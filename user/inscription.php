@@ -32,7 +32,9 @@ if (isset($result['success']) && $result['success']) {
     <title>Inscription - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -311,87 +313,88 @@ if (isset($result['success']) && $result['success']) {
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo.jpeg" alt="Sugar Paper">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
         </a>
     </header>
 
     <div class="auth-content">
-    <div class="container">
-        <div class="header">
-            <div class="icon">
-                <i class="fas fa-user-plus"></i>
+        <div class="container">
+            <div class="header">
+                <div class="icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h1>Créer un compte</h1>
+                <p>Rejoignez Sugar Paper</p>
             </div>
-            <h1>Créer un compte</h1>
-            <p>Rejoignez Sugar Paper</p>
+
+            <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" action="" id="inscriptionForm">
+                <div class="form-group">
+                    <label for="nom"><i class="fas fa-user"></i> Nom *</label>
+                    <input type="text" id="nom" name="nom" placeholder="Votre nom" required
+                        value="<?php echo isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : ''; ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="prenom"><i class="fas fa-user"></i> Prénom *</label>
+                    <input type="text" id="prenom" name="prenom" placeholder="Votre prénom" required
+                        value="<?php echo isset($_POST['prenom']) ? htmlspecialchars($_POST['prenom']) : ''; ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" required
+                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="telephone"><i class="fas fa-phone"></i> Téléphone *</label>
+                    <div class="input-wrapper">
+                        <input type="tel" id="telephone" name="telephone" placeholder="+241 01 23 45 67" required
+                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password_confirm"><i class="fas fa-lock"></i> Confirmer le mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="password_confirm" name="password_confirm"
+                            placeholder="Confirmez votre mot de passe" required>
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('password_confirm', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </button>
+            </form>
+
+            <div class="footer-text">
+                <p>Vous avez déjà un compte ? <a href="connexion.php">Se connecter</a></p>
+            </div>
         </div>
-
-        <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST" action="" id="inscriptionForm">
-            <div class="form-group">
-                <label for="nom"><i class="fas fa-user"></i> Nom *</label>
-                <input type="text" id="nom" name="nom" placeholder="Votre nom" required
-                    value="<?php echo isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : ''; ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="prenom"><i class="fas fa-user"></i> Prénom *</label>
-                <input type="text" id="prenom" name="prenom" placeholder="Votre prénom" required
-                    value="<?php echo isset($_POST['prenom']) ? htmlspecialchars($_POST['prenom']) : ''; ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i> Email *</label>
-                <div class="input-wrapper">
-                    <input type="email" id="email" name="email" placeholder="votre@email.com" required
-                        value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
-                    <i class="fas fa-envelope"></i>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="telephone"><i class="fas fa-phone"></i> Téléphone *</label>
-                <div class="input-wrapper">
-                    <input type="tel" id="telephone" name="telephone" placeholder="+241 01 23 45 67" required
-                        value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
-                    <i class="fas fa-phone"></i>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
-                <div class="input-wrapper password-wrapper">
-                    <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
-                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="password_confirm"><i class="fas fa-lock"></i> Confirmer le mot de passe *</label>
-                <div class="input-wrapper password-wrapper">
-                    <input type="password" id="password_confirm" name="password_confirm"
-                        placeholder="Confirmez votre mot de passe" required>
-                    <button type="button" class="password-toggle" onclick="togglePassword('password_confirm', this)">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-submit">
-                <i class="fas fa-user-plus"></i> S'inscrire
-            </button>
-        </form>
-
-        <div class="footer-text">
-            <p>Vous avez déjà un compte ? <a href="connexion.php">Se connecter</a></p>
-        </div>
-    </div>
     </div>
 
     <script>

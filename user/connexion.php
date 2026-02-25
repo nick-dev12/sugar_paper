@@ -24,7 +24,7 @@ if (isset($result['success']) && $result['success'] && $result['user']) {
     $_SESSION['user_email'] = $result['user']['email'];
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
-    
+
     header('Location: /index.php');
     exit;
 }
@@ -38,13 +38,16 @@ if (isset($_SESSION['inscription_success'])) {
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -370,92 +373,94 @@ if (isset($_SESSION['inscription_success'])) {
         }
     </style>
 </head>
+
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo.jpeg" alt="Sugar Paper">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
         </a>
     </header>
 
     <div class="auth-content">
-    <div class="container">
-        <div class="header">
-            <div class="icon">
-                <i class="fas fa-sign-in-alt"></i>
+        <div class="container">
+            <div class="header">
+                <div class="icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <h1>Connexion</h1>
+                <p>Accédez à votre compte</p>
             </div>
-            <h1>Connexion</h1>
-            <p>Accédez à votre compte</p>
+
+            <?php if (!empty($inscription_success)): ?>
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($inscription_success); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
+                </div>
+            <?php endif; ?>
+
+            <form method="POST" action="" id="loginForm">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" required
+                            value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                        <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="forgot-password-link">
+                        <a href="mot-de-passe-oublie.php">Mot de passe oublié ?</a>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" required>
+                    <label for="accepte_conditions">
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a>
+                        *
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+            </form>
+
+            <div class="footer-text">
+                <p>Vous n'avez pas de compte ? <a href="inscription.php">Créer un compte</a></p>
+            </div>
         </div>
-
-        <?php if (!empty($inscription_success)): ?>
-            <div class="success-message">
-                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($inscription_success); ?>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
-            <div class="error-message">
-                <i class="fas fa-exclamation-circle"></i> <?php echo $result['message']; ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST" action="" id="loginForm">
-            <div class="form-group">
-                <label for="email"><i class="fas fa-envelope"></i> Email *</label>
-                <div class="input-wrapper">
-                    <input type="email" id="email" name="email" placeholder="votre@email.com" required
-                           value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
-                    <i class="fas fa-envelope"></i>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
-                <div class="input-wrapper password-wrapper">
-                    <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
-                    <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
-                <div class="forgot-password-link">
-                    <a href="mot-de-passe-oublie.php">Mot de passe oublié ?</a>
-                </div>
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" required>
-                <label for="accepte_conditions">
-                    J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a> *
-                </label>
-            </div>
-
-            <button type="submit" class="btn-submit">
-                <i class="fas fa-sign-in-alt"></i> Se connecter
-            </button>
-        </form>
-
-        <div class="footer-text">
-            <p>Vous n'avez pas de compte ? <a href="inscription.php">Créer un compte</a></p>
-        </div>
-    </div>
     </div>
 
     <script>
-    function togglePassword(inputId, button) {
-        const input = document.getElementById(inputId);
-        const icon = button.querySelector('i');
-        
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
-        } else {
-            input.type = 'password';
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         }
-    }
     </script>
 </body>
-</html>
 
+</html>
