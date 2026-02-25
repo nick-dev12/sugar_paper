@@ -77,7 +77,7 @@ $annulees = count_commandes_by_statut('annulee');
 
         .commande-item {
             background: #ffffff;
-            border: 1px solid #f0e9e9;
+            border: 1px solid #e8e8e8;
             border-radius: 12px;
             padding: 20px;
             max-width: 300px;
@@ -142,7 +142,7 @@ $annulees = count_commandes_by_statut('annulee');
             gap: 10px;
             margin-top: 15px;
             padding-top: 15px;
-            border-top: 1px solid #f0e9e9;
+            border-top: 1px solid #e8e8e8;
         }
 
         .detail-item {

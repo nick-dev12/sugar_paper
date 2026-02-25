@@ -1,0 +1,140 @@
+<?php
+session_start();
+
+require_once __DIR__ . '/models/model_produits.php';
+
+$page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+$limit = 20;
+$offset = ($page - 1) * $limit;
+
+$produits = get_produits_nouveautes_paginated($offset, $limit);
+$total_produits = count_all_produits_actifs();
+$total_pages = $total_produits > 0 ? ceil($total_produits / $limit) : 1;
+
+if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
+    require_once __DIR__ . '/controllers/controller_commerce_users.php';
+}
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveautés - Sugar Paper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/a_style.css">
+    <link rel="stylesheet" href="/css/product-cards.css">
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css">
+    <style>
+        .page-header {
+            background: var(--couleur-dominante);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 40px;
+        }
+        .page-header h1 { font-size: 32px; margin-bottom: 10px; font-weight: 700; }
+        .page-header p { font-size: 16px; opacity: 0.9; }
+        .produits-container-wrapper { max-width: 1400px; margin: 0 auto; padding: 0 20px 80px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+        .empty-state i { font-size: 64px; margin-bottom: 20px; opacity: 0.4; }
+        .empty-state a {
+            display: inline-block; margin-top: 20px; padding: 12px 24px;
+            background: var(--couleur-dominante); color: #fff; text-decoration: none;
+            border-radius: 8px; font-weight: 600; transition: all 0.3s;
+        }
+        .empty-state a:hover { background: rgba(229, 72, 138, 0.9); }
+        .pagination { display: flex; justify-content: center; gap: 8px; margin: 40px 0; flex-wrap: wrap; }
+        .pagination a, .pagination span {
+            padding: 10px 16px; border-radius: 8px; text-decoration: none;
+            background: #fff; border: 1px solid rgba(0,0,0,0.1); color: var(--texte-fonce);
+            font-weight: 600; transition: all 0.3s;
+        }
+        .pagination a:hover { background: var(--couleur-dominante); color: #fff; border-color: var(--couleur-dominante); }
+        .pagination .current { background: var(--couleur-dominante); color: #fff; border-color: var(--couleur-dominante); }
+    </style>
+</head>
+<body>
+    <?php include('nav_bar.php'); ?>
+
+    <div class="page-header">
+        <h1><i class="fas fa-gift"></i> Nouveautés</h1>
+        <p>Découvrez nos derniers produits ajoutés</p>
+    </div>
+
+    <div class="produits-container-wrapper">
+        <section class="section00">
+            <section class="produit_vedetes">
+                <?php if (empty($produits)): ?>
+                <div class="empty-state">
+                    <i class="fas fa-box-open"></i>
+                    <p>Aucun produit pour le moment.</p>
+                    <a href="index.php"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
+                </div>
+                <?php else: ?>
+                <article data-aos="fade-up" class="articles carousel11">
+                    <?php foreach ($produits as $produit): ?>
+                    <?php
+                    $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
+                    $prix_affichage = $has_promo ? $produit['prix_promotion'] : $produit['prix'];
+                    $pourcentage = $has_promo ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
+                    ?>
+                    <div class="carousel">
+                        <div class="image-wrapper">
+                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                alt="<?php echo htmlspecialchars($produit['nom']); ?>"
+                                onerror="this.src='/image/produit1.jpg'">
+                        </div>
+                        <div class="produit-content">
+                            <p id="nom"><?php echo htmlspecialchars($produit['nom']); ?></p>
+                            <?php if (!empty($produit['categorie_nom'])): ?>
+                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
+                            <?php endif; ?>
+                            <p class="prix">
+                                <?php if ($has_promo): ?>
+                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                                <?php else: ?>
+                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                                <?php endif; ?>
+                            </p>
+                            <?php if (!empty($produit['stock'])): ?>
+                            <p class="produit-card-stock-info"><strong>Stock:</strong> <?php echo $produit['stock']; ?></p>
+                            <?php endif; ?>
+                        </div>
+                        <a href="produit.php?id=<?php echo $produit['id']; ?>">
+                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </article>
+
+                <?php if ($total_pages > 1): ?>
+                <div class="pagination">
+                    <?php if ($page > 1): ?>
+                    <a href="?page=<?php echo $page - 1; ?>"><i class="fas fa-chevron-left"></i> Précédent</a>
+                    <?php endif; ?>
+                    <?php for ($i = 1; $i <= min($total_pages, 10); $i++): ?>
+                    <?php if ($i == $page): ?>
+                    <span class="current"><?php echo $i; ?></span>
+                    <?php else: ?>
+                    <a href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    <?php endif; ?>
+                    <?php endfor; ?>
+                    <?php if ($page < $total_pages): ?>
+                    <a href="?page=<?php echo $page + 1; ?>">Suivant <i class="fas fa-chevron-right"></i></a>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                <?php endif; ?>
+            </section>
+        </section>
+    </div>
+
+    <?php include('footer.php'); ?>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script>AOS.init();</script>
+</body>
+</html>

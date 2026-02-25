@@ -9,7 +9,7 @@
   
   /* Couleurs secondaires */
   --jaune-wilton: #F4D35E;
-  --beige-creme: #F6E7C9;
+  --beige-creme: #ffffff;
   --turquoise: #20C5C7;
   --orange: #F77F00;
   
@@ -18,16 +18,16 @@
   --texte-clair: #ffffff;
   
   /* Rôles - Rose = principale */
-  --fond-principal: #F6E7C9;
+  --fond-principal: #ffffff;
   --couleur-dominante: #E5488A;
   --boutons-secondaires: #20C5C7;
   --accent-promo: #F77F00;
   --titres: #3d2800;
   
-  /* Glassmorphisme */
-  --glass-bg: rgba(246, 231, 201, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.5);
-  --glass-shadow: 0 8px 32px rgba(229, 72, 138, 0.12);
+  /* Glassmorphisme - fond blanc opaque avec bordures et ombres */
+  --glass-bg: #ffffff;
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   
   /* Ombres (rose principale) */
   --ombre-douce: 0 4px 20px rgba(229, 72, 138, 0.08);

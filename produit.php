@@ -164,7 +164,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     .produit-prix-section {
         margin-bottom: 15px;
         padding: 18px;
-        background: rgba(246, 231, 201, 0.5);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         border-left: 4px solid var(--couleur-dominante);
     }
@@ -204,7 +204,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     .produit-stock-info {
         margin-bottom: 15px;
         padding: 14px;
-        background: rgba(246, 231, 201, 0.4);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         border: 1px solid rgba(229, 72, 138, 0.15);
     }
@@ -442,7 +442,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
     .produit-connect-cta {
         padding: 24px;
-        background: rgba(246, 231, 201, 0.5);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         text-align: center;
         border: 1px solid rgba(229, 72, 138, 0.2);

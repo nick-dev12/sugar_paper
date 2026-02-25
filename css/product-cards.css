@@ -18,14 +18,12 @@
   box-sizing: border-box;
 }
 
-/* Carte de produit - Glassmorphisme */
+/* Carte de produit - Fond blanc opaque */
 .produit_vedete .articles .carousel,
 .produit_vedetes .articles .carousel,
 .carousel11 .carousel {
-  background: rgba(246, 231, 201, 0.5);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   overflow: hidden;
   width: 260px;
@@ -55,7 +53,7 @@
   width: 100%;
   height: 200px !important;
   overflow: hidden;
-  background: rgba(244, 211, 94, 0.2);
+  background: #f8f8f8;
 }
 
 .produit_vedete .articles .carousel img,

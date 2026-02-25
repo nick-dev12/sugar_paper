@@ -27,9 +27,9 @@ $zones = get_all_zones_livraison(null);
             margin-top: 20px;
         }
         .zones-table { width: 100%; min-width: 640px; border-collapse: collapse; }
-        .zones-table th, .zones-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #f0e9e9; }
-        .zones-table th { background: #f8f6f0; color: #6b2f20; font-weight: 600; }
-        .zones-table tr:hover { background: #faf9f8; }
+        .zones-table th, .zones-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e8e8e8; }
+        .zones-table th { background: #ffffff; color: #6b2f20; font-weight: 600; }
+        .zones-table tr:hover { background: #fafafa; }
         .zone-prix { font-weight: 600; color: #918a44; }
         .zone-lieu { font-weight: 500; color: #000; }
         .statut-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }

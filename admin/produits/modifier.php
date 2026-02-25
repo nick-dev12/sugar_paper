@@ -79,7 +79,7 @@ $categories = get_all_categories();
         .form-group textarea {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid #f0e9e9;
+            border: 2px solid #e8e8e8;
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;

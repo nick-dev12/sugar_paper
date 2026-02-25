@@ -71,7 +71,7 @@ if (isset($result['success']) && $result['success']) {
         .form-group textarea {
             width: 100%;
             padding: 12px 15px;
-            border: 2px solid #f0e9e9;
+            border: 2px solid #e8e8e8;
             border-radius: 8px;
             font-size: 15px;
             transition: all 0.3s ease;
@@ -104,7 +104,7 @@ if (isset($result['success']) && $result['success']) {
             gap: 15px;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 2px solid #f0e9e9;
+            border-top: 2px solid #e8e8e8;
         }
 
         .btn-primary {
@@ -128,7 +128,7 @@ if (isset($result['success']) && $result['success']) {
 
         .btn-back {
             padding: 12px 30px;
-            background: #f0e9e9;
+            background: #ffffff;
             color: #6b2f20;
             border: none;
             border-radius: 8px;

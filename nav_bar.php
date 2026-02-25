@@ -31,14 +31,14 @@ if (isset($_SESSION['user_id'])) {
         justify-content: space-between;
         gap: 20px;
         padding: 12px 30px;
-        background: rgba(246, 231, 201, 0.85);
+        background: #ffffff;
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.5);
     }
 
     .section1 {
-        z-index: -1;
+        z-index: 100;
     }
 
     .nav-planete-gateau .logo {
@@ -56,10 +56,21 @@ if (isset($_SESSION['user_id'])) {
         display: contents;
     }
 
-    .nav-top-row .logo { order: 1; }
-    .nav-search-wrapper { order: 2; }
-    .nav-top-row .nav-panier-link { order: 3; }
-    .nav-top-row .nav-compte-btn { order: 4; }
+    .nav-top-row .logo {
+        order: 1;
+    }
+
+    .nav-search-wrapper {
+        order: 2;
+    }
+
+    .nav-top-row .nav-panier-link {
+        order: 3;
+    }
+
+    .nav-top-row .nav-compte-btn {
+        order: 4;
+    }
 
     /* Barre de recherche avec filtres */
     .nav-search-wrapper {
@@ -101,20 +112,20 @@ if (isset($_SESSION['user_id'])) {
         border-color: var(--couleur-dominante);
     }
 
-.nav-search-filters-panel {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin-top: 10px;
-    background: #fff;
-    border-radius: 14px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    padding: 20px;
-    z-index: 10001;
-    display: none;
-    border: 1px solid rgba(229, 72, 138, 0.2);
-}
+    .nav-search-filters-panel {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 10px;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        padding: 20px;
+        z-index: 10001;
+        display: none;
+        border: 1px solid rgba(229, 72, 138, 0.2);
+    }
 
     .nav-search-filters-panel.show {
         display: block;
@@ -198,7 +209,7 @@ if (isset($_SESSION['user_id'])) {
     }
 
     .nav-search-filters-actions .btn-reset {
-        background: #f0e9e9;
+        background: #ffffff;
         color: var(--texte-fonce);
     }
 
@@ -658,7 +669,6 @@ if (isset($_SESSION['user_id'])) {
 </nav>
 
 <?php
-// Récupérer les catégories pour le menu de navigation
 $categories_menu = [];
 if (file_exists(__DIR__ . '/models/model_categories.php')) {
     require_once __DIR__ . '/models/model_categories.php';
@@ -666,43 +676,109 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
 }
 ?>
 
-<section class="section1">
-    <div>
-        <span class="toggle-categories-btn" style="cursor: pointer;"><i class="fa-solid fa-bars"></i></span>
+<!-- Overlay et sidebar menu latéral (apparaît au clic sur MENU) -->
+<div class="nav-sidebar-overlay" id="navSidebarOverlay"></div>
+<aside class="nav-sidebar" id="navSidebar">
+    <div class="nav-sidebar-header">
+        <a href="/index.php" class="nav-sidebar-logo">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
+        </a>
+        <p class="nav-sidebar-slogan">SUGAR PAPER</p>
     </div>
-    <?php if (!empty($categories_menu)): ?>
-        <?php foreach ($categories_menu as $index => $categorie): ?>
-            <a href="categorie.php?id=<?php echo $categorie['id']; ?>"
-                class="category-link <?php echo $index >= 3 ? 'category-hidden' : ''; ?>">
-                <?php echo htmlspecialchars($categorie['nom']); ?>
-            </a>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <!-- Fallback si aucune catégorie n'est disponible -->
-        <a href="produits.php" class="category-link">Tous les produits</a>
-    <?php endif; ?>
+    <div class="nav-sidebar-content">
+        <a href="/nouveautes.php" class="nav-sidebar-item nav-sidebar-nouveautes">
+            <i class="fa-solid fa-cake-candles"></i>
+            <span>NOUVEAUTÉS</span>
+        </a>
+        <a href="/promo.php" class="nav-sidebar-item nav-sidebar-promo">
+            <i class="fa-solid fa-percent"></i>
+            <span>PROMO</span>
+        </a>
+        <div class="nav-sidebar-categories">
+            <?php if (!empty($categories_menu)): ?>
+                <?php foreach ($categories_menu as $categorie): ?>
+                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>" class="nav-sidebar-category">
+                        <span><?php echo htmlspecialchars($categorie['nom']); ?></span>
+                        <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                    </a>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <a href="produits.php" class="nav-sidebar-category">
+                    <span>Tous les produits</span>
+                    <span class="nav-sidebar-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="nav-sidebar-footer">
+        <a href="/contact.php" class="nav-sidebar-footer-btn">
+            <i class="fa-solid fa-phone"></i>
+            <span>CONTACTEZ<br>NOUS</span>
+        </a>
+        <a href="/contact.php#livraison" class="nav-sidebar-footer-btn">
+            <i class="fa-solid fa-truck"></i>
+            <span>PORTS ET<br>EXPÉDITION</span>
+        </a>
+        <a href="<?php echo isset($_SESSION['user_id']) ? '/user/mon-compte.php' : '/user/connexion.php'; ?>"
+            class="nav-sidebar-footer-btn">
+            <i class="fa-solid fa-briefcase"></i>
+            <span>COMPTE<br>PRO</span>
+        </a>
+    </div>
+</aside>
+
+<section class="section1">
+    <div class="section1-left">
+        <button type="button" class="toggle-categories-btn" id="navMenuToggle" aria-label="Ouvrir le menu">
+            <i class="fa-solid fa-bars"></i>
+            <span>MENU</span>
+        </button>
+    </div>
+    <div class="section1-right">
+        <a href="/nouveautes.php" class="nav-action-btn nav-btn-nouveautes">
+            <i class="fa-solid fa-gift"></i>
+            <span>NOUVEAUTÉS</span>
+        </a>
+        <a href="/promo.php" class="nav-action-btn nav-btn-promo">
+            <i class="fa-solid fa-percent"></i>
+            <span>PROMO</span>
+        </a>
+        <a href="/contact.php" class="nav-action-btn nav-btn-contact">
+            <i class="fa-solid fa-phone"></i>
+            <span>CONTACT</span>
+        </a>
+    </div>
 </section>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const toggleBtn = document.querySelector('.toggle-categories-btn');
-        const hiddenCategories = document.querySelectorAll('.category-hidden');
+        var toggle = document.getElementById('navMenuToggle');
+        var sidebar = document.getElementById('navSidebar');
+        var overlay = document.getElementById('navSidebarOverlay');
 
-        if (toggleBtn && hiddenCategories.length > 0) {
-            toggleBtn.addEventListener('click', function () {
-                const section1 = document.querySelector('.section1');
-                section1.classList.toggle('show-all-categories');
-
-                // Changer l'icône
-                const icon = this.querySelector('i');
-                if (section1.classList.contains('show-all-categories')) {
-                    icon.classList.remove('fa-bars');
-                    icon.classList.add('fa-times');
-                } else {
-                    icon.classList.remove('fa-times');
-                    icon.classList.add('fa-bars');
-                }
-            });
+        function openMenu() {
+            if (sidebar) sidebar.classList.add('open');
+            if (overlay) overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            var icon = toggle ? toggle.querySelector('i') : null;
+            if (icon) { icon.classList.remove('fa-bars'); icon.classList.add('fa-times'); }
         }
+        function closeMenu() {
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('show');
+            document.body.style.overflow = '';
+            var icon = toggle ? toggle.querySelector('i') : null;
+            if (icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+        }
+
+        if (toggle) toggle.addEventListener('click', function () {
+            if (sidebar && sidebar.classList.contains('open')) closeMenu();
+            else openMenu();
+        });
+        if (overlay) overlay.addEventListener('click', closeMenu);
+
+        window.addEventListener('resize', function () {
+            if (window.innerWidth > 992 && sidebar && sidebar.classList.contains('open')) closeMenu();
+        });
     });
 </script>

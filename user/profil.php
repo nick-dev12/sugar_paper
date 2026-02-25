@@ -293,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
         }
 
         .btn-cancel {
-            background: rgba(246, 231, 201, 0.6);
+            background: rgba(255, 255, 255, 0.95);
             color: var(--titres);
             padding: 12px 30px;
             border: none;
@@ -335,7 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
         }
 
         .info-section {
-            background: rgba(246, 231, 201, 0.4);
+            background: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 25px;
@@ -395,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
         }
 
         .security-section {
-            background: rgba(246, 231, 201, 0.5);
+            background: rgba(255, 255, 255, 0.95);
             border: 1px solid rgba(247, 127, 0, 0.3);
         }
 

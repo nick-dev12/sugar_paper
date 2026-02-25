@@ -65,9 +65,9 @@ if (isset($result['success']) && $result['success']) {
                 radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
                 radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
                 radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(246, 231, 201, 0.6) 0%, transparent 45%),
+                radial-gradient(ellipse 50% 60% at 10% 70%, rgba(255, 255, 255, 0.95) 0%, transparent 45%),
                 radial-gradient(ellipse 60% 50% at 80% 60%, rgba(247, 127, 0, 0.25) 0%, transparent 45%),
-                linear-gradient(135deg, rgba(246, 231, 201, 0.9) 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
+                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
             filter: blur(60px);
             pointer-events: none;
             z-index: -1;
@@ -79,7 +79,7 @@ if (isset($result['success']) && $result['success']) {
             left: 0;
             right: 0;
             padding: 12px 30px;
-            background: rgba(246, 231, 201, 0.85);
+            background: #ffffff;
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);

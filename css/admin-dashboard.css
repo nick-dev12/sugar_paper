@@ -45,7 +45,7 @@ body::before {
     ),
     radial-gradient(
       ellipse 50% 60% at 10% 70%,
-      rgba(246, 231, 201, 0.6) 0%,
+      rgba(255, 255, 255, 0.95) 0%,
       transparent 45%
     ),
     radial-gradient(
@@ -55,7 +55,7 @@ body::before {
     ),
     linear-gradient(
       135deg,
-      rgba(246, 231, 201, 0.9) 0%,
+      #ffffff 0%,
       rgba(229, 72, 138, 0.15) 50%,
       rgba(32, 197, 199, 0.1) 100%
     );
@@ -74,7 +74,7 @@ body::before {
 /* Barre de navigation verticale */
 .admin-sidebar {
   width: 280px;
-  background: #f0e9e9;
+  background: #ffffff;
   border-right: 1px solid rgba(107, 47, 32, 0.15);
   min-height: 100vh;
   max-height: 100vh;
@@ -94,7 +94,7 @@ body::before {
 
 .sidebar-header {
   padding: 25px 20px;
-  background: rgba(246, 231, 201, 0.6);
+  background: #ffffff;
   border-bottom: 1px solid rgba(229, 72, 138, 0.2);
 }
 
@@ -182,6 +182,7 @@ body::before {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  background: #ffffff;
 }
 
 .contents-container {
@@ -195,9 +196,7 @@ body::before {
 }
 
 .content-header {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: #ffffff;
   border: 1px solid var(--glass-border);
   padding: 25px 30px;
   border-radius: 12px;
@@ -257,9 +256,7 @@ body::before {
 
 /* Section produits */
 .produits-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: #ffffff;
   border: 1px solid var(--glass-border);
   padding: 30px;
   border-radius: 12px;
@@ -295,8 +292,7 @@ body::before {
 
 /* Cards de produits */
 .produit-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
+  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--glass-border);
@@ -321,7 +317,7 @@ body::before {
   width: 100%;
   object-fit: cover;
   border-bottom: 1px solid var(--glass-border);
-  background: rgba(244, 211, 94, 0.2);
+  background: #f8f8f8;
 }
 
 .produit-card-body {
@@ -464,8 +460,7 @@ body::before {
 }
 
 .stat-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
+  background: #ffffff;
   border: 1px solid var(--glass-border);
   padding: 20px;
   border-radius: 12px;
@@ -495,11 +490,12 @@ body::before {
 }
 
 .alert-box {
-  background: rgba(244, 211, 94, 0.4);
+  background: #fffef7;
   border-left: 4px solid var(--jaune-wilton);
   padding: 15px;
   border-radius: 6px;
   margin-bottom: 30px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 .alert-box p {
@@ -556,7 +552,7 @@ body::before {
 }
 
 .message.success {
-  background: rgba(32, 197, 199, 0.15);
+  background: #e8f8f8;
   border-left: 4px solid var(--turquoise);
   color: var(--titres);
 }
@@ -574,8 +570,7 @@ body::before {
 }
 
 .categorie-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(15px);
+  background: #ffffff;
   border: 1px solid var(--glass-border);
   border-radius: 16px;
   overflow: hidden;
@@ -596,7 +591,7 @@ body::before {
   width: 100%;
   height: 160px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(246, 231, 201, 0.6) 0%, rgba(229, 72, 138, 0.08) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(229, 72, 138, 0.08) 100%);
 }
 
 .categorie-card .categorie-image {
@@ -756,7 +751,7 @@ body::before {
   width: 100%;
   height: 200px;
   object-fit: cover;
-  background: rgba(244, 211, 94, 0.2);
+  background: #f8f8f8;
 }
 
 .slide-body {
@@ -826,7 +821,7 @@ body::before {
 }
 
 .data-table tr:hover {
-  background: rgba(246, 231, 201, 0.3);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 /* Form containers */
@@ -879,7 +874,7 @@ body::before {
 }
 
 .btn-back {
-  background: rgba(246, 231, 201, 0.8);
+  background: #ffffff;
   color: var(--titres);
   padding: 10px 20px;
   border-radius: 8px;
@@ -1718,7 +1713,7 @@ body::before {
 
 .user-card.inactive {
   opacity: 0.7;
-  background: rgba(246, 231, 201, 0.5);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .user-header {
@@ -1803,7 +1798,7 @@ body::before {
   gap: 10px;
   margin-bottom: 15px;
   padding: 15px;
-  background: rgba(246, 231, 201, 0.3);
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
 }
 
@@ -2075,7 +2070,7 @@ body::before {
 }
 
 .btn-cancel {
-  background: rgba(246, 231, 201, 0.6);
+  background: rgba(255, 255, 255, 0.95);
   color: var(--titres);
   padding: 12px 30px;
   border: 1px solid var(--glass-border);
@@ -2091,12 +2086,12 @@ body::before {
 }
 
 .btn-cancel:hover {
-  background: rgba(246, 231, 201, 0.9);
+  background: #ffffff;
   color: var(--titres);
 }
 
 .info-section {
-  background: rgba(246, 231, 201, 0.4);
+  background: rgba(255, 255, 255, 0.95);
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 25px;
@@ -2333,7 +2328,7 @@ body::before {
 
 .statut-current-wrap {
   padding: 12px;
-  background: rgba(246, 231, 201, 0.5);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
   margin-bottom: 20px;
 }
@@ -2421,7 +2416,7 @@ body::before {
 
 .notes-box {
   padding: 12px;
-  background: rgba(246, 231, 201, 0.5);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
 }
 
@@ -2450,7 +2445,7 @@ body::before {
 .current-image {
   margin-top: 15px;
   padding: 18px;
-  background: rgba(246, 231, 201, 0.4);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   border: 1px solid var(--glass-border);
 }
@@ -2757,7 +2752,7 @@ body::before {
   padding: 25px;
   border: 2px dashed rgba(229, 72, 138, 0.35);
   border-radius: 10px;
-  background: rgba(246, 231, 201, 0.3);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--couleur-dominante);
   cursor: pointer;
   transition: all 0.3s;
@@ -2771,7 +2766,7 @@ body::before {
 .video-preview-container {
   margin-top: 15px;
   padding: 18px;
-  background: rgba(246, 231, 201, 0.4);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   border: 1px solid var(--glass-border);
 }

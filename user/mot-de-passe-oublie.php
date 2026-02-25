@@ -53,7 +53,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
                 radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
                 radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
                 radial-gradient(ellipse 70% 50% at 50% 80%, rgba(32, 197, 199, 0.3) 0%, transparent 50%),
-                linear-gradient(135deg, rgba(246, 231, 201, 0.9) 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
+                linear-gradient(135deg, #ffffff 0%, rgba(229, 72, 138, 0.15) 50%, rgba(32, 197, 199, 0.1) 100%);
             filter: blur(60px);
             pointer-events: none;
             z-index: -1;
@@ -62,7 +62,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             position: fixed;
             top: 0; left: 0; right: 0;
             padding: 12px 30px;
-            background: rgba(246, 231, 201, 0.85);
+            background: #ffffff;
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
             z-index: 100;

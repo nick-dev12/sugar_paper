@@ -43,7 +43,7 @@ body::before {
     ),
     radial-gradient(
       ellipse 50% 60% at 10% 70%,
-      rgba(246, 231, 201, 0.6) 0%,
+      rgba(255, 255, 255, 0.95) 0%,
       transparent 45%
     ),
     radial-gradient(
@@ -53,7 +53,7 @@ body::before {
     ),
     linear-gradient(
       135deg,
-      rgba(246, 231, 201, 0.9) 0%,
+      #ffffff 0%,
       rgba(229, 72, 138, 0.15) 50%,
       rgba(32, 197, 199, 0.1) 100%
     );

@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
         }
 
         .categorie-info {
-            background: #f0e9e9;
+            background: #ffffff;
             padding: 20px;
             border-radius: 8px;
             margin: 20px 0;

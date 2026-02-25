@@ -74,7 +74,7 @@ if (isset($_SESSION['success_message'])) {
         .form-group textarea {
             width: 100%;
             padding: 12px;
-            border: 1px solid #f0e9e9;
+            border: 1px solid #e8e8e8;
             border-radius: 6px;
             font-size: 14px;
             transition: border-color 0.3s ease;
@@ -102,7 +102,7 @@ if (isset($_SESSION['success_message'])) {
         .current-image {
             margin-top: 15px;
             padding: 15px;
-            background: #f0e9e9;
+            background: #ffffff;
             border-radius: 8px;
         }
 
@@ -140,7 +140,7 @@ if (isset($_SESSION['success_message'])) {
         }
 
         .btn-back {
-            background: #f0e9e9;
+            background: #ffffff;
             color: #6b2f20;
             padding: 12px 30px;
             border: none;
@@ -179,7 +179,7 @@ if (isset($_SESSION['success_message'])) {
             justify-content: center;
             gap: 10px;
             padding: 15px;
-            background: #f0e9e9;
+            background: #ffffff;
             border: 2px dashed #918a44;
             border-radius: 6px;
             cursor: pointer;

@@ -24,7 +24,7 @@ if (isset($result['success']) && $result['success']) {
         .form-container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 600; color: #6b2f20; margin-bottom: 8px; }
-        .form-group input, .form-group textarea { width: 100%; padding: 12px 15px; border: 2px solid #f0e9e9; border-radius: 8px; font-size: 14px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 12px 15px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px; }
         .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #918a44; }
         .error-message { background: #fee; border-left: 4px solid #c26638; color: #6b2f20; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; }
         .btn-back { background: #e0e0e0; color: #6b2f20; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }

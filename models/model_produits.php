@@ -325,6 +325,59 @@ function count_all_produits_actifs() {
 }
 
 /**
+ * Récupère les produits en promotion (prix_promotion défini et inférieur au prix)
+ * @param int $offset Décalage pour pagination
+ * @param int $limit Nombre maximum de produits à retourner
+ * @return array Tableau des produits en promo
+ */
+function get_produits_en_promo($offset = 0, $limit = 50) {
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom 
+            FROM produits p 
+            LEFT JOIN categories c ON p.categorie_id = c.id 
+            WHERE p.statut = 'actif' 
+            AND p.prix_promotion IS NOT NULL 
+            AND p.prix_promotion > 0 
+            AND p.prix_promotion < p.prix
+            ORDER BY (p.prix - p.prix_promotion) DESC, p.date_creation DESC
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $produits ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Compte les produits en promotion
+ * @return int Nombre de produits en promo
+ */
+function count_produits_en_promo() {
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM produits 
+            WHERE statut = 'actif' 
+            AND prix_promotion IS NOT NULL 
+            AND prix_promotion > 0 
+            AND prix_promotion < prix
+        ");
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Récupère les produits les plus récents (nouveautés)
  * @param int $limit Nombre maximum de produits à retourner (par défaut 4)
  * @return array Tableau des produits les plus récents
@@ -347,6 +400,34 @@ function get_produits_nouveautes($limit = 4) {
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Récupère tous les produits nouveautés avec pagination
+ * @param int $offset Décalage pour pagination
+ * @param int $limit Nombre maximum de produits à retourner
+ * @return array Tableau des produits les plus récents
+ */
+function get_produits_nouveautes_paginated($offset = 0, $limit = 20) {
+    global $db;
+    
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom 
+            FROM produits p 
+            LEFT JOIN categories c ON p.categorie_id = c.id 
+            WHERE p.statut = 'actif'
+            ORDER BY p.date_creation DESC, p.date_modification DESC
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $produits ?: [];
     } catch (PDOException $e) {
         return [];
     }

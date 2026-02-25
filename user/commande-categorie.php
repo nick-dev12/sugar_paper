@@ -120,7 +120,7 @@ $all_categories = get_all_categories();
         }
 
         .produit-card-commande {
-            background: rgba(246, 231, 201, 0.5);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
             padding: 15px;
             border: 1px solid var(--glass-border);
@@ -228,7 +228,7 @@ $all_categories = get_all_categories();
 
         .filter-btn {
             padding: 8px 16px;
-            background: rgba(246, 231, 201, 0.6);
+            background: rgba(255, 255, 255, 0.95);
             color: var(--titres);
             text-decoration: none;
             border-radius: 20px;
