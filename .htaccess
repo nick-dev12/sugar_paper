@@ -1,0 +1,8 @@
+# Configuration PHP pour l'upload de fichiers volumineux
+# Ces valeurs surchargent les valeurs du php.ini si nécessaire
+
+php_value upload_max_filesize 1000M
+php_value post_max_size 1000M
+php_value max_execution_time 300
+php_value max_input_time 300
+php_value memory_limit 512M

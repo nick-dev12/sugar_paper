@@ -1,0 +1,40 @@
+/**
+ * Palette - Rose comme couleur principale
+ * #E5488A (rose) | #F4D35E | #F6E7C9 | #20C5C7 | #F77F00
+ */
+
+:root {
+  /* Couleur principale */
+  --rose: #E5488A;
+  
+  /* Couleurs secondaires */
+  --jaune-wilton: #F4D35E;
+  --beige-creme: #F6E7C9;
+  --turquoise: #20C5C7;
+  --orange: #F77F00;
+  
+  /* Dérivés pour usage */
+  --texte-fonce: #3d2800;
+  --texte-clair: #ffffff;
+  
+  /* Rôles - Rose = principale */
+  --fond-principal: #F6E7C9;
+  --couleur-dominante: #E5488A;
+  --boutons-secondaires: #20C5C7;
+  --accent-promo: #F77F00;
+  --titres: #3d2800;
+  
+  /* Glassmorphisme */
+  --glass-bg: rgba(246, 231, 201, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px rgba(229, 72, 138, 0.12);
+  
+  /* Ombres (rose principale) */
+  --ombre-douce: 0 4px 20px rgba(229, 72, 138, 0.08);
+  --ombre-promo: 0 4px 15px rgba(229, 72, 138, 0.25);
+  --ombre-gourmande: 0 8px 30px rgba(229, 72, 138, 0.15);
+  
+  /* Typographie */
+  --font-titres: 'Playfair Display', serif;
+  --font-corps: 'Quicksand', 'Nunito', sans-serif;
+}

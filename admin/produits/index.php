@@ -1,0 +1,120 @@
+<?php
+/**
+ * Page de liste des produits
+ * Programmation procédurale uniquement
+ */
+
+session_start();
+
+// Vérifier si l'admin est connecté
+if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+    header('Location: ../login.php');
+    exit;
+}
+
+// Afficher le message de succès s'il existe
+$success_message = '';
+if (isset($_SESSION['success_message'])) {
+    $success_message = $_SESSION['success_message'];
+    unset($_SESSION['success_message']);
+}
+
+// Récupérer tous les produits
+require_once __DIR__ . '/../../models/model_produits.php';
+$produits = get_all_produits();
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste des Produits - Administration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/admin-dashboard.css">
+</head>
+<body>
+    <?php include '../includes/nav.php'; ?>
+    
+    <div class="content-header">
+        <h1><i class="fas fa-box"></i> Liste des Produits</h1>
+        <div class="header-actions">
+            <a href="ajouter.php" class="btn-primary">
+                <i class="fas fa-plus"></i> Nouveau Produit
+            </a>
+        </div>
+    </div>
+
+    <?php if (!empty($success_message)): ?>
+        <div class="message success">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+        </div>
+    <?php endif; ?>
+
+    <section class="produits-section">
+        <div class="section-title">
+            <h2><i class="fas fa-box"></i> Tous les Produits (<?php echo count($produits); ?>)</h2>
+        </div>
+
+        <?php if (empty($produits)): ?>
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
+                <p>Aucun produit enregistré pour le moment.</p>
+                <a href="ajouter.php" class="btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter le premier produit
+                </a>
+            </div>
+        <?php else: ?>
+            <div class="produits-grid">
+                <?php foreach ($produits as $produit): ?>
+                    <div class="produit-card">
+                        <?php
+                        $statut_class = 'statut-actif';
+                        if ($produit['statut'] == 'inactif') {
+                            $statut_class = 'statut-inactif';
+                        } elseif ($produit['statut'] == 'rupture_stock') {
+                            $statut_class = 'statut-rupture';
+                        }
+                        $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
+                        ?>
+                        <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
+                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
+                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" 
+                             class="produit-card-image"
+                             onerror="this.src='/image/produit1.jpg'">
+                        <div class="produit-card-body">
+                            <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
+                            <p class="produit-card-categorie"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?></p>
+                            <p class="produit-card-prix">
+                                <?php echo number_format($produit['prix'], 0, ',', ' '); ?> 
+                                <span class="prix-unite">FCFA</span>
+                                <?php if ($produit['prix_promotion']): ?>
+                                    <span class="prix-promo">
+                                        (Promo: <?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?> FCFA)
+                                    </span>
+                                <?php endif; ?>
+                            </p>
+                            <p class="produit-card-stock">
+                                Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span> 
+                                <?php if ($produit['poids']): ?>
+                                    (<?php echo htmlspecialchars($produit['poids']); ?>)
+                                <?php endif; ?>
+                            </p>
+                            <div class="produit-card-actions">
+                                <a href="modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                                <a href="supprimer.php?id=<?php echo $produit['id']; ?>" 
+                                   class="btn-card btn-delete"
+                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+
+    <?php include '../includes/footer.php'; ?>
+
