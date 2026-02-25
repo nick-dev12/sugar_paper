@@ -24,12 +24,33 @@ if ($is_produits || $is_categories || $is_slider || $is_parametres || $is_comman
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!-- Bouton menu mobile -->
-<button class="mobile-menu-toggle" id="menuToggle" onclick="toggleSidebar()">
+<button class="mobile-menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">
     <i class="fas fa-bars"></i>
 </button>
 
 <!-- Overlay pour mobile -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+(function() {
+    function toggleAdminSidebar() {
+        var sidebar = document.getElementById('adminSidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+            document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+        }
+    }
+    window.toggleSidebar = toggleAdminSidebar;
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('menuToggle');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (btn) btn.addEventListener('click', toggleAdminSidebar);
+        if (overlay) overlay.addEventListener('click', toggleAdminSidebar);
+    });
+})();
+</script>
 
 <div class="admin-container">
     <!-- Barre de navigation verticale -->

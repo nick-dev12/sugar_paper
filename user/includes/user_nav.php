@@ -8,12 +8,33 @@
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!-- Bouton menu mobile -->
-<button class="mobile-menu-toggle" id="menuToggle" onclick="toggleSidebar()">
+<button class="mobile-menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">
     <i class="fas fa-bars"></i>
 </button>
 
 <!-- Overlay pour mobile -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+(function() {
+    function toggleUserSidebar() {
+        var sidebar = document.getElementById('userSidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+            document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+        }
+    }
+    window.toggleSidebar = toggleUserSidebar;
+    document.addEventListener('DOMContentLoaded', function() {
+        var btn = document.getElementById('menuToggle');
+        var overlay = document.getElementById('sidebarOverlay');
+        if (btn) btn.addEventListener('click', toggleUserSidebar);
+        if (overlay) overlay.addEventListener('click', toggleUserSidebar);
+    });
+})();
+</script>
 
 <div class="user-container">
     <!-- Barre de navigation verticale -->

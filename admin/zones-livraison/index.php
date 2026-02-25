@@ -21,7 +21,12 @@ $zones = get_all_zones_livraison(null);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css">
     <style>
-        .zones-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 20px;
+        }
+        .zones-table { width: 100%; min-width: 640px; border-collapse: collapse; }
         .zones-table th, .zones-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #f0e9e9; }
         .zones-table th { background: #f8f6f0; color: #6b2f20; font-weight: 600; }
         .zones-table tr:hover { background: #faf9f8; }
@@ -36,6 +41,17 @@ $zones = get_all_zones_livraison(null);
         .btn-edit:hover { background: #bbdefb; }
         .btn-delete { background: #ffebee; color: #c62828; }
         .btn-delete:hover { background: #ffcdd2; }
+        @media (max-width: 768px) {
+            .content-header { flex-direction: column; align-items: stretch; gap: 12px; }
+            .content-header .header-actions .btn-primary { width: 100%; justify-content: center; }
+            .section-title { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .zones-table th, .zones-table td { padding: 10px 12px; font-size: 14px; }
+            .zones-actions { flex-direction: column; }
+            .zones-actions a { width: 100%; text-align: center; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .zones-table th, .zones-table td { padding: 8px 10px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
