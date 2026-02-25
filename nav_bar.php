@@ -24,68 +24,82 @@ if (isset($_SESSION['user_id'])) {
 <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&display=swap" rel="stylesheet">
 <style>
-/* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
-.nav-planete-gateau {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 12px 30px;
-    background: rgba(246, 231, 201, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-}
+    /* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
+    .nav-planete-gateau {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 12px 30px;
+        background: rgba(246, 231, 201, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    }
 
-.nav-planete-gateau .logo {
-    flex-shrink: 0;
-}
+    .section1 {
+        z-index: -1;
+    }
 
-.nav-planete-gateau .logo img {
-    height: 70px;
-    width: auto;
-    max-width: 160px;
-    object-fit: contain;
-}
+    .nav-planete-gateau .logo {
+        flex-shrink: 0;
+    }
 
-/* Barre de recherche avec filtres */
-.nav-search-wrapper {
-    display: flex;
-    flex: 1;
-    max-width: 500px;
-    margin: 0 20px;
-    position: relative;
-}
+    .nav-planete-gateau .logo img {
+        height: 70px;
+        width: auto;
+        max-width: 160px;
+        object-fit: contain;
+    }
 
-.nav-search-form {
-    display: flex;
-    align-items: stretch;
-    flex: 1;
-    border-radius: 25px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(229, 72, 138, 0.15);
-}
+    .nav-top-row {
+        display: contents;
+    }
 
-.nav-search-filters-btn {
-    margin-left: 8px;
-    padding: 12px 14px;
-    background: rgba(229, 72, 138, 0.15);
-    border: 2px solid rgba(229, 72, 138, 0.3);
-    border-radius: 12px;
-    color: var(--couleur-dominante);
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    .nav-top-row .logo { order: 1; }
+    .nav-search-wrapper { order: 2; }
+    .nav-top-row .nav-panier-link { order: 3; }
+    .nav-top-row .nav-compte-btn { order: 4; }
 
-.nav-search-filters-btn:hover,
-.nav-search-filters-btn.active {
-    background: var(--couleur-dominante);
-    color: #fff;
-    border-color: var(--couleur-dominante);
-}
+    /* Barre de recherche avec filtres */
+    .nav-search-wrapper {
+        display: flex;
+        flex: 1;
+        max-width: 500px;
+        margin: 0 20px;
+        position: relative;
+        z-index: 9999;
+    }
+
+    .nav-search-form {
+        display: flex;
+        align-items: stretch;
+        flex: 1;
+        border-radius: 25px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(229, 72, 138, 0.15);
+    }
+
+    .nav-search-filters-btn {
+        margin-left: 8px;
+        padding: 12px 14px;
+        background: rgba(229, 72, 138, 0.15);
+        border: 2px solid rgba(229, 72, 138, 0.3);
+        border-radius: 12px;
+        color: var(--couleur-dominante);
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-search-filters-btn:hover,
+    .nav-search-filters-btn.active {
+        background: var(--couleur-dominante);
+        color: #fff;
+        border-color: var(--couleur-dominante);
+    }
 
 .nav-search-filters-panel {
     position: absolute;
@@ -97,367 +111,437 @@ if (isset($_SESSION['user_id'])) {
     border-radius: 14px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     padding: 20px;
-    z-index: 1000;
+    z-index: 10001;
     display: none;
     border: 1px solid rgba(229, 72, 138, 0.2);
 }
 
-.nav-search-filters-panel.show {
-    display: block;
-}
-
-.nav-search-filters-panel h4 {
-    font-size: 14px;
-    color: var(--titres);
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.nav-search-filters-panel h4 i {
-    color: var(--couleur-dominante);
-}
-
-.nav-search-filters-row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-}
-
-.nav-search-filters-row:last-of-type {
-    margin-bottom: 0;
-}
-
-.nav-search-filters-group {
-    flex: 1;
-    min-width: 120px;
-}
-
-.nav-search-filters-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--texte-fonce);
-    margin-bottom: 6px;
-}
-
-.nav-search-filters-group input,
-.nav-search-filters-group select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 2px solid rgba(229, 72, 138, 0.2);
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.nav-search-filters-group input:focus,
-.nav-search-filters-group select:focus {
-    outline: none;
-    border-color: var(--couleur-dominante);
-}
-
-.nav-search-filters-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.nav-search-filters-actions button {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.nav-search-filters-actions .btn-apply {
-    background: var(--couleur-dominante);
-    color: #fff;
-}
-
-.nav-search-filters-actions .btn-apply:hover {
-    background: rgba(229, 72, 138, 0.9);
-}
-
-.nav-search-filters-actions .btn-reset {
-    background: #f0e9e9;
-    color: var(--texte-fonce);
-}
-
-.nav-search-filters-actions .btn-reset:hover {
-    background: #e5dcdc;
-}
-
-.nav-search-btn {
-    padding: 12px 20px;
-    background: var(--couleur-dominante);
-    border: none;
-    color: #ffffff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s;
-}
-
-.nav-search-btn:hover {
-    background: rgba(229, 72, 138, 0.9);
-}
-
-.nav-search-btn i {
-    font-size: 18px;
-}
-
-.nav-search-input {
-    flex: 1;
-    padding: 12px 20px;
-    border: 2px solid rgba(229, 72, 138, 0.25);
-    border-left: none;
-    background: #ffffff;
-    font-size: 15px;
-    outline: none;
-    border-radius: 0 25px 25px 0;
-}
-
-.nav-search-input::placeholder {
-    color: #999;
-}
-
-.nav-search-input:focus {
-    border-color: var(--couleur-dominante);
-}
-
-/* Bouton Mon compte */
-.nav-compte-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 20px;
-    background: var(--couleur-dominante);
-    color: #ffffff;
-    text-decoration: none;
-    border-radius: 25px;
-    transition: all 0.3s;
-    position: relative;
-    min-width: 140px;
-}
-
-.nav-compte-btn:hover {
-    background: rgba(229, 72, 138, 0.9);
-    color: #ffffff;
-    transform: translateY(-1px);
-}
-
-.nav-compte-title {
-    font-size: 14px;
-    font-weight: 700;
-    display: block;
-    line-height: 1.2;
-}
-
-.nav-compte-subtitle {
-    font-size: 12px;
-    opacity: 0.95;
-    font-weight: 400;
-}
-
-.nav-compte-chevron {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    opacity: 0.9;
-}
-
-/* Panier */
-.nav-panier-link {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    color: var(--texte-fonce);
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.nav-panier-link:hover {
-    color: var(--couleur-dominante);
-}
-
-.nav-panier-link i {
-    font-size: 26px;
-}
-
-.nav-panier-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: #20C5C7;
-    color: #ffffff;
-    border-radius: 50%;
-    min-width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    border: 2px solid #ffffff;
-    padding: 0 4px;
-    box-shadow: 0 2px 6px rgba(32, 197, 199, 0.4);
-}
-
-@media (max-width: 992px) {
-    .nav-planete-gateau {
-        padding: 10px 20px;
-        gap: 12px;
+    .nav-search-filters-panel.show {
+        display: block;
     }
-    .nav-planete-gateau .logo img {
-        height: 55px;
-    }
-    .nav-search-wrapper {
-        max-width: 320px;
-    }
-    .nav-search-filters-btn {
-        padding: 10px 12px;
-    }
-    .nav-search-input {
+
+    .nav-search-filters-panel h4 {
         font-size: 14px;
-        padding: 10px 16px;
-    }
-    .nav-compte-btn {
-        min-width: 130px;
-        padding: 8px 14px;
-    }
-    .nav-compte-title {
-        font-size: 12px;
-    }
-    .nav-compte-subtitle {
-        font-size: 11px;
-    }
-}
-
-@media (max-width: 768px) {
-    .nav-planete-gateau {
-        flex-wrap: wrap;
-        padding: 10px 12px;
-        gap: 10px;
-        justify-content: space-between;
-    }
-    .nav-planete-gateau .logo {
-        order: 1;
-    }
-    .nav-planete-gateau .logo img {
-        height: 45px;
-        max-width: 120px;
-    }
-    .nav-compte-btn {
-        order: 2;
-        min-width: auto;
-        padding: 8px 12px;
-        flex-direction: row;
-        gap: 6px;
-    }
-    .nav-compte-title {
-        display: none;
-    }
-    .nav-compte-subtitle {
-        font-size: 12px;
-        font-weight: 600;
-    }
-    .nav-compte-chevron {
-        display: none;
-    }
-    .nav-panier-link {
-        order: 3;
-        width: 42px;
-        height: 42px;
-    }
-    .nav-panier-link i {
-        font-size: 22px;
-    }
-    .nav-panier-badge {
-        min-width: 18px;
-        height: 18px;
-        font-size: 10px;
-    }
-    .nav-search-wrapper {
-        order: 4;
-        width: 100%;
-        max-width: 100%;
-        margin: 0;
-        flex-direction: row;
-    }
-    .nav-search-form {
-        flex: 1;
-    }
-    .nav-search-btn {
-        padding: 10px 14px;
-    }
-    .nav-search-input {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
-    .nav-search-filters-btn {
-        padding: 10px 12px;
-        flex-shrink: 0;
-    }
-    .nav-search-filters-panel {
-        left: 0;
-        right: 0;
-        padding: 15px;
-    }
-}
-
-@media (max-width: 480px) {
-    .nav-planete-gateau {
-        padding: 8px 10px;
+        color: var(--titres);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
         gap: 8px;
     }
-    .nav-planete-gateau .logo img {
-        height: 40px;
-        max-width: 100px;
+
+    .nav-search-filters-panel h4 i {
+        color: var(--couleur-dominante);
     }
-    .nav-compte-btn {
-        padding: 6px 10px;
+
+    .nav-search-filters-row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 15px;
     }
-    .nav-compte-subtitle {
-        font-size: 11px;
+
+    .nav-search-filters-row:last-of-type {
+        margin-bottom: 0;
     }
-    .nav-panier-link {
-        width: 38px;
-        height: 38px;
+
+    .nav-search-filters-group {
+        flex: 1;
+        min-width: 120px;
     }
-    .nav-panier-link i {
-        font-size: 20px;
+
+    .nav-search-filters-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--texte-fonce);
+        margin-bottom: 6px;
     }
+
+    .nav-search-filters-group input,
+    .nav-search-filters-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid rgba(229, 72, 138, 0.2);
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .nav-search-filters-group input:focus,
+    .nav-search-filters-group select:focus {
+        outline: none;
+        border-color: var(--couleur-dominante);
+    }
+
+    .nav-search-filters-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .nav-search-filters-actions button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .nav-search-filters-actions .btn-apply {
+        background: var(--couleur-dominante);
+        color: #fff;
+    }
+
+    .nav-search-filters-actions .btn-apply:hover {
+        background: rgba(229, 72, 138, 0.9);
+    }
+
+    .nav-search-filters-actions .btn-reset {
+        background: #f0e9e9;
+        color: var(--texte-fonce);
+    }
+
+    .nav-search-filters-actions .btn-reset:hover {
+        background: #e5dcdc;
+    }
+
     .nav-search-btn {
-        padding: 8px 12px;
+        padding: 12px 20px;
+        background: var(--couleur-dominante);
+        border: none;
+        color: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
     }
+
+    .nav-search-btn:hover {
+        background: rgba(229, 72, 138, 0.9);
+    }
+
+    .nav-search-btn i {
+        font-size: 18px;
+    }
+
     .nav-search-input {
-        padding: 8px 12px;
-        font-size: 13px;
+        flex: 1;
+        padding: 12px 20px;
+        border: 2px solid rgba(229, 72, 138, 0.25);
+        border-left: none;
+        background: #ffffff;
+        font-size: 15px;
+        outline: none;
+        border-radius: 0 25px 25px 0;
     }
-    .nav-search-filters-btn {
-        padding: 8px 10px;
+
+    .nav-search-input::placeholder {
+        color: #999;
     }
-}
+
+    .nav-search-input:focus {
+        border-color: var(--couleur-dominante);
+    }
+
+    /* Bouton Mon compte */
+    .nav-compte-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 20px;
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 25px;
+        transition: all 0.3s;
+        position: relative;
+        min-width: 140px;
+    }
+
+    .nav-compte-btn:hover {
+        background: rgba(229, 72, 138, 0.9);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .nav-compte-title {
+        font-size: 14px;
+        font-weight: 700;
+        display: block;
+        line-height: 1.2;
+    }
+
+    .nav-compte-subtitle {
+        font-size: 12px;
+        opacity: 0.95;
+        font-weight: 400;
+    }
+
+    .nav-compte-chevron {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 12px;
+        opacity: 0.9;
+    }
+
+    /* Panier */
+    .nav-panier-link {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        color: var(--texte-fonce);
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .nav-panier-link:hover {
+        color: var(--couleur-dominante);
+    }
+
+    .nav-panier-link i {
+        font-size: 26px;
+    }
+
+    .nav-panier-badge {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: #20C5C7;
+        color: #ffffff;
+        border-radius: 50%;
+        min-width: 22px;
+        height: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        border: 2px solid #ffffff;
+        padding: 0 4px;
+        box-shadow: 0 2px 6px rgba(32, 197, 199, 0.4);
+    }
+
+    @media (max-width: 992px) {
+        .nav-planete-gateau {
+            padding: 10px 20px;
+            gap: 12px;
+        }
+
+        .nav-planete-gateau .logo img {
+            height: 55px;
+        }
+
+        .nav-search-wrapper {
+            max-width: 320px;
+        }
+
+        .nav-search-filters-btn {
+            padding: 10px 12px;
+        }
+
+        .nav-search-input {
+            font-size: 14px;
+            padding: 10px 16px;
+        }
+
+        .nav-compte-btn {
+            min-width: 130px;
+            padding: 8px 14px;
+        }
+
+        .nav-compte-title {
+            font-size: 12px;
+        }
+
+        .nav-compte-subtitle {
+            font-size: 11px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .nav-planete-gateau {
+            flex-wrap: wrap;
+            padding: 10px 12px;
+            gap: 10px;
+        }
+
+        .nav-top-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            order: 1;
+            flex-shrink: 0;
+        }
+
+        .nav-planete-gateau .logo {
+            flex-shrink: 0;
+        }
+
+        .nav-planete-gateau .logo img {
+            height: 45px;
+            max-width: 120px;
+        }
+
+        .nav-panier-link {
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+        }
+
+        .nav-panier-link i {
+            font-size: 22px;
+        }
+
+        .nav-panier-badge {
+            min-width: 18px;
+            height: 18px;
+            font-size: 10px;
+        }
+
+        .nav-compte-btn {
+            min-width: auto;
+            padding: 8px 12px;
+            flex-direction: row;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .nav-compte-title {
+            display: none;
+        }
+
+        .nav-compte-subtitle {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .nav-compte-chevron {
+            display: none;
+        }
+
+        .nav-search-wrapper {
+            order: 2;
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            flex-direction: row;
+        }
+
+        .nav-search-form {
+            flex: 1;
+        }
+
+        .nav-search-btn {
+            padding: 10px 14px;
+        }
+
+        .nav-search-input {
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+
+        .nav-search-filters-btn {
+            padding: 10px 12px;
+            flex-shrink: 0;
+        }
+
+        .nav-search-filters-panel {
+            left: 0;
+            right: 0;
+            padding: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .nav-planete-gateau {
+            padding: 8px 10px;
+            gap: 8px;
+        }
+
+        .nav-planete-gateau .logo img {
+            height: 40px;
+            max-width: 100px;
+        }
+
+        .nav-compte-btn {
+            padding: 6px 10px;
+        }
+
+        .nav-compte-subtitle {
+            font-size: 11px;
+        }
+
+        .nav-panier-link {
+            width: 38px;
+            height: 38px;
+        }
+
+        .nav-panier-link i {
+            font-size: 20px;
+        }
+
+        .nav-search-btn {
+            padding: 8px 12px;
+        }
+
+        .nav-search-input {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .nav-search-filters-btn {
+            padding: 8px 10px;
+        }
+    }
 </style>
 
 <div class="info">
 
 </div>
 <nav class="nav-planete-gateau">
-    <a class="logo" href="/index.php">
-        <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
-    </a>
+    <div class="nav-top-row">
+        <a class="logo" href="/index.php">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
+        </a>
+        <a href="<?php echo isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier'; ?>"
+            class="nav-panier-link"
+            title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="<?php
+        if (isset($_SESSION['commercant_id']))
+            echo '/view/profil_commercent.php';
+        elseif (isset($_SESSION['user_id']))
+            echo '/user/mon-compte.php';
+        else
+            echo '/user/connexion.php';
+        ?>" class="nav-compte-btn">
+            <span class="nav-compte-title">Mon compte</span>
+            <span class="nav-compte-subtitle"><?php
+            if (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
+                $explode_nom = explode(' ', $commercant['nom']);
+                echo htmlspecialchars($explode_nom[0] ?? $commercant['nom']);
+            } elseif (isset($_SESSION['user_id']) && !empty($_SESSION['user_prenom'])) {
+                echo htmlspecialchars($_SESSION['user_prenom']);
+            } else {
+                echo 'Identifiez-vous';
+            }
+            ?></span>
+            <i class="fa-solid fa-chevron-down nav-compte-chevron"></i>
+        </a>
+    </div>
 
     <div class="nav-search-wrapper">
         <form class="nav-search-form" action="/produits.php" method="get" id="nav-search-form">
@@ -501,12 +585,11 @@ if (isset($_SESSION['user_id'])) {
                     <select id="filter-categorie" name="categorie">
                         <option value="">Toutes les catégories</option>
                         <?php if (!empty($categories_menu)): ?>
-                        <?php foreach ($categories_menu as $cat): ?>
-                        <option value="<?php echo $cat['id']; ?>"
-                            <?php echo (isset($_GET['categorie']) && $_GET['categorie'] == $cat['id']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($cat['nom']); ?>
-                        </option>
-                        <?php endforeach; ?>
+                            <?php foreach ($categories_menu as $cat): ?>
+                                <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categorie']) && $_GET['categorie'] == $cat['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($cat['nom']); ?>
+                                </option>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </select>
                 </div>
@@ -516,14 +599,11 @@ if (isset($_SESSION['user_id'])) {
                     <label for="filter-tri">Trier par</label>
                     <select id="filter-tri" name="tri">
                         <option value="">Plus récents</option>
-                        <option value="prix_asc"
-                            <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_asc') ? 'selected' : ''; ?>>Prix
+                        <option value="prix_asc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_asc') ? 'selected' : ''; ?>>Prix
                             croissant</option>
-                        <option value="prix_desc"
-                            <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_desc') ? 'selected' : ''; ?>>Prix
+                        <option value="prix_desc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_desc') ? 'selected' : ''; ?>>Prix
                             décroissant</option>
-                        <option value="nom"
-                            <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'nom') ? 'selected' : ''; ?>>Nom A-Z
+                        <option value="nom" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'nom') ? 'selected' : ''; ?>>Nom A-Z
                         </option>
                     </select>
                 </div>
@@ -537,75 +617,44 @@ if (isset($_SESSION['user_id'])) {
         </div>
     </div>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var toggle = document.getElementById('nav-filters-toggle');
-        var panel = document.getElementById('nav-filters-panel');
-        if (toggle && panel) {
-            toggle.addEventListener('click', function() {
-                panel.classList.toggle('show');
-                toggle.classList.toggle('active', panel.classList.contains('show'));
-            });
-            document.addEventListener('click', function(e) {
-                if (!toggle.contains(e.target) && !panel.contains(e.target)) {
-                    panel.classList.remove('show');
-                    toggle.classList.remove('active');
-                }
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            var toggle = document.getElementById('nav-filters-toggle');
+            var panel = document.getElementById('nav-filters-panel');
+            if (toggle && panel) {
+                toggle.addEventListener('click', function () {
+                    panel.classList.toggle('show');
+                    toggle.classList.toggle('active', panel.classList.contains('show'));
+                });
+                document.addEventListener('click', function (e) {
+                    if (!toggle.contains(e.target) && !panel.contains(e.target)) {
+                        panel.classList.remove('show');
+                        toggle.classList.remove('active');
+                    }
+                });
+            }
+        });
+
+        function appliquerFiltres() {
+            document.getElementById('nav-prix-min').value = document.getElementById('filter-prix-min').value;
+            document.getElementById('nav-prix-max').value = document.getElementById('filter-prix-max').value;
+            document.getElementById('nav-categorie').value = document.getElementById('filter-categorie').value;
+            document.getElementById('nav-tri').value = document.getElementById('filter-tri').value;
+            document.getElementById('nav-search-form').submit();
         }
-    });
 
-    function appliquerFiltres() {
-        document.getElementById('nav-prix-min').value = document.getElementById('filter-prix-min').value;
-        document.getElementById('nav-prix-max').value = document.getElementById('filter-prix-max').value;
-        document.getElementById('nav-categorie').value = document.getElementById('filter-categorie').value;
-        document.getElementById('nav-tri').value = document.getElementById('filter-tri').value;
-        document.getElementById('nav-search-form').submit();
-    }
-
-    function reinitialiserFiltres() {
-        document.getElementById('filter-prix-min').value = '';
-        document.getElementById('filter-prix-max').value = '';
-        document.getElementById('filter-categorie').value = '';
-        document.getElementById('filter-tri').value = '';
-        document.getElementById('nav-prix-min').value = '';
-        document.getElementById('nav-prix-max').value = '';
-        document.getElementById('nav-categorie').value = '';
-        document.getElementById('nav-tri').value = '';
-        document.getElementById('nav-search').value = '';
-        document.getElementById('nav-search-form').submit();
-    }
+        function reinitialiserFiltres() {
+            document.getElementById('filter-prix-min').value = '';
+            document.getElementById('filter-prix-max').value = '';
+            document.getElementById('filter-categorie').value = '';
+            document.getElementById('filter-tri').value = '';
+            document.getElementById('nav-prix-min').value = '';
+            document.getElementById('nav-prix-max').value = '';
+            document.getElementById('nav-categorie').value = '';
+            document.getElementById('nav-tri').value = '';
+            document.getElementById('nav-search').value = '';
+            document.getElementById('nav-search-form').submit();
+        }
     </script>
-
-    <a href="<?php
-    if (isset($_SESSION['commercant_id']))
-        echo '/view/profil_commercent.php';
-    elseif (isset($_SESSION['user_id']))
-        echo '/user/mon-compte.php';
-    else
-        echo '/user/connexion.php';
-    ?>" class="nav-compte-btn">
-        <span class="nav-compte-title">Mon compte</span>
-        <span class="nav-compte-subtitle"><?php
-        if (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
-            $explode_nom = explode(' ', $commercant['nom']);
-            echo htmlspecialchars($explode_nom[0] ?? $commercant['nom']);
-        } elseif (isset($_SESSION['user_id']) && !empty($_SESSION['user_prenom'])) {
-            echo htmlspecialchars($_SESSION['user_prenom']);
-        } else {
-            echo 'Identifiez-vous';
-        }
-        ?></span>
-        <i class="fa-solid fa-chevron-down nav-compte-chevron"></i>
-    </a>
-
-    <a href="<?php echo isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier'; ?>"
-        class="nav-panier-link"
-        title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
-        <i class="fa-solid fa-cart-shopping"></i>
-        <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-        <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
-        <?php endif; ?>
-    </a>
 </nav>
 
 <?php
@@ -622,38 +671,38 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
         <span class="toggle-categories-btn" style="cursor: pointer;"><i class="fa-solid fa-bars"></i></span>
     </div>
     <?php if (!empty($categories_menu)): ?>
-    <?php foreach ($categories_menu as $index => $categorie): ?>
-    <a href="categorie.php?id=<?php echo $categorie['id']; ?>"
-        class="category-link <?php echo $index >= 3 ? 'category-hidden' : ''; ?>">
-        <?php echo htmlspecialchars($categorie['nom']); ?>
-    </a>
-    <?php endforeach; ?>
+        <?php foreach ($categories_menu as $index => $categorie): ?>
+            <a href="categorie.php?id=<?php echo $categorie['id']; ?>"
+                class="category-link <?php echo $index >= 3 ? 'category-hidden' : ''; ?>">
+                <?php echo htmlspecialchars($categorie['nom']); ?>
+            </a>
+        <?php endforeach; ?>
     <?php else: ?>
-    <!-- Fallback si aucune catégorie n'est disponible -->
-    <a href="produits.php" class="category-link">Tous les produits</a>
+        <!-- Fallback si aucune catégorie n'est disponible -->
+        <a href="produits.php" class="category-link">Tous les produits</a>
     <?php endif; ?>
 </section>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleBtn = document.querySelector('.toggle-categories-btn');
-    const hiddenCategories = document.querySelectorAll('.category-hidden');
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggleBtn = document.querySelector('.toggle-categories-btn');
+        const hiddenCategories = document.querySelectorAll('.category-hidden');
 
-    if (toggleBtn && hiddenCategories.length > 0) {
-        toggleBtn.addEventListener('click', function() {
-            const section1 = document.querySelector('.section1');
-            section1.classList.toggle('show-all-categories');
+        if (toggleBtn && hiddenCategories.length > 0) {
+            toggleBtn.addEventListener('click', function () {
+                const section1 = document.querySelector('.section1');
+                section1.classList.toggle('show-all-categories');
 
-            // Changer l'icône
-            const icon = this.querySelector('i');
-            if (section1.classList.contains('show-all-categories')) {
-                icon.classList.remove('fa-bars');
-                icon.classList.add('fa-times');
-            } else {
-                icon.classList.remove('fa-times');
-                icon.classList.add('fa-bars');
-            }
-        });
-    }
-});
+                // Changer l'icône
+                const icon = this.querySelector('i');
+                if (section1.classList.contains('show-all-categories')) {
+                    icon.classList.remove('fa-bars');
+                    icon.classList.add('fa-times');
+                } else {
+                    icon.classList.remove('fa-times');
+                    icon.classList.add('fa-bars');
+                }
+            });
+        }
+    });
 </script>
