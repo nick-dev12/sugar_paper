@@ -4,6 +4,10 @@
  * Programmation procédurale uniquement
  */
 
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
 require_once __DIR__ . '/../models/model_users.php';
 
 /**
@@ -170,21 +174,6 @@ function process_user_login() {
 }
 
 /**
- * Retourne l'URL de base du site (pour les liens dans les emails)
- */
-function get_user_site_base_url() {
-    $config = file_exists(__DIR__ . '/../config/emailjs.php')
-        ? require __DIR__ . '/../config/emailjs.php'
-        : [];
-    if (!empty($config['site_url'])) {
-        return rtrim($config['site_url'], '/');
-    }
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    return $protocol . '://' . $host;
-}
-
-/**
  * Traite la demande de réinitialisation de mot de passe (mot de passe oublié) - Clients
  * @return array Tableau avec 'success', 'message', 'email', 'reset_link', 'token'
  */
@@ -217,8 +206,17 @@ function process_user_forgot_password() {
         $expires_at = date('Y-m-d H:i:s', strtotime('+2 hours'));
 
         if (create_user_password_reset_token($email, $token, $expires_at)) {
-            $base_url = get_user_site_base_url();
+            require_once __DIR__ . '/../includes/site_url.php';
+            $base_url = get_site_base_url();
             $reset_link = $base_url . '/user/reinitialiser-mot-de-passe.php?token=' . $token;
+
+            if (function_exists('mail_send_reset_link')) {
+                $mail_result = mail_send_reset_link($email, $reset_link, 'user');
+                if (!$mail_result['success']) {
+                    $message = 'Le lien a été généré mais l\'envoi de l\'email a échoué : ' . ($mail_result['error'] ?? 'Erreur inconnue');
+                    return ['success' => false, 'message' => $message, 'email' => '', 'reset_link' => '', 'token' => ''];
+                }
+            }
 
             $success = true;
             $message = 'Si cet email est associé à un compte, vous recevrez un lien de réinitialisation.';

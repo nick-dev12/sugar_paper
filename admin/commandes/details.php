@@ -60,9 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         send_commande_status_notification(
             (int) $commande['user_id'],
             $commande['numero_commande'],
-            $statut_mis_a_jour
+            $statut_mis_a_jour,
+            $commande['user_email'] ?? ''
         );
-        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Une notification a été envoyée au client si les notifications sont activées.';
+        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Une notification et un email ont été envoyés au client.';
         header('Location: details.php?id=' . $commande_id);
         exit;
     }

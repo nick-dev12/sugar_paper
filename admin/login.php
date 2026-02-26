@@ -30,6 +30,7 @@ if (isset($result['success']) && $result['success'] && $result['admin']) {
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
     $_SESSION['admin_email'] = $result['admin']['email'];
     $_SESSION['admin_statut'] = $result['admin']['statut'];
+    $_SESSION['admin_role'] = $result['admin']['role'] ?? 'admin';
 
     header('Location: dashboard.php');
     exit;

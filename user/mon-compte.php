@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/session_user.php';
 session_start();
 
 // Vérifier si l'utilisateur est connecté
@@ -49,6 +50,22 @@ $nb_visites = count_visites_by_user($_SESSION['user_id']);
 
 <body>
     <?php include 'includes/user_nav.php'; ?>
+
+    <!-- Section orientation : continuer les achats -->
+    <div class="continue-shopping-banner">
+        <div class="continue-shopping-content">
+            <div class="continue-shopping-icon">
+                <i class="fas fa-shopping-basket"></i>
+            </div>
+            <div class="continue-shopping-text">
+                <h2>Continuer mes achats</h2>
+                <p>Découvrez nos produits naturels et complétez votre panier</p>
+            </div>
+            <a href="/index.php" class="continue-shopping-btn">
+                <i class="fas fa-store"></i> Accueil - Voir les produits
+            </a>
+        </div>
+    </div>
 
     <div class="content-header">
         <h1>

@@ -5,6 +5,12 @@
  * Copiez ce fichier en conn.php et modifiez les valeurs selon votre environnement
  */
 
+// Charger l'autoload Composer (PHPMailer, Firebase, etc.)
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
+
 // Paramètres de connexion
 $db_host = "localhost";
 $db_name = "tresor_afri";

@@ -161,6 +161,85 @@ body::before {
     margin-left: 0;
 }
 
+/* Bannière "Continuer mes achats" - orientation rapide */
+.continue-shopping-banner {
+    background: linear-gradient(135deg, #918a44 0%, #6b2f20 100%);
+    border-radius: 12px;
+    padding: 20px 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(107, 47, 32, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.continue-shopping-content {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.continue-shopping-icon {
+    width: 55px;
+    height: 55px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #ffffff;
+}
+
+.continue-shopping-text {
+    flex: 1;
+    min-width: 200px;
+}
+
+.continue-shopping-text h2 {
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-family: var(--font-titres);
+}
+
+.continue-shopping-text p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    margin: 0;
+}
+
+.continue-shopping-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: #ffffff;
+    color: #6b2f20;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.continue-shopping-btn:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+    .continue-shopping-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    .continue-shopping-text {
+        min-width: auto;
+    }
+}
+
 .content-header {
     background: var(--glass-bg);
     backdrop-filter: blur(15px);
@@ -218,6 +297,15 @@ body::before {
     transform: translateY(-2px);
     box-shadow: var(--ombre-promo);
     color: var(--texte-clair);
+}
+
+#btn-enable-notifications.notifications-enabled {
+    background: rgba(32, 197, 199, 0.9);
+    cursor: default;
+}
+
+#btn-enable-notifications.notifications-enabled:hover {
+    transform: none;
 }
 
 /* Section de contenu */

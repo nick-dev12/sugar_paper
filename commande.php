@@ -28,10 +28,34 @@ $numero_commande = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_commande') {
     $result = process_create_commande();
-    
+
     if ($result['success']) {
-        // Redirection vers la page de confirmation
+        // Envoi de la réponse immédiatement pour ne pas bloquer l'utilisateur
+        ignore_user_abort(true);
         header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
+        echo ' ';
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            flush();
+            if (ob_get_level()) {
+                ob_end_flush();
+            }
+        }
+
+        // Envoi notification + email en arrière-plan (après que le client a reçu la redirection)
+        if (!empty($result['email_data']) && file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
+            require_once __DIR__ . '/services/send_new_commande_to_admin.php';
+            $d = $result['email_data'];
+            send_new_commande_to_admin(
+                $d['numero_commande'],
+                $d['montant_total'],
+                $d['nombre_articles'],
+                $d['telephone_livraison'] ?? '',
+                $d['adresse_livraison'] ?? '',
+                $d['produits'] ?? []
+            );
+        }
         exit;
     } else {
         $message = $result['message'];
@@ -65,6 +89,7 @@ include 'nav_bar.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -147,11 +172,13 @@ include 'nav_bar.php';
             background: rgba(255, 255, 255, 0.8);
             cursor: pointer;
         }
+
         .form-group select:focus {
             outline: none;
             border-color: var(--couleur-dominante);
             box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
         }
+
         .form-group input,
         .form-group textarea {
             width: 100%;
@@ -346,6 +373,7 @@ include 'nav_bar.php';
         /* Footer - hérite du style global a_style.css */
     </style>
 </head>
+
 <body>
 
     <div class="commande-container">
@@ -355,9 +383,9 @@ include 'nav_bar.php';
         <p class="commande-page-subtitle">Veuillez remplir les informations de contact</p>
 
         <?php if ($message): ?>
-        <div class="message <?php echo $message_type; ?>">
-            <?php echo htmlspecialchars($message); ?>
-        </div>
+            <div class="message <?php echo $message_type; ?>">
+                <?php echo htmlspecialchars($message); ?>
+            </div>
         <?php endif; ?>
 
         <div class="commande-wrapper">
@@ -371,41 +399,38 @@ include 'nav_bar.php';
                     <input type="hidden" name="action" value="create_commande">
 
                     <?php if (empty($zones_livraison)): ?>
-                    <div class="message error">
-                        <i class="fas fa-exclamation-triangle"></i> Aucune zone de livraison n'est configurée. Veuillez contacter l'administrateur.
-                    </div>
+                        <div class="message error">
+                            <i class="fas fa-exclamation-triangle"></i> Aucune zone de livraison n'est configurée. Veuillez
+                            contacter l'administrateur.
+                        </div>
                     <?php else: ?>
-                    <div class="form-group">
-                        <label for="zone_livraison_id">
-                            <i class="fas fa-map-marker-alt"></i> Zone de livraison *
-                        </label>
-                        <select id="zone_livraison_id" name="zone_livraison_id" required>
-                            <option value="">Sélectionnez votre zone de livraison</option>
-                            <?php if (!empty($zones_livraison)): ?>
-                                <?php foreach ($zones_livraison as $zone): ?>
-                                <option value="<?php echo $zone['id']; ?>" data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
-                                    <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?> 
-                                    (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
-                                </option>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                        <small>Choisissez la zone correspondant à votre adresse de livraison</small>
-                    </div>
+                        <div class="form-group">
+                            <label for="zone_livraison_id">
+                                <i class="fas fa-map-marker-alt"></i> Zone de livraison *
+                            </label>
+                            <select id="zone_livraison_id" name="zone_livraison_id" required>
+                                <option value="">Sélectionnez votre zone de livraison</option>
+                                <?php if (!empty($zones_livraison)): ?>
+                                    <?php foreach ($zones_livraison as $zone): ?>
+                                        <option value="<?php echo $zone['id']; ?>"
+                                            data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
+                                            <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
+                                            (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <small>Choisissez la zone correspondant à votre adresse de livraison</small>
+                        </div>
                     <?php endif; ?>
 
                     <div class="form-group">
                         <label for="telephone_livraison">
                             <i class="fas fa-phone"></i> Téléphone de livraison *
                         </label>
-                        <input 
-                            type="tel" 
-                            id="telephone_livraison" 
-                            name="telephone_livraison" 
-                            required
+                        <input type="tel" id="telephone_livraison" name="telephone_livraison" required
                             placeholder="+241 XX XX XX XX"
-                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>"
-                        >
+                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>">
                         <small>Numéro de téléphone pour la livraison</small>
                     </div>
 
@@ -413,11 +438,8 @@ include 'nav_bar.php';
                         <label for="notes">
                             <i class="fas fa-sticky-note"></i> Notes (optionnel)
                         </label>
-                        <textarea 
-                            id="notes" 
-                            name="notes"
-                            placeholder="Instructions spéciales pour la livraison (ex: code d'accès, étage, etc.)"
-                        ><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
+                        <textarea id="notes" name="notes"
+                            placeholder="Instructions spéciales pour la livraison (ex: code d'accès, étage, etc.)"><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
                         <small>Ajoutez des instructions spéciales si nécessaire</small>
                     </div>
 
@@ -436,18 +458,19 @@ include 'nav_bar.php';
                 <div style="margin-bottom: 20px;">
                     <?php foreach ($panier_items as $item): ?>
                         <?php
-                        $prix_unitaire = !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] 
-                            ? $item['prix_promotion'] 
+                        $prix_unitaire = !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']
+                            ? $item['prix_promotion']
                             : $item['prix'];
                         $prix_total_item = $prix_unitaire * $item['quantite'];
                         ?>
                         <div class="panier-item-summary">
-                            <img src="/upload/<?php echo htmlspecialchars($item['image_principale']); ?>" 
-                                 alt="<?php echo htmlspecialchars($item['nom']); ?>"
-                                 onerror="this.src='/image/produit1.jpg'">
+                            <img src="/upload/<?php echo htmlspecialchars($item['image_principale']); ?>"
+                                alt="<?php echo htmlspecialchars($item['nom']); ?>"
+                                onerror="this.src='/image/produit1.jpg'">
                             <div class="panier-item-summary-info">
                                 <h4><?php echo htmlspecialchars($item['nom']); ?></h4>
-                                <p>Quantité: <?php echo $item['quantite']; ?> × <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</p>
+                                <p>Quantité: <?php echo $item['quantite']; ?> ×
+                                    <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</p>
                             </div>
                             <div class="panier-item-summary-price">
                                 <?php echo number_format($prix_total_item, 0, ',', ' '); ?> FCFA
@@ -468,7 +491,8 @@ include 'nav_bar.php';
 
                 <div class="summary-item">
                     <span class="summary-item-label">Sous-total</span>
-                    <span class="summary-item-value"><?php echo number_format($panier_total, 0, ',', ' '); ?> FCFA</span>
+                    <span class="summary-item-value"><?php echo number_format($panier_total, 0, ',', ' '); ?>
+                        FCFA</span>
                 </div>
 
                 <div class="summary-item">
@@ -479,7 +503,8 @@ include 'nav_bar.php';
                 <div class="summary-total">
                     <div class="summary-item">
                         <span class="summary-item-label">Total général</span>
-                        <span class="summary-item-value" id="summary-total"><?php echo number_format($panier_total, 0, ',', ' '); ?> FCFA</span>
+                        <span class="summary-item-value"
+                            id="summary-total"><?php echo number_format($panier_total, 0, ',', ' '); ?> FCFA</span>
                     </div>
                 </div>
 
@@ -493,25 +518,25 @@ include 'nav_bar.php';
     <?php include 'footer.php'; ?>
 
     <script>
-    (function() {
-        var panierTotal = <?php echo $panier_total; ?>;
-        var selectZone = document.getElementById('zone_livraison_id');
-        var spanLivraison = document.getElementById('summary-livraison');
-        var spanTotal = document.getElementById('summary-total');
-        function formatNumber(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-        function updateTotaux() {
-            var opt = selectZone.options[selectZone.selectedIndex];
-            var frais = opt && opt.dataset.prix ? parseFloat(opt.dataset.prix) : 0;
-            var total = panierTotal + frais;
-            spanLivraison.textContent = formatNumber(Math.round(frais)) + ' FCFA';
-            spanTotal.textContent = formatNumber(Math.round(total)) + ' FCFA';
-        }
-        if (selectZone) {
-            selectZone.addEventListener('change', updateTotaux);
-            updateTotaux();
-        }
-    })();
+        (function () {
+            var panierTotal = <?php echo $panier_total; ?>;
+            var selectZone = document.getElementById('zone_livraison_id');
+            var spanLivraison = document.getElementById('summary-livraison');
+            var spanTotal = document.getElementById('summary-total');
+            function formatNumber(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+            function updateTotaux() {
+                var opt = selectZone.options[selectZone.selectedIndex];
+                var frais = opt && opt.dataset.prix ? parseFloat(opt.dataset.prix) : 0;
+                var total = panierTotal + frais;
+                spanLivraison.textContent = formatNumber(Math.round(frais)) + ' FCFA';
+                spanTotal.textContent = formatNumber(Math.round(total)) + ' FCFA';
+            }
+            if (selectZone) {
+                selectZone.addEventListener('change', updateTotaux);
+                updateTotaux();
+            }
+        })();
     </script>
 </body>
-</html>
 
+</html>

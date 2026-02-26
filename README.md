@@ -11,11 +11,16 @@ Site e-commerce B2C pour produits naturels issus de la production propre de l'en
 ## Installation
 
 1. Cloner le dépôt
-2. Copier `conn/conn.example.php` vers `conn/conn.php` et configurer vos paramètres de base de données
-3. Ajouter les fichiers de configuration sensibles (non versionnés) :
+2. **Installer les dépendances Composer** :
+   ```bash
+   composer install
+   ```
+3. Copier `conn/conn.example.php` vers `conn/conn.php` et configurer vos paramètres de base de données
+4. Ajouter les fichiers de configuration sensibles (non versionnés) :
    - `sugar-paper-*.json` : clés Firebase (Console Firebase)
    - `config/emailjs.php` : configuration EmailJS
    - `config/firebase_config.php` : configuration Firebase frontend
+   - `config/email.php` : configuration PHPMailer/SMTP (copier depuis `config/email.example.php`)
 
 ## Structure
 

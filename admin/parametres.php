@@ -83,13 +83,13 @@ if (isset($_SESSION['success_message'])) {
                 <div class="parametre-icon">
                     <i class="fas fa-sliders-h"></i>
                 </div>
-                <h3 class="parametre-title">Carrousel Principal</h3>
+                <h3 class="parametre-title">Slider Principal</h3>
                 <p class="parametre-description">
-                    Gérez le carrousel d'images en haut de la page d'accueil : ajoutez, modifiez ou supprimez les slides
+                    Gérez le slider d'images en haut de la page d'accueil : ajoutez, modifiez ou supprimez les slides
                     avec leurs titres, textes et boutons d'action.
                 </p>
                 <a href="slider/index.php" class="parametre-link">
-                    <i class="fas fa-edit"></i> Gérer le carrousel
+                    <i class="fas fa-edit"></i> Gérer le slider
                 </a>
             </div>
 

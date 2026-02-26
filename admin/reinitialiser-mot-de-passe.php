@@ -45,9 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
     <title>Réinitialiser le mot de passe - Admin Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: var(--font-corps);
             min-height: 100vh;
@@ -58,11 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             padding: 20px;
             position: relative;
         }
+
         body::before {
             content: "";
             position: fixed;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
             background:
                 radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
                 radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
@@ -72,16 +82,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             pointer-events: none;
             z-index: -1;
         }
+
         .auth-header {
             position: fixed;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             padding: 12px 30px;
             background: #ffffff;
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
             z-index: 100;
         }
-        .auth-header .logo img { height: 55px; width: auto; max-width: 140px; object-fit: contain; }
+
+        .auth-header .logo img {
+            height: 55px;
+            width: auto;
+            max-width: 140px;
+            object-fit: contain;
+        }
+
         .auth-content {
             width: 100%;
             display: flex;
@@ -90,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             flex: 1;
             padding-top: 80px;
         }
+
         .container {
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
@@ -102,16 +123,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             position: relative;
             overflow: hidden;
         }
+
         .container::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 5px;
             background: var(--couleur-dominante);
         }
-        .header { text-align: center; margin-bottom: 30px; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
         .header .icon {
-            width: 70px; height: 70px;
+            width: 70px;
+            height: 70px;
             background: var(--couleur-dominante);
             border-radius: 50%;
             display: flex;
@@ -121,10 +151,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             color: var(--texte-clair);
             font-size: 30px;
         }
-        .header h1 { color: var(--titres); font-size: 28px; margin-bottom: 10px; font-weight: 600; font-family: var(--font-titres); }
-        .header p { color: var(--texte-fonce); font-size: 14px; opacity: 0.85; }
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; color: var(--titres); font-weight: 500; margin-bottom: 8px; font-size: 14px; }
+
+        .header h1 {
+            color: var(--titres);
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-family: var(--font-titres);
+        }
+
+        .header p {
+            color: var(--texte-fonce);
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--titres);
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
         .form-group input {
             width: 100%;
             padding: 12px 15px;
@@ -135,13 +188,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             background: rgba(255, 255, 255, 0.8);
             color: var(--texte-fonce);
         }
+
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
             box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
         }
-        .input-wrapper { position: relative; }
-        .input-wrapper.password-wrapper input { padding-right: 45px; }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper.password-wrapper input {
+            padding-right: 45px;
+        }
+
         .password-toggle {
             position: absolute;
             right: 15px;
@@ -160,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             justify-content: center;
             z-index: 10;
         }
+
         .error-message {
             background: rgba(229, 72, 138, 0.1);
             border-left: 4px solid var(--couleur-dominante);
@@ -170,6 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             font-size: 14px;
             line-height: 1.5;
         }
+
         .success-message {
             background: rgba(32, 197, 199, 0.12);
             border-left: 4px solid var(--turquoise);
@@ -180,6 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             font-size: 14px;
             line-height: 1.5;
         }
+
         .btn-submit {
             width: 100%;
             padding: 14px;
@@ -194,22 +258,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             margin-top: 10px;
             box-shadow: var(--ombre-douce);
         }
+
         .btn-submit:hover {
             background: rgba(229, 72, 138, 0.9);
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
             color: var(--texte-clair);
         }
-        .footer-text { text-align: center; margin-top: 25px; color: var(--texte-fonce); font-size: 14px; opacity: 0.85; }
-        .footer-text a { color: var(--couleur-dominante); text-decoration: none; font-weight: 600; }
-        .footer-text a:hover { text-decoration: underline; }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: var(--texte-fonce);
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .footer-text a {
+            color: var(--couleur-dominante);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo.jpeg" alt="Sugar Paper">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
         </a>
     </header>
 
@@ -248,7 +328,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
                     <div class="form-group">
                         <label for="password"><i class="fas fa-lock"></i> Nouveau mot de passe *</label>
                         <div class="input-wrapper password-wrapper">
-                            <input type="password" id="password" name="password" placeholder="Min. 8 caractères, majuscule, minuscule, chiffre" required>
+                            <input type="password" id="password" name="password"
+                                placeholder="Min. 8 caractères, majuscule, minuscule, chiffre" required>
                             <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -257,8 +338,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
                     <div class="form-group">
                         <label for="password_confirm"><i class="fas fa-lock"></i> Confirmer le mot de passe *</label>
                         <div class="input-wrapper password-wrapper">
-                            <input type="password" id="password_confirm" name="password_confirm" placeholder="Confirmez votre mot de passe" required>
-                            <button type="button" class="password-toggle" onclick="togglePassword('password_confirm', this)">
+                            <input type="password" id="password_confirm" name="password_confirm"
+                                placeholder="Confirmez votre mot de passe" required>
+                            <button type="button" class="password-toggle"
+                                onclick="togglePassword('password_confirm', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>

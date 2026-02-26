@@ -12,6 +12,12 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+// Seuls les admins avec rôle "admin" peuvent gérer les utilisateurs clients
+if (($_SESSION['admin_role'] ?? '') !== 'admin') {
+    header('Location: ../dashboard.php');
+    exit;
+}
+
 // Traitement de la désactivation/activation
 $success_message = '';
 $error_message = '';
@@ -43,31 +49,34 @@ $users_inactifs = count(array_filter($users, function($u) { return $u['statut'] 
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Utilisateurs - Administration</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css">
+    <link rel="stylesheet" href="/css/admin-users-cards.css">
 </head>
-<body>
+
+<body class="page-users">
     <?php include '../includes/nav.php'; ?>
-    
+
     <div class="content-header">
         <h1><i class="fas fa-users"></i> Gestion des Utilisateurs</h1>
     </div>
 
     <!-- Messages -->
     <?php if ($success_message): ?>
-        <div class="message success">
-            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
-        </div>
+    <div class="message success">
+        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+    </div>
     <?php endif; ?>
 
     <?php if ($error_message): ?>
-        <div class="message error">
-            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
-        </div>
+    <div class="message error">
+        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($error_message); ?>
+    </div>
     <?php endif; ?>
 
     <!-- Statistiques -->
@@ -96,88 +105,86 @@ $users_inactifs = count(array_filter($users, function($u) { return $u['statut'] 
         </div>
 
         <?php if (empty($users)): ?>
-            <div class="empty-state">
-                <i class="fas fa-users"></i>
-                <h3>Aucun utilisateur</h3>
-                <p>Aucun utilisateur n'est enregistré dans le système.</p>
-            </div>
+        <div class="empty-state">
+            <i class="fas fa-users"></i>
+            <h3>Aucun utilisateur</h3>
+            <p>Aucun utilisateur n'est enregistré dans le système.</p>
+        </div>
         <?php else: ?>
-            <div class="users-grid">
-                <?php foreach ($users as $user): ?>
-                    <div class="user-card <?php echo $user['statut'] === 'inactif' ? 'inactive' : ''; ?>">
-                        <span class="user-statut statut-<?php echo $user['statut']; ?>">
-                            <?php echo $user['statut'] === 'actif' ? 'Actif' : 'Inactif'; ?>
-                        </span>
-                        
-                        <div class="user-header">
-                            <div class="user-avatar">
-                                <?php echo strtoupper(substr($user['prenom'], 0, 1)); ?>
-                            </div>
-                            <div class="user-info">
-                                <div class="user-name">
-                                    <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?>
-                                </div>
-                                <div class="user-email">
-                                    <?php echo htmlspecialchars($user['email']); ?>
-                                </div>
-                            </div>
+        <div class="users-grid">
+            <?php foreach ($users as $user): ?>
+            <div class="user-card <?php echo $user['statut'] === 'inactif' ? 'inactive' : ''; ?>">
+                <div class="card-header-wrap">
+                    <span class="user-statut statut-<?php echo $user['statut']; ?>">
+                        <?php echo $user['statut'] === 'actif' ? 'Actif' : 'Inactif'; ?>
+                    </span>
+                    <div class="user-header">
+                        <div class="user-avatar">
+                            <?php echo strtoupper(substr($user['prenom'], 0, 1)); ?>
                         </div>
-
-                        <div class="user-details">
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value">
-                                    <?php echo htmlspecialchars($user['telephone']); ?>
-                                </div>
+                        <div class="user-info">
+                            <div class="user-name">
+                                <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?>
                             </div>
-                            <div class="detail-item">
-                                <label>Date d'inscription</label>
-                                <div class="value">
-                                    <?php echo date('d/m/Y', strtotime($user['date_creation'])); ?>
-                                </div>
+                            <div class="user-email">
+                                <?php echo htmlspecialchars($user['email']); ?>
                             </div>
-                        </div>
-
-                        <div class="user-stats">
-                            <div class="stat-item">
-                                <div class="stat-item-label">Commandes</div>
-                                <div class="stat-item-value"><?php echo (int)$user['nb_commandes']; ?></div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-item-label">Reçues</div>
-                                <div class="stat-item-value"><?php echo (int)$user['nb_commandes_livrees']; ?></div>
-                            </div>
-                        </div>
-
-                        <div class="user-actions">
-                            <?php if ($user['statut'] === 'actif'): ?>
-                                <form method="POST" action="" class="user-action-form">
-                                    <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                    <input type="hidden" name="nouveau_statut" value="inactif">
-                                    <button type="submit" name="toggle_statut" class="btn-action btn-deactivate"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir désactiver cet utilisateur ?');">
-                                        <i class="fas fa-ban"></i> Désactiver
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <form method="POST" action="" class="user-action-form">
-                                    <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                    <input type="hidden" name="nouveau_statut" value="actif">
-                                    <button type="submit" name="toggle_statut" class="btn-action btn-activate"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir activer cet utilisateur ?');">
-                                        <i class="fas fa-check"></i> Activer
-                                    </button>
-                                </form>
-                            <?php endif; ?>
                         </div>
                     </div>
-                <?php endforeach; ?>
+                </div>
+
+                <div class="card-body">
+                    <div class="user-details">
+                        <div class="detail-item">
+                            <label>Téléphone</label>
+                            <div class="value">
+                                <?php echo htmlspecialchars($user['telephone']); ?>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-item-label">Commandes</div>
+                            <div class="stat-item-value"><?php echo (int)$user['nb_commandes']; ?></div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-item-label">Livrées</div>
+                            <div class="stat-item-value"><?php echo (int)$user['nb_commandes_livrees']; ?></div>
+                        </div>
+                    </div>
+
+                    <div class="user-actions">
+                        <?php if ($user['statut'] === 'actif'): ?>
+                        <form method="POST" action="" class="user-action-form">
+                            <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                            <input type="hidden" name="nouveau_statut" value="inactif">
+                            <button type="submit" name="toggle_statut" class="btn-action btn-deactivate"
+                                onclick="return confirm('Êtes-vous sûr de vouloir désactiver cet utilisateur ?');">
+                                <i class="fas fa-ban"></i> Désactiver
+                            </button>
+                        </form>
+                        <?php else: ?>
+                        <form method="POST" action="" class="user-action-form">
+                            <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                            <input type="hidden" name="nouveau_statut" value="actif">
+                            <button type="submit" name="toggle_statut" class="btn-action btn-activate"
+                                onclick="return confirm('Êtes-vous sûr de vouloir activer cet utilisateur ?');">
+                                <i class="fas fa-check"></i> Activer
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
+            <?php endforeach; ?>
+        </div>
         <?php endif; ?>
     </section>
 
     <?php include '../includes/footer.php'; ?>
 
 </body>
-</html>
 
+</html>

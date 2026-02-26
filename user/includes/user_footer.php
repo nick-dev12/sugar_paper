@@ -19,6 +19,7 @@
         });
     })();
 </script>
+<?php include __DIR__ . '/../../includes/social_floating.php'; ?>
 </body>
 </html>
 

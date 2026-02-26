@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/session_user.php';
 session_start();
 
 // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
@@ -461,6 +462,7 @@ if (isset($_SESSION['inscription_success'])) {
             }
         }
     </script>
+    <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 
 </html>

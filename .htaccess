@@ -1,6 +1,9 @@
 # Configuration PHP pour l'upload de fichiers volumineux
 # Ces valeurs surchargent les valeurs du php.ini si nécessaire
 
+# Session persistante pour les utilisateurs connectés (30 jours)
+php_value session.gc_maxlifetime 2592000
+
 php_value upload_max_filesize 1000M
 php_value post_max_size 1000M
 php_value max_execution_time 300

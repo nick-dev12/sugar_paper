@@ -67,3 +67,4 @@
         </div>
     </div>
 </footer>
+<?php include __DIR__ . '/includes/social_floating.php'; ?>

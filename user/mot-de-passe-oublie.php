@@ -1,7 +1,7 @@
 <?php
 /**
  * Page mot de passe oublié - Clients
- * Utilise EmailJS pour l'envoi d'emails côté client
+ * Utilise PHPMailer pour l'envoi d'emails côté serveur
  */
 
 session_start();
@@ -13,14 +13,6 @@ if (isset($_SESSION['user_id'])) {
 
 require_once __DIR__ . '/../controllers/controller_users.php';
 $result = process_user_forgot_password();
-
-// Configuration EmailJS (voir config/emailjs.php)
-$emailjs_config = file_exists(__DIR__ . '/../config/emailjs.php')
-    ? require __DIR__ . '/../config/emailjs.php'
-    : [];
-$emailjs_public_key = $emailjs_config['public_key'] ?? 'VOTRE_PUBLIC_KEY';
-$emailjs_service_id = $emailjs_config['service_id'] ?? 'VOTRE_SERVICE_ID';
-$emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['template_id'] ?? 'VOTRE_TEMPLATE_ID';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -31,9 +23,16 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
     <title>Mot de passe oublié - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: var(--font-corps);
             min-height: 100vh;
@@ -44,11 +43,14 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             padding: 20px;
             position: relative;
         }
+
         body::before {
             content: "";
             position: fixed;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
             background:
                 radial-gradient(ellipse 80% 50% at 30% 20%, rgba(229, 72, 138, 0.4) 0%, transparent 50%),
                 radial-gradient(ellipse 60% 40% at 70% 10%, rgba(244, 211, 94, 0.35) 0%, transparent 45%),
@@ -58,16 +60,26 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             pointer-events: none;
             z-index: -1;
         }
+
         .auth-header {
             position: fixed;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             padding: 12px 30px;
             background: #ffffff;
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
             z-index: 100;
         }
-        .auth-header .logo img { height: 55px; width: auto; max-width: 140px; object-fit: contain; }
+
+        .auth-header .logo img {
+            height: 55px;
+            width: auto;
+            max-width: 140px;
+            object-fit: contain;
+        }
+
         .auth-content {
             width: 100%;
             display: flex;
@@ -76,6 +88,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             flex: 1;
             padding-top: 80px;
         }
+
         .container {
             background: var(--glass-bg);
             backdrop-filter: blur(15px);
@@ -88,16 +101,25 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             position: relative;
             overflow: hidden;
         }
+
         .container::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 5px;
             background: var(--couleur-dominante);
         }
-        .header { text-align: center; margin-bottom: 30px; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
         .header .icon {
-            width: 70px; height: 70px;
+            width: 70px;
+            height: 70px;
             background: var(--couleur-dominante);
             border-radius: 50%;
             display: flex;
@@ -107,10 +129,33 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             color: var(--texte-clair);
             font-size: 30px;
         }
-        .header h1 { color: var(--titres); font-size: 28px; margin-bottom: 10px; font-weight: 600; font-family: var(--font-titres); }
-        .header p { color: var(--texte-fonce); font-size: 14px; opacity: 0.85; }
-        .form-group { margin-bottom: 25px; }
-        .form-group label { display: block; color: var(--titres); font-weight: 500; margin-bottom: 8px; font-size: 14px; }
+
+        .header h1 {
+            color: var(--titres);
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-family: var(--font-titres);
+        }
+
+        .header p {
+            color: var(--texte-fonce);
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--titres);
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
         .form-group input {
             width: 100%;
             padding: 12px 15px;
@@ -121,11 +166,13 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             background: rgba(255, 255, 255, 0.8);
             color: var(--texte-fonce);
         }
+
         .form-group input:focus {
             outline: none;
             border-color: var(--couleur-dominante);
             box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
         }
+
         .error-message {
             background: rgba(229, 72, 138, 0.1);
             border-left: 4px solid var(--couleur-dominante);
@@ -136,6 +183,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             font-size: 14px;
             line-height: 1.5;
         }
+
         .success-message {
             background: rgba(32, 197, 199, 0.12);
             border-left: 4px solid var(--turquoise);
@@ -146,6 +194,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             font-size: 14px;
             line-height: 1.5;
         }
+
         .btn-submit {
             width: 100%;
             padding: 14px;
@@ -160,26 +209,60 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             margin-top: 10px;
             box-shadow: var(--ombre-douce);
         }
+
         .btn-submit:hover {
             background: rgba(229, 72, 138, 0.9);
             transform: translateY(-2px);
             box-shadow: var(--ombre-promo);
             color: var(--texte-clair);
         }
-        .footer-text { text-align: center; margin-top: 25px; color: var(--texte-fonce); font-size: 14px; opacity: 0.85; }
-        .footer-text a { color: var(--couleur-dominante); text-decoration: none; font-weight: 600; }
-        .footer-text a:hover { text-decoration: underline; }
-        .loading { display: none; text-align: center; padding: 20px; color: var(--texte-fonce); }
-        .loading.show { display: block; }
-        .loading i { font-size: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: var(--texte-fonce);
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        .footer-text a {
+            color: var(--couleur-dominante);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .footer-text a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: var(--texte-fonce);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
 <body>
     <header class="auth-header">
         <a class="logo" href="/index.php">
-            <img src="/image/logo.jpeg" alt="Sugar Paper">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
         </a>
     </header>
 
@@ -191,49 +274,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
                 <p>Entrez votre email pour recevoir un lien de réinitialisation</p>
             </div>
 
-            <?php if ($result['success'] && !empty($result['reset_link'])): ?>
-                <div id="emailSent" class="success-message">
-                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($result['message']); ?>
-                </div>
-                <div id="emailLoading" class="loading show">
-                    <i class="fas fa-spinner"></i> Envoi de l'email en cours...
-                </div>
-                <div id="emailError" class="error-message" style="display:none;">
-                    <i class="fas fa-exclamation-circle"></i> <span id="emailErrorText"></span>
-                </div>
-                <div class="footer-text">
-                    <p><a href="connexion.php">Retour à la connexion</a></p>
-                </div>
-                <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-                <script>
-                    (function() {
-                        var publicKey = '<?php echo htmlspecialchars($emailjs_public_key); ?>';
-                        var serviceId = '<?php echo htmlspecialchars($emailjs_service_id); ?>';
-                        var templateId = '<?php echo htmlspecialchars($emailjs_template_id); ?>';
-                        var toEmail = '<?php echo htmlspecialchars($result['email']); ?>';
-                        var resetLink = '<?php echo htmlspecialchars($result['reset_link']); ?>';
-                        if (publicKey === 'VOTRE_PUBLIC_KEY' || serviceId === 'VOTRE_SERVICE_ID' || templateId === 'VOTRE_TEMPLATE_ID') {
-                            document.getElementById('emailLoading').classList.remove('show');
-                            document.getElementById('emailError').style.display = 'block';
-                            document.getElementById('emailErrorText').textContent = 'EmailJS non configuré. Voir config/emailjs.php';
-                        } else {
-                            emailjs.init(publicKey);
-                            emailjs.send(serviceId, templateId, {
-                                to_email: toEmail,
-                                user_email: toEmail,
-                                email: toEmail,
-                                reset_link: resetLink
-                            }).then(function() {
-                                document.getElementById('emailLoading').classList.remove('show');
-                            }).catch(function(err) {
-                                document.getElementById('emailLoading').classList.remove('show');
-                                document.getElementById('emailError').style.display = 'block';
-                                document.getElementById('emailErrorText').textContent = 'Erreur lors de l\'envoi de l\'email: ' + (err.text || err);
-                            });
-                        }
-                    })();
-                </script>
-            <?php elseif ($result['success']): ?>
+            <?php if ($result['success']): ?>
                 <div class="success-message">
                     <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($result['message']); ?>
                 </div>
@@ -264,6 +305,7 @@ $emailjs_template_id = $emailjs_config['template_id_user'] ?? $emailjs_config['t
             <?php endif; ?>
         </div>
     </div>
+    <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 
 </html>

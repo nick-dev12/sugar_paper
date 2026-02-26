@@ -6,6 +6,12 @@
 
 session_start();
 
+// Supprimer les tokens FCM du client avant déconnexion
+if (isset($_SESSION['user_id'])) {
+    require_once __DIR__ . '/../models/model_fcm.php';
+    delete_fcm_tokens_by_user((int) $_SESSION['user_id']);
+}
+
 // Détruire toutes les variables de session
 $_SESSION = array();
 

@@ -34,7 +34,12 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
         <div class="content-header">
             <h1><i class="fas fa-chart-line"></i> Tableau de Bord</h1>
             <div class="header-actions">
-
+                <button type="button" id="btn-enable-notifications" class="btn-primary btn-secondary-style" title="Recevoir des notifications push pour les nouvelles commandes">
+                    <i class="fas fa-bell"></i> Activer les notifications
+                </button>
+                <a href="test-notification.php" class="btn-primary btn-secondary-style" title="Envoyer une notification de test sur cet ordinateur">
+                    <i class="fas fa-paper-plane"></i> Test notification
+                </a>
                 <a href="zones-livraison/index.php" class="btn-primary btn-secondary-style">
                     <i class="fas fa-truck"></i> Zones de livraison
                 </a>
@@ -45,6 +50,16 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
         </div>
 
         <?php
+        if (isset($_SESSION['notification_test_message'])) {
+            $test_msg = $_SESSION['notification_test_message'];
+            $test_type = $_SESSION['notification_test_type'] ?? 'success';
+            unset($_SESSION['notification_test_message'], $_SESSION['notification_test_type']);
+            ?>
+            <div class="alert-box message-<?php echo htmlspecialchars($test_type); ?>" style="margin-bottom: 20px;">
+                <p><i class="fas fa-<?php echo $test_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i> <?php echo htmlspecialchars($test_msg); ?></p>
+            </div>
+            <?php
+        }
         // Récupérer les statistiques des commandes
         require_once __DIR__ . '/../models/model_commandes_admin.php';
         require_once __DIR__ . '/../models/model_commandes_personnalisees.php';

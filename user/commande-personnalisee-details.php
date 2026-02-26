@@ -3,6 +3,7 @@
  * Détails d'une commande personnalisée (côté client)
  */
 
+require_once __DIR__ . '/../includes/session_user.php';
 session_start();
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {

@@ -25,6 +25,14 @@
                 alert('Les notifications nécessitent un navigateur prenant en charge les Service Workers.');
                 return Promise.resolve(false);
             }
+            type = type || 'user';
+            if (Notification.permission === 'granted') {
+                return window.FirebaseNotifications.registerServiceWorker(type);
+            }
+            if (Notification.permission === 'denied') {
+                alert('Les notifications ont été bloquées. Autorisez-les dans les paramètres du navigateur.');
+                return Promise.resolve(false);
+            }
             return this.requestPermission(type);
         },
 
@@ -50,7 +58,10 @@
             var swPath = '/firebase-messaging-sw.js';
             return navigator.serviceWorker.register(swPath)
                 .then(function(reg) {
-                    return reg.ready || Promise.resolve(reg);
+                    return reg.ready;
+                })
+                .then(function() {
+                    return navigator.serviceWorker.ready;
                 })
                 .then(function(reg) {
                     return window.FirebaseNotifications.getToken(type, reg);
@@ -130,8 +141,49 @@
                     btn.innerHTML = ok ? '<i class="fas fa-bell"></i> Notifications activées' : '<i class="fas fa-bell-slash"></i> Activer les notifications';
                     if (ok) btn.classList.add('notifications-enabled');
                 }
+                if (ok) window.FirebaseNotifications.setupForegroundHandler();
                 return ok;
+            });
+        },
+
+        /**
+         * Affiche les notifications quand la page est ouverte (premier plan).
+         * Sans cela, les messages reçus avec l'onglet actif ne s'affichent pas.
+         */
+        _foregroundHandlerSetup: false,
+        setupForegroundHandler: function() {
+            if (window.FirebaseNotifications._foregroundHandlerSetup) return;
+            if (typeof firebase === 'undefined' || !firebase.messaging) return;
+            if (!('Notification' in window)) return;
+            window.FirebaseNotifications._foregroundHandlerSetup = true;
+            var messaging = firebase.messaging();
+            messaging.onMessage(function(payload) {
+                var title = payload.notification && payload.notification.title ? payload.notification.title : (payload.data && payload.data.title ? payload.data.title : 'Sugar Paper');
+                var body = payload.notification && payload.notification.body ? payload.notification.body : (payload.data && payload.data.body ? payload.data.body : '');
+                var options = {
+                    body: body,
+                    icon: '/image/produit1.jpg',
+                    tag: (payload.data && payload.data.tag) ? payload.data.tag : 'sugar-paper-' + Date.now(),
+                    requireInteraction: false
+                };
+                if (Notification.permission === 'granted') {
+                    try {
+                        new Notification(title, options);
+                    } catch (e) {
+                        console.warn('Notification foreground:', e);
+                    }
+                }
             });
         }
     };
+
+    if (typeof firebase !== 'undefined' && firebase.messaging && document.readyState !== 'loading') {
+        window.FirebaseNotifications.setupForegroundHandler();
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof firebase !== 'undefined' && firebase.messaging) {
+                setTimeout(function() { window.FirebaseNotifications.setupForegroundHandler(); }, 500);
+            }
+        });
+    }
 })();

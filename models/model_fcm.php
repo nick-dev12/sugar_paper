@@ -91,3 +91,51 @@ function get_fcm_tokens_by_admin($admin_id) {
         return [];
     }
 }
+
+/**
+ * Supprime les tokens FCM d'un admin (à la déconnexion)
+ * @param int $admin_id ID de l'admin
+ * @return bool True en cas de succès
+ */
+function delete_fcm_tokens_by_admin($admin_id) {
+    global $db;
+    
+    try {
+        $stmt = $db->prepare("UPDATE fcm_tokens SET admin_id = NULL WHERE admin_id = :admin_id AND type = 'admin'");
+        return $stmt->execute(['admin_id' => $admin_id]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Supprime les tokens FCM d'un utilisateur (à la déconnexion)
+ * @param int $user_id ID de l'utilisateur
+ * @return bool True en cas de succès
+ */
+function delete_fcm_tokens_by_user($user_id) {
+    global $db;
+    
+    try {
+        $stmt = $db->prepare("UPDATE fcm_tokens SET user_id = NULL WHERE user_id = :user_id AND type = 'user'");
+        return $stmt->execute(['user_id' => $user_id]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Récupère tous les tokens FCM des administrateurs
+ * @return array Liste des tokens
+ */
+function get_all_fcm_tokens_admin() {
+    global $db;
+    
+    try {
+        $stmt = $db->prepare("SELECT DISTINCT token FROM fcm_tokens WHERE type = 'admin' AND admin_id IS NOT NULL AND token IS NOT NULL AND token != ''");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        return [];
+    }
+}

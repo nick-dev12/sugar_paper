@@ -16,24 +16,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <script>
-(function() {
-    function toggleUserSidebar() {
-        var sidebar = document.getElementById('userSidebar');
-        var overlay = document.getElementById('sidebarOverlay');
-        if (sidebar && overlay) {
-            sidebar.classList.toggle('show');
-            overlay.classList.toggle('show');
-            document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+    (function () {
+        function toggleUserSidebar() {
+            var sidebar = document.getElementById('userSidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('show');
+                overlay.classList.toggle('show');
+                document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+            }
         }
-    }
-    window.toggleSidebar = toggleUserSidebar;
-    document.addEventListener('DOMContentLoaded', function() {
-        var btn = document.getElementById('menuToggle');
-        var overlay = document.getElementById('sidebarOverlay');
-        if (btn) btn.addEventListener('click', toggleUserSidebar);
-        if (overlay) overlay.addEventListener('click', toggleUserSidebar);
-    });
-})();
+        window.toggleSidebar = toggleUserSidebar;
+        document.addEventListener('DOMContentLoaded', function () {
+            var btn = document.getElementById('menuToggle');
+            var overlay = document.getElementById('sidebarOverlay');
+            if (btn) btn.addEventListener('click', toggleUserSidebar);
+            if (overlay) overlay.addEventListener('click', toggleUserSidebar);
+        });
+    })();
 </script>
 
 <div class="user-container">
@@ -48,23 +48,22 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-home"></i>
                 <span>Tableau de bord</span>
             </a>
-            <a href="/produits.php" class="menu-item">
-                <i class="fas fa-box"></i>
-                <span>Tous les produits</span>
-            </a>
             <a href="/panier.php" class="menu-item">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Mon panier</span>
             </a>
-            <a href="mes-commandes.php" class="menu-item <?php echo $current_page == 'mes-commandes.php' ? 'active' : ''; ?>">
+            <a href="mes-commandes.php"
+                class="menu-item <?php echo $current_page == 'mes-commandes.php' ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-bag"></i>
                 <span>Mes commandes</span>
             </a>
-            <a href="commandes-annulees.php" class="menu-item <?php echo $current_page == 'commandes-annulees.php' ? 'active' : ''; ?>">
+            <a href="commandes-annulees.php"
+                class="menu-item <?php echo $current_page == 'commandes-annulees.php' ? 'active' : ''; ?>">
                 <i class="fas fa-ban"></i>
                 <span>Commandes annulées</span>
             </a>
-            <a href="produits-livres.php" class="menu-item <?php echo $current_page == 'produits-livres.php' ? 'active' : ''; ?>">
+            <a href="produits-livres.php"
+                class="menu-item <?php echo $current_page == 'produits-livres.php' ? 'active' : ''; ?>">
                 <i class="fas fa-check-circle"></i>
                 <span>Produits livrés</span>
             </a>
@@ -89,4 +88,3 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <!-- Contenu principal -->
     <main class="user-content" id="userContent">
-

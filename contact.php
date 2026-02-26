@@ -4,6 +4,12 @@ session_start();
 $message_envoye = false;
 $erreur = '';
 
+// Charger Composer (PHPMailer) pour l'envoi d'emails
+$autoload = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrf = isset($_POST['csrf_token']) ? $_POST['csrf_token'] : '';
     if (empty($csrf) || !isset($_SESSION['contact_csrf']) || !hash_equals($_SESSION['contact_csrf'], $csrf)) {
@@ -11,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
         $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-        $sujet = isset($_POST['sujet']) ? trim($_POST['sujet']) : '';
+        $sujet = isset($_POST['sujet']) ? trim($_POST['sujet']) : 'Contact';
         $message = isset($_POST['message']) ? trim($_POST['message']) : '';
 
         if (empty($nom) || empty($email) || empty($message)) {
@@ -19,8 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $erreur = 'Adresse email invalide.';
         } else {
-            $message_envoye = true;
-            unset($_SESSION['contact_csrf']);
+            if (function_exists('mail_send_contact')) {
+                $result = mail_send_contact($nom, $email, $sujet, $message);
+                if ($result['success']) {
+                    $message_envoye = true;
+                    unset($_SESSION['contact_csrf']);
+                } else {
+                    $erreur = $result['error'] ?? 'Erreur lors de l\'envoi. Vérifiez config/email.php.';
+                }
+            } else {
+                $erreur = 'Service email non configuré. Exécutez "composer install" et configurez config/email.php.';
+            }
         }
     }
 }

@@ -9,7 +9,10 @@ conn/conn.php
 
 # Configuration API (clés secrètes)
 config/emailjs.php
+config/email.php
+config/site.php
 config/firebase_config.php
+config/firebase_server.php
 
 # Variables d'environnement
 .env
@@ -39,6 +42,4 @@ temp/
 Thumbs.db
 desktop.ini
 
-# Dépendances (si présentes)
-node_modules/
-vendor/
+

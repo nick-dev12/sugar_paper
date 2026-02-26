@@ -52,23 +52,27 @@ function admin_exists()
  * @param string $prenom Le prénom de l'administrateur
  * @param string $email L'email de l'administrateur
  * @param string $password_hash Le mot de passe hashé
+ * @param string $role Rôle : 'admin' ou 'utilisateur' (défaut: 'utilisateur')
  * @return bool|int L'ID de l'admin créé en cas de succès, False en cas d'échec
  */
-function create_admin($nom, $prenom, $email, $password_hash)
+function create_admin($nom, $prenom, $email, $password_hash, $role = 'utilisateur')
 {
     global $db;
 
+    $role = in_array($role, ['admin', 'utilisateur']) ? $role : 'utilisateur';
+
     try {
         $stmt = $db->prepare("
-            INSERT INTO admin (nom, prenom, email, password, date_creation, statut) 
-            VALUES (:nom, :prenom, :email, :password, NOW(), 'actif')
+            INSERT INTO admin (nom, prenom, email, password, date_creation, statut, role) 
+            VALUES (:nom, :prenom, :email, :password, NOW(), 'actif', :role)
         ");
 
         $result = $stmt->execute([
             'nom' => $nom,
             'prenom' => $prenom,
             'email' => $email,
-            'password' => $password_hash
+            'password' => $password_hash,
+            'role' => $role
         ]);
 
         if ($result) {
@@ -250,6 +254,90 @@ function mark_reset_token_used($token)
     try {
         $stmt = $db->prepare("UPDATE admin_password_reset SET used = 1 WHERE token = :token");
         return $stmt->execute(['token' => $token]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Récupère les emails de tous les administrateurs actifs
+ * @return array Liste des emails
+ */
+function get_all_admin_emails()
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("SELECT email FROM admin WHERE statut = 'actif' AND email IS NOT NULL AND email != ''");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Récupère tous les comptes administrateurs
+ * @return array Liste des admins
+ */
+function get_all_admins()
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT id, nom, prenom, email, date_creation, derniere_connexion, statut, 
+                   COALESCE(role, 'admin') as role 
+            FROM admin 
+            ORDER BY date_creation DESC
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Met à jour le rôle d'un administrateur
+ * @param int $id ID de l'admin
+ * @param string $role 'admin' ou 'utilisateur'
+ * @return bool
+ */
+function update_admin_role($id, $role)
+{
+    global $db;
+
+    if (!in_array($role, ['admin', 'utilisateur'])) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("UPDATE admin SET role = :role WHERE id = :id");
+        return $stmt->execute(['id' => $id, 'role' => $role]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Met à jour le statut d'un administrateur
+ * @param int $id ID de l'admin
+ * @param string $statut 'actif' ou 'inactif'
+ * @return bool
+ */
+function update_admin_statut($id, $statut)
+{
+    global $db;
+
+    if (!in_array($statut, ['actif', 'inactif'])) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("UPDATE admin SET statut = :statut WHERE id = :id");
+        return $stmt->execute(['id' => $id, 'statut' => $statut]);
     } catch (PDOException $e) {
         return false;
     }

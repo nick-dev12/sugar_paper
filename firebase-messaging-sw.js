@@ -1,5 +1,14 @@
 /* Service Worker pour Firebase Cloud Messaging - Notifications push
    Config à synchroniser avec config/firebase_config.php */
+
+self.addEventListener('install', function() {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+    event.waitUntil(self.clients.claim());
+});
+
 importScripts('https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js');
 

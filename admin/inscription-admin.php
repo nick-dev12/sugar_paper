@@ -1,16 +1,37 @@
 <?php
 session_start();
 
+require_once __DIR__ . '/../models/model_admin.php';
+
+// Si des admins existent : seul un admin connecté avec rôle admin peut ajouter des comptes
+if (admin_exists()) {
+    if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+        header('Location: login.php');
+        exit;
+    }
+    if (($_SESSION['admin_role'] ?? '') !== 'admin') {
+        header('Location: dashboard.php');
+        exit;
+    }
+}
+
 // Traiter le formulaire
 require_once __DIR__ . '/../controllers/controller_admin.php';
 $result = process_admin_inscription();
 
-// Si l'inscription est réussie, rediriger vers la page de connexion
+// Si l'inscription est réussie, rediriger
 if (isset($result['success']) && $result['success']) {
-    $_SESSION['inscription_success'] = $result['message'];
-    header('Location: login.php');
+    if (isset($_SESSION['admin_id'])) {
+        $_SESSION['success_message'] = $result['message'];
+        header('Location: comptes/index.php');
+    } else {
+        $_SESSION['inscription_success'] = $result['message'];
+        header('Location: login.php');
+    }
     exit;
 }
+
+$is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -319,6 +340,36 @@ if (isset($result['success']) && $result['success']) {
             text-decoration: underline;
         }
 
+        .form-group-role {
+            background: rgba(229, 72, 138, 0.06);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(229, 72, 138, 0.2);
+        }
+
+        .select-role {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(229, 72, 138, 0.2);
+            border-radius: 8px;
+            font-size: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--texte-fonce);
+        }
+
+        .select-role:focus {
+            outline: none;
+            border-color: var(--couleur-dominante);
+        }
+
+        .role-help {
+            font-size: 12px;
+            color: var(--texte-fonce);
+            margin-top: 10px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             .container {
@@ -351,8 +402,8 @@ if (isset($result['success']) && $result['success']) {
                 <div class="icon">
                     <i class="fas fa-user-shield"></i>
                 </div>
-                <h1>Inscription Administrateur</h1>
-                <p>Créez le compte administrateur principal</p>
+                <h1><?php echo $is_ajout_par_admin ? 'Ajouter un compte' : 'Inscription Administrateur'; ?></h1>
+                <p><?php echo $is_ajout_par_admin ? 'Créez un nouveau compte pour la plateforme' : 'Créez le compte administrateur principal'; ?></p>
             </div>
 
             <?php if (isset($result['message']) && !empty($result['message'])): ?>
@@ -389,6 +440,20 @@ if (isset($result['success']) && $result['success']) {
                     </div>
                 </div>
 
+                <?php if ($is_ajout_par_admin): ?>
+                <div class="form-group form-group-role">
+                    <label for="role"><i class="fas fa-user-tag"></i> Rôle *</label>
+                    <select id="role" name="role" required class="select-role">
+                        <option value="admin" <?php echo (isset($_POST['role']) && $_POST['role'] === 'admin') ? 'selected' : ''; ?>>Administrateur (accès complet)</option>
+                        <option value="utilisateur" <?php echo (!isset($_POST['role']) || $_POST['role'] === 'utilisateur') ? 'selected' : ''; ?>>Utilisateur (tout sauf gestion des comptes clients)</option>
+                    </select>
+                    <p class="role-help">
+                        <strong>Administrateur :</strong> accès à tout (comptes, utilisateurs clients, produits, commandes...).<br>
+                        <strong>Utilisateur :</strong> accès à tout sauf la gestion des comptes utilisateurs clients.
+                    </p>
+                </div>
+                <?php endif; ?>
+
                 <div class="form-group">
                     <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
                     <div class="input-wrapper password-wrapper">
@@ -421,12 +486,16 @@ if (isset($result['success']) && $result['success']) {
                 </div>
 
                 <button type="submit" class="btn-submit">
-                    <i class="fas fa-user-plus"></i> Créer le compte administrateur
+                    <i class="fas fa-user-plus"></i> <?php echo $is_ajout_par_admin ? 'Ajouter le compte' : 'Créer le compte administrateur'; ?>
                 </button>
             </form>
 
             <div class="footer-text">
+                <?php if ($is_ajout_par_admin): ?>
+                <p><a href="comptes/index.php">← Retour à la gestion des comptes</a></p>
+                <?php else: ?>
                 <p>Après l'inscription, vous serez redirigé vers la page de connexion</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>

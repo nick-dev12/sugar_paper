@@ -4,23 +4,12 @@
  * Programmation procédurale uniquement
  */
 
-require_once __DIR__ . '/../models/model_admin.php';
-
-/**
- * Retourne l'URL de base du site (pour les liens dans les emails)
- * Utilise config/emailjs.php si site_url est défini, sinon déduit de $_SERVER
- */
-function get_site_base_url() {
-    $config = file_exists(__DIR__ . '/../config/emailjs.php')
-        ? require __DIR__ . '/../config/emailjs.php'
-        : [];
-    if (!empty($config['site_url'])) {
-        return rtrim($config['site_url'], '/');
-    }
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    return $protocol . '://' . $host;
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
 }
+require_once __DIR__ . '/../models/model_admin.php';
+require_once __DIR__ . '/../includes/site_url.php';
 
 /**
  * Traite l'inscription d'un nouvel administrateur
@@ -90,17 +79,39 @@ function process_admin_inscription() {
         $errors[] = 'Les mots de passe ne correspondent pas.';
     }
     
+    // Rôle : admin (accès complet) ou utilisateur (tout sauf gestion des comptes clients)
+    $role = isset($_POST['role']) ? trim($_POST['role']) : 'utilisateur';
+    if (!in_array($role, ['admin', 'utilisateur'])) {
+        $role = 'utilisateur';
+    }
+
+    // Si un admin est connecté, il doit avoir le rôle admin pour ajouter des comptes
+    $admin_connecte = isset($_SESSION['admin_id']) && isset($_SESSION['admin_role']);
+    if ($admin_connecte && ($_SESSION['admin_role'] ?? '') !== 'admin') {
+        $errors[] = 'Vous n\'avez pas les droits pour ajouter des comptes.';
+    }
+
     // Si aucune erreur, procéder à l'inscription
     if (empty($errors)) {
         // Hashage du mot de passe
         $password_hash = password_hash($password, PASSWORD_BCRYPT);
-        
+
+        // Premier admin = rôle admin, sinon rôle du formulaire
+        $role_final = $role;
+        if (!admin_exists()) {
+            $role_final = 'admin';
+        }
+
         // Création de l'administrateur
-        $admin_id = create_admin($nom, $prenom, $email, $password_hash);
-        
+        $admin_id = create_admin($nom, $prenom, $email, $password_hash, $role_final);
+
         if ($admin_id) {
             $success = true;
-            $message = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
+            if ($admin_connecte) {
+                $message = 'Compte ajouté avec succès !';
+            } else {
+                $message = 'Inscription réussie ! Vous pouvez maintenant vous connecter.';
+            }
         } else {
             $errors[] = 'Une erreur est survenue lors de l\'inscription. Veuillez réessayer.';
         }
@@ -215,6 +226,14 @@ function process_forgot_password() {
         if (create_password_reset_token($email, $token, $expires_at)) {
             $base_url = get_site_base_url();
             $reset_link = rtrim($base_url, '/') . '/admin/reinitialiser-mot-de-passe.php?token=' . $token;
+
+            if (function_exists('mail_send_reset_link')) {
+                $mail_result = mail_send_reset_link($email, $reset_link, 'admin');
+                if (!$mail_result['success']) {
+                    $message = 'Le lien a été généré mais l\'envoi de l\'email a échoué : ' . ($mail_result['error'] ?? 'Erreur inconnue');
+                    return ['success' => false, 'message' => $message, 'email' => '', 'reset_link' => '', 'token' => ''];
+                }
+            }
 
             $success = true;
             $message = 'Si cet email est associé à un compte admin, vous recevrez un lien de réinitialisation.';

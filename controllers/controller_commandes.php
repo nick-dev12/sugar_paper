@@ -8,6 +8,11 @@ require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_zones_livraison.php';
 
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
+
 /**
  * Traite la création d'une commande
  * @return array Tableau avec 'success', 'message', et éventuellement 'commande_id' et 'numero_commande'
@@ -105,12 +110,40 @@ function process_create_commande() {
     if ($result['success']) {
         // Vider le panier après création de la commande
         clear_panier($user_id);
-        
+
+        // Préparer les données pour la notification/email (envoi asynchrone dans commande.php)
+        $sous_total = 0;
+        $nombre_articles = 0;
+        $produits_email = [];
+        foreach ($panier_items as $item) {
+            $prix_unitaire = !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']
+                ? $item['prix_promotion']
+                : $item['prix'];
+            $prix_total_ligne = $prix_unitaire * $item['quantite'];
+            $sous_total += $prix_total_ligne;
+            $nombre_articles += $item['quantite'];
+            $produits_email[] = [
+                'nom' => $item['nom'],
+                'quantite' => $item['quantite'],
+                'prix_unitaire' => $prix_unitaire,
+                'prix_total' => $prix_total_ligne
+            ];
+        }
+        $montant_total = $sous_total + $frais_livraison;
+
         return [
             'success' => true,
             'message' => 'Votre commande a été créée avec succès ! Numéro de commande: ' . $result['numero_commande'],
             'commande_id' => $result['commande_id'],
-            'numero_commande' => $result['numero_commande']
+            'numero_commande' => $result['numero_commande'],
+            'email_data' => [
+                'numero_commande' => $result['numero_commande'],
+                'montant_total' => $montant_total,
+                'nombre_articles' => $nombre_articles,
+                'telephone_livraison' => $telephone_livraison,
+                'adresse_livraison' => $adresse_livraison,
+                'produits' => $produits_email
+            ]
         ];
     }
     
