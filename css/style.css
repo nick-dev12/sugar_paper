@@ -62,11 +62,14 @@ body::before {
   z-index: -1;
 }
 
-/* modification de la deuxieme section */
+/* modification de la deuxieme section - Slider principal
+   Images : object-fit + transform pour proportions et adaptation responsive
+   Container fixe, images s'adaptent sans dépasser */
 
 .slider-area {
   height: 450px;
   width: 100%;
+  overflow: hidden;
 }
 
 .slider-area .slider-item {
@@ -74,18 +77,20 @@ body::before {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: start;
+  justify-content: center;
   position: relative;
+  overflow: hidden;
 }
 
 .slider-area .slider-item .box {
   position: absolute;
   width: 100%;
-  height: 450px;
+  height: 100%;
   background: rgba(229, 72, 138, 0.35);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   top: 0;
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,7 +98,7 @@ body::before {
 }
 
 .slider-area .slider-item .box h1 {
-  font-size: 40px;
+  font-size: clamp(18px, 4vw, 40px);
   color: white;
   width: 100%;
   text-align: left;
@@ -109,14 +114,16 @@ body::before {
   font-weight: 600;
 }
 
+/* Image : object-fit conserve les proportions, ne dépasse jamais le container */
 .slider-area .slider-item img {
-  height: 100%;
   width: 100%;
-  object-fit: cover;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 .slider-area .slider-item p {
-  font-size: 14px;
+  font-size: clamp(9px, 1.5vw, 14px);
   color: white;
   width: 100%;
   text-align: left;
@@ -134,7 +141,7 @@ body::before {
   padding: 12px 28px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 25px;
-  font-size: 18px;
+  font-size: clamp(11px, 2vw, 18px);
   background: rgba(229, 72, 138, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -148,195 +155,47 @@ body::before {
   box-shadow: var(--ombre-promo);
 }
 
-/* Responsive Design pour le Slider */
-@media (max-width: 1200px) {
-  .slider-area {
-    height: 550px;
-  }
-
-  .slider-area .slider-item {
-    height: 550px;
-  }
-
-  .slider-area .slider-item .box {
-    height: 550px;
-  }
-
-  .slider-area .slider-item .box h1 {
-    font-size: 36px;
-    max-width: 600px;
-    transform: translateY(180px);
-    padding: 10px 18px;
-  }
-
-  .slider-area .slider-item p {
-    font-size: 13px;
-    max-width: 600px;
-    transform: translateX(350px);
-    padding: 8px 16px;
-    margin-top: 25px;
-  }
-
-  .slider-area .slider-item button {
-    font-size: 16px;
-    padding: 9px 18px;
-    margin-top: 25px;
-    transform: translateX(-350px);
-  }
-}
-
-@media (max-width: 992px) {
-  .slider-area {
-    height: 480px;
-  }
-
-  .slider-area .slider-item {
-    height: 480px;
-  }
-
-  .slider-area .slider-item .box {
-    height: 480px;
-  }
-
-  .slider-area .slider-item .box h1 {
-    font-size: 32px;
-    max-width: 550px;
-    transform: translateY(150px);
-    padding: 10px 16px;
-  }
-
-  .slider-area .slider-item p {
-    font-size: 12px;
-    max-width: 550px;
-    transform: translateX(300px);
-    padding: 8px 14px;
-    margin-top: 20px;
-  }
-
-  .slider-area .slider-item button {
-    font-size: 15px;
-    padding: 8px 16px;
-    margin-top: 20px;
-    transform: translateX(-300px);
-  }
-}
-
+/* Responsive : uniquement ajustements typo/animations, container inchangé */
 @media (max-width: 768px) {
-  .slider-area {
-    height: 400px;
-  }
-
-  .slider-area .slider-item {
-    height: 400px;
-  }
-
-  .slider-area .slider-item .box {
-    height: 400px;
-  }
-
   .slider-area .slider-item .box h1 {
-    font-size: 26px;
-    max-width: 90%;
-    width: 90%;
     transform: translateY(120px);
-    padding: 8px 14px;
     text-align: center;
   }
 
   .slider-area .slider-item p {
-    font-size: 11px;
-    max-width: 90%;
-    width: 90%;
     transform: translateX(250px);
-    padding: 6px 12px;
-    margin-top: 15px;
     text-align: center;
   }
 
   .slider-area .slider-item button {
-    font-size: 13px;
-    padding: 7px 14px;
-    margin-top: 15px;
     transform: translateX(-250px);
   }
 }
 
 @media (max-width: 576px) {
-  .slider-area {
-    height: 350px;
-  }
-
-  .slider-area .slider-item {
-    height: 350px;
-  }
-
-  .slider-area .slider-item .box {
-    height: 350px;
-  }
-
   .slider-area .slider-item .box h1 {
-    font-size: 20px;
-    max-width: 95%;
-    width: 95%;
     transform: translateY(100px);
-    padding: 6px 12px;
-    text-align: center;
   }
 
   .slider-area .slider-item p {
-    font-size: 10px;
-    max-width: 95%;
-    width: 95%;
     transform: translateX(200px);
-    padding: 5px 10px;
-    margin-top: 12px;
-    text-align: center;
   }
 
   .slider-area .slider-item button {
-    font-size: 12px;
-    padding: 6px 12px;
-    margin-top: 12px;
     transform: translateX(-200px);
   }
 }
 
 @media (max-width: 480px) {
-  .slider-area {
-    height: 300px;
-  }
-
-  .slider-area .slider-item {
-    height: 300px;
-  }
-
-  .slider-area .slider-item .box {
-    height: 300px;
-  }
-
   .slider-area .slider-item .box h1 {
-    font-size: 18px;
-    max-width: 95%;
-    width: 95%;
     transform: translateY(80px);
-    padding: 5px 10px;
-    text-align: center;
   }
 
   .slider-area .slider-item p {
-    font-size: 9px;
-    max-width: 95%;
-    width: 95%;
     transform: translateX(150px);
-    padding: 4px 8px;
-    margin-top: 10px;
-    text-align: center;
   }
 
   .slider-area .slider-item button {
-    font-size: 11px;
-    padding: 5px 10px;
-    margin-top: 10px;
     transform: translateX(-150px);
   }
 }
@@ -1146,7 +1005,8 @@ footer span {
   font-family: "Nunito", sans-serif;
 }
 
-/* modification de la quatrieme section */
+/* modification de la quatrieme section
+   Image de fond : proportions conservées, adaptation responsive sans dépasser */
 
 .section4 {
   height: 400px;
@@ -1156,18 +1016,23 @@ footer span {
   justify-content: center;
   position: relative;
   margin: 30px 0;
+  overflow: hidden;
 }
+
 .section4 .slider {
   display: flex;
   height: 500px;
   width: 100%;
+  min-height: 400px;
   position: relative;
-  background-repeat: repeat;
+  background-repeat: no-repeat;
   background-size: cover;
-  background-attachment: fixed;
+  background-position: center center;
   flex-direction: column;
-  /* L'image de fond est définie dynamiquement via le style inline */
+  overflow: hidden;
+  /* L'image de fond : cover garde les proportions, s'adapte sans dépasser */
 }
+
 .section4 .slider p {
   font-size: 12px;
   font-family: Arial, Helvetica, sans-serif;

@@ -22,6 +22,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
     <title>Sugar Paper</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
@@ -191,7 +192,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 
         <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-            data-aos-mirror="true" data-aos-once="false" data-aos-anchor-placement="top-bottom"
+            data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
             class="articles owl-carousel carousel1">
             <?php if (empty($produits_nouveaux)): ?>
             <!-- Message si aucun produit -->
@@ -378,7 +379,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 
         <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-            data-aos-mirror="true" data-aos-once="false" data-aos-anchor-placement="top-bottom"
+            data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
             class="articles owl-carousel carousel1">
             <?php if (empty($produits_populaires)): ?>
             <!-- Message si aucun produit -->

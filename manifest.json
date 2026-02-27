@@ -1,0 +1,26 @@
+{
+  "name": "Sugar Paper - Produits naturels",
+  "short_name": "Sugar Paper",
+  "description": "Boutique en ligne de produits naturels - Noix, Feuilles, Fruits, Huiles, Céréales, Racines",
+  "start_url": "/index.php",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#E5488A",
+  "background_color": "#ffffff",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

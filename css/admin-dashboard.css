@@ -310,6 +310,7 @@ body::before {
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 400px;
   width: 100%;
   max-width: 250px;
   min-width: 250px !important;
@@ -322,9 +323,9 @@ body::before {
 }
 
 .produit-card-image {
-  height: 120px;
+  height: 250px;
   width: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-bottom: 1px solid var(--glass-border);
   background: #f8f8f8;
 }
@@ -607,7 +608,11 @@ body::before {
   width: 100%;
   height: 160px;
   overflow: hidden;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(229, 72, 138, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(229, 72, 138, 0.08) 100%
+  );
 }
 
 .categorie-card .categorie-image {

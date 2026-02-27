@@ -64,6 +64,16 @@ function mail_create_instance() {
             } elseif ($enc === 'tls') {
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             }
+            // Hébergement partagé : certificat émis pour *.web-hosting.com au lieu de mail.domaine.com
+            if (isset($smtp['verify_ssl']) && $smtp['verify_ssl'] === false) {
+                $mail->SMTPOptions = [
+                    'ssl' => [
+                        'verify_peer'       => false,
+                        'verify_peer_name'  => false,
+                        'allow_self_signed' => true,
+                    ],
+                ];
+            }
             break;
         case 'sendmail':
             $mail->isSendmail();

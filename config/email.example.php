@@ -9,14 +9,15 @@ return [
     // Méthode d'envoi : 'smtp', 'sendmail', ou 'mail' (fonction mail() PHP)
     'method' => 'smtp',
 
-    // Configuration SMTP - sugar-paper.com (TLS/STARTTLS sur port 587)
+    // Configuration SMTP - SSL/TLS recommandé (port 465)
     'smtp' => [
-        'host' => 'mail.sugar-paper.com',
-        'port' => 587,
-        'encryption' => 'tls',  // Port 587 = TLS (STARTTLS)
+        'host' => 'sugar-paper.com',
+        'port' => 465,
+        'encryption' => 'ssl',
         'username' => 'service@sugar-paper.com',
-        'password' => 'Ludvanne12@gmail.com',  // Mot de passe du compte service@sugar-paper.com
+        'password' => 'VOTRE_MOT_DE_PASSE',
         'timeout' => 30,
+        'verify_ssl' => false,
     ],
 
     // Expéditeur par défaut
@@ -26,7 +27,7 @@ return [
     ],
 
     // Email de contact (destinataire des messages du formulaire contact)
-    'contact_email' => 'service@sugar-paper.com',
+    'contact_email' => 'sugarpaper26@gmail.com',
 
     // Mode debug : true pour afficher les erreurs SMTP
     'debug' => false,

@@ -13,11 +13,11 @@
             <ul class="footer_list">
                 <li class="li footer_list_item">
                     <i class="fas fa-envelope"></i>
-                    <a href="mailto:service@sugarpaper.com">service@sugarpaper.com</a>
+                    <a href="mailto:sugarpaper26@gmail.com">sugarpaper26@gmail.com</a>
                 </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-phone"></i>
-                    <a href="tel:+221771202041">+221 77 120 20 41</a>
+                    <a href="tel:+221773292123">+221 77 32 92 123</a>
                 </li>
             </ul>
         </div>

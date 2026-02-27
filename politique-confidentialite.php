@@ -6,6 +6,7 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
     <title>Politique de Confidentialité - Sugar Paper</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css">
@@ -160,8 +161,8 @@ session_start();
         <p>
             Pour toute question concernant cette politique de confidentialité ou pour exercer vos droits, 
             contactez-nous à : 
-            <a href="mailto:service@sugarpaper.com">service@sugarpaper.com</a> 
-            ou par téléphone au <a href="tel:+221771202041">+221 77 120 20 41</a>.
+            <a href="mailto:sugarpaper26@gmail.com">sugarpaper26@gmail.com</a> 
+            ou par téléphone au <a href="tel:+221773292123">+221 77 32 92 123</a>.
         </p>
         
         <a href="javascript:history.back()" class="back-link">

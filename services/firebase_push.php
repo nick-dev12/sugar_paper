@@ -32,6 +32,7 @@ function _firebase_configure_ssl() {
 
 /**
  * Envoie une notification push FCM via kreait/firebase-php (si installé)
+ * Retourne null en cas d'erreur de dépendances (ex: PSR Cache) pour déclencher le fallback natif
  */
 function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data) {
     _firebase_configure_ssl();
@@ -39,7 +40,12 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
     if (!file_exists($autoload)) {
         return null;
     }
-    require_once $autoload;
+
+    try {
+        require_once $autoload;
+    } catch (\Throwable $e) {
+        return null;
+    }
     if (!class_exists('Kreait\Firebase\Factory')) {
         return null;
     }
@@ -88,7 +94,14 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
             'errors' => $errors
         ];
     } catch (\Throwable $e) {
-        return ['success' => 0, 'failed' => count($tokens), 'errors' => [$e->getMessage()]];
+        $msg = $e->getMessage();
+        // Erreurs de dépendances (PSR Cache, etc.) : basculer vers l'implémentation native
+        if (stripos($msg, 'CacheItemPoolInterface') !== false
+            || stripos($msg, 'Interface') !== false && stripos($msg, 'not found') !== false
+            || stripos($msg, 'Class') !== false && stripos($msg, 'not found') !== false) {
+            return null;
+        }
+        return ['success' => 0, 'failed' => count($tokens), 'errors' => [$msg]];
     }
 }
 
@@ -97,6 +110,14 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
  */
 function _fcm_base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+function _firebase_get_project_id($credentials_path) {
+    if (!file_exists($credentials_path)) {
+        return 'sugar-paper';
+    }
+    $credentials = json_decode(file_get_contents($credentials_path), true);
+    return $credentials['project_id'] ?? 'sugar-paper';
 }
 
 function firebase_get_access_token($credentials_path) {
@@ -210,7 +231,7 @@ function firebase_send_notification($tokens, $title, $body, $data = []) {
     }
     $config = _firebase_get_config();
     $credentials_path = $config['credentials_path'];
-    $project_id = 'sugar-paper';
+    $project_id = _firebase_get_project_id($credentials_path);
 
     $result = _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data);
     if ($result !== null) {
