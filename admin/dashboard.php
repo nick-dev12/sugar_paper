@@ -20,6 +20,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de Bord - Administration Sugar Paper</title>
+    <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css">
 </head>
@@ -34,6 +35,9 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
         <div class="content-header">
             <h1><i class="fas fa-chart-line"></i> Tableau de Bord</h1>
             <div class="header-actions">
+                <button type="button" id="btn-install-pwa" class="btn-primary btn-secondary-style" title="Installer l'application Sugar Paper sur cet appareil" style="display: none;">
+                    <i class="fas fa-download"></i> Installer l'application
+                </button>
                 <button type="button" id="btn-enable-notifications" class="btn-primary btn-secondary-style" title="Recevoir des notifications push pour les nouvelles commandes">
                     <i class="fas fa-bell"></i> Activer les notifications
                 </button>
@@ -223,6 +227,35 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
                         );
                     }
                 });
+            }
+
+            var installBtn = document.getElementById('btn-install-pwa');
+            var deferredPrompt;
+
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+                if (installBtn) installBtn.style.display = 'none';
+            } else {
+                window.addEventListener('beforeinstallprompt', function (e) {
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    if (installBtn) installBtn.style.display = 'inline-flex';
+                });
+
+                if (installBtn) {
+                    installBtn.addEventListener('click', function () {
+                        if (!deferredPrompt) {
+                            alert('L\'installation n\'est pas disponible. Essayez depuis Chrome ou Edge en mode HTTPS.');
+                            return;
+                        }
+                        deferredPrompt.prompt();
+                        deferredPrompt.userChoice.then(function (choiceResult) {
+                            if (choiceResult.outcome === 'accepted') {
+                                installBtn.style.display = 'none';
+                            }
+                            deferredPrompt = null;
+                        });
+                    });
+                }
             }
         });
     </script>
