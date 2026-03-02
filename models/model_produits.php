@@ -508,17 +508,9 @@ function create_produit($data) {
     global $db;
     
     try {
-        $stmt = $db->prepare("
-            INSERT INTO produits (
-                nom, description, prix, prix_promotion, stock, categorie_id,
-                image_principale, images, poids, unite, date_creation, statut
-            ) VALUES (
-                :nom, :description, :prix, :prix_promotion, :stock, :categorie_id,
-                :image_principale, :images, :poids, :unite, NOW(), :statut
-            )
-        ");
-        
-        $result = $stmt->execute([
+        $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
+        $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
+        $params = [
             'nom' => $data['nom'],
             'description' => $data['description'],
             'prix' => $data['prix'],
@@ -530,7 +522,28 @@ function create_produit($data) {
             'poids' => $data['poids'] ?? null,
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
-        ]);
+        ];
+        $with_extras = isset($data['couleurs']) || isset($data['taille']);
+        if ($with_extras) {
+            $cols .= ", couleurs, taille";
+            $vals .= ", :couleurs, :taille";
+            $params['couleurs'] = $data['couleurs'] ?? null;
+            $params['taille'] = $data['taille'] ?? null;
+        }
+        try {
+            $stmt = $db->prepare("INSERT INTO produits ($cols) VALUES ($vals)");
+            $result = $stmt->execute($params);
+        } catch (PDOException $e) {
+            if ($with_extras && (strpos($e->getMessage(), 'couleurs') !== false || strpos($e->getMessage(), 'taille') !== false)) {
+                $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
+                $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
+                unset($params['couleurs'], $params['taille']);
+                $stmt = $db->prepare("INSERT INTO produits ($cols) VALUES ($vals)");
+                $result = $stmt->execute($params);
+            } else {
+                throw $e;
+            }
+        }
         
         if ($result) {
             return $db->lastInsertId();
@@ -552,24 +565,8 @@ function update_produit($id, $data) {
     global $db;
     
     try {
-        $stmt = $db->prepare("
-            UPDATE produits SET
-                nom = :nom,
-                description = :description,
-                prix = :prix,
-                prix_promotion = :prix_promotion,
-                stock = :stock,
-                categorie_id = :categorie_id,
-                image_principale = :image_principale,
-                images = :images,
-                poids = :poids,
-                unite = :unite,
-                statut = :statut,
-                date_modification = NOW()
-            WHERE id = :id
-        ");
-        
-        return $stmt->execute([
+        $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
+        $params = [
             'id' => $id,
             'nom' => $data['nom'],
             'description' => $data['description'],
@@ -582,7 +579,25 @@ function update_produit($id, $data) {
             'poids' => $data['poids'] ?? null,
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
-        ]);
+        ];
+        $with_extras = isset($data['couleurs']) || isset($data['taille']);
+        if ($with_extras) {
+            $sets .= ", couleurs = :couleurs, taille = :taille";
+            $params['couleurs'] = $data['couleurs'] ?? null;
+            $params['taille'] = $data['taille'] ?? null;
+        }
+        try {
+            $stmt = $db->prepare("UPDATE produits SET $sets WHERE id = :id");
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            if ($with_extras && (strpos($e->getMessage(), 'couleurs') !== false || strpos($e->getMessage(), 'taille') !== false)) {
+                $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
+                unset($params['couleurs'], $params['taille']);
+                $stmt = $db->prepare("UPDATE produits SET $sets WHERE id = :id");
+                return $stmt->execute($params);
+            }
+            throw $e;
+        }
     } catch (PDOException $e) {
         return false;
     }

@@ -90,6 +90,21 @@ function process_create_commande() {
         }
     }
     
+    // Récupérer les choix couleur, poids, taille par panier_id
+    $choix = [];
+    if (isset($_POST['choix']) && is_array($_POST['choix'])) {
+        foreach ($_POST['choix'] as $pid => $c) {
+            $panier_id = (int) $pid;
+            if ($panier_id > 0 && is_array($c)) {
+                $choix[$panier_id] = [
+                    'couleur' => isset($c['couleur']) ? trim($c['couleur']) : '',
+                    'poids' => isset($c['poids']) ? trim($c['poids']) : '',
+                    'taille' => isset($c['taille']) ? trim($c['taille']) : ''
+                ];
+            }
+        }
+    }
+    
     $result = create_commande(
         $user_id,
         $panier_items,
@@ -97,7 +112,8 @@ function process_create_commande() {
         $telephone_livraison,
         $notes ?: null,
         $zone_livraison_id,
-        $frais_livraison
+        $frais_livraison,
+        $choix
     );
     
     if ($result === false) {
@@ -122,11 +138,16 @@ function process_create_commande() {
             $prix_total_ligne = $prix_unitaire * $item['quantite'];
             $sous_total += $prix_total_ligne;
             $nombre_articles += $item['quantite'];
+            $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
+            $c = isset($choix[$panier_id]) ? $choix[$panier_id] : [];
             $produits_email[] = [
                 'nom' => $item['nom'],
                 'quantite' => $item['quantite'],
                 'prix_unitaire' => $prix_unitaire,
-                'prix_total' => $prix_total_ligne
+                'prix_total' => $prix_total_ligne,
+                'couleur' => isset($c['couleur']) ? $c['couleur'] : '',
+                'poids' => isset($c['poids']) ? $c['poids'] : '',
+                'taille' => isset($c['taille']) ? $c['taille'] : ''
             ];
         }
         $montant_total = $sous_total + $frais_livraison;

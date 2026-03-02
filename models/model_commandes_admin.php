@@ -77,7 +77,8 @@ function get_produits_by_commande($commande_id) {
     
     try {
         $stmt = $db->prepare("
-            SELECT cp.*, p.nom as produit_nom, p.image_principale, c.nom as categorie_nom
+            SELECT cp.*, p.nom as produit_nom, p.image_principale, c.nom as categorie_nom,
+                   cp.couleur, cp.poids, cp.taille
             FROM commande_produits cp
             INNER JOIN produits p ON cp.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id

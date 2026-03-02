@@ -140,7 +140,28 @@ $categories = get_all_categories();
             max-width: 200px;
             border-radius: 8px;
         }
+        .gallery-preview-edit { display: flex; flex-wrap: wrap; gap: 12px; margin: 15px 0; }
+        .gallery-thumb-edit { position: relative; }
+        .gallery-thumb-edit img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(145, 138, 68, 0.3); }
+        .gallery-thumb-edit .img-remove-btn { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border: none; background: rgba(0,0,0,0.6); color: #fff; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+        .gallery-thumb-edit .img-remove-btn:hover { background: #c00; }
+        .gallery-thumb-edit .img-badge { position: absolute; top: 4px; left: 4px; background: #918a44; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+        .image-preview-container { margin-top: 12px; }
+        .image-preview-container img { max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid rgba(229, 72, 138, 0.3); }
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+        .image-preview-grid .preview-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(229, 72, 138, 0.3); }
 
+        .couleurs-picker-block { margin-top: 8px; }
+        .couleurs-add-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .couleurs-add-row input[type="color"] { width: 50px; height: 40px; padding: 2px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; }
+        .btn-add-couleur { padding: 12px 18px; background: #918a44; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add-couleur:hover { background: #7a7340; }
+        .couleurs-swatches { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 0; }
+        .couleur-swatch { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: #f5f5f5; border-radius: 20px; border: 2px solid #ddd; }
+        .couleur-swatch .swatch-preview { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #333; }
+        .couleur-swatch .swatch-hex { font-size: 12px; color: #333; }
+        .couleur-swatch .swatch-remove { width: 24px; height: 24px; border: none; background: #c00; color: #fff; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+        .couleur-swatch .swatch-remove:hover { background: #a00; }
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -232,25 +253,81 @@ $categories = get_all_categories();
                 <div class="form-group">
                     <label for="unite">Unité</label>
                     <select id="unite" name="unite">
-                        <option value="unité" <?php echo ($produit['unite'] == 'unité') ? 'selected' : ''; ?>>Unité</option>
-                        <option value="kg" <?php echo ($produit['unite'] == 'kg') ? 'selected' : ''; ?>>Kilogramme</option>
-                        <option value="g" <?php echo ($produit['unite'] == 'g') ? 'selected' : ''; ?>>Gramme</option>
-                        <option value="L" <?php echo ($produit['unite'] == 'L') ? 'selected' : ''; ?>>Litre</option>
+                        <option value="unité" <?php echo (($produit['unite'] ?? '') == 'unité') ? 'selected' : ''; ?>>Unité</option>
+                        <option value="kg" <?php echo (($produit['unite'] ?? '') == 'kg') ? 'selected' : ''; ?>>Kilogramme</option>
+                        <option value="g" <?php echo (($produit['unite'] ?? '') == 'g') ? 'selected' : ''; ?>>Gramme</option>
+                        <option value="L" <?php echo (($produit['unite'] ?? '') == 'L') ? 'selected' : ''; ?>>Litre</option>
                     </select>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label for="image_principale">Image principale</label>
-                <?php if ($produit['image_principale']): ?>
-                    <div>
-                        <img src="../../upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
-                             alt="Image actuelle" class="current-image">
-                        <p style="font-size: 12px; color: #666; margin-top: 5px;">Image actuelle (laisser vide pour conserver)</p>
+            <?php
+            $couleurs_init = [];
+            $couleurs_raw = trim($produit['couleurs'] ?? '');
+            if ($couleurs_raw) {
+                $dec = json_decode($couleurs_raw, true);
+                if (is_array($dec)) {
+                    $couleurs_init = array_filter($dec, function($c) {
+                        return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+                    });
+                }
+            }
+            ?>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Couleurs disponibles (optionnel)</label>
+                    <div class="couleurs-picker-block">
+                        <div class="couleurs-add-row">
+                            <input type="color" id="couleur-input" value="#E5488A" title="Choisir une couleur">
+                            <button type="button" class="btn-add-couleur" id="btn-add-couleur">
+                                <i class="fas fa-plus"></i> Ajouter cette couleur
+                            </button>
+                        </div>
+                        <div id="couleurs-list" class="couleurs-swatches"></div>
+                        <input type="hidden" name="couleurs" id="couleurs-hidden" value="<?php echo htmlspecialchars($couleurs_raw ? (empty($couleurs_init) ? $couleurs_raw : json_encode($couleurs_init)) : ''); ?>">
                     </div>
-                <?php endif; ?>
-                <input type="file" id="image_principale" name="image_principale" accept="image/*">
-                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats acceptés: JPG, PNG, GIF, WEBP (max 5MB)</small>
+                    <?php if ($couleurs_raw && empty($couleurs_init)): ?>
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Ancien format (texte) : <?php echo htmlspecialchars($couleurs_raw); ?> — remplacez par des couleurs via le sélecteur ci-dessus.</small>
+                    <?php else: ?>
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Cliquez sur la pastille pour choisir une couleur, puis sur « Ajouter ». Vous pouvez ajouter plusieurs couleurs.</small>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group">
+                    <label for="taille">Tailles disponibles (optionnel)</label>
+                    <input type="text" id="taille" name="taille" placeholder="Ex: S, M, L ou 21cm, 14.8cm"
+                           value="<?php echo htmlspecialchars($produit['taille'] ?? ''); ?>">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-image"></i> Images du produit</label>
+                <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Images actuelles — cliquez sur &times; pour supprimer une image. La première est l'image principale.</p>
+                <?php 
+                $images_produit = [];
+                if (!empty($produit['images'])) {
+                    $dec = json_decode($produit['images'], true);
+                    if (is_array($dec)) $images_produit = $dec;
+                }
+                if (empty($images_produit) && !empty($produit['image_principale'])) {
+                    $images_produit = [$produit['image_principale']];
+                }
+                ?>
+                <div id="gallery-existing" class="gallery-preview-edit">
+                    <?php foreach ($images_produit as $idx => $img_path): ?>
+                        <div class="gallery-thumb-edit" data-path="<?php echo htmlspecialchars($img_path); ?>">
+                            <input type="hidden" name="images_to_keep[]" value="<?php echo htmlspecialchars($img_path); ?>">
+                            <span class="img-badge"><?php echo $idx === 0 ? 'Principale' : ($idx + 1); ?></span>
+                            <button type="button" class="img-remove-btn" title="Supprimer cette image">&times;</button>
+                            <img src="../../upload/<?php echo htmlspecialchars($img_path); ?>" alt="Image <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+                <label for="images_supplementaires" style="display: inline-block; margin-top: 10px; cursor: pointer; padding: 10px 16px; background: #f0f0f0; border-radius: 8px;">
+                    <i class="fas fa-plus"></i> Ajouter des images à la galerie
+                </label>
+                <input type="file" id="images_supplementaires" name="images_supplementaires[]" accept="image/*" multiple style="display: none;" onchange="previewMultipleImages(this, 'preview-supplementaires')">
+                <div id="preview-supplementaires" class="image-preview-grid"></div>
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats: JPG, PNG, GIF, WEBP. Au moins une image doit rester.</small>
             </div>
 
             <div class="form-group">
@@ -268,5 +345,95 @@ $categories = get_all_categories();
         </form>
     </div>
 
+    <script>
+        (function() {
+            var galleryExisting = document.getElementById('gallery-existing');
+            var inputSupp = document.getElementById('images_supplementaires');
+            if (galleryExisting) {
+                galleryExisting.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.img-remove-btn');
+                    if (btn) {
+                        e.preventDefault();
+                        btn.closest('.gallery-thumb-edit').remove();
+                    }
+                });
+            }
+            function previewMultipleImages(input, containerId) {
+                var c = document.getElementById(containerId);
+                c.innerHTML = '';
+                if (input.files) for (var i = 0; i < input.files.length; i++) {
+                    (function(f) {
+                        var r = new FileReader();
+                        r.onload = function(e) {
+                            var d = document.createElement('div');
+                            d.className = 'preview-item';
+                            var img = document.createElement('img');
+                            img.src = e.target.result;
+                            d.appendChild(img);
+                            c.appendChild(d);
+                        };
+                        r.readAsDataURL(f);
+                    })(input.files[i]);
+                }
+            }
+            if (inputSupp) inputSupp.addEventListener('change', function() { previewMultipleImages(this, 'preview-supplementaires'); });
+            document.querySelector('form').addEventListener('submit', function(e) {
+                var kept = document.querySelectorAll('input[name="images_to_keep[]"]').length;
+                var newFiles = inputSupp && inputSupp.files ? inputSupp.files.length : 0;
+                if (kept === 0 && newFiles === 0) {
+                    e.preventDefault();
+                    alert('Au moins une image est obligatoire. Veuillez conserver ou ajouter au moins une image.');
+                    return false;
+                }
+            });
+        })();
+        (function() {
+            var couleurInput = document.getElementById('couleur-input');
+            var btnAdd = document.getElementById('btn-add-couleur');
+            var list = document.getElementById('couleurs-list');
+            var hidden = document.getElementById('couleurs-hidden');
+            var couleurs = [];
+            try {
+                if (hidden && hidden.value) {
+                    var parsed = JSON.parse(hidden.value);
+                    if (Array.isArray(parsed)) couleurs = parsed;
+                }
+            } catch (e) {}
+            function updateHidden() {
+                if (hidden) hidden.value = JSON.stringify(couleurs);
+            }
+            function render() {
+                if (!list) return;
+                list.innerHTML = '';
+                couleurs.forEach(function(hex, i) {
+                    var div = document.createElement('div');
+                    div.className = 'couleur-swatch';
+                    div.innerHTML = '<span class="swatch-preview" style="background:' + hex + '"></span><span class="swatch-hex">' + hex + '</span><button type="button" class="swatch-remove" data-i="' + i + '" title="Retirer">&times;</button>';
+                    list.appendChild(div);
+                });
+                updateHidden();
+            }
+            if (btnAdd && couleurInput) {
+                btnAdd.addEventListener('click', function() {
+                    var hex = couleurInput.value;
+                    if (hex && couleurs.indexOf(hex) === -1) {
+                        couleurs.push(hex);
+                        render();
+                    }
+                });
+            }
+            if (list) {
+                list.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.swatch-remove');
+                    if (btn) {
+                        var i = parseInt(btn.dataset.i, 10);
+                        couleurs.splice(i, 1);
+                        render();
+                    }
+                });
+            }
+            render();
+        })();
+    </script>
     <?php include '../includes/footer.php'; ?>
 

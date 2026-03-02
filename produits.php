@@ -154,8 +154,9 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             font-size: 14px;
             opacity: 0.95;
         }
+
         .filtres-actifs span {
-            background: rgba(255,255,255,0.25);
+            background: rgba(255, 255, 255, 0.25);
             padding: 6px 12px;
             border-radius: 20px;
         }
@@ -166,17 +167,33 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <?php include('nav_bar.php'); ?>
 
     <div class="produits-page-header">
-        <h1><i class="fas fa-box"></i> <?php echo !empty($recherche_actuelle) ? 'Résultats pour "' . htmlspecialchars($recherche_actuelle) . '"' : 'Tous nos produits'; ?></h1>
-        <p><?php echo $has_filters ? $total_produits . ' produit(s) trouvé(s)' : 'Découvrez notre sélection complète de produits naturels'; ?></p>
-        <?php if ($has_filters): ?>
-        <p class="filtres-actifs">
-            <?php if (!empty($recherche_actuelle)): ?><span><i class="fas fa-search"></i> <?php echo htmlspecialchars($recherche_actuelle); ?></span><?php endif; ?>
-            <?php if ($prix_min !== null): ?><span><i class="fas fa-coins"></i> Min <?php echo number_format($prix_min, 0, ',', ' '); ?> FCFA</span><?php endif; ?>
-            <?php if ($prix_max !== null): ?><span><i class="fas fa-coins"></i> Max <?php echo number_format($prix_max, 0, ',', ' '); ?> FCFA</span><?php endif; ?>
+        <h1><i class="fas fa-box"></i>
+            <?php echo !empty($recherche_actuelle) ? 'Résultats pour "' . htmlspecialchars($recherche_actuelle) . '"' : 'Tous nos produits'; ?>
+        </h1>
+        <p><?php echo $has_filters ? $total_produits . ' produit(s) trouvé(s)' : 'Découvrez notre sélection complète de produits naturels'; ?>
         </p>
+        <?php if ($has_filters): ?>
+            <p class="filtres-actifs">
+                <?php if (!empty($recherche_actuelle)): ?><span><i class="fas fa-search"></i>
+                        <?php echo htmlspecialchars($recherche_actuelle); ?></span><?php endif; ?>
+                <?php if ($prix_min !== null): ?><span><i class="fas fa-coins"></i> Min
+                        <?php echo number_format($prix_min, 0, ',', ' '); ?> FCFA</span><?php endif; ?>
+                <?php if ($prix_max !== null): ?><span><i class="fas fa-coins"></i> Max
+                        <?php echo number_format($prix_max, 0, ',', ' '); ?> FCFA</span><?php endif; ?>
+            </p>
         <?php endif; ?>
     </div>
 
+    <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
+    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+        <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
+    </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
+        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
+    </div>
+    <?php endif; ?>
     <div class="produits-container-wrapper">
         <section class="section00">
             <section class="produit_vedetes">
@@ -200,39 +217,46 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                             $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                                <div class="image-wrapper">
-                                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                                        alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                        onerror="this.src='/image/produit1.jpg'">
-                                </div>
-                                <div class="produit-content">
-                                    <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                    <?php if (!empty($produit['categorie_nom'])): ?>
-                                        <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                    <?php endif; ?>
-                                    <p class="prix">
-                                        <?php if ($has_promotion): ?>
-                                            <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                FCFA</span>
-                                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                FCFA</span>
-                                        <?php else: ?>
-                                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                FCFA</span>
+                                <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
+                                    <div class="image-wrapper">
+                                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                                            onerror="this.src='/image/produit1.jpg'">
+                                    </div>
+                                    <div class="produit-content">
+                                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <?php if (!empty($produit['categorie_nom'])): ?>
+                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
-                                    </p>
-                                    <?php if (!empty($produit['stock'])): ?>
-                                        <p class="produit-card-stock-info">
-                                            <strong>Stock:</strong> <?php echo $produit['stock']; ?>
-                                            <?php if (!empty($produit['poids'])): ?>
-                                                (<?php echo htmlspecialchars($produit['poids']); ?>)
+                                        <p class="prix">
+                                            <?php if ($has_promotion): ?>
+                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
+                                                    FCFA</span>
+                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
+                                                    FCFA</span>
+                                            <?php else: ?>
+                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
+                                                    FCFA</span>
                                             <?php endif; ?>
                                         </p>
-                                    <?php endif; ?>
-                                </div>
-                                <a href="produit.php?id=<?php echo $produit['id']; ?>">
-                                    <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                        <?php if (!empty($produit['stock'])): ?>
+                                            <p class="produit-card-stock-info">
+                                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+                                                <?php if (!empty($produit['poids'])): ?>
+                                                    (<?php echo htmlspecialchars($produit['poids']); ?>)
+                                                <?php endif; ?>
+                                            </p>
+                                        <?php endif; ?>
+                                    </div>
                                 </a>
+                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                                    <input type="hidden" name="quantite" value="1">
+                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
+                                    <button type="submit" class="btn-add-cart">
+                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                    </button>
+                                </form>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -262,15 +286,19 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         const limit = 20;
         const totalProduits = <?php echo $total_produits; ?>;
         const apiBaseParams = '<?php
-            $p = ['offset' => 0, 'limit' => 20];
-            if ($has_filters) {
-                if (!empty($recherche_actuelle)) $p['recherche'] = $recherche_actuelle;
-                if ($prix_min !== null) $p['prix_min'] = $prix_min;
-                if ($prix_max !== null) $p['prix_max'] = $prix_max;
-                if ($categorie_id !== null) $p['categorie'] = $categorie_id;
-                $p['tri'] = $tri;
-            }
-            echo http_build_query($p);
+        $p = ['offset' => 0, 'limit' => 20];
+        if ($has_filters) {
+            if (!empty($recherche_actuelle))
+                $p['recherche'] = $recherche_actuelle;
+            if ($prix_min !== null)
+                $p['prix_min'] = $prix_min;
+            if ($prix_max !== null)
+                $p['prix_max'] = $prix_max;
+            if ($categorie_id !== null)
+                $p['categorie'] = $categorie_id;
+            $p['tri'] = $tri;
+        }
+        echo http_build_query($p);
         ?>';
 
         function getApiUrl() {
@@ -331,21 +359,29 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                                 </p>`;
                             }
 
+                            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
                             div.innerHTML = `
-                                <div class="image-wrapper">
-                                    <img src="/upload/${produit.image_principale}" 
-                                         alt="${escapeHtml(produit.nom)}"
-                                         onerror="this.src='/image/produit1.jpg'">
-                                </div>
-                                <div class="produit-content">
-                                    <p id="nom">${escapeHtml(produit.nom)}</p>
-                                    ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
-                                    <p class="prix">${prixHTML}</p>
-                                    ${stockHTML}
-                                </div>
-                                <a href="produit.php?id=${produit.id}">
-                                    <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                <a href="produit.php?id=${produit.id}" class="product-card-link">
+                                    <div class="image-wrapper">
+                                        <img src="/upload/${produit.image_principale}" 
+                                             alt="${escapeHtml(produit.nom)}"
+                                             onerror="this.src='/image/produit1.jpg'">
+                                    </div>
+                                    <div class="produit-content">
+                                        <p id="nom">${escapeHtml(produit.nom)}</p>
+                                        ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
+                                        <p class="prix">${prixHTML}</p>
+                                        ${stockHTML}
+                                    </div>
                                 </a>
+                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                                    <input type="hidden" name="produit_id" value="${produit.id}">
+                                    <input type="hidden" name="quantite" value="1">
+                                    <input type="hidden" name="return_url" value="${returnUrl}">
+                                    <button type="submit" class="btn-add-cart">
+                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                    </button>
+                                </form>
                             `;
 
                             container.appendChild(div);

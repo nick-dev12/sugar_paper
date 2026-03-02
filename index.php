@@ -49,6 +49,40 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
     }
+    /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
+    .carousel-produits-outer {
+        position: relative;
+        width: 100%;
+    }
+    .carousel-produits-outer .carousel1.carousel1-flex-mode {
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 15px;
+    }
+    .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel {
+        width: 320px;
+        min-width: 170px;
+        max-width: 320px;
+        flex: 0 0 320px;
+    }
+    .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel:nth-child(n+7) {
+        display: none !important;
+    }
+    @media (max-width: 650px) {
+        .carousel-produits-outer .carousel1.carousel1-flex-mode {
+            gap: 12px;
+            padding: 12px;
+        }
+    }
+    @media (max-width: 400px) {
+        .carousel-produits-outer .carousel1.carousel1-flex-mode {
+            gap: 10px;
+            padding: 10px;
+        }
+    }
     </style>
 
 </head>
@@ -83,6 +117,18 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         <?php endif; ?>
     </div>
 
+    <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
+    <div class="commande-perso-success"
+        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+        <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
+    </div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+    <div class="commande-perso-success"
+        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
+        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
+    </div>
+    <?php endif; ?>
     <?php if (isset($_SESSION['commande_perso_success'])): ?>
     <div class="commande-perso-success"
         style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
@@ -191,9 +237,10 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 
 
+        <div class="carousel-produits-outer">
         <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
             data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-            class="articles owl-carousel carousel1">
+            class="articles carousel1 carousel1-flex-mode" id="carousel-nouveaux">
             <?php if (empty($produits_nouveaux)): ?>
             <!-- Message si aucun produit -->
             <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
@@ -210,38 +257,46 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                     ?>
             <div class="carousel">
-                <div class="image-wrapper">
-                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                        alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                        onerror="this.src='/image/produit1.jpg'">
-                </div>
-                <div class="produit-content">
-                    <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                    <?php if (!empty($produit['categorie_nom'])): ?>
-                    <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                    <?php endif; ?>
-                    <p class="prix">
-                        <?php if ($has_promotion): ?>
-                        <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
-                        <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-                        <?php else: ?>
-                        <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
+                    <div class="image-wrapper">
+                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                            onerror="this.src='/image/produit1.jpg'">
+                    </div>
+                    <div class="produit-content">
+                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                        <?php if (!empty($produit['categorie_nom'])): ?>
+                        <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                         <?php endif; ?>
-                    </p>
-                    <?php if (!empty($produit['stock'])): ?>
-                    <p class="produit-card-stock-info">
-                        <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+                        <p class="prix">
+                            <?php if ($has_promotion): ?>
+                            <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                            <?php else: ?>
+                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                            <?php endif; ?>
+                        </p>
+                        <?php if (!empty($produit['stock'])): ?>
+                        <p class="produit-card-stock-info">
+                            <strong>Stock:</strong> <?php echo $produit['stock']; ?>
 
-                    </p>
-                    <?php endif; ?>
-                </div>
-                <a href="produit.php?id=<?php echo $produit['id']; ?>">
-                    <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                        </p>
+                        <?php endif; ?>
+                    </div>
                 </a>
+                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                    <input type="hidden" name="quantite" value="1">
+                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
+                    <button type="submit" class="btn-add-cart">
+                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                    </button>
+                </form>
             </div>
             <?php endforeach; ?>
             <?php endif; ?>
         </article>
+        </div>
     </section>
 
 
@@ -378,9 +433,10 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 
 
+        <div class="carousel-produits-outer">
         <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
             data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-            class="articles owl-carousel carousel1">
+            class="articles carousel1 carousel1-flex-mode" id="carousel-populaires">
             <?php if (empty($produits_populaires)): ?>
             <!-- Message si aucun produit -->
             <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
@@ -397,39 +453,47 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                     ?>
             <div class="carousel">
-                <div class="image-wrapper">
-                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                        alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                        onerror="this.src='/image/produit1.jpg'">
-                </div>
-                <div class="produit-content">
-                    <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                    <?php if (!empty($produit['categorie_nom'])): ?>
-                    <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                    <?php endif; ?>
-                    <p class="prix">
-                        <?php if ($has_promotion): ?>
-                        <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
-                        <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-
-                        <?php else: ?>
-                        <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
+                    <div class="image-wrapper">
+                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                            onerror="this.src='/image/produit1.jpg'">
+                    </div>
+                    <div class="produit-content">
+                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                        <?php if (!empty($produit['categorie_nom'])): ?>
+                        <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                         <?php endif; ?>
-                    </p>
-                    <?php if (!empty($produit['stock'])): ?>
-                    <p class="produit-card-stock-info">
-                        <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+                        <p class="prix">
+                            <?php if ($has_promotion): ?>
+                            <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
 
-                    </p>
-                    <?php endif; ?>
-                </div>
-                <a href="produit.php?id=<?php echo $produit['id']; ?>">
-                    <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                            <?php else: ?>
+                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                            <?php endif; ?>
+                        </p>
+                        <?php if (!empty($produit['stock'])): ?>
+                        <p class="produit-card-stock-info">
+                            <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+
+                        </p>
+                        <?php endif; ?>
+                    </div>
                 </a>
+                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                    <input type="hidden" name="quantite" value="1">
+                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
+                    <button type="submit" class="btn-add-cart">
+                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                    </button>
+                </form>
             </div>
             <?php endforeach; ?>
             <?php endif; ?>
         </article>
+        </div>
     </section>
 
 
@@ -517,36 +581,43 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                         $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                         ?>
                 <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                    <div class="image-wrapper">
-                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
-                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                            onerror="this.src='/image/produit1.jpg'">
-                    </div>
-                    <div class="produit-content">
-                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                        <?php if (!empty($produit['categorie_nom'])): ?>
-                        <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                        <?php endif; ?>
-                        <p class="prix">
-                            <?php if ($has_promotion): ?>
-                            <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
-                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                FCFA</span>
-
-                            <?php else: ?>
-                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
+                        <div class="image-wrapper">
+                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                                onerror="this.src='/image/produit1.jpg'">
+                        </div>
+                        <div class="produit-content">
+                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                            <?php if (!empty($produit['categorie_nom'])): ?>
+                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                             <?php endif; ?>
-                        </p>
-                        <?php if (!empty($produit['stock'])): ?>
-                        <p class="produit-card-stock-info">
-                            <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+                            <p class="prix">
+                                <?php if ($has_promotion): ?>
+                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?> FCFA</span>
+                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
+                                    FCFA</span>
 
-                        </p>
-                        <?php endif; ?>
-                    </div>
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>">
-                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                <?php else: ?>
+                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1"> FCFA</span>
+                                <?php endif; ?>
+                            </p>
+                            <?php if (!empty($produit['stock'])): ?>
+                            <p class="produit-card-stock-info">
+                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
+
+                            </p>
+                            <?php endif; ?>
+                        </div>
                     </a>
+                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                        <input type="hidden" name="quantite" value="1">
+                        <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
+                        <button type="submit" class="btn-add-cart">
+                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                        </button>
+                    </form>
                 </div>
                 <?php endforeach; ?>
                 <?php endif; ?>
@@ -599,61 +670,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             carousel2.trigger('prev.owl.carousel');
         })
 
-        // Initialiser le carrousel 1 avec la portée appropriée
-        $('.carousel1').owlCarousel({
-            items: 5,
-            loop: true,
-            dots: true,
-            autoplay: true,
-            autoplayTimeout: 3000,
-            animateOut: 'slideOutDown',
-            animateIn: 'flipInX',
-            smartSpeed: 600,
-            stagePadding: 1,
-            nav: true,
-            navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                '<i class="fa-solid fa-chevron-right"></i>'
-            ],
-            responsive: {
-                0: {
-                    items: 1,
-                    stagePadding: 10,
-                    nav: false,
-                    dots: true
-                },
-                576: {
-                    items: 2,
-                    stagePadding: 15,
-                    nav: true,
-                    dots: true
-                },
-                768: {
-                    items: 2,
-                    stagePadding: 15,
-                    nav: true,
-                    dots: true
-                },
-                992: {
-                    items: 3,
-                    stagePadding: 20,
-                    nav: true,
-                    dots: true
-                },
-                1200: {
-                    items: 4,
-                    stagePadding: 1,
-                    nav: true,
-                    dots: true
-                }
-            }
-        });
-        var carousel1 = $('.carousel1').owlCarousel();
-        $('.owl-next').click(function() {
-            carousel1.trigger('next.owl.carousel');
-        })
-        $('.owl-prev').click(function() {
-            carousel1.trigger('prev.owl.carousel');
-        })
+        // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
 
 
         $('.slider-area').owlCarousel({
@@ -680,6 +697,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         })
 
 
+        // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile
         $('.categorie').owlCarousel({
             items: 5,
             loop: true,
@@ -691,38 +709,51 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             animateIn: 'flipInX',
             smartSpeed: 1200,
             stagePadding: 20,
+            margin: 15,
             nav: true,
             navText: ['<i class="fa-solid fa-chevron-left"></i>',
                 '<i class="fa-solid fa-chevron-right"></i>'
             ],
             responsive: {
                 0: {
+                    items: 1,
+                    stagePadding: 10,
+                    margin: 10,
+                    nav: true,
+                    dots: true
+                },
+                350: {
                     items: 2,
                     stagePadding: 10,
-                    nav: false,
+                    margin: 12,
+                    nav: true,
                     dots: true
                 },
                 576: {
                     items: 2,
                     stagePadding: 15,
+                    margin: 15,
                     nav: true,
                     dots: true
                 },
                 768: {
                     items: 3,
                     stagePadding: 15,
+                    margin: 15,
                     nav: true,
                     dots: true
                 },
                 992: {
                     items: 4,
                     stagePadding: 20,
+                    margin: 15,
                     nav: true,
                     dots: true
                 },
                 1200: {
                     items: 4,
                     stagePadding: 20,
+                    margin: 15,
                     nav: true,
                     dots: true
                 }

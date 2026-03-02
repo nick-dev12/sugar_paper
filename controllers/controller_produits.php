@@ -26,17 +26,11 @@ function upload_produit_image($file, $field_name = 'image') {
     }
     
     $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 5 * 1024 * 1024; // 5MB
     
     $file_info = $file[$field_name];
     
     // Vérifier le type
     if (!in_array($file_info['type'], $allowed_types)) {
-        return false;
-    }
-    
-    // Vérifier la taille
-    if ($file_info['size'] > $max_size) {
         return false;
     }
     
@@ -51,6 +45,36 @@ function upload_produit_image($file, $field_name = 'image') {
     }
     
     return false;
+}
+
+/**
+ * Upload plusieurs images supplémentaires
+ * @param array $files $_FILES avec name en tableau (ex: images_supplementaires[])
+ * @param string $field_name Le nom du champ (ex: images_supplementaires)
+ * @return array Tableau des chemins des images uploadées
+ */
+function upload_produit_images_multiples($files, $field_name = 'images_supplementaires') {
+    $uploaded = [];
+    if (!isset($files[$field_name]) || !is_array($files[$field_name]['name'])) {
+        return $uploaded;
+    }
+    
+    $count = count($files[$field_name]['name']);
+    for ($i = 0; $i < $count; $i++) {
+        $file = [
+            'name' => $files[$field_name]['name'][$i],
+            'type' => $files[$field_name]['type'][$i],
+            'tmp_name' => $files[$field_name]['tmp_name'][$i],
+            'error' => $files[$field_name]['error'][$i],
+            'size' => $files[$field_name]['size'][$i]
+        ];
+        $fake_files = [$field_name => $file];
+        $path = upload_produit_image($fake_files, $field_name);
+        if ($path) {
+            $uploaded[] = $path;
+        }
+    }
+    return $uploaded;
 }
 
 /**
@@ -74,6 +98,22 @@ function process_add_produit() {
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $poids = isset($_POST['poids']) && trim($_POST['poids']) !== '' ? trim($_POST['poids']) : null;
+    $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
+    $couleurs = null;
+    if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
+        $raw = trim($_POST['couleurs']);
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) && !empty($decoded)) {
+            $valid = array_values(array_unique(array_filter($decoded, function($c) {
+                return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+            })));
+            $couleurs = !empty($valid) ? json_encode($valid) : null;
+        } else {
+            $couleurs = $raw;
+        }
+    }
+    $taille = isset($_POST['taille']) && trim($_POST['taille']) !== '' ? trim($_POST['taille']) : null;
     
     // Validation
     if (empty($nom)) {
@@ -105,15 +145,25 @@ function process_add_produit() {
         $errors[] = 'La catégorie sélectionnée n\'existe pas.';
     }
     
-    // Upload de l'image principale
+    // Upload des images : images_produit[] (1ère = principale, reste = galerie)
     $image_principale = null;
-    if (isset($_FILES['image_principale']) && $_FILES['image_principale']['error'] === UPLOAD_ERR_OK) {
-        $image_principale = upload_produit_image($_FILES, 'image_principale');
-        if (!$image_principale) {
-            $errors[] = 'Erreur lors de l\'upload de l\'image principale.';
+    $images_supp = [];
+    if (isset($_FILES['images_produit']) && is_array($_FILES['images_produit']['name'])) {
+        $uploaded = upload_produit_images_multiples($_FILES, 'images_produit');
+        if (!empty($uploaded)) {
+            $image_principale = $uploaded[0];
+            $images_supp = array_slice($uploaded, 1);
         }
-    } else {
-        $errors[] = 'L\'image principale est obligatoire.';
+    }
+    if (!$image_principale) {
+        $errors[] = 'Au moins une image est obligatoire.';
+    }
+    
+    // Construire le tableau images (principale + supplémentaires) en JSON
+    $images_json = null;
+    if ($image_principale) {
+        $all_images = array_merge([$image_principale], $images_supp);
+        $images_json = json_encode($all_images);
     }
     
     // Si aucune erreur, créer le produit
@@ -126,8 +176,11 @@ function process_add_produit() {
             'stock' => $stock,
             'categorie_id' => $categorie_id,
             'image_principale' => $image_principale,
-            'poids' => null,
-            'unite' => 'unité',
+            'images' => $images_json,
+            'poids' => $poids,
+            'unite' => $unite,
+            'couleurs' => $couleurs,
+            'taille' => $taille,
             'statut' => $stock > 0 ? $statut : 'rupture_stock'
         ];
         
@@ -176,9 +229,23 @@ function process_update_produit($produit_id) {
     $prix_promotion = isset($_POST['prix_promotion']) && !empty($_POST['prix_promotion']) ? trim($_POST['prix_promotion']) : null;
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
-    $poids = isset($_POST['poids']) ? trim($_POST['poids']) : null;
+    $poids = isset($_POST['poids']) && trim($_POST['poids']) !== '' ? trim($_POST['poids']) : null;
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $couleurs = null;
+    if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
+        $raw = trim($_POST['couleurs']);
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded) && !empty($decoded)) {
+            $valid = array_values(array_unique(array_filter($decoded, function($c) {
+                return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+            })));
+            $couleurs = !empty($valid) ? json_encode($valid) : null;
+        } else {
+            $couleurs = $raw;
+        }
+    }
+    $taille = isset($_POST['taille']) && trim($_POST['taille']) !== '' ? trim($_POST['taille']) : null;
     
     // Validation (identique à l'ajout)
     if (empty($nom)) {
@@ -205,18 +272,42 @@ function process_update_produit($produit_id) {
         $errors[] = 'Veuillez sélectionner une catégorie.';
     }
     
-    // Upload de l'image principale (optionnel lors de la modification)
-    $image_principale = $produit['image_principale']; // Garder l'ancienne par défaut
-    if (isset($_FILES['image_principale']) && $_FILES['image_principale']['error'] === UPLOAD_ERR_OK) {
-        $new_image = upload_produit_image($_FILES, 'image_principale');
-        if ($new_image) {
-            // Supprimer l'ancienne image si elle existe
-            if ($image_principale && file_exists(__DIR__ . '/../upload/' . $image_principale)) {
-                @unlink(__DIR__ . '/../upload/' . $image_principale);
-            }
-            $image_principale = $new_image;
+    // Récupérer les images existantes
+    $all_images = [];
+    if (!empty($produit['images'])) {
+        $decoded = json_decode($produit['images'], true);
+        if (is_array($decoded)) {
+            $all_images = $decoded;
         }
     }
+    if (empty($all_images) && !empty($produit['image_principale'])) {
+        $all_images = [$produit['image_principale']];
+    }
+    
+    // Images à conserver (envoyées par le formulaire - celles non supprimées par l'utilisateur)
+    $images_to_keep = [];
+    if (isset($_POST['images_to_keep']) && is_array($_POST['images_to_keep'])) {
+        $images_to_keep = array_values(array_filter(array_map('trim', $_POST['images_to_keep'])));
+    }
+    
+    // Upload des images supplémentaires (nouvelles)
+    $images_supp = [];
+    if (isset($_FILES['images_supplementaires']) && is_array($_FILES['images_supplementaires']['name'])) {
+        $images_supp = upload_produit_images_multiples($_FILES, 'images_supplementaires');
+    }
+    
+    // Construire le tableau final : images conservées + nouvelles
+    $final_images = array_merge($images_to_keep, $images_supp);
+    $final_images = array_values(array_unique($final_images));
+    
+    // Validation : au moins une image obligatoire
+    if (empty($final_images)) {
+        $errors[] = 'Au moins une image est obligatoire. Veuillez conserver ou ajouter au moins une image.';
+    }
+    
+    $image_principale = !empty($final_images) ? $final_images[0] : $produit['image_principale'];
+    $images_json = !empty($final_images) ? json_encode($final_images) : null;
+    $removed_images = array_diff($all_images, $images_to_keep);
     
     // Si aucune erreur, mettre à jour le produit
     if (empty($errors)) {
@@ -228,14 +319,24 @@ function process_update_produit($produit_id) {
             'stock' => $stock,
             'categorie_id' => $categorie_id,
             'image_principale' => $image_principale,
+            'images' => $images_json,
             'poids' => $poids,
             'unite' => $unite,
+            'couleurs' => $couleurs,
+            'taille' => $taille,
             'statut' => $stock > 0 ? $statut : 'rupture_stock'
         ];
         
         if (update_produit($produit_id, $data)) {
             $success = true;
             $message = 'Produit modifié avec succès !';
+            // Supprimer du disque les images retirées par l'utilisateur
+            foreach ($removed_images as $old_path) {
+                $full_path = __DIR__ . '/../upload/' . $old_path;
+                if ($old_path && file_exists($full_path)) {
+                    @unlink($full_path);
+                }
+            }
         } else {
             $errors[] = 'Une erreur est survenue lors de la modification du produit.';
         }

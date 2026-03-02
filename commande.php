@@ -365,6 +365,28 @@ include 'nav_bar.php';
             text-decoration: underline;
         }
 
+        .choix-produits-section { margin-top: 25px; }
+        .choix-produits-section > label { margin-bottom: 12px; display: block; }
+        .choix-produits-list { display: flex; flex-direction: column; gap: 16px; }
+        .choix-produit-item {
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            border: 1px solid rgba(229, 72, 138, 0.15);
+        }
+        .choix-produit-nom { font-weight: 600; color: var(--titres); margin-bottom: 10px; font-size: 14px; }
+        .choix-produit-options { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .choix-option { display: flex; flex-direction: column; gap: 4px; min-width: 100px; }
+        .choix-option label { font-size: 12px; color: #737373; }
+        .choix-option select {
+            padding: 8px 10px;
+            border: 2px solid rgba(229, 72, 138, 0.2);
+            border-radius: 6px;
+            font-size: 13px;
+            background: #fff;
+        }
+        .choix-aucune { font-size: 13px; color: #737373; font-style: italic; }
+
         /* Styles pour éviter que le footer s'incruste */
         .commande-container {
             margin-bottom: 100px;
@@ -442,6 +464,78 @@ include 'nav_bar.php';
                         <textarea id="notes" name="notes"
                             placeholder="Instructions spéciales pour la livraison (ex: code d'accès, étage, etc.)"><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
                         <small>Ajoutez des instructions spéciales si nécessaire</small>
+                    </div>
+
+                    <div class="form-group choix-produits-section">
+                        <label><i class="fas fa-palette"></i> Couleur, poids et taille (par produit)</label>
+                        <div class="choix-produits-list">
+                            <?php foreach ($panier_items as $item): ?>
+                            <?php
+                            $couleurs_options = [];
+                            $poids_options = [];
+                            $taille_options = [];
+                            if (!empty($item['couleurs'])) {
+                                $cr = trim($item['couleurs']);
+                                $dec = json_decode($cr, true);
+                                if (is_array($dec)) {
+                                    $couleurs_options = array_filter($dec, function($x) { return is_string($x) && preg_match('/^#[0-9A-Fa-f]{6}$/', $x); });
+                                } else {
+                                    $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
+                                }
+                            }
+                            if (!empty($item['poids'])) {
+                                $poids_options = array_map('trim', array_filter(explode(',', $item['poids'])));
+                            }
+                            if (!empty($item['taille'])) {
+                                $taille_options = array_map('trim', array_filter(explode(',', $item['taille'])));
+                            }
+                            $has_options = !empty($couleurs_options) || !empty($poids_options) || !empty($taille_options);
+                            ?>
+                            <div class="choix-produit-item" data-panier-id="<?php echo (int) $item['panier_id']; ?>">
+                                <div class="choix-produit-nom"><?php echo htmlspecialchars($item['nom']); ?></div>
+                                <div class="choix-produit-options">
+                                    <?php if (!empty($couleurs_options)): ?>
+                                    <div class="choix-option">
+                                        <label>Couleur</label>
+                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][couleur]">
+                                            <option value="">— Choisir —</option>
+                                            <?php foreach ($couleurs_options as $opt): ?>
+                                            <option value="<?php echo htmlspecialchars(is_string($opt) && strpos($opt, '#') === 0 ? $opt : $opt); ?>">
+                                                <?php echo htmlspecialchars(is_string($opt) && preg_match('/^#[0-9A-Fa-f]{6}$/', $opt) ? $opt : $opt); ?>
+                                            </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($poids_options)): ?>
+                                    <div class="choix-option">
+                                        <label>Poids</label>
+                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][poids]">
+                                            <option value="">— Choisir —</option>
+                                            <?php foreach ($poids_options as $opt): ?>
+                                            <option value="<?php echo htmlspecialchars($opt); ?>"><?php echo htmlspecialchars($opt); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($taille_options)): ?>
+                                    <div class="choix-option">
+                                        <label>Taille</label>
+                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][taille]">
+                                            <option value="">— Choisir —</option>
+                                            <?php foreach ($taille_options as $opt): ?>
+                                            <option value="<?php echo htmlspecialchars($opt); ?>"><?php echo htmlspecialchars($opt); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <?php endif; ?>
+                                    <?php if (!$has_options): ?>
+                                    <span class="choix-aucune">Aucune option disponible</span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-submit-commande" <?php echo empty($zones_livraison) ? 'disabled' : ''; ?>>

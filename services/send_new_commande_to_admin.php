@@ -49,11 +49,17 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
         if (!empty($produits)) {
             $body_html .= '<h3 style="color: #6b2f20; margin-top: 20px;">Produits commandés</h3>';
             $body_html .= '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
-            $body_html .= '<thead><tr style="background: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Produit</th><th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Qté</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Prix unit.</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Total</th></tr></thead><tbody>';
+            $body_html .= '<thead><tr style="background: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Produit</th><th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Qté</th><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Couleur / Poids / Taille</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Prix unit.</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Total</th></tr></thead><tbody>';
             foreach ($produits as $p) {
+                $details = [];
+                if (!empty(trim($p['couleur'] ?? ''))) $details[] = 'Couleur: ' . htmlspecialchars($p['couleur']);
+                if (!empty(trim($p['poids'] ?? ''))) $details[] = 'Poids: ' . htmlspecialchars($p['poids']);
+                if (!empty(trim($p['taille'] ?? ''))) $details[] = 'Taille: ' . htmlspecialchars($p['taille']);
+                $details_str = !empty($details) ? implode(' — ', $details) : '—';
                 $body_html .= '<tr>';
                 $body_html .= '<td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($p['nom'] ?? '') . '</td>';
                 $body_html .= '<td style="padding: 8px; text-align: center; border: 1px solid #ddd;">' . (int) ($p['quantite'] ?? 0) . '</td>';
+                $body_html .= '<td style="padding: 8px; border: 1px solid #ddd; font-size: 13px;">' . $details_str . '</td>';
                 $body_html .= '<td style="padding: 8px; text-align: right; border: 1px solid #ddd;">' . number_format((float) ($p['prix_unitaire'] ?? 0), 0, ',', ' ') . ' FCFA</td>';
                 $body_html .= '<td style="padding: 8px; text-align: right; border: 1px solid #ddd;">' . number_format((float) ($p['prix_total'] ?? 0), 0, ',', ' ') . ' FCFA</td>';
                 $body_html .= '</tr>';

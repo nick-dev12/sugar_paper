@@ -24,9 +24,10 @@ function generate_numero_commande() {
  * @param string $notes Les notes optionnelles
  * @param int|null $zone_livraison_id ID de la zone de livraison (optionnel)
  * @param float $frais_livraison Frais de livraison en FCFA (défaut 0)
+ * @param array $choix Choix couleur/poids/taille par panier_id [panier_id => ['couleur'=>..., 'poids'=>..., 'taille'=>...]]
  * @return array|false Tableau avec 'success' et 'commande_id' ou False en cas d'erreur
  */
-function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0) {
+function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = []) {
     global $db;
     
     try {
@@ -80,11 +81,22 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                 : $item['prix'];
             $prix_total = $prix_unitaire * $item['quantite'];
             
+            $couleur = null;
+            $poids_choix = null;
+            $taille_choix = null;
+            $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
+            if ($panier_id > 0 && isset($choix[$panier_id])) {
+                $c = $choix[$panier_id];
+                $couleur = isset($c['couleur']) && trim($c['couleur']) !== '' ? trim($c['couleur']) : null;
+                $poids_choix = isset($c['poids']) && trim($c['poids']) !== '' ? trim($c['poids']) : null;
+                $taille_choix = isset($c['taille']) && trim($c['taille']) !== '' ? trim($c['taille']) : null;
+            }
+            
             $stmt = $db->prepare("
                 INSERT INTO commande_produits (
-                    commande_id, produit_id, quantite, prix_unitaire, prix_total
+                    commande_id, produit_id, quantite, prix_unitaire, prix_total, couleur, poids, taille
                 ) VALUES (
-                    :commande_id, :produit_id, :quantite, :prix_unitaire, :prix_total
+                    :commande_id, :produit_id, :quantite, :prix_unitaire, :prix_total, :couleur, :poids, :taille
                 )
             ");
             
@@ -93,7 +105,10 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                 'produit_id' => $item['id'],
                 'quantite' => $item['quantite'],
                 'prix_unitaire' => $prix_unitaire,
-                'prix_total' => $prix_total
+                'prix_total' => $prix_total,
+                'couleur' => $couleur,
+                'poids' => $poids_choix,
+                'taille' => $taille_choix
             ]);
         }
         

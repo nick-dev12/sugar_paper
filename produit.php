@@ -18,9 +18,13 @@ $message = '';
 $message_type = '';
 
 // Vérifier si c'est une redirection après ajout au panier (pattern Post-Redirect-Get)
-if (isset($_GET['added']) && $_GET['added'] === 'success') {
+if (isset($_GET['added']) && ($_GET['added'] === 'success' || $_GET['added'] === '1')) {
     $message = 'Produit ajouté au panier avec succès.';
     $message_type = 'success';
+}
+if (isset($_GET['error'])) {
+    $message = htmlspecialchars($_GET['error']);
+    $message_type = 'error';
 }
 
 // Traitement du formulaire POST
@@ -127,6 +131,86 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         position: relative;
     }
 
+    .produit-gallery-main {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .produit-gallery-thumbs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+    }
+
+    .gallery-nav {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid rgba(229, 72, 138, 0.4);
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--couleur-dominante);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.3s;
+    }
+
+    .gallery-nav:hover {
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        border-color: var(--couleur-dominante);
+    }
+
+    .gallery-thumbs-list {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 5px 0;
+        flex: 1;
+        scroll-behavior: smooth;
+    }
+
+    .gallery-thumbs-list::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .gallery-thumbs-list::-webkit-scrollbar-thumb {
+        background: rgba(229, 72, 138, 0.4);
+        border-radius: 4px;
+    }
+
+    .gallery-thumb {
+        flex-shrink: 0;
+        width: 70px;
+        height: 70px;
+        padding: 0;
+        border: 3px solid transparent;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        background: #f8f8f8;
+        transition: all 0.3s;
+    }
+
+    .gallery-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .gallery-thumb:hover {
+        border-color: rgba(229, 72, 138, 0.5);
+    }
+
+    .gallery-thumb.active {
+        border-color: var(--couleur-dominante);
+        box-shadow: 0 0 0 2px rgba(229, 72, 138, 0.3);
+    }
+
     .produit-image-main {
         width: 100%;
         height: 400px;
@@ -226,6 +310,24 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     .stock-value {
         color: var(--couleur-dominante);
         font-weight: 700;
+    }
+
+    .couleurs-swatches-display {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-left: 4px;
+    }
+
+    .couleur-swatch-display {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        cursor: default;
     }
 
     .produit-description {
@@ -521,11 +623,40 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         <?php endif; ?>
 
         <div class="produit-detail-wrapper">
-            <!-- Section Image -->
+            <!-- Section Image avec galerie -->
             <div class="produit-image-section">
-                <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                    alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main"
-                    onerror="this.src='/image/produit1.jpg'">
+                <?php
+                $galerie_images = [];
+                if (!empty($produit['images'])) {
+                    $dec = json_decode($produit['images'], true);
+                    if (is_array($dec)) $galerie_images = $dec;
+                }
+                if (empty($galerie_images) && !empty($produit['image_principale'])) {
+                    $galerie_images = [$produit['image_principale']];
+                }
+                ?>
+                <div class="produit-gallery-main">
+                    <img src="/upload/<?php echo htmlspecialchars($galerie_images[0] ?? $produit['image_principale']); ?>"
+                        alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main" id="produit-image-main"
+                        onerror="this.src='/image/produit1.jpg'">
+                </div>
+                <?php if (count($galerie_images) > 1): ?>
+                <div class="produit-gallery-thumbs">
+                    <button type="button" class="gallery-nav gallery-prev" aria-label="Image précédente">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="gallery-thumbs-list">
+                        <?php foreach ($galerie_images as $idx => $img_path): ?>
+                        <button type="button" class="gallery-thumb <?php echo $idx === 0 ? 'active' : ''; ?>" data-index="<?php echo $idx; ?>" data-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
+                            <img src="/upload/<?php echo htmlspecialchars($img_path); ?>" alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
+                        </button>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="gallery-nav gallery-next" aria-label="Image suivante">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Section Informations -->
@@ -548,13 +679,49 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                     <?php endif; ?>
                 </div>
 
-                <!-- Stock et Poids -->
+                <!-- Stock, Poids, Couleurs, Taille -->
                 <div class="produit-stock-info">
                     <div class="stock-item">
                         <strong>Stock disponible:</strong>
                         <span class="stock-value"><?php echo $produit['stock']; ?></span>
                     </div>
-
+                    <?php if (!empty($produit['poids'])): ?>
+                    <div class="stock-item">
+                        <strong>Poids:</strong>
+                        <span><?php echo htmlspecialchars($produit['poids']); ?> <?php echo htmlspecialchars($produit['unite'] ?? 'unité'); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($produit['couleurs'])): ?>
+                    <?php
+                    $couleurs_produit = [];
+                    $couleurs_raw = trim($produit['couleurs']);
+                    $dec = json_decode($couleurs_raw, true);
+                    $is_hex_array = is_array($dec) && !empty($dec);
+                    if ($is_hex_array) {
+                        $couleurs_produit = array_filter($dec, function($c) {
+                            return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+                        });
+                    }
+                    ?>
+                    <div class="stock-item stock-item-couleurs">
+                        <strong>Couleurs:</strong>
+                        <?php if ($is_hex_array && !empty($couleurs_produit)): ?>
+                        <span class="couleurs-swatches-display">
+                            <?php foreach ($couleurs_produit as $hex): ?>
+                            <span class="couleur-swatch-display" style="background-color:<?php echo htmlspecialchars($hex); ?>;" title="<?php echo htmlspecialchars($hex); ?>"></span>
+                            <?php endforeach; ?>
+                        </span>
+                        <?php else: ?>
+                        <span><?php echo htmlspecialchars($produit['couleurs']); ?></span>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($produit['taille'])): ?>
+                    <div class="stock-item">
+                        <strong>Tailles:</strong>
+                        <span><?php echo htmlspecialchars($produit['taille']); ?></span>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Description -->
@@ -620,18 +787,27 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                                 : $similaire['prix'];
                             ?>
                     <div class="carousel">
-                        <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
-                            alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
-                            onerror="this.src='/image/produit1.jpg'">
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
-                            <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
-                                    class="span1">FCFA</span></p>
-                            <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
-                        </div>
-                        <a href="produit.php?id=<?php echo $similaire['id']; ?>">
-                            <i class="fa-solid fa-cart-shopping fa-xs"></i> Voir détails
+                        <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
+                            <div class="image-wrapper">
+                                <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
+                                    alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </div>
+                            <div class="produit-content">
+                                <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
+                                <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
+                                        class="span1">FCFA</span></p>
+                                <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
+                            </div>
                         </a>
+                        <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                            <input type="hidden" name="produit_id" value="<?php echo $similaire['id']; ?>">
+                            <input type="hidden" name="quantite" value="1">
+                            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
+                            <button type="submit" class="btn-add-cart">
+                                <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                            </button>
+                        </form>
                     </div>
                     <?php endforeach; ?>
                 </article>
@@ -664,6 +840,34 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
         } else {
             btnAdd.disabled = false;
         }
+    }
+
+    var galleryThumbs = document.querySelectorAll('.gallery-thumb');
+    var galleryMain = document.getElementById('produit-image-main');
+    var galleryPrev = document.querySelector('.gallery-prev');
+    var galleryNext = document.querySelector('.gallery-next');
+    var galleryList = document.querySelector('.gallery-thumbs-list');
+    if (galleryThumbs.length > 0 && galleryMain) {
+        var currentIdx = 0;
+        function setActiveThumb(idx) {
+            galleryThumbs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+            currentIdx = idx;
+            var src = galleryThumbs[idx].getAttribute('data-src');
+            if (src) galleryMain.src = src;
+        }
+        galleryThumbs.forEach(function(thumb, idx) {
+            thumb.addEventListener('click', function() { setActiveThumb(idx); });
+        });
+        if (galleryPrev) galleryPrev.addEventListener('click', function() {
+            currentIdx = (currentIdx - 1 + galleryThumbs.length) % galleryThumbs.length;
+            setActiveThumb(currentIdx);
+            if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList.offsetWidth / 2 + 35;
+        });
+        if (galleryNext) galleryNext.addEventListener('click', function() {
+            currentIdx = (currentIdx + 1) % galleryThumbs.length;
+            setActiveThumb(currentIdx);
+            if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList.offsetWidth / 2 + 35;
+        });
     }
 
     if (quantiteInput) {

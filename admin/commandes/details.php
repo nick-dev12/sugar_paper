@@ -168,6 +168,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                         <p>Quantité: <?php echo $produit['quantite']; ?> | Prix unitaire:
                             <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA
                         </p>
+                        <?php if (!empty($produit['couleur']) || !empty($produit['poids']) || !empty($produit['taille'])): ?>
+                        <div class="produit-options-detail">
+                            <?php if (!empty($produit['couleur'])): ?>
+                            <?php
+                            $hex = trim($produit['couleur']);
+                            $is_hex = preg_match('/^#[0-9A-Fa-f]{6}$/', $hex);
+                            ?>
+                            <div class="option-detail option-couleur">
+                                <span class="option-label">Couleur:</span>
+                                <?php if ($is_hex): ?>
+                                <span class="couleur-swatch-large" style="background-color:<?php echo htmlspecialchars($hex); ?>;" title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                <span class="option-value"><?php echo htmlspecialchars($hex); ?></span>
+                                <?php else: ?>
+                                <span class="option-value"><?php echo htmlspecialchars($produit['couleur']); ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($produit['poids'])): ?>
+                            <div class="option-detail option-poids">
+                                <span class="option-label">Poids:</span>
+                                <span class="option-value"><?php echo htmlspecialchars($produit['poids']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($produit['taille'])): ?>
+                            <div class="option-detail option-taille">
+                                <span class="option-label">Taille:</span>
+                                <span class="option-value"><?php echo htmlspecialchars($produit['taille']); ?></span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <div class="produit-total">
                         <?php echo number_format($produit['prix_total'], 0, ',', ' '); ?> FCFA
