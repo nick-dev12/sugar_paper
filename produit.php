@@ -110,15 +110,15 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link
         href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/variables.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <link rel="stylesheet" href="/css/owl.carousel.min.css">
-    <link rel="stylesheet" href="/css/owl.carousel.css">
-    <link rel="stylesheet" href="/css/animate.css">
-    <link rel="stylesheet" href="/css/animate.min.css">
-    <link rel="stylesheet" href="/css/a_style.css">
-    <link rel="stylesheet" href="/css/product-cards.css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles pour la page produit - Palette gourmande */
         body {
@@ -834,100 +834,118 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                     </div>
                 <?php endif; ?>
 
-                <!-- Sélection de quantité -->
+                <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <form method="POST" action="" id="add-to-panier-form">
                         <input type="hidden" name="action" value="add_to_panier">
                         <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                <?php endif; ?>
 
-                        <?php if ($has_selectable_options): ?>
-                            <div class="produit-options-section">
-                                <div class="quantite-label" style="margin-bottom: 10px;"><i class="fas fa-palette"></i>
-                                    Choisissez vos options</div>
-                                <?php if (!empty($couleurs_options)): ?>
-                                    <div class="option-group">
-                                        <label class="option-label">Couleur</label>
-                                        <?php if (count($couleurs_options) === 1): ?>
-                                            <input type="hidden" name="option_couleur"
-                                                value="<?php echo htmlspecialchars($couleurs_options[0]); ?>">
-                                            <span class="couleurs-swatches-select">
-                                                <?php $hex = $couleurs_options[0]; ?>
-                                                <span class="couleur-swatch-select is-hex" style="opacity:0.9;">
-                                                    <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
-                                                        <span class="swatch-preview"
-                                                            style="background-color:<?php echo htmlspecialchars($hex); ?>;"
-                                                            title="<?php echo htmlspecialchars($hex); ?>"></span>
-                                                        <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                                    <?php else: ?>
-                                                        <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                                    <?php endif; ?>
-                                                </span>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="couleurs-swatches-select">
-                                                <?php foreach ($couleurs_options as $hex): ?>
-                                                    <label
-                                                        class="couleur-swatch-select <?php echo preg_match('/^#[0-9A-Fa-f]{6}$/', $hex) ? 'is-hex' : ''; ?>">
-                                                        <input type="radio" name="option_couleur"
-                                                            value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur"
-                                                            required>
-                                                        <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
-                                                            <span class="swatch-preview"
-                                                                style="background-color:<?php echo htmlspecialchars($hex); ?>;"
-                                                                title="<?php echo htmlspecialchars($hex); ?>"></span>
-                                                        <?php else: ?>
-                                                            <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                                        <?php endif; ?>
-                                                    </label>
-                                                <?php endforeach; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if (!empty($poids_options) && count($poids_options) > 1): ?>
-                                    <div class="option-group">
-                                        <label class="option-label" for="option-poids">Poids</label>
-                                        <select name="option_poids" id="option-poids" class="option-select" required>
-                                            <option value="">— Choisir un poids —</option>
-                                            <?php foreach ($poids_options as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>">
-                                                    <?php echo htmlspecialchars($opt); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                <?php elseif (!empty($poids_options)): ?>
-                                    <div class="option-group">
-                                        <label class="option-label">Poids</label>
-                                        <input type="hidden" name="option_poids"
-                                            value="<?php echo htmlspecialchars($poids_options[0]); ?>">
-                                        <span class="option-value-display"><?php echo htmlspecialchars($poids_options[0]); ?></span>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if (!empty($taille_options) && count($taille_options) > 1): ?>
-                                    <div class="option-group">
-                                        <label class="option-label" for="option-taille">Taille</label>
-                                        <select name="option_taille" id="option-taille" class="option-select" required>
-                                            <option value="">— Choisir une taille —</option>
-                                            <?php foreach ($taille_options as $opt): ?>
-                                                <option value="<?php echo htmlspecialchars($opt); ?>">
-                                                    <?php echo htmlspecialchars($opt); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                <?php elseif (!empty($taille_options)): ?>
-                                    <div class="option-group">
-                                        <label class="option-label">Taille</label>
-                                        <input type="hidden" name="option_taille"
-                                            value="<?php echo htmlspecialchars($taille_options[0]); ?>">
-                                        <span
-                                            class="option-value-display"><?php echo htmlspecialchars($taille_options[0]); ?></span>
-                                    </div>
+                <?php if ($has_selectable_options): ?>
+                    <div class="produit-options-section">
+                        <div class="quantite-label" style="margin-bottom: 10px;"><i class="fas fa-palette"></i>
+                            Choisissez vos options</div>
+                        <?php if (!empty($couleurs_options)): ?>
+                            <div class="option-group">
+                                <label class="option-label">Couleur</label>
+                                <?php if (count($couleurs_options) === 1): ?>
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="hidden" name="option_couleur"
+                                        value="<?php echo htmlspecialchars($couleurs_options[0]); ?>">
+                                    <?php endif; ?>
+                                    <span class="couleurs-swatches-select">
+                                        <?php $hex = $couleurs_options[0]; ?>
+                                        <span class="couleur-swatch-select is-hex" style="opacity:0.9;">
+                                            <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
+                                                <span class="swatch-preview"
+                                                    style="background-color:<?php echo htmlspecialchars($hex); ?>;"
+                                                    title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                                <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
+                                            <?php else: ?>
+                                                <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="couleurs-swatches-select">
+                                        <?php foreach ($couleurs_options as $hex): ?>
+                                            <label
+                                                class="couleur-swatch-select <?php echo preg_match('/^#[0-9A-Fa-f]{6}$/', $hex) ? 'is-hex' : ''; ?>">
+                                                <?php if (isset($_SESSION['user_id'])): ?>
+                                                <input type="radio" name="option_couleur"
+                                                    value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur"
+                                                    required>
+                                                <?php endif; ?>
+                                                <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
+                                                    <span class="swatch-preview"
+                                                        style="background-color:<?php echo htmlspecialchars($hex); ?>;"
+                                                        title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                                <?php else: ?>
+                                                    <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
+                                                <?php endif; ?>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </span>
                                 <?php endif; ?>
                             </div>
                         <?php endif; ?>
+                        <?php if (!empty($poids_options) && count($poids_options) > 1): ?>
+                            <div class="option-group">
+                                <label class="option-label" for="option-poids">Poids</label>
+                                <?php if (isset($_SESSION['user_id'])): ?>
+                                <select name="option_poids" id="option-poids" class="option-select" required>
+                                    <option value="">— Choisir un poids —</option>
+                                    <?php foreach ($poids_options as $opt): ?>
+                                        <option value="<?php echo htmlspecialchars($opt); ?>">
+                                            <?php echo htmlspecialchars($opt); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php else: ?>
+                                <span class="option-value-display"><?php echo htmlspecialchars(implode(', ', $poids_options)); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        <?php elseif (!empty($poids_options)): ?>
+                            <div class="option-group">
+                                <label class="option-label">Poids</label>
+                                <?php if (isset($_SESSION['user_id'])): ?>
+                                <input type="hidden" name="option_poids"
+                                    value="<?php echo htmlspecialchars($poids_options[0]); ?>">
+                                <?php endif; ?>
+                                <span class="option-value-display"><?php echo htmlspecialchars($poids_options[0]); ?></span>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($taille_options) && count($taille_options) > 1): ?>
+                            <div class="option-group">
+                                <label class="option-label" for="option-taille">Taille</label>
+                                <?php if (isset($_SESSION['user_id'])): ?>
+                                <select name="option_taille" id="option-taille" class="option-select" required>
+                                    <option value="">— Choisir une taille —</option>
+                                    <?php foreach ($taille_options as $opt): ?>
+                                        <option value="<?php echo htmlspecialchars($opt); ?>">
+                                            <?php echo htmlspecialchars($opt); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <?php else: ?>
+                                <span class="option-value-display"><?php echo htmlspecialchars(implode(', ', $taille_options)); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        <?php elseif (!empty($taille_options)): ?>
+                            <div class="option-group">
+                                <label class="option-label">Taille</label>
+                                <?php if (isset($_SESSION['user_id'])): ?>
+                                <input type="hidden" name="option_taille"
+                                    value="<?php echo htmlspecialchars($taille_options[0]); ?>">
+                                <?php endif; ?>
+                                <span class="option-value-display"><?php echo htmlspecialchars($taille_options[0]); ?></span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
+                <!-- Sélection de quantité et ajout au panier -->
+                <?php if (isset($_SESSION['user_id'])): ?>
                         <div class="quantite-section">
                             <label class="quantite-label">Quantité:</label>
                             <div class="quantite-controls">

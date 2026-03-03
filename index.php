@@ -39,15 +39,15 @@ $seo_canonical = $base . '/';
     <link
         href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/css/variables.css">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <link rel="stylesheet" href="/css/owl.carousel.min.css">
-    <link rel="stylesheet" href="/css/owl.carousel.css">
-    <link rel="stylesheet" href="/css/animate.css">
-    <link rel="stylesheet" href="/css/animate.min.css">
-    <link rel="stylesheet" href="/css/a_style.css">
-    <link rel="stylesheet" href="/css/product-cards.css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <style>
     .btn-commande-perso:hover {
         background: rgba(229, 72, 138, 0.9) !important;

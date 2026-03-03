@@ -20,7 +20,8 @@ if (!empty($whatsapp)) {
     $whatsapp_url = 'https://wa.me/' . $whatsapp_clean;
 }
 ?>
-<link rel="stylesheet" href="/css/social-floating.css">
+<?php if (!function_exists('get_asset_version')) { require_once __DIR__ . '/asset_version.php'; } ?>
+<link rel="stylesheet" href="/css/social-floating.css<?php echo asset_version_query(); ?>">
 <div class="social-floating" id="socialFloating" aria-label="Réseaux sociaux">
     <?php if (!empty($whatsapp_url)): ?>
     <a href="<?php echo htmlspecialchars($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer" class="social-floating-btn social-whatsapp" title="Contactez-nous sur WhatsApp">

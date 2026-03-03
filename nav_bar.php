@@ -1,4 +1,8 @@
 <?php
+if (!function_exists('get_asset_version')) {
+    require_once __DIR__ . '/includes/asset_version.php';
+}
+$asset_version = isset($asset_version) ? $asset_version : get_asset_version();
 // Compter les articles du panier si l'utilisateur est connecté
 $panier_count = 0;
 if (isset($_SESSION['user_id'])) {
@@ -13,8 +17,8 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 ?>
-<link rel="stylesheet" href="/css/variables.css">
-<link rel="stylesheet" href="/css/nabare.css">
+<link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
+<link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
