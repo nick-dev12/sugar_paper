@@ -1,5 +1,12 @@
 <?php
 session_start();
+
+// Meta SEO
+require_once __DIR__ . '/includes/site_url.php';
+$base = get_site_base_url();
+$seo_title = "Conditions d'Utilisation - Sugar Paper";
+$seo_description = "Conditions générales d'utilisation du site Sugar Paper. Règles et modalités d'utilisation de notre boutique en ligne.";
+$seo_canonical = $base . '/conditions-utilisation.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -7,7 +14,7 @@ session_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Conditions d'Utilisation - Sugar Paper</title>
+    <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/style.css">

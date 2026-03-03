@@ -79,6 +79,17 @@ $produits_similaires = array_slice($produits_similaires, 0, 4); // Limiter à 4 
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';
 }
+
+// Meta SEO
+require_once __DIR__ . '/includes/site_url.php';
+$base = get_site_base_url();
+$seo_title = $produit['nom'] . ' - Sugar Paper';
+$desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Produit naturel Sugar Paper';
+$seo_description = mb_substr($desc, 0, 160);
+$seo_canonical = $base . '/produit.php?id=' . (int)$produit['id'];
+$seo_og_type = 'product';
+$img = !empty($produit['image_principale']) ? $produit['image_principale'] : '';
+$seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.png';
 ?>
 
 <!DOCTYPE html>
@@ -88,7 +99,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title><?php echo htmlspecialchars($produit['nom']); ?> - Sugar Paper</title>
+    <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />

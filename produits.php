@@ -28,6 +28,13 @@ if (file_exists(__DIR__ . '/models/model_produits.php')) {
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';
 }
+
+// Meta SEO
+require_once __DIR__ . '/includes/site_url.php';
+$base = get_site_base_url();
+$seo_title = 'Tous nos produits - Sugar Paper';
+$seo_description = 'Découvrez notre catalogue de produits naturels : noix, feuilles, fruits, huiles, céréales, racines. Produits 100% naturels, livraison au Sénégal.';
+$seo_canonical = $base . '/produits.php';
 ?>
 
 <!DOCTYPE html>
@@ -37,7 +44,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Tous nos produits - Sugar Paper</title>
+    <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />

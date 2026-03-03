@@ -46,6 +46,13 @@ if (!isset($_SESSION['contact_csrf'])) {
 $email_contact = 'sugarpaper26@gmail.com';
 $telephones_contact = ['+221 77 416 12 12', '+221 33 823 35 14'];
 $adresse_contact = 'Hann Mariste 2 LOT R/01';
+
+// Meta SEO
+require_once __DIR__ . '/includes/site_url.php';
+$base = get_site_base_url();
+$seo_title = 'Contact - Sugar Paper';
+$seo_description = 'Contactez Sugar Paper pour vos commandes de produits naturels. Hann Mariste 2 LOT R/01. Tél: +221 77 416 12 12.';
+$seo_canonical = $base . '/contact.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -54,7 +61,7 @@ $adresse_contact = 'Hann Mariste 2 LOT R/01';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
-    <title>Contact - Sugar Paper</title>
+    <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/style.css">
