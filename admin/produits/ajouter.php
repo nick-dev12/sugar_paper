@@ -119,15 +119,24 @@ $categories = get_all_categories();
             </div>
 
             <div class="form-add-block">
-                <h3 class="form-add-section-title"><i class="fas fa-ruler"></i> Poids, couleurs et taille (optionnel)</h3>
+                <h3 class="form-add-section-title"><i class="fas fa-ruler"></i> Poids, couleurs et tailles (optionnel)</h3>
                 <div class="form-group-row">
                     <div class="form-group">
-                        <label for="poids">Poids</label>
-                        <input type="text" id="poids" name="poids" placeholder="Ex: 500g, 1kg"
-                               value="<?php echo isset($_POST['poids']) ? htmlspecialchars($_POST['poids']) : ''; ?>">
+                        <label>Poids disponibles</label>
+                        <div class="options-add-block">
+                            <div class="options-add-row">
+                                <input type="text" id="poids-input" placeholder="Ex: 500g, 1kg, 2kg" class="options-input">
+                                <button type="button" class="btn-add-option" id="btn-add-poids">
+                                    <i class="fas fa-plus"></i> Ajouter
+                                </button>
+                            </div>
+                            <div id="poids-list" class="options-tags-list"></div>
+                            <input type="hidden" name="poids" id="poids-hidden" value="<?php echo isset($_POST['poids']) ? htmlspecialchars($_POST['poids']) : ''; ?>">
+                        </div>
+                        <small class="form-help">Saisissez un poids puis cliquez sur « Ajouter ». Vous pouvez ajouter plusieurs poids (500g, 1kg, etc.).</small>
                     </div>
                     <div class="form-group">
-                        <label for="unite">Unité</label>
+                        <label for="unite">Unité par défaut</label>
                         <select id="unite" name="unite">
                             <option value="unité" <?php echo (!isset($_POST['unite']) || $_POST['unite'] == 'unité') ? 'selected' : ''; ?>>Unité</option>
                             <option value="kg" <?php echo (isset($_POST['unite']) && $_POST['unite'] == 'kg') ? 'selected' : ''; ?>>Kilogramme</option>
@@ -152,9 +161,18 @@ $categories = get_all_categories();
                         <small class="form-help">Cliquez sur la pastille pour choisir une couleur, puis sur « Ajouter ». Vous pouvez ajouter plusieurs couleurs.</small>
                     </div>
                     <div class="form-group">
-                        <label for="taille">Tailles disponibles</label>
-                        <input type="text" id="taille" name="taille" placeholder="Ex: S, M, L ou 21cm, 14.8cm"
-                               value="<?php echo isset($_POST['taille']) ? htmlspecialchars($_POST['taille']) : ''; ?>">
+                        <label>Tailles disponibles</label>
+                        <div class="options-add-block">
+                            <div class="options-add-row">
+                                <input type="text" id="taille-input" placeholder="Ex: S, M, L, 21cm" class="options-input">
+                                <button type="button" class="btn-add-option" id="btn-add-taille">
+                                    <i class="fas fa-plus"></i> Ajouter
+                                </button>
+                            </div>
+                            <div id="taille-list" class="options-tags-list"></div>
+                            <input type="hidden" name="taille" id="taille-hidden" value="<?php echo isset($_POST['taille']) ? htmlspecialchars($_POST['taille']) : ''; ?>">
+                        </div>
+                        <small class="form-help">Saisissez une taille puis cliquez sur « Ajouter ». Vous pouvez ajouter plusieurs tailles (S, M, L, etc.).</small>
                     </div>
                 </div>
             </div>
@@ -212,6 +230,17 @@ $categories = get_all_categories();
         .couleur-swatch .swatch-hex { font-size: 12px; color: #333; }
         .couleur-swatch .swatch-remove { width: 24px; height: 24px; border: none; background: #c00; color: #fff; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
         .couleur-swatch .swatch-remove:hover { background: #a00; }
+
+        .options-add-block { margin-top: 8px; }
+        .options-add-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+        .options-input { flex: 1; min-width: 150px; padding: 10px 14px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; }
+        .options-input:focus { outline: none; border-color: #918a44; }
+        .btn-add-option { padding: 10px 16px; background: #918a44; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add-option:hover { background: #7a7340; }
+        .options-tags-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; }
+        .option-tag { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f5f5f5; border-radius: 20px; border: 2px solid #ddd; font-size: 13px; }
+        .option-tag .tag-remove { width: 22px; height: 22px; border: none; background: #c00; color: #fff; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+        .option-tag .tag-remove:hover { background: #a00; }
     </style>
     <script>
         (function() {
@@ -336,6 +365,63 @@ $categories = get_all_categories();
                 });
             }
             render();
+        })();
+        (function() {
+            function initOptions(idInput, idList, idHidden, btnId) {
+                var input = document.getElementById(idInput);
+                var list = document.getElementById(idList);
+                var hidden = document.getElementById(idHidden);
+                var btn = document.getElementById(btnId);
+                var values = [];
+                try {
+                    if (hidden && hidden.value) {
+                        values = hidden.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+                    }
+                } catch (e) {}
+                function updateHidden() {
+                    if (hidden) hidden.value = values.join(', ');
+                }
+                function render() {
+                    if (!list) return;
+                    list.innerHTML = '';
+                    values.forEach(function(val, i) {
+                        var div = document.createElement('div');
+                        div.className = 'option-tag';
+                        div.innerHTML = '<span>' + (val.replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</span><button type="button" class="tag-remove" data-i="' + i + '" title="Retirer">&times;</button>';
+                        list.appendChild(div);
+                    });
+                    updateHidden();
+                }
+                if (btn && input) {
+                    btn.addEventListener('click', function() {
+                        var val = (input.value || '').trim();
+                        if (val && values.indexOf(val) === -1) {
+                            values.push(val);
+                            input.value = '';
+                            render();
+                        }
+                    });
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            btn.click();
+                        }
+                    });
+                }
+                if (list) {
+                    list.addEventListener('click', function(e) {
+                        var btn = e.target.closest('.tag-remove');
+                        if (btn) {
+                            var i = parseInt(btn.dataset.i, 10);
+                            values.splice(i, 1);
+                            render();
+                        }
+                    });
+                }
+                render();
+            }
+            initOptions('poids-input', 'poids-list', 'poids-hidden', 'btn-add-poids');
+            initOptions('taille-input', 'taille-list', 'taille-hidden', 'btn-add-taille');
         })();
     </script>
     <?php include '../includes/footer.php'; ?>

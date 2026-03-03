@@ -90,19 +90,34 @@ function process_create_commande() {
         }
     }
     
-    // Récupérer les choix couleur, poids, taille par panier_id
+    // Récupérer les choix couleur, poids, taille par panier_id (priorité: POST, sinon options du panier)
     $choix = [];
-    if (isset($_POST['choix']) && is_array($_POST['choix'])) {
-        foreach ($_POST['choix'] as $pid => $c) {
-            $panier_id = (int) $pid;
-            if ($panier_id > 0 && is_array($c)) {
-                $choix[$panier_id] = [
-                    'couleur' => isset($c['couleur']) ? trim($c['couleur']) : '',
-                    'poids' => isset($c['poids']) ? trim($c['poids']) : '',
-                    'taille' => isset($c['taille']) ? trim($c['taille']) : ''
-                ];
-            }
+    foreach ($panier_items as $item) {
+        $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
+        if ($panier_id <= 0) continue;
+
+        $couleur = '';
+        $poids = '';
+        $taille = '';
+
+        if (isset($_POST['choix'][$panier_id]) && is_array($_POST['choix'][$panier_id])) {
+            $c = $_POST['choix'][$panier_id];
+            $couleur = isset($c['couleur']) ? trim($c['couleur']) : '';
+            $poids = isset($c['poids']) ? trim($c['poids']) : '';
+            $taille = isset($c['taille']) ? trim($c['taille']) : '';
         }
+        // Fallback: utiliser les options du panier (sélectionnées sur la page produit)
+        if ($couleur === '' && !empty(trim($item['panier_couleur'] ?? ''))) {
+            $couleur = trim($item['panier_couleur']);
+        }
+        if ($poids === '' && !empty(trim($item['panier_poids'] ?? ''))) {
+            $poids = trim($item['panier_poids']);
+        }
+        if ($taille === '' && !empty(trim($item['panier_taille'] ?? ''))) {
+            $taille = trim($item['panier_taille']);
+        }
+
+        $choix[$panier_id] = ['couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
     }
     
     $result = create_commande(

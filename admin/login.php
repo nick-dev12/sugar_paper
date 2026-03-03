@@ -401,9 +401,9 @@ if (isset($_SESSION['inscription_success'])) {
                 </button>
             </form>
 
-            <div class="footer-text">
+            <!-- <div class="footer-text">
                 <p>Vous n'avez pas de compte ? <a href="inscription-admin.php">Créer un compte</a></p>
-            </div>
+            </div> -->
         </div>
     </div>
 

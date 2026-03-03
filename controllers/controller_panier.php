@@ -11,40 +11,81 @@ require_once __DIR__ . '/../models/model_produits.php';
  * Traite l'ajout d'un produit au panier
  * @return array Tableau avec 'success' (bool) et 'message' (string)
  */
-function process_add_to_panier() {
+function process_add_to_panier()
+{
     if (!isset($_SESSION['user_id'])) {
         return ['success' => false, 'message' => 'Vous devez être connecté pour ajouter des produits au panier.'];
     }
-    
+
     if (!isset($_POST['produit_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
-    
+
     $user_id = $_SESSION['user_id'];
-    $produit_id = (int)$_POST['produit_id'];
-    $quantite = (int)$_POST['quantite'];
-    
+    $produit_id = (int) $_POST['produit_id'];
+    $quantite = (int) $_POST['quantite'];
+
+    $option_couleur = isset($_POST['option_couleur']) ? trim($_POST['option_couleur']) : '';
+    $option_poids = isset($_POST['option_poids']) ? trim($_POST['option_poids']) : '';
+    $option_taille = isset($_POST['option_taille']) ? trim($_POST['option_taille']) : '';
+
     if ($quantite <= 0) {
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
     }
-    
+
     // Vérifier que le produit existe et est actif
     $produit = get_produit_by_id($produit_id);
     if (!$produit || $produit['statut'] != 'actif') {
         return ['success' => false, 'message' => 'Ce produit n\'est pas disponible.'];
     }
-    
+
+    // Validation des options si le produit en a
+    $couleurs_options = [];
+    $poids_options = [];
+    $taille_options = [];
+    if (!empty($produit['couleurs'])) {
+        $cr = trim($produit['couleurs']);
+        $dec = json_decode($cr, true);
+        if (is_array($dec)) {
+            $couleurs_options = array_filter($dec, function ($c) {
+                return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+            });
+        }
+        if (empty($couleurs_options)) {
+            $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
+        }
+    }
+    if (!empty($produit['poids'])) {
+        $poids_options = array_map('trim', array_filter(explode(',', $produit['poids'])));
+    }
+    if (!empty($produit['taille'])) {
+        $taille_options = array_map('trim', array_filter(explode(',', $produit['taille'])));
+    }
+    // Validation des options (requises uniquement si le formulaire vient de la page produit avec les champs option_*)
+    $from_product_page = isset($_POST['action']) && $_POST['action'] === 'add_to_panier';
+    if ($from_product_page) {
+        if (!empty($couleurs_options) && empty($option_couleur)) {
+            return ['success' => false, 'message' => 'Veuillez sélectionner une couleur.'];
+        }
+        if (count($poids_options) > 1 && empty($option_poids)) {
+            return ['success' => false, 'message' => 'Veuillez sélectionner un poids.'];
+        }
+        if (count($taille_options) > 1 && empty($option_taille)) {
+            return ['success' => false, 'message' => 'Veuillez sélectionner une taille.'];
+        }
+    }
+
     // Vérifier le stock disponible
     $item_panier = is_in_panier($user_id, $produit_id);
     $quantite_actuelle = $item_panier ? $item_panier['quantite'] : 0;
     $quantite_totale = $quantite_actuelle + $quantite;
-    
+
     if ($quantite_totale > $produit['stock']) {
         return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $produit['stock']];
     }
-    
-    // Ajouter au panier
-    if (add_to_panier($user_id, $produit_id, $quantite)) {
+
+    // Ajouter au panier avec options
+    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null)) {
         return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
     } else {
         return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
@@ -55,22 +96,23 @@ function process_add_to_panier() {
  * Traite la mise à jour de la quantité d'un produit dans le panier
  * @return array Tableau avec 'success' (bool) et 'message' (string)
  */
-function process_update_panier() {
+function process_update_panier()
+{
     if (!isset($_SESSION['user_id'])) {
         return ['success' => false, 'message' => 'Vous devez être connecté.'];
     }
-    
+
     if (!isset($_POST['panier_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
-    
-    $panier_id = (int)$_POST['panier_id'];
-    $quantite = (int)$_POST['quantite'];
-    
+
+    $panier_id = (int) $_POST['panier_id'];
+    $quantite = (int) $_POST['quantite'];
+
     if ($quantite <= 0) {
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
     }
-    
+
     // Récupérer l'élément du panier pour vérifier le stock
     $panier_items = get_panier_by_user($_SESSION['user_id']);
     $item = null;
@@ -80,16 +122,16 @@ function process_update_panier() {
             break;
         }
     }
-    
+
     if (!$item) {
         return ['success' => false, 'message' => 'Élément du panier introuvable.'];
     }
-    
+
     // Vérifier le stock
     if ($quantite > $item['stock']) {
         return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $item['stock']];
     }
-    
+
     // Mettre à jour
     if (update_panier_quantite($panier_id, $quantite)) {
         return ['success' => true, 'message' => 'Quantité mise à jour.'];
@@ -102,17 +144,18 @@ function process_update_panier() {
  * Traite la suppression d'un produit du panier
  * @return array Tableau avec 'success' (bool) et 'message' (string)
  */
-function process_delete_from_panier() {
+function process_delete_from_panier()
+{
     if (!isset($_SESSION['user_id'])) {
         return ['success' => false, 'message' => 'Vous devez être connecté.'];
     }
-    
+
     if (!isset($_POST['panier_id'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
-    
-    $panier_id = (int)$_POST['panier_id'];
-    
+
+    $panier_id = (int) $_POST['panier_id'];
+
     if (delete_from_panier($panier_id)) {
         return ['success' => true, 'message' => 'Produit retiré du panier.'];
     } else {
@@ -121,4 +164,3 @@ function process_delete_from_panier() {
 }
 
 ?>
-

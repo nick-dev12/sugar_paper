@@ -21,12 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['produit_id'])) {
 }
 
 $result = process_add_to_panier();
-$return_url = isset($_POST['return_url']) && $_POST['return_url'] !== '' ? $_POST['return_url'] : '/panier.php';
-$separator = (strpos($return_url, '?') !== false) ? '&' : '?';
 
 if ($result['success']) {
-    header('Location: ' . $return_url . $separator . 'added=1');
+    header('Location: /panier.php?added=1');
 } else {
+    $return_url = isset($_POST['return_url']) && $_POST['return_url'] !== '' ? $_POST['return_url'] : '/panier.php';
+    $separator = (strpos($return_url, '?') !== false) ? '&' : '?';
     header('Location: ' . $return_url . $separator . 'error=' . urlencode($result['message']));
 }
 exit;

@@ -365,19 +365,54 @@ include 'nav_bar.php';
             text-decoration: underline;
         }
 
-        .choix-produits-section { margin-top: 25px; }
-        .choix-produits-section > label { margin-bottom: 12px; display: block; }
-        .choix-produits-list { display: flex; flex-direction: column; gap: 16px; }
+        .choix-produits-section {
+            margin-top: 25px;
+        }
+
+        .choix-produits-section>label {
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .choix-produits-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
         .choix-produit-item {
             padding: 14px;
             background: rgba(255, 255, 255, 0.6);
             border-radius: 8px;
             border: 1px solid rgba(229, 72, 138, 0.15);
         }
-        .choix-produit-nom { font-weight: 600; color: var(--titres); margin-bottom: 10px; font-size: 14px; }
-        .choix-produit-options { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-        .choix-option { display: flex; flex-direction: column; gap: 4px; min-width: 100px; }
-        .choix-option label { font-size: 12px; color: #737373; }
+
+        .choix-produit-nom {
+            font-weight: 600;
+            color: var(--titres);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .choix-produit-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .choix-option {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 100px;
+        }
+
+        .choix-option label {
+            font-size: 12px;
+            color: #737373;
+        }
+
         .choix-option select {
             padding: 8px 10px;
             border: 2px solid rgba(229, 72, 138, 0.2);
@@ -385,7 +420,108 @@ include 'nav_bar.php';
             font-size: 13px;
             background: #fff;
         }
-        .choix-aucune { font-size: 13px; color: #737373; font-style: italic; }
+
+        .choix-aucune {
+            font-size: 13px;
+            color: #737373;
+            font-style: italic;
+        }
+
+        .choix-option-couleurs .choix-couleurs-swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .choix-couleur-swatch {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 56px;
+            padding: 10px 12px;
+            background: #fff;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .choix-couleur-swatch:hover {
+            border-color: rgba(229, 72, 138, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .choix-couleur-swatch:has(input:checked) {
+            border-color: var(--couleur-dominante);
+            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.25);
+            background: #fff;
+        }
+
+        .choix-couleur-swatch input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Pastille de couleur pleine et bien visible */
+        .choix-couleur-swatch.is-hex .swatch {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .choix-couleur-swatch:not(.is-hex) .swatch-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--texte-fonce);
+            text-align: center;
+            padding: 8px 4px;
+        }
+
+        .choix-couleur-swatch.choix-couleur-none {
+            min-width: 90px;
+            border-style: dashed;
+        }
+
+        .choix-couleur-swatch.choix-couleur-none .swatch-text {
+            font-size: 13px;
+            color: #737373;
+            font-weight: 500;
+        }
+
+        /* Contraste pour couleurs claires (blanc, jaune, etc.) */
+        .choix-couleur-swatch.is-hex .swatch {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+        }
+
+        .choix-produit-item {
+            padding: 18px;
+        }
+
+        .choix-produit-nom {
+            font-size: 15px;
+            margin-bottom: 14px;
+        }
+
+        .choix-option-couleurs {
+            margin-bottom: 16px;
+        }
+
+        .choix-option-couleurs > label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--titres);
+            margin-bottom: 12px;
+            display: block;
+        }
 
         /* Styles pour éviter que le footer s'incruste */
         .commande-container {
@@ -470,70 +606,91 @@ include 'nav_bar.php';
                         <label><i class="fas fa-palette"></i> Couleur, poids et taille (par produit)</label>
                         <div class="choix-produits-list">
                             <?php foreach ($panier_items as $item): ?>
-                            <?php
-                            $couleurs_options = [];
-                            $poids_options = [];
-                            $taille_options = [];
-                            if (!empty($item['couleurs'])) {
-                                $cr = trim($item['couleurs']);
-                                $dec = json_decode($cr, true);
-                                if (is_array($dec)) {
-                                    $couleurs_options = array_filter($dec, function($x) { return is_string($x) && preg_match('/^#[0-9A-Fa-f]{6}$/', $x); });
-                                } else {
-                                    $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
+                                <?php
+                                $couleurs_options = [];
+                                $poids_options = [];
+                                $taille_options = [];
+                                if (!empty($item['couleurs'])) {
+                                    $cr = trim($item['couleurs']);
+                                    $dec = json_decode($cr, true);
+                                    if (is_array($dec)) {
+                                        $couleurs_options = array_filter($dec, function ($x) {
+                                            return is_string($x) && preg_match('/^#[0-9A-Fa-f]{6}$/', $x); });
+                                    } else {
+                                        $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
+                                    }
                                 }
-                            }
-                            if (!empty($item['poids'])) {
-                                $poids_options = array_map('trim', array_filter(explode(',', $item['poids'])));
-                            }
-                            if (!empty($item['taille'])) {
-                                $taille_options = array_map('trim', array_filter(explode(',', $item['taille'])));
-                            }
-                            $has_options = !empty($couleurs_options) || !empty($poids_options) || !empty($taille_options);
-                            ?>
-                            <div class="choix-produit-item" data-panier-id="<?php echo (int) $item['panier_id']; ?>">
-                                <div class="choix-produit-nom"><?php echo htmlspecialchars($item['nom']); ?></div>
-                                <div class="choix-produit-options">
-                                    <?php if (!empty($couleurs_options)): ?>
-                                    <div class="choix-option">
-                                        <label>Couleur</label>
-                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][couleur]">
-                                            <option value="">— Choisir —</option>
-                                            <?php foreach ($couleurs_options as $opt): ?>
-                                            <option value="<?php echo htmlspecialchars(is_string($opt) && strpos($opt, '#') === 0 ? $opt : $opt); ?>">
-                                                <?php echo htmlspecialchars(is_string($opt) && preg_match('/^#[0-9A-Fa-f]{6}$/', $opt) ? $opt : $opt); ?>
-                                            </option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                if (!empty($item['poids'])) {
+                                    $poids_options = array_map('trim', array_filter(explode(',', $item['poids'])));
+                                }
+                                if (!empty($item['taille'])) {
+                                    $taille_options = array_map('trim', array_filter(explode(',', $item['taille'])));
+                                }
+                                $has_options = !empty($couleurs_options) || !empty($poids_options) || !empty($taille_options);
+                                ?>
+                                <div class="choix-produit-item" data-panier-id="<?php echo (int) $item['panier_id']; ?>">
+                                    <div class="choix-produit-nom"><?php echo htmlspecialchars($item['nom']); ?></div>
+                                    <div class="choix-produit-options">
+                                        <?php
+                                        $pre_couleur = isset($item['panier_couleur']) ? trim($item['panier_couleur']) : '';
+                                        $pre_poids = isset($item['panier_poids']) ? trim($item['panier_poids']) : '';
+                                        $pre_taille = isset($item['panier_taille']) ? trim($item['panier_taille']) : '';
+                                        ?>
+                                        <?php if (!empty($couleurs_options)): ?>
+                                            <div class="choix-option choix-option-couleurs">
+                                                <label>Couleur</label>
+                                                <div class="choix-couleurs-swatches">
+                                                    <label class="choix-couleur-swatch choix-couleur-none">
+                                                        <input type="radio" name="choix[<?php echo (int) $item['panier_id']; ?>][couleur]" value=""
+                                                            <?php echo $pre_couleur === '' ? ' checked' : ''; ?>>
+                                                        <span class="swatch-text">— Choisir —</span>
+                                                    </label>
+                                                    <?php foreach ($couleurs_options as $opt): ?>
+                                                        <?php $is_hex = preg_match('/^#[0-9A-Fa-f]{6}$/', $opt); ?>
+                                                        <label class="choix-couleur-swatch <?php echo $is_hex ? 'is-hex' : ''; ?>">
+                                                            <input type="radio" name="choix[<?php echo (int) $item['panier_id']; ?>][couleur]" value="<?php echo htmlspecialchars($opt); ?>"
+                                                                <?php echo ($pre_couleur !== '' && $pre_couleur === $opt) ? ' checked' : ''; ?>>
+                                                            <?php if ($is_hex): ?>
+                                                                <span class="swatch" style="background-color:<?php echo htmlspecialchars($opt); ?>;" title="<?php echo htmlspecialchars($opt); ?>"></span>
+                                                            <?php else: ?>
+                                                                <span class="swatch-text"><?php echo htmlspecialchars($opt); ?></span>
+                                                            <?php endif; ?>
+                                                        </label>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($poids_options)): ?>
+                                            <div class="choix-option">
+                                                <label>Poids</label>
+                                                <select name="choix[<?php echo (int) $item['panier_id']; ?>][poids]">
+                                                    <option value="">— Choisir —</option>
+                                                    <?php foreach ($poids_options as $opt): ?>
+                                                        <option value="<?php echo htmlspecialchars($opt); ?>"
+                                                            <?php echo ($pre_poids !== '' && $pre_poids === $opt) ? ' selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($opt); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($taille_options)): ?>
+                                            <div class="choix-option">
+                                                <label>Taille</label>
+                                                <select name="choix[<?php echo (int) $item['panier_id']; ?>][taille]">
+                                                    <option value="">— Choisir —</option>
+                                                    <?php foreach ($taille_options as $opt): ?>
+                                                        <option value="<?php echo htmlspecialchars($opt); ?>"
+                                                            <?php echo ($pre_taille !== '' && $pre_taille === $opt) ? ' selected' : ''; ?>>
+                                                            <?php echo htmlspecialchars($opt); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!$has_options): ?>
+                                            <span class="choix-aucune">Aucune option disponible</span>
+                                        <?php endif; ?>
                                     </div>
-                                    <?php endif; ?>
-                                    <?php if (!empty($poids_options)): ?>
-                                    <div class="choix-option">
-                                        <label>Poids</label>
-                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][poids]">
-                                            <option value="">— Choisir —</option>
-                                            <?php foreach ($poids_options as $opt): ?>
-                                            <option value="<?php echo htmlspecialchars($opt); ?>"><?php echo htmlspecialchars($opt); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <?php endif; ?>
-                                    <?php if (!empty($taille_options)): ?>
-                                    <div class="choix-option">
-                                        <label>Taille</label>
-                                        <select name="choix[<?php echo (int) $item['panier_id']; ?>][taille]">
-                                            <option value="">— Choisir —</option>
-                                            <?php foreach ($taille_options as $opt): ?>
-                                            <option value="<?php echo htmlspecialchars($opt); ?>"><?php echo htmlspecialchars($opt); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                    <?php endif; ?>
-                                    <?php if (!$has_options): ?>
-                                    <span class="choix-aucune">Aucune option disponible</span>
-                                    <?php endif; ?>
                                 </div>
-                            </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -565,7 +722,8 @@ include 'nav_bar.php';
                             <div class="panier-item-summary-info">
                                 <h4><?php echo htmlspecialchars($item['nom']); ?></h4>
                                 <p>Quantité: <?php echo $item['quantite']; ?> ×
-                                    <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</p>
+                                    <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA
+                                </p>
                             </div>
                             <div class="panier-item-summary-price">
                                 <?php echo number_format($prix_total_item, 0, ',', ' '); ?> FCFA

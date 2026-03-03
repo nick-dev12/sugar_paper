@@ -440,6 +440,21 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
             margin-top: 10px;
         }
 
+        .panier-item-options {
+            font-size: 13px;
+            color: var(--couleur-dominante);
+            margin-bottom: 8px;
+        }
+
+        .panier-item-options .opt-swatch {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.2);
+            vertical-align: middle;
+        }
+
         .summary-value {
             font-weight: 600;
             color: var(--titres);
@@ -540,6 +555,22 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                             <div class="panier-item-info">
                                 <h3 class="panier-item-nom"><?php echo htmlspecialchars($item['nom']); ?></h3>
                                 <p class="panier-item-categorie"><?php echo htmlspecialchars($item['categorie_nom']); ?></p>
+                                <?php if (!empty($item['panier_couleur']) || !empty($item['panier_poids']) || !empty($item['panier_taille'])): ?>
+                                <p class="panier-item-options">
+                                    <?php
+                                    $opts = [];
+                                    if (!empty(trim($item['panier_couleur'] ?? ''))) {
+                                        $hex = trim($item['panier_couleur']);
+                                        $opts[] = preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)
+                                            ? '<span class="opt-swatch" style="background:' . htmlspecialchars($hex) . '"></span> ' . htmlspecialchars($hex)
+                                            : 'Couleur: ' . htmlspecialchars($hex);
+                                    }
+                                    if (!empty(trim($item['panier_poids'] ?? ''))) $opts[] = 'Poids: ' . htmlspecialchars($item['panier_poids']);
+                                    if (!empty(trim($item['panier_taille'] ?? ''))) $opts[] = 'Taille: ' . htmlspecialchars($item['panier_taille']);
+                                    echo implode(' • ', $opts);
+                                    ?>
+                                </p>
+                                <?php endif; ?>
                                 <p class="panier-item-prix">
                                     <span class="panier-prix-label">Prix unitaire:</span>
                                     <span class="panier-prix-value">

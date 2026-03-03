@@ -71,10 +71,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-eye"></i>
                 <span>Produits visités</span>
             </a>
-            <a href="favoris.php" class="menu-item">
-                <i class="fas fa-heart"></i>
-                <span>Mes favoris</span>
-            </a>
+
             <a href="profil.php" class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
                 <i class="fas fa-user"></i>
                 <span>Mon profil</span>

@@ -44,7 +44,8 @@ if (!isset($_SESSION['contact_csrf'])) {
 }
 
 $email_contact = 'sugarpaper26@gmail.com';
-$telephone_contact = '+221 77 32 92 123';
+$telephones_contact = ['+221 77 416 12 12', '+221 33 823 35 14'];
+$adresse_contact = 'Hann Mariste 2 LOT R/01';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -258,16 +259,22 @@ $telephone_contact = '+221 77 32 92 123';
                     <i class="fas fa-envelope"></i>
                     <div>
                         <strong>Email</strong><br>
-                        <a
-                            href="mailto:<?php echo htmlspecialchars($email_contact); ?>"><?php echo htmlspecialchars($email_contact); ?></a>
+                        <a href="mailto:<?php echo htmlspecialchars($email_contact); ?>"><?php echo htmlspecialchars($email_contact); ?></a>
                     </div>
                 </div>
                 <div class="contact-item">
                     <i class="fas fa-phone"></i>
                     <div>
-                        <strong>Téléphone</strong><br>
-                        <a
-                            href="tel:<?php echo preg_replace('/\s+/', '', $telephone_contact); ?>"><?php echo htmlspecialchars($telephone_contact); ?></a>
+                        <strong>Téléphones</strong><br>
+                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[0]); ?>"><?php echo htmlspecialchars($telephones_contact[0]); ?></a><br>
+                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[1]); ?>"><?php echo htmlspecialchars($telephones_contact[1]); ?></a>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <strong>Adresse</strong><br>
+                        <?php echo htmlspecialchars($adresse_contact); ?>
                     </div>
                 </div>
             </div>
