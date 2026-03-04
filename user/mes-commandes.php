@@ -73,27 +73,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recommander'])) {
             $produits_commande = get_commande_produits($commande_id);
 
             if (!empty($produits_commande)) {
+                require_once __DIR__ . '/../models/model_variantes.php';
                 $added_count = 0;
                 foreach ($produits_commande as $produit) {
-                    // Vérifier si le produit existe encore et est actif
                     require_once __DIR__ . '/../models/model_produits.php';
                     $produit_info = get_produit_by_id($produit['produit_id']);
 
                     if ($produit_info && $produit_info['statut'] === 'actif' && $produit_info['stock'] > 0) {
-                        // Vérifier si le produit est déjà dans le panier
-                        $panier_existant = is_in_panier($_SESSION['user_id'], $produit['produit_id']);
-                        if ($panier_existant) {
-                            // Mettre à jour la quantité
-                            $new_quantite = min($panier_existant['quantite'] + $produit['quantite'], $produit_info['stock']);
-                            if (update_panier_quantite($panier_existant['id'], $new_quantite)) {
-                                $added_count++;
-                            }
-                        } else {
-                            // Ajouter au panier
-                            $quantite = min($produit['quantite'], $produit_info['stock']);
-                            if (add_to_panier($_SESSION['user_id'], $produit['produit_id'], $quantite)) {
-                                $added_count++;
-                            }
+                        $quantite = min($produit['quantite'], $produit_info['stock']);
+                        $variante_id = !empty($produit['variante_id']) ? (int) $produit['variante_id'] : null;
+                        $variante_nom = !empty($produit['variante_nom']) ? trim($produit['variante_nom']) : null;
+                        $variante_image = null;
+                        if ($variante_id) {
+                            $var = get_variante_by_id($variante_id);
+                            $variante_image = $var && !empty($var['image']) ? $var['image'] : null;
+                        }
+                        $surcout_poids = isset($produit['surcout_poids']) ? (float) $produit['surcout_poids'] : 0;
+                        $surcout_taille = isset($produit['surcout_taille']) ? (float) $produit['surcout_taille'] : 0;
+                        $prix_unitaire = isset($produit['prix_unitaire']) ? (float) $produit['prix_unitaire'] : null;
+
+                        if (add_to_panier($_SESSION['user_id'], $produit['produit_id'], $quantite,
+                            $produit['couleur'] ?? null, $produit['poids'] ?? null, $produit['taille'] ?? null,
+                            $variante_id, $variante_nom, $variante_image, $surcout_poids, $surcout_taille, $prix_unitaire)) {
+                            $added_count++;
                         }
                     }
                 }

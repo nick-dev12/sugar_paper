@@ -22,8 +22,11 @@ if ($commande_id <= 0) {
 
 // Récupérer la commande et ses produits
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
+require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../includes/format_commande_options.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
+$produits = is_array($produits) ? $produits : [];
 
 if (!$commande) {
     header('Location: index.php');
@@ -160,42 +163,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 
         <div class="produits-list">
             <?php foreach ($produits as $produit): ?>
+                <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : $produit['image_principale']; ?>
+                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' - ' . $produit['variante_nom'] : $produit['produit_nom']; ?>
                 <div class="produit-item">
-                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
-                        alt="<?php echo htmlspecialchars($produit['produit_nom']); ?>"
+                    <img src="/upload/<?php echo htmlspecialchars($img_src); ?>"
+                        alt="<?php echo htmlspecialchars($nom_affichage); ?>"
                         onerror="this.src='/image/produit1.jpg'">
                     <div class="produit-info">
-                        <h4><?php echo htmlspecialchars($produit['produit_nom']); ?></h4>
-                        <p>Quantité: <?php echo $produit['quantite']; ?> | Prix unitaire:
-                            <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA
-                        </p>
-                        <?php if (!empty($produit['couleur']) || !empty($produit['poids']) || !empty($produit['taille'])): ?>
+                        <h4><?php echo htmlspecialchars($nom_affichage); ?></h4>
+                        <div class="produit-info-lignes">
+                            <div class="info-ligne">Quantité: <?php echo $produit['quantite']; ?></div>
+                            <div class="info-ligne">Prix unitaire: <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
+                        </div>
+                        <?php if (!empty($produit['couleur']) || !empty($produit['poids']) || !empty($produit['taille']) || !empty($produit['variante_nom']) || (!empty($produit['surcout_poids']) && $produit['surcout_poids'] > 0) || (!empty($produit['surcout_taille']) && $produit['surcout_taille'] > 0)): ?>
                         <div class="produit-options-detail">
+                            <?php if (!empty($produit['variante_nom'])): ?>
+                            <div class="option-detail option-variante">
+                                <span class="option-label">Variante:</span>
+                                <span class="option-value"><?php echo htmlspecialchars($produit['variante_nom']); ?></span>
+                            </div>
+                            <?php endif; ?>
                             <?php if (!empty($produit['couleur'])): ?>
                             <?php
                             $hex = trim($produit['couleur']);
                             $is_hex = preg_match('/^#[0-9A-Fa-f]{6}$/', $hex);
+                            $nom_couleur = format_couleur_commande($hex);
                             ?>
                             <div class="option-detail option-couleur">
                                 <span class="option-label">Couleur:</span>
                                 <?php if ($is_hex): ?>
                                 <span class="couleur-swatch-large" style="background-color:<?php echo htmlspecialchars($hex); ?>;" title="<?php echo htmlspecialchars($hex); ?>"></span>
-                                <span class="option-value"><?php echo htmlspecialchars($hex); ?></span>
-                                <?php else: ?>
-                                <span class="option-value"><?php echo htmlspecialchars($produit['couleur']); ?></span>
                                 <?php endif; ?>
+                                <span class="option-value"><?php echo htmlspecialchars($nom_couleur); ?></span>
                             </div>
                             <?php endif; ?>
-                            <?php if (!empty($produit['poids'])): ?>
+                            <?php 
+                            $poids_raw = $produit['poids'] ?? '';
+                            $taille_raw = $produit['taille'] ?? '';
+                            $surcout_p = isset($produit['surcout_poids']) ? (float)$produit['surcout_poids'] : 0;
+                            $surcout_t = isset($produit['surcout_taille']) ? (float)$produit['surcout_taille'] : 0;
+                            $poids_lignes = parse_poids_taille_commande($poids_raw, $surcout_p);
+                            $taille_lignes = parse_poids_taille_commande($taille_raw, $surcout_t);
+                            $afficher_poids = !empty($poids_lignes);
+                            $afficher_taille = !empty($taille_lignes);
+                            ?>
+                            <?php if ($afficher_poids): ?>
                             <div class="option-detail option-poids">
                                 <span class="option-label">Poids:</span>
-                                <span class="option-value"><?php echo htmlspecialchars($produit['poids']); ?></span>
+                                <div class="option-value options-lignes">
+                                    <?php foreach ($poids_lignes as $opt): ?>
+                                    <div class="option-ligne"><?php 
+                                    echo htmlspecialchars($opt['v']); 
+                                    if (($opt['s'] ?? 0) > 0) echo ' (poids +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
+                                    ?></div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                             <?php endif; ?>
-                            <?php if (!empty($produit['taille'])): ?>
+                            <?php if ($afficher_taille): ?>
                             <div class="option-detail option-taille">
                                 <span class="option-label">Taille:</span>
-                                <span class="option-value"><?php echo htmlspecialchars($produit['taille']); ?></span>
+                                <div class="option-value options-lignes">
+                                    <?php foreach ($taille_lignes as $opt): ?>
+                                    <div class="option-ligne"><?php 
+                                    echo htmlspecialchars($opt['v']); 
+                                    if (($opt['s'] ?? 0) > 0) echo ' (taille +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
+                                    ?></div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                             <?php endif; ?>
                         </div>

@@ -81,7 +81,7 @@ $seo_canonical = $base . '/produits.php';
         .produits-container-wrapper {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 0 20px;
+
         }
 
         .btn-voir-plus {
@@ -192,14 +192,16 @@ $seo_canonical = $base . '/produits.php';
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
-    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
-        <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
-    </div>
+        <div
+            style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+            <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
+        </div>
     <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
-    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
-        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
-    </div>
+        <div
+            style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
+            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
+        </div>
     <?php endif; ?>
     <div class="produits-container-wrapper">
         <section class="section00">
@@ -246,20 +248,14 @@ $seo_canonical = $base . '/produits.php';
                                                     FCFA</span>
                                             <?php endif; ?>
                                         </p>
-                                        <?php if (!empty($produit['stock'])): ?>
-                                            <p class="produit-card-stock-info">
-                                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
-                                                <?php if (!empty($produit['poids'])): ?>
-                                                    (<?php echo htmlspecialchars($produit['poids']); ?>)
-                                                <?php endif; ?>
-                                            </p>
-                                        <?php endif; ?>
+
                                     </div>
                                 </a>
                                 <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
                                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                                     <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
+                                    <input type="hidden" name="return_url"
+                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
                                     <button type="submit" class="btn-add-cart">
                                         <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
                                     </button>
@@ -366,7 +362,8 @@ $seo_canonical = $base . '/produits.php';
                                 </p>`;
                             }
 
-                            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g,
+                                '&amp;').replace(/"/g, '&quot;');
                             div.innerHTML = `
                                 <a href="produit.php?id=${produit.id}" class="product-card-link">
                                     <div class="image-wrapper">

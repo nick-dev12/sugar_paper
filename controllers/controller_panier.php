@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../models/model_variantes.php';
 
 /**
  * Traite l'ajout d'un produit au panier
@@ -28,6 +29,12 @@ function process_add_to_panier()
     $option_couleur = isset($_POST['option_couleur']) ? trim($_POST['option_couleur']) : '';
     $option_poids = isset($_POST['option_poids']) ? trim($_POST['option_poids']) : '';
     $option_taille = isset($_POST['option_taille']) ? trim($_POST['option_taille']) : '';
+    $option_variante_id = isset($_POST['option_variante_id']) ? (int)$_POST['option_variante_id'] : null;
+    $option_variante_nom = isset($_POST['option_variante_nom']) ? trim($_POST['option_variante_nom']) : null;
+    $option_variante_image = isset($_POST['option_variante_image']) ? trim($_POST['option_variante_image']) : null;
+    $option_prix_unitaire = isset($_POST['option_prix_unitaire']) && is_numeric($_POST['option_prix_unitaire']) ? (float)$_POST['option_prix_unitaire'] : null;
+    $option_surcout_poids = isset($_POST['option_surcout_poids']) && is_numeric($_POST['option_surcout_poids']) ? (float)$_POST['option_surcout_poids'] : 0;
+    $option_surcout_taille = isset($_POST['option_surcout_taille']) && is_numeric($_POST['option_surcout_taille']) ? (float)$_POST['option_surcout_taille'] : 0;
 
     if ($quantite <= 0) {
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
@@ -41,8 +48,8 @@ function process_add_to_panier()
 
     // Validation des options si le produit en a
     $couleurs_options = [];
-    $poids_options = [];
-    $taille_options = [];
+    $poids_options = parse_options_with_surcharge($produit['poids'] ?? null);
+    $taille_options = parse_options_with_surcharge($produit['taille'] ?? null);
     if (!empty($produit['couleurs'])) {
         $cr = trim($produit['couleurs']);
         $dec = json_decode($cr, true);
@@ -55,24 +62,27 @@ function process_add_to_panier()
             $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
         }
     }
-    if (!empty($produit['poids'])) {
-        $poids_options = array_map('trim', array_filter(explode(',', $produit['poids'])));
+    $poids_values = array_map(function($x) { return $x['v']; }, $poids_options);
+    $taille_values = array_map(function($x) { return $x['v']; }, $taille_options);
+    // Les options couleur/poids/taille sont facultatives.
+
+    // Variante sélectionnée (pour nom/image)
+    $variante = ($option_variante_id && ($v = get_variante_by_id($option_variante_id)) && $v['produit_id'] == $produit_id) ? $v : null;
+    $surcout_poids = get_surcharge_for_option($poids_options, $option_poids);
+    $surcout_taille = get_surcharge_for_option($taille_options, $option_taille);
+
+    // Prix final : priorité à option_prix_unitaire du formulaire (valeur vue par l'utilisateur)
+    $prix_final = null;
+    if ($option_prix_unitaire !== null && $option_prix_unitaire > 0) {
+        $prix_final = $option_prix_unitaire;
     }
-    if (!empty($produit['taille'])) {
-        $taille_options = array_map('trim', array_filter(explode(',', $produit['taille'])));
-    }
-    // Validation des options (requises uniquement si le formulaire vient de la page produit avec les champs option_*)
-    $from_product_page = isset($_POST['action']) && $_POST['action'] === 'add_to_panier';
-    if ($from_product_page) {
-        if (!empty($couleurs_options) && empty($option_couleur)) {
-            return ['success' => false, 'message' => 'Veuillez sélectionner une couleur.'];
+    if ($prix_final === null) {
+        $prix_base = $produit['prix'];
+        if ($variante) {
+            $prix_base = !empty($variante['prix_promotion']) && $variante['prix_promotion'] < $variante['prix']
+                ? $variante['prix_promotion'] : $variante['prix'];
         }
-        if (count($poids_options) > 1 && empty($option_poids)) {
-            return ['success' => false, 'message' => 'Veuillez sélectionner un poids.'];
-        }
-        if (count($taille_options) > 1 && empty($option_taille)) {
-            return ['success' => false, 'message' => 'Veuillez sélectionner une taille.'];
-        }
+        $prix_final = $prix_base + $surcout_poids + $surcout_taille;
     }
 
     // Vérifier le stock disponible
@@ -85,7 +95,11 @@ function process_add_to_panier()
     }
 
     // Ajouter au panier avec options
-    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null)) {
+    $vid = ($option_variante_id && $option_variante_id > 0) ? $option_variante_id : null;
+    $vnom = $variante ? $variante['nom'] : $option_variante_nom;
+    $vimg = $variante ? $variante['image'] : $option_variante_image;
+    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
         return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
     } else {
         return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];

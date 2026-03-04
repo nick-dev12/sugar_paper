@@ -25,6 +25,7 @@ $produits = get_all_produits();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,9 +34,10 @@ $produits = get_all_produits();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
 </head>
+
 <body>
     <?php include '../includes/nav.php'; ?>
-    
+
     <div class="content-header">
         <h1><i class="fas fa-box"></i> Liste des Produits</h1>
         <div class="header-actions">
@@ -78,15 +80,16 @@ $produits = get_all_produits();
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
-                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" 
-                             class="produit-card-image"
-                             onerror="this.src='/image/produit1.jpg'">
+                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                            alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
+                            onerror="this.src='/image/produit1.jpg'">
                         <div class="produit-card-body">
                             <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
-                            <p class="produit-card-categorie"><?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?></p>
+                            <p class="produit-card-categorie">
+                                <?php echo htmlspecialchars($produit['categorie_nom'] ?? 'Sans catégorie'); ?>
+                            </p>
                             <p class="produit-card-prix">
-                                <?php echo number_format($produit['prix'], 0, ',', ' '); ?> 
+                                <?php echo number_format($produit['prix'], 0, ',', ' '); ?>
                                 <span class="prix-unite">FCFA</span>
                                 <?php if ($produit['prix_promotion']): ?>
                                     <span class="prix-promo">
@@ -95,18 +98,15 @@ $produits = get_all_produits();
                                 <?php endif; ?>
                             </p>
                             <p class="produit-card-stock">
-                                Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span> 
-                                <?php if ($produit['poids']): ?>
-                                    (<?php echo htmlspecialchars($produit['poids']); ?>)
-                                <?php endif; ?>
+                                Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
+
                             </p>
                             <div class="produit-card-actions">
                                 <a href="modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>
-                                <a href="supprimer.php?id=<?php echo $produit['id']; ?>" 
-                                   class="btn-card btn-delete"
-                                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                <a href="supprimer.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-delete"
+                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
                                     <i class="fas fa-trash"></i> Supprimer
                                 </a>
                             </div>
@@ -118,4 +118,3 @@ $produits = get_all_produits();
     </section>
 
     <?php include '../includes/footer.php'; ?>
-

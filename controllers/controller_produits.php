@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
+require_once __DIR__ . '/../models/model_variantes.php';
 
 /**
  * Upload une image de produit
@@ -98,7 +99,6 @@ function process_add_produit() {
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
-    $poids = isset($_POST['poids']) && trim($_POST['poids']) !== '' ? trim($_POST['poids']) : null;
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $couleurs = null;
     if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
@@ -113,7 +113,26 @@ function process_add_produit() {
             $couleurs = $raw;
         }
     }
-    $taille = isset($_POST['taille']) && trim($_POST['taille']) !== '' ? trim($_POST['taille']) : null;
+    $poids = null;
+    $taille = null;
+    if (isset($_POST['poids']) && trim($_POST['poids']) !== '') {
+        $raw = trim($_POST['poids']);
+        $dec = json_decode($raw, true);
+        $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
+        if (!$poids && $raw) {
+            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+            $poids = !empty($arr) ? json_encode($arr) : null;
+        }
+    }
+    if (isset($_POST['taille']) && trim($_POST['taille']) !== '') {
+        $raw = trim($_POST['taille']);
+        $dec = json_decode($raw, true);
+        $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
+        if (!$taille && $raw) {
+            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+            $taille = !empty($arr) ? json_encode($arr) : null;
+        }
+    }
     
     // Validation
     if (empty($nom)) {
@@ -189,6 +208,40 @@ function process_add_produit() {
         if ($produit_id) {
             $success = true;
             $message = 'Produit ajouté avec succès !';
+            // Créer les variantes
+            $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? array_values($_POST['variantes_nom']) : [];
+            $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? array_values($_POST['variantes_prix']) : [];
+            $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? array_values($_POST['variantes_prix_promo']) : [];
+            $variantes_files = (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name'])) ? $_FILES['variantes_image'] : null;
+            $nb_variantes = count($variantes_nom);
+            for ($i = 0; $i < $nb_variantes; $i++) {
+                $vn = trim($variantes_nom[$i] ?? '');
+                $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float)$variantes_prix[$i] : 0;
+                if ($vn !== '' && $vp > 0) {
+                    $vimg = null;
+                    if ($variantes_files && isset($variantes_files['name'][$i]) && (int)($variantes_files['error'][$i] ?? 4) === UPLOAD_ERR_OK) {
+                        $f = [
+                            'name' => $variantes_files['name'][$i],
+                            'type' => $variantes_files['type'][$i] ?? '',
+                            'tmp_name' => $variantes_files['tmp_name'][$i] ?? '',
+                            'error' => $variantes_files['error'][$i] ?? 4,
+                            'size' => $variantes_files['size'][$i] ?? 0
+                        ];
+                        $fake = ['image' => $f];
+                        $vimg = upload_produit_image($fake, 'image');
+                    }
+                    $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && (float)$variantes_prix_promo[$i] > 0 ? (float)$variantes_prix_promo[$i] : null;
+                    if ($vpromo !== null && $vpromo >= $vp) $vpromo = null;
+                    create_variante([
+                        'produit_id' => $produit_id,
+                        'nom' => $vn,
+                        'prix' => $vp,
+                        'prix_promotion' => $vpromo,
+                        'image' => $vimg ?: null,
+                        'ordre' => $i
+                    ]);
+                }
+            }
         } else {
             $errors[] = 'Une erreur est survenue lors de l\'ajout du produit.';
         }
@@ -229,7 +282,6 @@ function process_update_produit($produit_id) {
     $prix_promotion = isset($_POST['prix_promotion']) && !empty($_POST['prix_promotion']) ? trim($_POST['prix_promotion']) : null;
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
-    $poids = isset($_POST['poids']) && trim($_POST['poids']) !== '' ? trim($_POST['poids']) : null;
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
     $couleurs = null;
@@ -245,7 +297,26 @@ function process_update_produit($produit_id) {
             $couleurs = $raw;
         }
     }
-    $taille = isset($_POST['taille']) && trim($_POST['taille']) !== '' ? trim($_POST['taille']) : null;
+    $poids = null;
+    $taille = null;
+    if (isset($_POST['poids']) && trim($_POST['poids']) !== '') {
+        $raw = trim($_POST['poids']);
+        $dec = json_decode($raw, true);
+        $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
+        if (!$poids && $raw) {
+            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+            $poids = !empty($arr) ? json_encode($arr) : null;
+        }
+    }
+    if (isset($_POST['taille']) && trim($_POST['taille']) !== '') {
+        $raw = trim($_POST['taille']);
+        $dec = json_decode($raw, true);
+        $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
+        if (!$taille && $raw) {
+            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+            $taille = !empty($arr) ? json_encode($arr) : null;
+        }
+    }
     
     // Validation (identique à l'ajout)
     if (empty($nom)) {
@@ -335,6 +406,63 @@ function process_update_produit($produit_id) {
                 $full_path = __DIR__ . '/../upload/' . $old_path;
                 if ($old_path && file_exists($full_path)) {
                     @unlink($full_path);
+                }
+            }
+            // Gestion des variantes
+            $variantes_nom = isset($_POST['variantes_nom']) && is_array($_POST['variantes_nom']) ? $_POST['variantes_nom'] : [];
+            $variantes_prix = isset($_POST['variantes_prix']) && is_array($_POST['variantes_prix']) ? $_POST['variantes_prix'] : [];
+            $variantes_prix_promo = isset($_POST['variantes_prix_promo']) && is_array($_POST['variantes_prix_promo']) ? $_POST['variantes_prix_promo'] : [];
+            $variantes_id = isset($_POST['variantes_id']) && is_array($_POST['variantes_id']) ? $_POST['variantes_id'] : [];
+            $existing_ids = [];
+            foreach (get_variantes_by_produit($produit_id) as $v) {
+                $existing_ids[] = (int) $v['id'];
+            }
+            $kept_ids = [];
+            for ($i = 0; $i < count($variantes_nom); $i++) {
+                $vn = isset($variantes_nom[$i]) ? trim($variantes_nom[$i]) : '';
+                $vp = isset($variantes_prix[$i]) && is_numeric($variantes_prix[$i]) ? (float) $variantes_prix[$i] : 0;
+                if (empty($vn) || $vp <= 0) continue;
+                $vid = isset($variantes_id[$i]) ? (int) $variantes_id[$i] : 0;
+                $vpromo = isset($variantes_prix_promo[$i]) && is_numeric($variantes_prix_promo[$i]) && $variantes_prix_promo[$i] > 0 ? (float) $variantes_prix_promo[$i] : null;
+                if ($vpromo && $vp > 0 && $vpromo >= $vp) $vpromo = null;
+                $vimg = null;
+                if (isset($_FILES['variantes_image']) && is_array($_FILES['variantes_image']['name']) && isset($_FILES['variantes_image']['name'][$i]) && $_FILES['variantes_image']['error'][$i] === UPLOAD_ERR_OK) {
+                    $fake = [
+                        'image' => [
+                            'name' => $_FILES['variantes_image']['name'][$i],
+                            'type' => $_FILES['variantes_image']['type'][$i],
+                            'tmp_name' => $_FILES['variantes_image']['tmp_name'][$i],
+                            'error' => $_FILES['variantes_image']['error'][$i],
+                            'size' => $_FILES['variantes_image']['size'][$i]
+                        ]
+                    ];
+                    $vimg = upload_produit_image($fake, 'image');
+                }
+                if ($vid > 0 && in_array($vid, $existing_ids)) {
+                    $old = get_variante_by_id($vid);
+                    $img_final = $vimg ?: ($old ? $old['image'] : null);
+                    update_variante($vid, [
+                        'nom' => $vn,
+                        'prix' => $vp,
+                        'prix_promotion' => $vpromo,
+                        'image' => $img_final,
+                        'ordre' => $i
+                    ]);
+                    $kept_ids[] = $vid;
+                } else {
+                    create_variante([
+                        'produit_id' => $produit_id,
+                        'nom' => $vn,
+                        'prix' => $vp,
+                        'prix_promotion' => $vpromo,
+                        'image' => $vimg,
+                        'ordre' => $i
+                    ]);
+                }
+            }
+            foreach ($existing_ids as $eid) {
+                if (!in_array($eid, $kept_ids)) {
+                    delete_variante($eid);
                 }
             }
         } else {

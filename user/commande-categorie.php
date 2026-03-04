@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Page pour voir les commandes groupées par catégorie
  * Programmation procédurale uniquement
@@ -16,10 +17,12 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 // Inclusion des modèles
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_categories.php';
+require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../includes/format_commande_options.php';
 
 $user_id = $_SESSION['user_id'];
-$commande_id = isset($_GET['commande_id']) ? (int)$_GET['commande_id'] : null;
-$categorie_id = isset($_GET['categorie_id']) ? (int)$_GET['categorie_id'] : null;
+$commande_id = isset($_GET['commande_id']) ? (int) $_GET['commande_id'] : null;
+$categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : null;
 
 // Si une commande spécifique est demandée, récupérer ses produits
 if ($commande_id) {
@@ -29,16 +32,16 @@ if ($commande_id) {
         header('Location: mes-commandes.php');
         exit;
     }
-    
+
     // Récupérer les produits de cette commande
     $produits_commande = get_commande_produits($commande_id);
-    
+
     // Grouper par catégorie
     $grouped_by_categorie = [];
     foreach ($produits_commande as $produit) {
         $cat_id = $produit['categorie_id'];
         $cat_nom = $produit['categorie_nom'] ?? 'Sans catégorie';
-        
+
         if (!isset($grouped_by_categorie[$cat_id])) {
             $grouped_by_categorie[$cat_id] = [
                 'categorie_id' => $cat_id,
@@ -59,6 +62,7 @@ $all_categories = get_all_categories();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -168,12 +172,19 @@ $all_categories = get_all_categories();
         }
 
         .produit-card-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid rgba(229, 72, 138, 0.2);
+        }
+
+        .produit-card-details div {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .detail-label {
@@ -265,11 +276,35 @@ $all_categories = get_all_categories();
         .content-header-link-retour:hover {
             text-decoration: underline;
         }
+
+        .couleur-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .couleur-swatch-large {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        .options-lignes .option-ligne {
+            margin-bottom: 4px;
+        }
+
+        .options-lignes .option-ligne:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
+
 <body>
     <?php include 'includes/user_nav.php'; ?>
-    
+
     <div class="content-header">
         <h1><i class="fas fa-layer-group"></i> Mes Commandes par Catégorie</h1>
         <a href="mes-commandes.php" class="content-header-link-retour">
@@ -288,10 +323,10 @@ $all_categories = get_all_categories();
                     Toutes les catégories
                 </a>
                 <?php foreach ($all_categories as $cat): ?>
-                <a href="commande-categorie.php?categorie_id=<?php echo $cat['id']; ?>" 
-                   class="filter-btn <?php echo $categorie_id == $cat['id'] ? 'active' : ''; ?>">
-                    <?php echo htmlspecialchars($cat['nom']); ?>
-                </a>
+                    <a href="commande-categorie.php?categorie_id=<?php echo $cat['id']; ?>"
+                        class="filter-btn <?php echo $categorie_id == $cat['id'] ? 'active' : ''; ?>">
+                        <?php echo htmlspecialchars($cat['nom']); ?>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -312,7 +347,8 @@ $all_categories = get_all_categories();
                             <i class="fas fa-tag"></i>
                             <?php echo htmlspecialchars($categorie_data['categorie_nom']); ?>
                             <span class="categorie-badge">
-                                <?php echo count($categorie_data['produits']); ?> produit<?php echo count($categorie_data['produits']) > 1 ? 's' : ''; ?>
+                                <?php echo count($categorie_data['produits']); ?>
+                                produit<?php echo count($categorie_data['produits']) > 1 ? 's' : ''; ?>
                             </span>
                         </div>
                     </div>
@@ -320,23 +356,22 @@ $all_categories = get_all_categories();
                     <div class="produits-grid">
                         <?php foreach ($categorie_data['produits'] as $produit): ?>
                             <?php
-                            // Gérer les différents noms de champs selon la source des données
                             $produit_nom = $produit['nom'] ?? $produit['produit_nom'] ?? 'Produit sans nom';
-                            $produit_image = $produit['image_principale'] ?? '';
+                            $produit_nom_affichage = !empty($produit['variante_nom']) ? $produit_nom . ' - ' . $produit['variante_nom'] : $produit_nom;
+                            $produit_image = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? '');
                             ?>
                             <div class="produit-card-commande">
                                 <div class="produit-card-header">
-                                    <img src="/upload/<?php echo htmlspecialchars($produit_image); ?>" 
-                                         alt="<?php echo htmlspecialchars($produit_nom); ?>"
-                                         class="produit-card-image"
-                                         onerror="this.src='/image/produit1.jpg'">
+                                    <img src="/upload/<?php echo htmlspecialchars($produit_image); ?>"
+                                        alt="<?php echo htmlspecialchars($produit_nom_affichage); ?>" class="produit-card-image"
+                                        onerror="this.src='/image/produit1.jpg'">
                                     <div class="produit-card-info">
-                                        <h4 class="produit-card-nom"><?php echo htmlspecialchars($produit_nom); ?></h4>
+                                        <h4 class="produit-card-nom"><?php echo htmlspecialchars($produit_nom_affichage); ?></h4>
                                         <div class="produit-card-commande-info">
-                                            <?php 
+                                            <?php
                                             $numero_commande = $produit['numero_commande'] ?? null;
-                                            if ($numero_commande): 
-                                            ?>
+                                            if ($numero_commande):
+                                                ?>
                                                 <div class="commande-info-badge">
                                                     Commande #<?php echo htmlspecialchars($numero_commande); ?>
                                                 </div>
@@ -352,7 +387,9 @@ $all_categories = get_all_categories();
                                     </div>
                                     <div>
                                         <div class="detail-label">Prix unitaire</div>
-                                        <div class="detail-value"><?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
+                                        <div class="detail-value">
+                                            <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA
+                                        </div>
                                     </div>
                                     <div>
                                         <div class="detail-label">Prix total</div>
@@ -360,25 +397,79 @@ $all_categories = get_all_categories();
                                             <?php echo number_format($produit['prix_total'], 0, ',', ' '); ?> FCFA
                                         </div>
                                     </div>
-                                    <?php 
-                                    $produit_poids = $produit['poids'] ?? null;
-                                    if (!empty($produit_poids)): 
+                                    <?php if (!empty($produit['variante_nom'])): ?>
+                                        <div>
+                                            <div class="detail-label">Variante</div>
+                                            <div class="detail-value"><?php echo htmlspecialchars($produit['variante_nom']); ?></div>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php
+                                    $couleur = $produit['couleur'] ?? '';
+                                    if (!empty($couleur)):
+                                        $hex = trim($couleur);
+                                        $is_hex = preg_match('/^#[0-9A-Fa-f]{6}$/', $hex);
+                                        $nom_couleur = format_couleur_commande($hex);
+                                        ?>
+                                        <div>
+                                            <div class="detail-label">Couleur</div>
+                                            <div class="detail-value couleur-display">
+                                                <?php if ($is_hex): ?>
+                                                    <span class="couleur-swatch-large"
+                                                        style="background-color:<?php echo htmlspecialchars($hex); ?>;"
+                                                        title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                                <?php endif; ?>
+
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php
+                                    $poids_raw = $produit['poids'] ?? $produit['choix_poids'] ?? '';
+                                    $taille_raw = $produit['taille'] ?? '';
+                                    $surcout_p = isset($produit['surcout_poids']) ? (float) $produit['surcout_poids'] : 0;
+                                    $surcout_t = isset($produit['surcout_taille']) ? (float) $produit['surcout_taille'] : 0;
+                                    $poids_lignes = parse_poids_taille_commande($poids_raw, $surcout_p);
+                                    $taille_lignes = parse_poids_taille_commande($taille_raw, $surcout_t);
+                                    $afficher_poids = !empty($poids_lignes);
+                                    $afficher_taille = !empty($taille_lignes);
                                     ?>
-                                    <div>
-                                        <div class="detail-label">Poids</div>
-                                        <div class="detail-value"><?php echo htmlspecialchars($produit_poids); ?></div>
-                                    </div>
+                                    <?php if ($afficher_poids): ?>
+                                        <div>
+                                            <div class="detail-label">Poids</div>
+                                            <div class="detail-value options-lignes">
+                                                <?php foreach ($poids_lignes as $opt): ?>
+                                                    <div class="option-ligne"><?php
+                                                    echo htmlspecialchars($opt['v']);
+                                                    if (($opt['s'] ?? 0) > 0)
+                                                        echo ' (poids +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
+                                                    ?></div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($afficher_taille): ?>
+                                        <div>
+                                            <div class="detail-label">Taille</div>
+                                            <div class="detail-value options-lignes">
+                                                <?php foreach ($taille_lignes as $opt): ?>
+                                                    <div class="option-ligne"><?php
+                                                    echo htmlspecialchars($opt['v']);
+                                                    if (($opt['s'] ?? 0) > 0)
+                                                        echo ' (taille +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
+                                                    ?></div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
 
-                                <?php 
+                                <?php
                                 $date_commande = $produit['date_commande'] ?? null;
-                                if ($date_commande): 
-                                ?>
-                                <div class="commande-date-info">
-                                    <i class="fas fa-calendar"></i> 
-                                    Date: <?php echo date('d/m/Y à H:i', strtotime($date_commande)); ?>
-                                </div>
+                                if ($date_commande):
+                                    ?>
+                                    <div class="commande-date-info">
+                                        <i class="fas fa-calendar"></i>
+                                        Date: <?php echo date('d/m/Y à H:i', strtotime($date_commande)); ?>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
@@ -391,5 +482,5 @@ $all_categories = get_all_categories();
     <?php include 'includes/user_footer.php'; ?>
 
 </body>
-</html>
 
+</html>

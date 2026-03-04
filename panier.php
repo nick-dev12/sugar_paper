@@ -541,19 +541,21 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                 <div class="panier-items">
                     <?php foreach ($panier_items as $item): ?>
                         <?php
-                        // Calculer le prix unitaire (promotion si disponible)
-                        $prix_unitaire = !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']
-                            ? $item['prix_promotion']
-                            : $item['prix'];
+                        // Prix unitaire : variante/surcoûts ou produit de base
+                        $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
+                            ? (float) $item['panier_prix_unitaire']
+                            : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
                         $prix_total_item = $prix_unitaire * $item['quantite'];
+                        $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : $item['image_principale'];
+                        $item_nom = !empty($item['panier_variante_nom']) ? $item['panier_variante_nom'] : $item['nom'];
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars($item['image_principale']); ?>"
-                                alt="<?php echo htmlspecialchars($item['nom']); ?>" class="panier-item-image"
+                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
+                                alt="<?php echo htmlspecialchars($item_nom); ?>" class="panier-item-image"
                                 onerror="this.src='/image/produit1.jpg'">
 
                             <div class="panier-item-info">
-                                <h3 class="panier-item-nom"><?php echo htmlspecialchars($item['nom']); ?></h3>
+                                <h3 class="panier-item-nom"><?php echo htmlspecialchars($item_nom); ?><?php if (!empty($item['panier_variante_nom'])): ?> <span class="variante-badge">(variante)</span><?php endif; ?></h3>
                                 <p class="panier-item-categorie"><?php echo htmlspecialchars($item['categorie_nom']); ?></p>
                                 <?php if (!empty($item['panier_couleur']) || !empty($item['panier_poids']) || !empty($item['panier_taille'])): ?>
                                 <p class="panier-item-options">
@@ -576,7 +578,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                                     <span class="panier-prix-value">
                                         <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA
                                     </span>
-                                    <?php if (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']): ?>
+                                    <?php if (empty($item['panier_prix_unitaire']) && !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']): ?>
                                         <span class="panier-prix-barré">
                                             <?php echo number_format($item['prix'], 0, ',', ' '); ?> FCFA
                                         </span>

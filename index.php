@@ -290,12 +290,6 @@ $seo_canonical = $base . '/';
                                     FCFA</span>
                                 <?php endif; ?>
                             </p>
-                            <?php if (!empty($produit['stock'])): ?>
-                            <p class="produit-card-stock-info">
-                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
-
-                            </p>
-                            <?php endif; ?>
                         </div>
                     </a>
                     <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
@@ -491,12 +485,7 @@ $seo_canonical = $base . '/';
                                     FCFA</span>
                                 <?php endif; ?>
                             </p>
-                            <?php if (!empty($produit['stock'])): ?>
-                            <p class="produit-card-stock-info">
-                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
 
-                            </p>
-                            <?php endif; ?>
                         </div>
                     </a>
                     <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
@@ -623,12 +612,7 @@ $seo_canonical = $base . '/';
                                     FCFA</span>
                                 <?php endif; ?>
                             </p>
-                            <?php if (!empty($produit['stock'])): ?>
-                            <p class="produit-card-stock-info">
-                                <strong>Stock:</strong> <?php echo $produit['stock']; ?>
 
-                            </p>
-                            <?php endif; ?>
                         </div>
                     </a>
                     <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">

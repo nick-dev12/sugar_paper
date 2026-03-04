@@ -147,22 +147,29 @@ function process_create_commande() {
         $nombre_articles = 0;
         $produits_email = [];
         foreach ($panier_items as $item) {
-            $prix_unitaire = !empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix']
-                ? $item['prix_promotion']
-                : $item['prix'];
+            $prix_unitaire = (!empty($item['panier_prix_unitaire']) && $item['panier_prix_unitaire'] > 0)
+                ? (float) $item['panier_prix_unitaire']
+                : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
             $prix_total_ligne = $prix_unitaire * $item['quantite'];
             $sous_total += $prix_total_ligne;
             $nombre_articles += $item['quantite'];
             $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
             $c = isset($choix[$panier_id]) ? $choix[$panier_id] : [];
+            $nom_affichage = $item['nom'];
+            if (!empty($item['panier_variante_nom'])) {
+                $nom_affichage .= ' - ' . $item['panier_variante_nom'];
+            }
             $produits_email[] = [
-                'nom' => $item['nom'],
+                'nom' => $nom_affichage,
                 'quantite' => $item['quantite'],
                 'prix_unitaire' => $prix_unitaire,
                 'prix_total' => $prix_total_ligne,
-                'couleur' => isset($c['couleur']) ? $c['couleur'] : '',
-                'poids' => isset($c['poids']) ? $c['poids'] : '',
-                'taille' => isset($c['taille']) ? $c['taille'] : ''
+                'variante_nom' => $item['panier_variante_nom'] ?? '',
+                'couleur' => isset($c['couleur']) ? $c['couleur'] : ($item['panier_couleur'] ?? ''),
+                'poids' => isset($c['poids']) ? $c['poids'] : ($item['panier_poids'] ?? ''),
+                'taille' => isset($c['taille']) ? $c['taille'] : ($item['panier_taille'] ?? ''),
+                'surcout_poids' => isset($item['panier_surcout_poids']) ? (float) $item['panier_surcout_poids'] : 0,
+                'surcout_taille' => isset($item['panier_surcout_taille']) ? (float) $item['panier_surcout_taille'] : 0
             ];
         }
         $montant_total = $sous_total + $frais_livraison;

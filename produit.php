@@ -5,6 +5,7 @@ session_start();
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
+require_once __DIR__ . '/models/model_variantes.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 
 // Récupérer l'ID du produit depuis l'URL ou POST
@@ -67,6 +68,9 @@ if ($prix_original) {
     $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
 }
 
+// Récupérer les variantes du produit
+$variantes = get_variantes_by_produit($produit_id);
+
 // Récupérer les produits similaires (même catégorie)
 $produits_similaires = get_produits_by_categorie($produit['categorie_id']);
 // Exclure le produit actuel
@@ -86,7 +90,7 @@ $base = get_site_base_url();
 $seo_title = $produit['nom'] . ' - Sugar Paper';
 $desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Produit naturel Sugar Paper';
 $seo_description = mb_substr($desc, 0, 160);
-$seo_canonical = $base . '/produit.php?id=' . (int)$produit['id'];
+$seo_canonical = $base . '/produit.php?id=' . (int) $produit['id'];
 $seo_og_type = 'product';
 $img = !empty($produit['image_principale']) ? $produit['image_principale'] : '';
 $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.png';
@@ -120,607 +124,707 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <style>
-        /* Styles pour la page produit - Palette gourmande */
-        body {
-            background: transparent;
+    /* Styles pour la page produit - Palette gourmande */
+    body {
+        background: transparent;
+    }
+
+    .produit-detail-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    .produit-detail-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    .produit-image-section {
+        position: relative;
+    }
+
+    .produit-gallery-main {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .produit-gallery-thumbs {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+    }
+
+    .gallery-nav {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 2px solid rgba(229, 72, 138, 0.4);
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--couleur-dominante);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.3s;
+    }
+
+    .gallery-nav:hover {
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        border-color: var(--couleur-dominante);
+    }
+
+    .gallery-thumbs-list {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding: 5px 0;
+        flex: 1;
+        scroll-behavior: smooth;
+    }
+
+    .gallery-thumbs-list::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .gallery-thumbs-list::-webkit-scrollbar-thumb {
+        background: rgba(229, 72, 138, 0.4);
+        border-radius: 4px;
+    }
+
+    .gallery-thumb {
+        flex-shrink: 0;
+        width: 70px;
+        height: 70px;
+        padding: 0;
+        border: 3px solid transparent;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        background: #f8f8f8;
+        transition: all 0.3s;
+    }
+
+    .gallery-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .gallery-thumb:hover {
+        border-color: rgba(229, 72, 138, 0.5);
+    }
+
+    .gallery-thumb.active {
+        border-color: var(--couleur-dominante);
+        box-shadow: 0 0 0 2px rgba(229, 72, 138, 0.3);
+    }
+
+    .produit-image-main {
+        width: 100%;
+        height: 400px;
+        object-fit: cover;
+        border-radius: 16px;
+        border: 2px solid rgba(229, 72, 138, 0.2);
+        background: var(--beige-creme);
+        box-shadow: 0 8px 24px rgba(229, 72, 138, 0.1);
+    }
+
+    .produit-info-section {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .produit-nom {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--titres);
+        margin-bottom: 10px;
+        line-height: 1.3;
+        font-family: var(--font-titres);
+    }
+
+    .produit-categorie {
+        display: inline-block;
+        font-size: 12px;
+        color: var(--couleur-dominante);
+        background: rgba(229, 72, 138, 0.12);
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .produit-prix-section {
+        margin-bottom: 15px;
+        padding: 18px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        border-left: 4px solid var(--couleur-dominante);
+    }
+
+    .prix-principal {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--titres);
+        margin-bottom: 5px;
+    }
+
+    .prix-original {
+        font-size: 18px;
+        color: var(--texte-fonce);
+        text-decoration: line-through;
+        margin-right: 8px;
+        opacity: 0.7;
+    }
+
+    .prix-promo {
+        font-size: 22px;
+        color: var(--accent-promo);
+        font-weight: 600;
+    }
+
+    .promo-badge {
+        display: inline-block;
+        background: var(--accent-promo);
+        color: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+        margin-left: 8px;
+    }
+
+    .produit-stock-info {
+        margin-bottom: 15px;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        border: 1px solid rgba(229, 72, 138, 0.15);
+    }
+
+    .stock-item {
+        font-size: 13px;
+        color: var(--texte-fonce);
+        margin-bottom: 6px;
+    }
+
+    .stock-item strong {
+        color: var(--couleur-dominante);
+        font-weight: 600;
+        min-width: 90px;
+        display: inline-block;
+    }
+
+    .stock-value {
+        color: var(--couleur-dominante);
+        font-weight: 700;
+    }
+
+    .couleurs-swatches-display {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-left: 4px;
+    }
+
+    .couleur-swatch-display {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        cursor: default;
+    }
+
+    .produit-options-section {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        border: 1px solid rgba(229, 72, 138, 0.15);
+    }
+
+    .option-group {
+        margin-bottom: 14px;
+    }
+
+    .option-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .option-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--titres);
+        margin-bottom: 8px;
+    }
+
+    .couleurs-swatches-select {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .couleur-swatch-select {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: #f5f5f5;
+        border-radius: 20px;
+        border: 2px solid #ddd;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .couleur-swatch-select:hover {
+        border-color: rgba(229, 72, 138, 0.5);
+        background: #fff;
+    }
+
+    .couleur-swatch-select:has(input:checked) {
+        border-color: var(--couleur-dominante);
+        box-shadow: 0 0 0 2px rgba(229, 72, 138, 0.3);
+        background: #fff;
+    }
+
+    .couleur-swatch-select input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .couleur-swatch-select .swatch-preview {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .couleur-swatch-select .swatch-text {
+        font-size: 13px;
+        color: var(--texte-fonce);
+    }
+
+    .option-select {
+        padding: 10px 14px;
+        border: 2px solid rgba(229, 72, 138, 0.3);
+        border-radius: 8px;
+        font-size: 14px;
+        min-width: 140px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .option-select:focus {
+        outline: none;
+        border-color: var(--couleur-dominante);
+    }
+
+    .option-value-display {
+        font-size: 14px;
+        color: var(--texte-fonce);
+        font-weight: 500;
+    }
+
+    .produit-description {
+        margin-bottom: 24px;
+        padding: 24px;
+        background: #ffffff;
+        border-radius: 16px;
+        line-height: 1.7;
+        color: var(--texte-fonce);
+        font-size: 15px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        border: 1px solid rgba(229, 72, 138, 0.12);
+        border-left: 4px solid var(--couleur-dominante);
+    }
+
+    .produit-description h3 {
+        font-size: 18px;
+        color: var(--couleur-dominante);
+        margin-bottom: 14px;
+        font-weight: 600;
+    }
+
+    .produit-description p {
+        margin: 0;
+        color: #333;
+    }
+
+    .quantite-section {
+        margin-bottom: 20px;
+    }
+
+    .quantite-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--titres);
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .quantite-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .quantite-input-wrapper {
+        display: flex;
+        align-items: center;
+        border: 2px solid rgba(229, 72, 138, 0.4);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .quantite-btn {
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        border: none;
+        width: 38px;
+        height: 40px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quantite-btn:hover {
+        background: rgba(229, 72, 138, 0.9);
+    }
+
+    .quantite-input {
+        width: 60px;
+        height: 38px;
+        border: none;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--titres);
+    }
+
+    .prix-total-section {
+        padding: 18px;
+        background: rgba(229, 72, 138, 0.85);
+        color: #ffffff;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .prix-total-label {
+        font-size: 13px;
+        margin-bottom: 5px;
+        opacity: 0.95;
+    }
+
+    .prix-total-value {
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .btn-add-panier {
+        width: 100%;
+        padding: 14px 25px;
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        border: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        box-shadow: 0 4px 15px rgba(229, 72, 138, 0.3);
+    }
+
+    .btn-add-panier:hover {
+        background: rgba(229, 72, 138, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
+    }
+
+    .btn-add-panier:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .message {
+        padding: 15px 20px;
+        padding-right: 45px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        font-weight: 500;
+        position: relative;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
         }
 
-        .produit-detail-container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 20px;
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .message-close {
+        position: absolute;
+        top: 50%;
+        right: 15px;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    .message-close:hover {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .message.fade-out {
+        animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+            transform: translateY(0);
         }
 
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+            max-height: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+    }
+
+    .produits-similaires {
+        margin-top: 60px;
+    }
+
+    .produits-similaires h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--titres);
+        margin-bottom: 30px;
+        text-align: center;
+        font-family: var(--font-titres);
+    }
+
+    .produit-connect-cta {
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid rgba(229, 72, 138, 0.2);
+    }
+
+    .produit-connect-cta p {
+        margin-bottom: 18px;
+        color: var(--texte-fonce);
+    }
+
+    .btn-connect-produit {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        background: var(--couleur-dominante);
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(229, 72, 138, 0.3);
+    }
+
+    .btn-connect-produit:hover {
+        background: rgba(229, 72, 138, 0.9);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
+        color: #ffffff;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
         .produit-detail-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .produit-image-section {
-            position: relative;
-        }
-
-        .produit-gallery-main {
-            position: relative;
-            margin-bottom: 15px;
-        }
-
-        .produit-gallery-thumbs {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 0;
-        }
-
-        .gallery-nav {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid rgba(229, 72, 138, 0.4);
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--couleur-dominante);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.3s;
-        }
-
-        .gallery-nav:hover {
-            background: var(--couleur-dominante);
-            color: #ffffff;
-            border-color: var(--couleur-dominante);
-        }
-
-        .gallery-thumbs-list {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 5px 0;
-            flex: 1;
-            scroll-behavior: smooth;
-        }
-
-        .gallery-thumbs-list::-webkit-scrollbar {
-            height: 4px;
-        }
-
-        .gallery-thumbs-list::-webkit-scrollbar-thumb {
-            background: rgba(229, 72, 138, 0.4);
-            border-radius: 4px;
-        }
-
-        .gallery-thumb {
-            flex-shrink: 0;
-            width: 70px;
-            height: 70px;
-            padding: 0;
-            border: 3px solid transparent;
-            border-radius: 10px;
-            overflow: hidden;
-            cursor: pointer;
-            background: #f8f8f8;
-            transition: all 0.3s;
-        }
-
-        .gallery-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .gallery-thumb:hover {
-            border-color: rgba(229, 72, 138, 0.5);
-        }
-
-        .gallery-thumb.active {
-            border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 2px rgba(229, 72, 138, 0.3);
+            grid-template-columns: 1fr;
+            gap: 20px;
         }
 
         .produit-image-main {
-            width: 100%;
-            height: 400px;
-            object-fit: cover;
-            border-radius: 16px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
-            background: var(--beige-creme);
-            box-shadow: 0 8px 24px rgba(229, 72, 138, 0.1);
-        }
-
-        .produit-info-section {
-            display: flex;
-            flex-direction: column;
+            height: 300px;
         }
 
         .produit-nom {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--titres);
-            margin-bottom: 10px;
-            line-height: 1.3;
-            font-family: var(--font-titres);
-        }
-
-        .produit-categorie {
-            display: inline-block;
-            font-size: 12px;
-            color: var(--couleur-dominante);
-            background: rgba(229, 72, 138, 0.12);
-            padding: 6px 12px;
-            border-radius: 20px;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-
-        .produit-prix-section {
-            margin-bottom: 15px;
-            padding: 18px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            border-left: 4px solid var(--couleur-dominante);
+            font-size: 20px;
         }
 
         .prix-principal {
-            font-size: 26px;
-            font-weight: 700;
-            color: var(--titres);
-            margin-bottom: 5px;
-        }
-
-        .prix-original {
-            font-size: 18px;
-            color: var(--texte-fonce);
-            text-decoration: line-through;
-            margin-right: 8px;
-            opacity: 0.7;
-        }
-
-        .prix-promo {
             font-size: 22px;
-            color: var(--accent-promo);
-            font-weight: 600;
-        }
-
-        .promo-badge {
-            display: inline-block;
-            background: var(--accent-promo);
-            color: #ffffff;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 20px;
-            margin-left: 8px;
-        }
-
-        .produit-stock-info {
-            margin-bottom: 15px;
-            padding: 14px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            border: 1px solid rgba(229, 72, 138, 0.15);
-        }
-
-        .stock-item {
-            font-size: 13px;
-            color: var(--texte-fonce);
-            margin-bottom: 6px;
-        }
-
-        .stock-item strong {
-            color: var(--couleur-dominante);
-            font-weight: 600;
-            min-width: 90px;
-            display: inline-block;
-        }
-
-        .stock-value {
-            color: var(--couleur-dominante);
-            font-weight: 700;
-        }
-
-        .couleurs-swatches-display {
-            display: inline-flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            margin-left: 4px;
-        }
-
-        .couleur-swatch-display {
-            display: inline-block;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 2px solid rgba(0, 0, 0, 0.2);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-            cursor: default;
-        }
-
-        .produit-options-section {
-            margin-bottom: 20px;
-            padding: 16px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            border: 1px solid rgba(229, 72, 138, 0.15);
-        }
-
-        .option-group {
-            margin-bottom: 14px;
-        }
-
-        .option-group:last-child {
-            margin-bottom: 0;
-        }
-
-        .option-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--titres);
-            margin-bottom: 8px;
-        }
-
-        .couleurs-swatches-select {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .couleur-swatch-select {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            background: #f5f5f5;
-            border-radius: 20px;
-            border: 2px solid #ddd;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .couleur-swatch-select:hover {
-            border-color: rgba(229, 72, 138, 0.5);
-            background: #fff;
-        }
-
-        .couleur-swatch-select:has(input:checked) {
-            border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 2px rgba(229, 72, 138, 0.3);
-            background: #fff;
-        }
-
-        .couleur-swatch-select input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .couleur-swatch-select .swatch-preview {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 2px solid rgba(0, 0, 0, 0.2);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-        }
-
-        .couleur-swatch-select .swatch-text {
-            font-size: 13px;
-            color: var(--texte-fonce);
-        }
-
-        .option-select {
-            padding: 10px 14px;
-            border: 2px solid rgba(229, 72, 138, 0.3);
-            border-radius: 8px;
-            font-size: 14px;
-            min-width: 140px;
-            background: #fff;
-            cursor: pointer;
-        }
-
-        .option-select:focus {
-            outline: none;
-            border-color: var(--couleur-dominante);
-        }
-
-        .option-value-display {
-            font-size: 14px;
-            color: var(--texte-fonce);
-            font-weight: 500;
-        }
-
-        .produit-description {
-            margin-bottom: 24px;
-            padding: 24px;
-            background: #ffffff;
-            border-radius: 16px;
-            line-height: 1.7;
-            color: var(--texte-fonce);
-            font-size: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(229, 72, 138, 0.12);
-            border-left: 4px solid var(--couleur-dominante);
-        }
-
-        .produit-description h3 {
-            font-size: 18px;
-            color: var(--couleur-dominante);
-            margin-bottom: 14px;
-            font-weight: 600;
-        }
-
-        .produit-description p {
-            margin: 0;
-            color: #333;
-        }
-
-        .quantite-section {
-            margin-bottom: 20px;
-        }
-
-        .quantite-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--titres);
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .quantite-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-
-        .quantite-input-wrapper {
-            display: flex;
-            align-items: center;
-            border: 2px solid rgba(229, 72, 138, 0.4);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .quantite-btn {
-            background: var(--couleur-dominante);
-            color: #ffffff;
-            border: none;
-            width: 38px;
-            height: 40px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .quantite-btn:hover {
-            background: rgba(229, 72, 138, 0.9);
-        }
-
-        .quantite-input {
-            width: 60px;
-            height: 38px;
-            border: none;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--titres);
-        }
-
-        .prix-total-section {
-            padding: 18px;
-            background: rgba(229, 72, 138, 0.85);
-            color: #ffffff;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .prix-total-label {
-            font-size: 13px;
-            margin-bottom: 5px;
-            opacity: 0.95;
         }
 
         .prix-total-value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .btn-add-panier {
-            width: 100%;
-            padding: 14px 25px;
-            background: var(--couleur-dominante);
-            color: #ffffff;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(229, 72, 138, 0.3);
-        }
-
-        .btn-add-panier:hover {
-            background: rgba(229, 72, 138, 0.9);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
-        }
-
-        .btn-add-panier:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .message {
-            padding: 15px 20px;
-            padding-right: 45px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: 500;
-            position: relative;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .message-close {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
             font-size: 20px;
-            color: inherit;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s;
-            padding: 0;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
         }
 
-        .message-close:hover {
-            opacity: 1;
-            background-color: rgba(0, 0, 0, 0.1);
+        .produit-detail-container {
+            margin: 15px auto;
+            padding: 0 15px;
         }
+    }
 
-        .message.fade-out {
-            animation: fadeOut 0.3s ease-out forwards;
-        }
+    .produit-section-bg {
+        background: #fff;
+        padding: 16px 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(229, 72, 138, 0.15);
+        margin-bottom: 20px;
+    }
 
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-                transform: translateY(0);
-            }
+    .produit-variantes-section {
+        margin-bottom: 20px;
+    }
 
-            to {
-                opacity: 0;
-                transform: translateY(-10px);
-                max-height: 0;
-                margin-bottom: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-            }
-        }
+    .produit-variantes-section.produit-section-bg {
+        padding: 18px 20px;
+    }
 
-        .produits-similaires {
-            margin-top: 60px;
-        }
+    .variantes-select {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-        .produits-similaires h2 {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--titres);
-            margin-bottom: 30px;
-            text-align: center;
-            font-family: var(--font-titres);
-        }
+    .variante-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 12px 16px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 100px;
+    }
 
-        .produit-connect-cta {
-            padding: 24px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(229, 72, 138, 0.2);
-        }
+    .variante-option:hover,
+    .variante-option.selected {
+        border-color: var(--couleur-dominante);
+        background: rgba(229, 72, 138, 0.05);
+    }
 
-        .produit-connect-cta p {
-            margin-bottom: 18px;
-            color: var(--texte-fonce);
-        }
+    .variante-option .variante-thumb {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 6px;
+        margin-bottom: 6px;
+    }
 
-        .btn-connect-produit {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 28px;
-            background: var(--couleur-dominante);
-            color: #ffffff;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(229, 72, 138, 0.3);
-        }
+    .variante-option .variante-nom {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--titres);
+    }
 
-        .btn-connect-produit:hover {
-            background: rgba(229, 72, 138, 0.9);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
-            color: #ffffff;
-        }
+    .variante-option .variante-prix {
+        font-size: 12px;
+        color: var(--couleur-dominante);
+    }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .produit-detail-wrapper {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
+    .options-list-select {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
-            .produit-image-main {
-                height: 300px;
-            }
+    .option-swatch-select {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 16px;
+        background: #fff;
+        border-radius: 10px;
+        border: 2px solid #e0e0e0;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 80px;
+    }
 
-            .produit-nom {
-                font-size: 20px;
-            }
+    .option-swatch-select:hover {
+        border-color: rgba(229, 72, 138, 0.5);
+    }
 
-            .prix-principal {
-                font-size: 22px;
-            }
+    .option-swatch-select.selected,
+    .option-swatch-select:has(input:checked) {
+        border-color: var(--couleur-dominante);
+        background: rgba(229, 72, 138, 0.05);
+    }
 
-            .prix-total-value {
-                font-size: 20px;
-            }
+    .option-swatch-select input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
 
-            .produit-detail-container {
-                margin: 15px auto;
-                padding: 0 15px;
-            }
-        }
+    .option-swatch-select .option-swatch-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--titres);
+    }
     </style>
 </head>
 
@@ -730,12 +834,12 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
     <div class="produit-detail-container">
         <?php if ($message): ?>
-            <div class="message <?php echo $message_type; ?>" id="message-alert">
-                <span><?php echo htmlspecialchars($message); ?></span>
-                <button type="button" class="message-close" onclick="closeMessage()" aria-label="Fermer">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+        <div class="message <?php echo $message_type; ?>" id="message-alert">
+            <span><?php echo htmlspecialchars($message); ?></span>
+            <button type="button" class="message-close" onclick="closeMessage()" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
         <?php endif; ?>
 
         <div class="produit-detail-wrapper">
@@ -758,270 +862,379 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         id="produit-image-main" onerror="this.src='/image/produit1.jpg'">
                 </div>
                 <?php if (count($galerie_images) > 1): ?>
-                    <div class="produit-gallery-thumbs">
-                        <button type="button" class="gallery-nav gallery-prev" aria-label="Image précédente">
-                            <i class="fas fa-chevron-left"></i>
+                <div class="produit-gallery-thumbs">
+                    <button type="button" class="gallery-nav gallery-prev" aria-label="Image précédente">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="gallery-thumbs-list">
+                        <?php foreach ($galerie_images as $idx => $img_path): ?>
+                        <button type="button" class="gallery-thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
+                            data-index="<?php echo $idx; ?>"
+                            data-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
+                            <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                                alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
                         </button>
-                        <div class="gallery-thumbs-list">
-                            <?php foreach ($galerie_images as $idx => $img_path): ?>
-                                <button type="button" class="gallery-thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
-                                    data-index="<?php echo $idx; ?>"
-                                    data-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
-                                    <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
-                                        alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
-                                </button>
-                            <?php endforeach; ?>
-                        </div>
-                        <button type="button" class="gallery-nav gallery-next" aria-label="Image suivante">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
+                        <?php endforeach; ?>
                     </div>
+                    <button type="button" class="gallery-nav gallery-next" aria-label="Image suivante">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
                 <?php endif; ?>
             </div>
 
             <!-- Section Informations -->
             <div class="produit-info-section">
-                <h1 class="produit-nom"><?php echo htmlspecialchars($produit['nom']); ?></h1>
+                <h1 class="produit-nom" id="produit-nom"><?php echo htmlspecialchars($produit['nom']); ?></h1>
 
                 <!-- Prix -->
                 <div class="produit-prix-section">
-                    <?php if ($prix_original): ?>
-                        <div class="prix-principal">
-                            <span class="prix-original"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                FCFA</span>
-                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-                            <span class="promo-badge">-<?php echo $pourcentage_reduction; ?>%</span>
-                        </div>
-                    <?php else: ?>
-                        <div class="prix-principal">
-                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
-                        </div>
-                    <?php endif; ?>
+                    <div class="prix-principal" id="produit-prix-affichage">
+                        <?php if ($prix_original): ?>
+                        <span class="prix-original"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
+                            FCFA</span>
+                        <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
+                        <span class="promo-badge">-<?php echo $pourcentage_reduction; ?>%</span>
+                        <?php else: ?>
+                        <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
+                        <?php endif; ?>
+                    </div>
                 </div>
 
-                <!-- Stock, Poids, Couleurs, Taille -->
+                <!-- Variantes, Stock, Poids, Couleurs, Taille -->
                 <?php
                 $couleurs_options = [];
-                $poids_options = [];
-                $taille_options = [];
                 if (!empty($produit['couleurs'])) {
                     $cr = trim($produit['couleurs']);
                     $dec = json_decode($cr, true);
-                    if (is_array($dec)) {
-                        $couleurs_options = array_filter($dec, function ($c) {
-                            return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
-                        });
-                    }
-                    if (empty($couleurs_options)) {
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        if (is_array($dec) && !empty($dec)) {
+                            $couleurs_options = array_filter($dec, function ($c) {
+                                return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+                            });
+                        }
+                    } else {
                         $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
                     }
                 }
-                if (!empty($produit['poids'])) {
-                    $poids_options = array_map('trim', array_filter(explode(',', $produit['poids'])));
-                }
-                if (!empty($produit['taille'])) {
-                    $taille_options = array_map('trim', array_filter(explode(',', $produit['taille'])));
-                }
+                $poids_options = parse_options_with_surcharge($produit['poids'] ?? null);
+                $taille_options = parse_options_with_surcharge($produit['taille'] ?? null);
+                $poids_options = array_values(array_filter($poids_options, function ($o) {
+                    $v = trim((string) ($o['v'] ?? ''));
+                    return $v !== '' && $v !== '[]' && $v !== '[ ]' && strtolower($v) !== 'null';
+                }));
+                $taille_options = array_values(array_filter($taille_options, function ($o) {
+                    $v = trim((string) ($o['v'] ?? ''));
+                    return $v !== '' && $v !== '[]' && $v !== '[ ]' && strtolower($v) !== 'null';
+                }));
                 $has_selectable_options = !empty($couleurs_options) || !empty($poids_options) || !empty($taille_options);
+                $has_variantes = !empty($variantes);
+                $prix_base_js = $prix_affichage;
+                $variantes_js = [];
+                foreach ($variantes as $v) {
+                    $vp = !empty($v['prix_promotion']) && $v['prix_promotion'] < $v['prix'] ? $v['prix_promotion'] : $v['prix'];
+                    $variantes_js[] = ['id' => $v['id'], 'nom' => $v['nom'], 'prix' => (float) $vp, 'image' => $v['image'] ?? ''];
+                }
+                $poids_js = [];
+                foreach ($poids_options as $p) {
+                    $poids_js[] = ['v' => $p['v'], 's' => (float) ($p['s'] ?? 0)];
+                }
+                $taille_js = [];
+                foreach ($taille_options as $t) {
+                    $taille_js[] = ['v' => $t['v'], 's' => (float) ($t['s'] ?? 0)];
+                }
                 ?>
 
-
-                <!-- Description -->
+                <!-- Description (en bas) -->
                 <?php if (!empty($produit['description'])): ?>
-                    <div class="produit-description">
-                        <h3>Description</h3>
-                        <p><?php echo nl2br(htmlspecialchars($produit['description'])); ?></p>
-                    </div>
+                <div class="produit-description produit-section-bg">
+                    <h3>Description</h3>
+                    <p>
+                        <?php echo nl2br(htmlspecialchars($produit['description'])); ?>
+                    </p>
+                </div>
                 <?php endif; ?>
+
+                <!-- Variantes du produit -->
+                <?php if ($has_variantes): ?>
+                <div class="produit-variantes-section produit-section-bg">
+                    <div class="quantite-label" style="margin-bottom: 10px;"><i class="fas fa-layer-group"></i> Autres
+                        quantités disponibles</div>
+                    <div class="variantes-select">
+                        <?php if (isset($_SESSION['user_id'])): ?>
+                        <input type="hidden" name="option_variante_id" id="option-variante-id" value="">
+                        <input type="hidden" name="option_variante_nom" id="option-variante-nom"
+                            value="<?php echo htmlspecialchars($produit['nom']); ?>">
+                        <input type="hidden" name="option_variante_image" id="option-variante-image"
+                            value="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
+                        <?php endif; ?>
+                        <label class="variante-option variante-base selected" data-id=""
+                            data-prix="<?php echo $prix_affichage; ?>"
+                            data-nom="<?php echo htmlspecialchars($produit['nom']); ?>"
+                            data-image="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
+                            <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
+                                value="" checked required><?php endif; ?>
+                            <?php if (!empty($produit['image_principale'])): ?><img
+                                src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" alt=""
+                                class="variante-thumb" onerror="this.style.display='none'"><?php endif; ?>
+                            <span class="variante-nom"><?php echo htmlspecialchars($produit['nom']); ?></span>
+                            <span class="variante-prix"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
+                                FCFA</span>
+                        </label>
+                        <?php foreach ($variantes as $var): ?>
+                        <?php $vp = !empty($var['prix_promotion']) && $var['prix_promotion'] < $var['prix'] ? $var['prix_promotion'] : $var['prix']; ?>
+                        <label class="variante-option" data-id="<?php echo $var['id']; ?>"
+                            data-prix="<?php echo $vp; ?>" data-nom="<?php echo htmlspecialchars($var['nom']); ?>"
+                            data-image="<?php echo htmlspecialchars($var['image'] ?? ''); ?>">
+                            <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
+                                value="<?php echo $var['id']; ?>"><?php endif; ?>
+                            <?php if (!empty($var['image'])): ?><img
+                                src="/upload/<?php echo htmlspecialchars($var['image']); ?>" alt=""
+                                class="variante-thumb" onerror="this.style.display='none'"><?php endif; ?>
+                            <span class="variante-nom"><?php echo htmlspecialchars($var['nom']); ?></span>
+                            <span class="variante-prix"><?php echo number_format($vp, 0, ',', ' '); ?> FCFA</span>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+
+
 
                 <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <form method="POST" action="" id="add-to-panier-form">
-                        <input type="hidden" name="action" value="add_to_panier">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                <?php endif; ?>
+                <form method="POST" action="" id="add-to-panier-form">
+                    <input type="hidden" name="action" value="add_to_panier">
+                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                    <?php endif; ?>
 
-                <?php if ($has_selectable_options): ?>
-                    <div class="produit-options-section">
+                    <?php if ($has_selectable_options): ?>
+                    <div class="produit-options-section produit-section-bg">
                         <div class="quantite-label" style="margin-bottom: 10px;"><i class="fas fa-palette"></i>
                             Choisissez vos options</div>
                         <?php if (!empty($couleurs_options)): ?>
-                            <div class="option-group">
-                                <label class="option-label">Couleur</label>
-                                <?php if (count($couleurs_options) === 1): ?>
-                                    <?php if (isset($_SESSION['user_id'])): ?>
-                                    <input type="hidden" name="option_couleur"
-                                        value="<?php echo htmlspecialchars($couleurs_options[0]); ?>">
+                        <div class="option-group">
+                            <label class="option-label">Couleur</label>
+                            <?php if (count($couleurs_options) === 1): ?>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <input type="hidden" name="option_couleur"
+                                value="<?php echo htmlspecialchars($couleurs_options[0]); ?>">
+                            <?php endif; ?>
+                            <span class="couleurs-swatches-select">
+                                <?php $hex = $couleurs_options[0]; ?>
+                                <span class="couleur-swatch-select is-hex" style="opacity:0.9;">
+                                    <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
+                                    <span class="swatch-preview"
+                                        style="background-color:<?php echo htmlspecialchars($hex); ?>;"
+                                        title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                    <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
+                                    <?php else: ?>
+                                    <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
                                     <?php endif; ?>
-                                    <span class="couleurs-swatches-select">
-                                        <?php $hex = $couleurs_options[0]; ?>
-                                        <span class="couleur-swatch-select is-hex" style="opacity:0.9;">
-                                            <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
-                                                <span class="swatch-preview"
-                                                    style="background-color:<?php echo htmlspecialchars($hex); ?>;"
-                                                    title="<?php echo htmlspecialchars($hex); ?>"></span>
-                                                <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                            <?php else: ?>
-                                                <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                            <?php endif; ?>
-                                        </span>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="couleurs-swatches-select">
-                                        <?php foreach ($couleurs_options as $hex): ?>
-                                            <label
-                                                class="couleur-swatch-select <?php echo preg_match('/^#[0-9A-Fa-f]{6}$/', $hex) ? 'is-hex' : ''; ?>">
-                                                <?php if (isset($_SESSION['user_id'])): ?>
-                                                <input type="radio" name="option_couleur"
-                                                    value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur"
-                                                    required>
-                                                <?php endif; ?>
-                                                <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
-                                                    <span class="swatch-preview"
-                                                        style="background-color:<?php echo htmlspecialchars($hex); ?>;"
-                                                        title="<?php echo htmlspecialchars($hex); ?>"></span>
-                                                <?php else: ?>
-                                                    <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
-                                                <?php endif; ?>
-                                            </label>
-                                        <?php endforeach; ?>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
+                                </span>
+                            </span>
+                            <?php else: ?>
+                            <span class="couleurs-swatches-select">
+                                <?php foreach ($couleurs_options as $hex): ?>
+                                <label
+                                    class="couleur-swatch-select <?php echo preg_match('/^#[0-9A-Fa-f]{6}$/', $hex) ? 'is-hex' : ''; ?>">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="radio" name="option_couleur"
+                                        value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur"
+                                        >
+                                    <?php endif; ?>
+                                    <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
+                                    <span class="swatch-preview"
+                                        style="background-color:<?php echo htmlspecialchars($hex); ?>;"
+                                        title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                    <?php else: ?>
+                                    <span class="swatch-text"><?php echo htmlspecialchars($hex); ?></span>
+                                    <?php endif; ?>
+                                </label>
+                                <?php endforeach; ?>
+                            </span>
+                            <?php endif; ?>
+                        </div>
                         <?php endif; ?>
                         <?php if (!empty($poids_options) && count($poids_options) > 1): ?>
-                            <div class="option-group">
-                                <label class="option-label" for="option-poids">Poids</label>
-                                <?php if (isset($_SESSION['user_id'])): ?>
-                                <select name="option_poids" id="option-poids" class="option-select" required>
-                                    <option value="">— Choisir un poids —</option>
-                                    <?php foreach ($poids_options as $opt): ?>
-                                        <option value="<?php echo htmlspecialchars($opt); ?>">
-                                            <?php echo htmlspecialchars($opt); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php else: ?>
-                                <span class="option-value-display"><?php echo htmlspecialchars(implode(', ', $poids_options)); ?></span>
-                                <?php endif; ?>
-                            </div>
+                        <div class="option-group">
+                            <label class="option-label">Poids</label>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <input type="hidden" name="option_surcout_poids" id="option-surcout-poids" value="0">
+                            <?php endif; ?>
+                            <span class="options-list-select poids-options-list">
+                                <label class="option-swatch-select selected"
+                                    data-value="" data-surcout="0">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="radio" name="option_poids"
+                                        value="" checked>
+                                    <?php endif; ?>
+                                    <span class="option-swatch-text">Prix de base (<?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA)</span>
+                                </label>
+                                <?php foreach ($poids_options as $opt): ?>
+                                <label class="option-swatch-select"
+                                    data-value="<?php echo htmlspecialchars($opt['v']); ?>"
+                                    data-surcout="<?php echo (float) ($opt['s'] ?? 0); ?>">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="radio" name="option_poids"
+                                        value="<?php echo htmlspecialchars($opt['v']); ?>">
+                                    <?php endif; ?>
+                                    <span
+                                        class="option-swatch-text"><?php echo htmlspecialchars($opt['v']); ?><?php echo ($opt['s'] ?? 0) > 0 ? ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </span>
+                        </div>
                         <?php elseif (!empty($poids_options)): ?>
-                            <div class="option-group">
-                                <label class="option-label">Poids</label>
-                                <?php if (isset($_SESSION['user_id'])): ?>
-                                <input type="hidden" name="option_poids"
-                                    value="<?php echo htmlspecialchars($poids_options[0]); ?>">
-                                <?php endif; ?>
-                                <span class="option-value-display"><?php echo htmlspecialchars($poids_options[0]); ?></span>
-                            </div>
+                        <div class="option-group">
+                            <label class="option-label">Poids</label>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <input type="hidden" name="option_poids"
+                                value="<?php echo htmlspecialchars($poids_options[0]['v']); ?>">
+                            <input type="hidden" name="option_surcout_poids" id="option-surcout-poids"
+                                value="<?php echo (float) ($poids_options[0]['s'] ?? 0); ?>">
+                            <?php endif; ?>
+                            <span
+                                class="option-value-display"><?php echo htmlspecialchars($poids_options[0]['v']); ?><?php echo ($poids_options[0]['s'] ?? 0) > 0 ? ' (+' . number_format($poids_options[0]['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
+                        </div>
                         <?php endif; ?>
                         <?php if (!empty($taille_options) && count($taille_options) > 1): ?>
-                            <div class="option-group">
-                                <label class="option-label" for="option-taille">Taille</label>
-                                <?php if (isset($_SESSION['user_id'])): ?>
-                                <select name="option_taille" id="option-taille" class="option-select" required>
-                                    <option value="">— Choisir une taille —</option>
-                                    <?php foreach ($taille_options as $opt): ?>
-                                        <option value="<?php echo htmlspecialchars($opt); ?>">
-                                            <?php echo htmlspecialchars($opt); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php else: ?>
-                                <span class="option-value-display"><?php echo htmlspecialchars(implode(', ', $taille_options)); ?></span>
-                                <?php endif; ?>
-                            </div>
+                        <div class="option-group">
+                            <label class="option-label">Taille</label>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <input type="hidden" name="option_surcout_taille" id="option-surcout-taille" value="0">
+                            <?php endif; ?>
+                            <span class="options-list-select taille-options-list">
+                                <label class="option-swatch-select selected"
+                                    data-value="" data-surcout="0">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="radio" name="option_taille"
+                                        value="" checked>
+                                    <?php endif; ?>
+                                    <span class="option-swatch-text">Prix de base (<?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA)</span>
+                                </label>
+                                <?php foreach ($taille_options as $opt): ?>
+                                <label class="option-swatch-select"
+                                    data-value="<?php echo htmlspecialchars($opt['v']); ?>"
+                                    data-surcout="<?php echo (float) ($opt['s'] ?? 0); ?>">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                    <input type="radio" name="option_taille"
+                                        value="<?php echo htmlspecialchars($opt['v']); ?>">
+                                    <?php endif; ?>
+                                    <span
+                                        class="option-swatch-text"><?php echo htmlspecialchars($opt['v']); ?><?php echo ($opt['s'] ?? 0) > 0 ? ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </span>
+                        </div>
                         <?php elseif (!empty($taille_options)): ?>
-                            <div class="option-group">
-                                <label class="option-label">Taille</label>
-                                <?php if (isset($_SESSION['user_id'])): ?>
-                                <input type="hidden" name="option_taille"
-                                    value="<?php echo htmlspecialchars($taille_options[0]); ?>">
-                                <?php endif; ?>
-                                <span class="option-value-display"><?php echo htmlspecialchars($taille_options[0]); ?></span>
-                            </div>
+                        <div class="option-group">
+                            <label class="option-label">Taille</label>
+                            <?php if (isset($_SESSION['user_id'])): ?>
+                            <input type="hidden" name="option_taille"
+                                value="<?php echo htmlspecialchars($taille_options[0]['v']); ?>">
+                            <input type="hidden" name="option_surcout_taille" id="option-surcout-taille"
+                                value="<?php echo (float) ($taille_options[0]['s'] ?? 0); ?>">
+                            <?php endif; ?>
+                            <span
+                                class="option-value-display"><?php echo htmlspecialchars($taille_options[0]['v']); ?><?php echo ($taille_options[0]['s'] ?? 0) > 0 ? ' (+' . number_format($taille_options[0]['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
+                        </div>
                         <?php endif; ?>
                     </div>
-                <?php endif; ?>
+                    <?php endif; ?>
 
-                <!-- Sélection de quantité et ajout au panier -->
-                <?php if (isset($_SESSION['user_id'])): ?>
-                        <div class="quantite-section">
-                            <label class="quantite-label">Quantité:</label>
-                            <div class="quantite-controls">
-                                <div class="quantite-input-wrapper">
-                                    <button type="button" class="quantite-btn" id="decrease-qty">-</button>
-                                    <input type="number" name="quantite" id="quantite" class="quantite-input" value="1"
-                                        min="1" max="<?php echo $produit['stock']; ?>" required>
-                                    <button type="button" class="quantite-btn" id="increase-qty">+</button>
-                                </div>
+                    <!-- Sélection de quantité et ajout au panier -->
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                    <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
+                        value="<?php echo $prix_affichage; ?>">
+                    <div class="quantite-section">
+                        <label class="quantite-label">Quantité:</label>
+                        <div class="quantite-controls">
+                            <div class="quantite-input-wrapper">
+                                <button type="button" class="quantite-btn" id="decrease-qty">-</button>
+                                <input type="number" name="quantite" id="quantite" class="quantite-input" value="1"
+                                    min="1" max="<?php echo $produit['stock']; ?>" required>
+                                <button type="button" class="quantite-btn" id="increase-qty">+</button>
                             </div>
                         </div>
-
-                        <!-- Prix total calculé -->
-                        <div class="prix-total-section">
-                            <div class="prix-total-label">Prix total:</div>
-                            <div class="prix-total-value" id="prix-total">
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn-add-panier" id="btn-add-panier">
-                            <i class="fa-solid fa-cart-shopping"></i>
-                            Ajouter au panier
-                        </button>
-                    </form>
-                <?php else: ?>
-                    <div class="produit-connect-cta">
-                        <p>Vous devez être connecté pour ajouter des produits au panier.</p>
-                        <a href="/user/connexion.php" class="btn-connect-produit">
-                            <i class="fa-solid fa-right-to-bracket"></i> Se connecter
-                        </a>
                     </div>
+
+
+                    <!-- Prix total calculé -->
+                    <div class="prix-total-section">
+                        <div class="prix-total-label">Prix total:</div>
+                        <div class="prix-total-value" id="prix-total">
+                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
+                        </div>
+                    </div>
+
+
+                    <button type="submit" class="btn-add-panier" id="btn-add-panier">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        Ajouter au panier
+                    </button>
+                </form>
+                <?php else: ?>
+
+                <div class="produit-connect-cta">
+                    <p>Vous devez être connecté pour ajouter des produits au panier.</p>
+                    <a href="/user/connexion.php" class="btn-connect-produit">
+                        <i class="fa-solid fa-right-to-bracket"></i> Se connecter
+                    </a>
+                </div>
                 <?php endif; ?>
+
+                <!-- Description (en bas) -->
+                <!-- <?php if (!empty($produit['description'])): ?>
+                    <div class="produit-description produit-section-bg">
+                        <h3>Description</h3>
+                        <p><?php echo nl2br(htmlspecialchars($produit['description'])); ?></p>
+                    </div>
+                <?php endif; ?> -->
             </div>
         </div>
 
         <!-- Produits similaires -->
         <?php if (!empty($produits_similaires)): ?>
-            <div class="produits-similaires">
-                <h2>Produits similaires</h2>
-                <section class="produit_vedetes">
-                    <article class="articles carousel11">
-                        <?php foreach ($produits_similaires as $similaire): ?>
-                            <?php
+        <div class="produits-similaires">
+            <h2>Produits similaires</h2>
+            <section class="produit_vedetes">
+                <article class="articles carousel11">
+                    <?php foreach ($produits_similaires as $similaire): ?>
+                    <?php
                             $prix_sim = !empty($similaire['prix_promotion']) && $similaire['prix_promotion'] < $similaire['prix']
                                 ? $similaire['prix_promotion']
                                 : $similaire['prix'];
                             ?>
-                            <div class="carousel">
-                                <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
-                                            alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
-                                        <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
-                                                class="span1">FCFA</span></p>
-                                        <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="<?php echo $similaire['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url"
-                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                                    </button>
-                                </form>
+                    <div class="carousel">
+                        <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
+                            <div class="image-wrapper">
+                                <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
+                                    alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
+                                    onerror="this.src='/image/produit1.jpg'">
                             </div>
-                        <?php endforeach; ?>
-                    </article>
-                </section>
-            </div>
+                            <div class="produit-content">
+                                <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
+                                <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
+                                        class="span1">FCFA</span></p>
+                                <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
+                            </div>
+                        </a>
+                        <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
+                            <input type="hidden" name="produit_id" value="<?php echo $similaire['id']; ?>">
+                            <input type="hidden" name="quantite" value="1">
+                            <input type="hidden" name="return_url"
+                                value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
+                            <button type="submit" class="btn-add-cart">
+                                <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                            </button>
+                        </form>
+                    </div>
+                    <?php endforeach; ?>
+                </article>
+            </section>
+        </div>
         <?php endif; ?>
     </div>
 
@@ -1029,127 +1242,230 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
     <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        // Calcul automatique du prix total
-        const prixUnitaire = <?php echo $prix_affichage; ?>;
-        const quantiteInput = document.getElementById('quantite');
-        const prixTotalElement = document.getElementById('prix-total');
-        const decreaseBtn = document.getElementById('decrease-qty');
-        const increaseBtn = document.getElementById('increase-qty');
-        const maxStock = <?php echo $produit['stock']; ?>;
+    // Calcul automatique du prix total (variante + surcoûts)
+    const prixBase = <?php echo $prix_affichage; ?>;
+    const quantiteInput = document.getElementById('quantite');
+    const prixTotalElement = document.getElementById('prix-total');
+    const prixUnitaireInput = document.getElementById('option-prix-unitaire');
+    const decreaseBtn = document.getElementById('decrease-qty');
+    const increaseBtn = document.getElementById('increase-qty');
+    const maxStock = <?php echo $produit['stock']; ?>;
 
-        function updatePrixTotal() {
-            const quantite = parseInt(quantiteInput.value) || 1;
-            const prixTotal = prixUnitaire * quantite;
-            prixTotalElement.textContent = prixTotal.toLocaleString('fr-FR') + ' FCFA';
-
-            // Désactiver le bouton si stock insuffisant
-            const btnAdd = document.getElementById('btn-add-panier');
-            if (quantite > maxStock || quantite <= 0) {
-                btnAdd.disabled = true;
-            } else {
-                btnAdd.disabled = false;
-            }
+    function getPrixUnitaire() {
+        var prix = prixBase;
+        var selVariante = document.querySelector('.variante-option.selected, .variante-option input:checked');
+        if (selVariante) {
+            var el = selVariante.classList ? selVariante : selVariante.closest('.variante-option');
+            if (el && el.dataset.prix) prix = parseFloat(el.dataset.prix);
         }
+        var surcP = 0,
+            surcT = 0;
+        var spH = document.getElementById('option-surcout-poids');
+        if (spH && spH.value) surcP = parseFloat(spH.value) || 0;
+        var stH = document.getElementById('option-surcout-taille');
+        if (stH && stH.value) surcT = parseFloat(stH.value) || 0;
+        return prix + surcP + surcT;
+    }
 
-        var galleryThumbs = document.querySelectorAll('.gallery-thumb');
-        var galleryMain = document.getElementById('produit-image-main');
-        var galleryPrev = document.querySelector('.gallery-prev');
-        var galleryNext = document.querySelector('.gallery-next');
-        var galleryList = document.querySelector('.gallery-thumbs-list');
-        if (galleryThumbs.length > 0 && galleryMain) {
-            var currentIdx = 0;
+    function updatePrixTotal() {
+        if (!quantiteInput || !prixTotalElement) return;
+        const prixUnitaire = getPrixUnitaire();
+        const quantite = parseInt(quantiteInput.value) || 1;
+        const prixTotal = prixUnitaire * quantite;
+        prixTotalElement.textContent = prixTotal.toLocaleString('fr-FR') + ' FCFA';
+        if (prixUnitaireInput) prixUnitaireInput.value = prixUnitaire;
 
-            function setActiveThumb(idx) {
-                galleryThumbs.forEach(function (t, i) {
-                    t.classList.toggle('active', i === idx);
-                });
-                currentIdx = idx;
-                var src = galleryThumbs[idx].getAttribute('data-src');
-                if (src) galleryMain.src = src;
-            }
-            galleryThumbs.forEach(function (thumb, idx) {
-                thumb.addEventListener('click', function () {
-                    setActiveThumb(idx);
-                });
-            });
-            if (galleryPrev) galleryPrev.addEventListener('click', function () {
-                currentIdx = (currentIdx - 1 + galleryThumbs.length) % galleryThumbs.length;
-                setActiveThumb(currentIdx);
-                if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList
-                    .offsetWidth / 2 + 35;
-            });
-            if (galleryNext) galleryNext.addEventListener('click', function () {
-                currentIdx = (currentIdx + 1) % galleryThumbs.length;
-                setActiveThumb(currentIdx);
-                if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList
-                    .offsetWidth / 2 + 35;
-            });
+        var btnAdd = document.getElementById('btn-add-panier');
+        if (btnAdd) btnAdd.disabled = (quantite > maxStock || quantite <= 0);
+    }
+
+    var produitNomBase = '<?php echo addslashes(htmlspecialchars($produit['nom'])); ?>';
+
+    function updatePrixEtNomAffichage() {
+        var prixUnitaire = getPrixUnitaire();
+        var selVariante = document.querySelector('.variante-option.selected, .variante-option input:checked');
+        var nomAffichage = produitNomBase;
+        if (selVariante) {
+            var el = selVariante.classList && selVariante.classList.contains ? selVariante : selVariante.closest(
+                '.variante-option');
+            if (el && el.dataset.nom) nomAffichage = el.dataset.nom;
         }
+        var elNom = document.getElementById('produit-nom');
+        var elPrix = document.getElementById('produit-prix-affichage');
+        if (elNom) elNom.textContent = nomAffichage;
+        if (elPrix) elPrix.textContent = prixUnitaire.toLocaleString('fr-FR') + ' FCFA';
+    }
 
-        if (quantiteInput) {
-            quantiteInput.addEventListener('input', updatePrixTotal);
-            quantiteInput.addEventListener('change', function () {
-                let value = parseInt(this.value) || 1;
-                if (value < 1) value = 1;
-                if (value > maxStock) value = maxStock;
-                this.value = value;
-                updatePrixTotal();
+    document.querySelectorAll('.variante-option').forEach(function(el) {
+        el.addEventListener('click', function() {
+            document.querySelectorAll('.variante-option').forEach(function(x) {
+                x.classList.remove('selected');
             });
-        }
-
-        if (decreaseBtn) {
-            decreaseBtn.addEventListener('click', function () {
-                let value = parseInt(quantiteInput.value) || 1;
-                if (value > 1) {
-                    value--;
-                    quantiteInput.value = value;
-                    updatePrixTotal();
-                }
-            });
-        }
-
-        if (increaseBtn) {
-            increaseBtn.addEventListener('click', function () {
-                let value = parseInt(quantiteInput.value) || 1;
-                if (value < maxStock) {
-                    value++;
-                    quantiteInput.value = value;
-                    updatePrixTotal();
-                }
-            });
-        }
-
-        // Initialiser le prix total au chargement
-        if (quantiteInput) {
+            el.classList.add('selected');
+            var inp = el.querySelector('input[type="radio"]');
+            if (inp) inp.checked = true;
+            var hid = document.getElementById('option-variante-id');
+            var hnom = document.getElementById('option-variante-nom');
+            var himg = document.getElementById('option-variante-image');
+            if (hid) hid.value = el.dataset.id || '';
+            if (hnom) hnom.value = el.dataset.nom || '';
+            if (himg) himg.value = el.dataset.image || '';
+            var mainImg = document.getElementById('produit-image-main');
+            if (mainImg && el.dataset.image) mainImg.src = '/upload/' + el.dataset.image;
+            else if (mainImg && !el.dataset.id) mainImg.src =
+                '/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>';
             updatePrixTotal();
-        }
+            if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
+        });
+    });
 
-        // Gestion du message de succès/erreur
-        function closeMessage() {
-            const message = document.getElementById('message-alert');
-            if (message) {
-                message.classList.add('fade-out');
-                setTimeout(() => {
-                    message.style.display = 'none';
-                    // Supprimer le paramètre ?added=success de l'URL
-                    if (window.location.search.includes('added=success')) {
-                        const url = new URL(window.location);
-                        url.searchParams.delete('added');
-                        window.history.replaceState({}, '', url);
-                    }
-                }, 300);
-            }
-        }
+    function setupOptionSwatchListeners() {
+        document.querySelectorAll('.poids-options-list .option-swatch-select').forEach(function(lbl) {
+            lbl.addEventListener('click', function() {
+                lbl.closest('.poids-options-list').querySelectorAll('.option-swatch-select').forEach(
+                    function(x) {
+                        x.classList.remove('selected');
+                    });
+                lbl.classList.add('selected');
+                var surc = document.getElementById('option-surcout-poids');
+                if (surc) surc.value = lbl.dataset.surcout || 0;
+                updatePrixTotal();
+                if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
+            });
+        });
+        document.querySelectorAll('.taille-options-list .option-swatch-select').forEach(function(lbl) {
+            lbl.addEventListener('click', function() {
+                lbl.closest('.taille-options-list').querySelectorAll('.option-swatch-select').forEach(
+                    function(x) {
+                        x.classList.remove('selected');
+                    });
+                lbl.classList.add('selected');
+                var surc = document.getElementById('option-surcout-taille');
+                if (surc) surc.value = lbl.dataset.surcout || 0;
+                updatePrixTotal();
+                if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
+            });
+        });
+        document.querySelectorAll('input[name="option_poids"]').forEach(function(rad) {
+            rad.addEventListener('change', function() {
+                var lbl = this.closest('.option-swatch-select');
+                var surc = document.getElementById('option-surcout-poids');
+                if (surc && lbl) surc.value = lbl.dataset.surcout || 0;
+                updatePrixTotal();
+                if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
+            });
+        });
+        document.querySelectorAll('input[name="option_taille"]').forEach(function(rad) {
+            rad.addEventListener('change', function() {
+                var lbl = this.closest('.option-swatch-select');
+                var surc = document.getElementById('option-surcout-taille');
+                if (surc && lbl) surc.value = lbl.dataset.surcout || 0;
+                updatePrixTotal();
+                if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
+            });
+        });
+    }
+    setupOptionSwatchListeners();
 
-        // Fermer automatiquement après 3 secondes si c'est un message de succès
-        document.addEventListener('DOMContentLoaded', function () {
-            const message = document.getElementById('message-alert');
-            if (message && message.classList.contains('success')) {
-                setTimeout(() => {
-                    closeMessage();
-                }, 3000);
+    var galleryThumbs = document.querySelectorAll('.gallery-thumb');
+    var galleryMain = document.getElementById('produit-image-main');
+    var galleryPrev = document.querySelector('.gallery-prev');
+    var galleryNext = document.querySelector('.gallery-next');
+    var galleryList = document.querySelector('.gallery-thumbs-list');
+    if (galleryThumbs.length > 0 && galleryMain) {
+        var currentIdx = 0;
+
+        function setActiveThumb(idx) {
+            galleryThumbs.forEach(function(t, i) {
+                t.classList.toggle('active', i === idx);
+            });
+            currentIdx = idx;
+            var src = galleryThumbs[idx].getAttribute('data-src');
+            if (src) galleryMain.src = src;
+        }
+        galleryThumbs.forEach(function(thumb, idx) {
+            thumb.addEventListener('click', function() {
+                setActiveThumb(idx);
+            });
+        });
+        if (galleryPrev) galleryPrev.addEventListener('click', function() {
+            currentIdx = (currentIdx - 1 + galleryThumbs.length) % galleryThumbs.length;
+            setActiveThumb(currentIdx);
+            if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList
+                .offsetWidth / 2 + 35;
+        });
+        if (galleryNext) galleryNext.addEventListener('click', function() {
+            currentIdx = (currentIdx + 1) % galleryThumbs.length;
+            setActiveThumb(currentIdx);
+            if (galleryList) galleryList.scrollLeft = galleryThumbs[currentIdx].offsetLeft - galleryList
+                .offsetWidth / 2 + 35;
+        });
+    }
+
+    if (quantiteInput) {
+        quantiteInput.addEventListener('input', updatePrixTotal);
+        quantiteInput.addEventListener('change', function() {
+            let value = parseInt(this.value) || 1;
+            if (value < 1) value = 1;
+            if (value > maxStock) value = maxStock;
+            this.value = value;
+            updatePrixTotal();
+        });
+    }
+
+    if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', function() {
+            let value = parseInt(quantiteInput.value) || 1;
+            if (value > 1) {
+                value--;
+                quantiteInput.value = value;
+                updatePrixTotal();
             }
         });
+    }
+
+    if (increaseBtn) {
+        increaseBtn.addEventListener('click', function() {
+            let value = parseInt(quantiteInput.value) || 1;
+            if (value < maxStock) {
+                value++;
+                quantiteInput.value = value;
+                updatePrixTotal();
+            }
+        });
+    }
+
+    // Initialiser le prix total au chargement
+    if (quantiteInput) {
+        updatePrixTotal();
+    }
+
+    // Gestion du message de succès/erreur
+    function closeMessage() {
+        const message = document.getElementById('message-alert');
+        if (message) {
+            message.classList.add('fade-out');
+            setTimeout(() => {
+                message.style.display = 'none';
+                // Supprimer le paramètre ?added=success de l'URL
+                if (window.location.search.includes('added=success')) {
+                    const url = new URL(window.location);
+                    url.searchParams.delete('added');
+                    window.history.replaceState({}, '', url);
+                }
+            }, 300);
+        }
+    }
+
+    // Fermer automatiquement après 3 secondes si c'est un message de succès
+    document.addEventListener('DOMContentLoaded', function() {
+        const message = document.getElementById('message-alert');
+        if (message && message.classList.contains('success')) {
+            setTimeout(() => {
+                closeMessage();
+            }, 3000);
+        }
+    });
     </script>
 
 </body>

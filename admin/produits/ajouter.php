@@ -121,20 +121,22 @@ $categories = get_all_categories();
 
             <div class="form-add-block">
                 <h3 class="form-add-section-title"><i class="fas fa-ruler"></i> Poids, couleurs et tailles (optionnel)</h3>
+                <p class="form-help" style="margin-bottom: 15px;">Pour chaque poids ou taille, vous pouvez ajouter un montant optionnel (+ FCFA) qui s'additionne au prix de base lorsque le client choisit cette option.</p>
                 <div class="form-group-row">
                     <div class="form-group">
                         <label>Poids disponibles</label>
-                        <div class="options-add-block">
+                        <div class="options-add-block options-with-surcharge">
                             <div class="options-add-row">
-                                <input type="text" id="poids-input" placeholder="Ex: 500g, 1kg, 2kg" class="options-input">
+                                <input type="text" id="poids-input" placeholder="Ex: 500g, 1kg" class="options-input">
+                                <input type="number" id="poids-surcharge" placeholder="+ FCFA" min="0" step="1" class="options-surcharge" title="Montant à ajouter au prix">
                                 <button type="button" class="btn-add-option" id="btn-add-poids">
                                     <i class="fas fa-plus"></i> Ajouter
                                 </button>
                             </div>
-                            <div id="poids-list" class="options-tags-list"></div>
+                            <div id="poids-list" class="options-tags-list options-tags-with-surcharge"></div>
                             <input type="hidden" name="poids" id="poids-hidden" value="<?php echo isset($_POST['poids']) ? htmlspecialchars($_POST['poids']) : ''; ?>">
                         </div>
-                        <small class="form-help">Saisissez un poids puis cliquez sur « Ajouter ». Vous pouvez ajouter plusieurs poids (500g, 1kg, etc.).</small>
+                        <small class="form-help">Poids + montant optionnel (ex: 1kg + 300). Laissez vide pour 0.</small>
                     </div>
                     <div class="form-group">
                         <label for="unite">Unité par défaut</label>
@@ -163,17 +165,18 @@ $categories = get_all_categories();
                     </div>
                     <div class="form-group">
                         <label>Tailles disponibles</label>
-                        <div class="options-add-block">
+                        <div class="options-add-block options-with-surcharge">
                             <div class="options-add-row">
-                                <input type="text" id="taille-input" placeholder="Ex: S, M, L, 21cm" class="options-input">
+                                <input type="text" id="taille-input" placeholder="Ex: S, M, L" class="options-input">
+                                <input type="number" id="taille-surcharge" placeholder="+ FCFA" min="0" step="1" class="options-surcharge" title="Montant à ajouter au prix">
                                 <button type="button" class="btn-add-option" id="btn-add-taille">
                                     <i class="fas fa-plus"></i> Ajouter
                                 </button>
                             </div>
-                            <div id="taille-list" class="options-tags-list"></div>
+                            <div id="taille-list" class="options-tags-list options-tags-with-surcharge"></div>
                             <input type="hidden" name="taille" id="taille-hidden" value="<?php echo isset($_POST['taille']) ? htmlspecialchars($_POST['taille']) : ''; ?>">
                         </div>
-                        <small class="form-help">Saisissez une taille puis cliquez sur « Ajouter ». Vous pouvez ajouter plusieurs tailles (S, M, L, etc.).</small>
+                        <small class="form-help">Taille + montant optionnel (ex: L + 200). Laissez vide pour 0.</small>
                     </div>
                 </div>
             </div>
@@ -200,6 +203,29 @@ $categories = get_all_categories();
                         <option value="inactif" <?php echo (isset($_POST['statut']) && $_POST['statut'] == 'inactif') ? 'selected' : ''; ?>>Inactif (masqué)</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-add-block form-add-block-variantes">
+                <h3 class="form-add-section-title"><i class="fas fa-layer-group"></i> Variantes du produit (optionnel)</h3>
+                <p class="form-help" style="margin-bottom: 15px;">Ajoutez des variantes avec un nom, un prix et une image différents du produit de base. Les options couleur, poids et taille s'appliquent aussi aux variantes.</p>
+                <div id="variantes-container" class="variantes-container">
+                    <div class="variante-item" data-index="0">
+                        <div class="variante-row">
+                            <input type="text" name="variantes_nom[]" placeholder="Nom (ex: Format familial)" class="variante-nom">
+                            <input type="number" name="variantes_prix[]" placeholder="Prix FCFA" min="0" step="0.01" class="variante-prix">
+                            <input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo">
+                            <div class="variante-image-wrap">
+                                <div class="variante-image-area">
+                                    <input type="file" name="variantes_image[]" accept="image/*" class="variante-image-input">
+                                    <span class="variante-image-label"><i class="fas fa-image"></i> Image</span>
+                                    <img class="variante-preview-img" src="" alt="" style="display: none;">
+                                </div>
+                            </div>
+                            <button type="button" class="btn-remove-variante" title="Supprimer">&times;</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="btn-add-variante" class="btn-add-variante"><i class="fas fa-plus"></i> Ajouter une variante</button>
             </div>
 
             <div class="form-add-actions">
@@ -242,6 +268,24 @@ $categories = get_all_categories();
         .option-tag { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f5f5f5; border-radius: 20px; border: 2px solid #ddd; font-size: 13px; }
         .option-tag .tag-remove { width: 22px; height: 22px; border: none; background: #c00; color: #fff; border-radius: 50%; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
         .option-tag .tag-remove:hover { background: #a00; }
+        .options-surcharge { width: 90px; padding: 8px 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px; }
+        .option-tag .tag-surcharge { font-size: 11px; color: #666; margin-left: 4px; }
+        .form-add-block-variantes { margin-top: 24px; padding-top: 24px; border-top: 2px solid #eee; }
+        .variantes-container { margin-bottom: 15px; }
+        .variante-item { margin-bottom: 12px; padding: 16px; background: #f9f9f9; border-radius: 10px; border: 1px solid #e8e8e8; }
+        .variante-row { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+        .variante-nom { flex: 1; min-width: 180px; padding: 10px 14px; border: 2px solid #ddd; border-radius: 8px; }
+        .variante-prix, .variante-prix-promo { width: 110px; padding: 10px 14px; border: 2px solid #ddd; border-radius: 8px; }
+        .variante-image-wrap { display: flex; align-items: center; gap: 10px; }
+        .variante-image-area { position: relative; min-width: 100px; min-height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #ddd; border-radius: 8px; background: #fff; cursor: pointer; overflow: hidden; }
+        .variante-image-area:hover { border-color: #918a44; background: #fafaf8; }
+        .variante-image-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 1; }
+        .variante-image-label { padding: 8px 14px; color: #918a44; font-size: 13px; }
+        .variante-preview-img { max-width: 90px; max-height: 70px; object-fit: cover; border-radius: 6px; margin: 4px; }
+        .btn-remove-variante { width: 34px; height: 34px; flex-shrink: 0; border: none; background: #c26638; color: #fff; border-radius: 8px; cursor: pointer; font-size: 18px; line-height: 1; }
+        .btn-remove-variante:hover { background: #a55a30; }
+        .btn-add-variante { padding: 12px 20px; background: #918a44; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-add-variante:hover { background: #7a7340; }
     </style>
     <script>
         (function() {
@@ -368,27 +412,37 @@ $categories = get_all_categories();
             render();
         })();
         (function() {
-            function initOptions(idInput, idList, idHidden, btnId) {
+            function initOptionsWithSurcharge(idInput, idSurcharge, idList, idHidden, btnId) {
                 var input = document.getElementById(idInput);
+                var surchargeInput = document.getElementById(idSurcharge);
                 var list = document.getElementById(idList);
                 var hidden = document.getElementById(idHidden);
                 var btn = document.getElementById(btnId);
                 var values = [];
                 try {
                     if (hidden && hidden.value) {
-                        values = hidden.value.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+                        var parsed = JSON.parse(hidden.value);
+                        if (Array.isArray(parsed)) values = parsed;
+                        else values = (hidden.value.split(',').map(function(s) { return {v: s.trim(), s: 0}; })).filter(function(x) { return x.v; });
                     }
-                } catch (e) {}
+                } catch (e) {
+                    if (hidden && hidden.value) {
+                        values = hidden.value.split(',').map(function(s) { return {v: s.trim(), s: 0}; }).filter(function(x) { return x.v; });
+                    }
+                }
                 function updateHidden() {
-                    if (hidden) hidden.value = values.join(', ');
+                    if (hidden) hidden.value = JSON.stringify(values);
                 }
                 function render() {
                     if (!list) return;
                     list.innerHTML = '';
-                    values.forEach(function(val, i) {
+                    values.forEach(function(item, i) {
+                        var v = typeof item === 'object' ? item.v : item;
+                        var s = typeof item === 'object' ? (item.s || 0) : 0;
+                        var surc = s > 0 ? ' <span class="tag-surcharge">+' + s + ' FCFA</span>' : '';
                         var div = document.createElement('div');
                         div.className = 'option-tag';
-                        div.innerHTML = '<span>' + (val.replace(/</g, '&lt;').replace(/>/g, '&gt;')) + '</span><button type="button" class="tag-remove" data-i="' + i + '" title="Retirer">&times;</button>';
+                        div.innerHTML = '<span>' + (v.replace(/</g, '&lt;').replace(/>/g, '&gt;')) + surc + '</span><button type="button" class="tag-remove" data-i="' + i + '" title="Retirer">&times;</button>';
                         list.appendChild(div);
                     });
                     updateHidden();
@@ -396,33 +450,90 @@ $categories = get_all_categories();
                 if (btn && input) {
                     btn.addEventListener('click', function() {
                         var val = (input.value || '').trim();
-                        if (val && values.indexOf(val) === -1) {
-                            values.push(val);
-                            input.value = '';
-                            render();
+                        var surc = surchargeInput ? (parseInt(surchargeInput.value, 10) || 0) : 0;
+                        if (val) {
+                            var exists = values.some(function(x) { return (typeof x === 'object' ? x.v : x) === val; });
+                            if (!exists) {
+                                values.push({v: val, s: surc});
+                                input.value = '';
+                                if (surchargeInput) surchargeInput.value = '';
+                                render();
+                            }
                         }
                     });
                     input.addEventListener('keypress', function(e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            btn.click();
-                        }
+                        if (e.key === 'Enter') { e.preventDefault(); btn.click(); }
                     });
                 }
                 if (list) {
                     list.addEventListener('click', function(e) {
-                        var btn = e.target.closest('.tag-remove');
-                        if (btn) {
-                            var i = parseInt(btn.dataset.i, 10);
-                            values.splice(i, 1);
-                            render();
-                        }
+                        var b = e.target.closest('.tag-remove');
+                        if (b) { values.splice(parseInt(b.dataset.i, 10), 1); render(); }
                     });
                 }
                 render();
             }
-            initOptions('poids-input', 'poids-list', 'poids-hidden', 'btn-add-poids');
-            initOptions('taille-input', 'taille-list', 'taille-hidden', 'btn-add-taille');
+            initOptionsWithSurcharge('poids-input', 'poids-surcharge', 'poids-list', 'poids-hidden', 'btn-add-poids');
+            initOptionsWithSurcharge('taille-input', 'taille-surcharge', 'taille-list', 'taille-hidden', 'btn-add-taille');
+        })();
+        (function() {
+            var container = document.getElementById('variantes-container');
+            var btnAdd = document.getElementById('btn-add-variante');
+            var idx = 1;
+            function getVarianteRowHtml() {
+                return '<div class="variante-row">' +
+                    '<input type="text" name="variantes_nom[]" placeholder="Nom (ex: Format familial)" class="variante-nom">' +
+                    '<input type="number" name="variantes_prix[]" placeholder="Prix FCFA" min="0" step="0.01" class="variante-prix">' +
+                    '<input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo">' +
+                    '<div class="variante-image-wrap">' +
+                    '<div class="variante-image-area">' +
+                    '<input type="file" name="variantes_image[]" accept="image/*" class="variante-image-input">' +
+                    '<span class="variante-image-label"><i class="fas fa-image"></i> Image</span>' +
+                    '<img class="variante-preview-img" src="" alt="" style="display: none;">' +
+                    '</div></div>' +
+                    '<button type="button" class="btn-remove-variante" title="Supprimer">&times;</button></div>';
+            }
+            function previewVarianteImage(input) {
+                var wrap = input.closest('.variante-image-wrap');
+                if (!wrap) return;
+                var img = wrap.querySelector('.variante-preview-img');
+                var label = wrap.querySelector('.variante-image-label');
+                if (!img || !label) return;
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        img.src = e.target.result;
+                        img.style.display = 'block';
+                        label.style.display = 'none';
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                } else {
+                    img.src = '';
+                    img.style.display = 'none';
+                    label.style.display = '';
+                }
+            }
+            if (container) {
+                container.addEventListener('change', function(e) {
+                    if (e.target.classList.contains('variante-image-input')) {
+                        previewVarianteImage(e.target);
+                    }
+                });
+            }
+            if (btnAdd && container) {
+                btnAdd.addEventListener('click', function() {
+                    var div = document.createElement('div');
+                    div.className = 'variante-item';
+                    div.dataset.index = idx++;
+                    div.innerHTML = getVarianteRowHtml();
+                    container.appendChild(div);
+                    div.querySelector('.btn-remove-variante').addEventListener('click', function() { div.remove(); });
+                });
+                container.addEventListener('click', function(e) {
+                    var b = e.target.closest('.btn-remove-variante');
+                    if (b && container.children.length > 1) b.closest('.variante-item').remove();
+                });
+            }
         })();
     </script>
     <?php include '../includes/footer.php'; ?>

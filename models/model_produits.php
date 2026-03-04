@@ -12,9 +12,10 @@ require_once __DIR__ . '/../conn/conn.php';
  * @param string $statut Filtrer par statut (optionnel)
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_all_produits($statut = null) {
+function get_all_produits($statut = null)
+{
     global $db;
-    
+
     try {
         if ($statut) {
             $stmt = $db->prepare("
@@ -34,9 +35,9 @@ function get_all_produits($statut = null) {
             ");
             $stmt->execute();
         }
-        
+
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return false;
@@ -48,9 +49,10 @@ function get_all_produits($statut = null) {
  * @param int $categorie_id L'ID de la catégorie
  * @return array|false Tableau des produits ou False en cas d'erreur
  */
-function get_produits_by_categorie($categorie_id) {
+function get_produits_by_categorie($categorie_id)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
@@ -61,7 +63,7 @@ function get_produits_by_categorie($categorie_id) {
         ");
         $stmt->execute(['categorie_id' => $categorie_id]);
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return [];
@@ -73,9 +75,10 @@ function get_produits_by_categorie($categorie_id) {
  * @param int $id L'ID du produit
  * @return array|false Les données du produit ou False si non trouvé
  */
-function get_produit_by_id($id) {
+function get_produit_by_id($id)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
@@ -85,7 +88,7 @@ function get_produit_by_id($id) {
         ");
         $stmt->execute(['id' => $id]);
         $produit = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return $produit ? $produit : false;
     } catch (PDOException $e) {
         return false;
@@ -98,9 +101,10 @@ function get_produit_by_id($id) {
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits
  */
-function get_all_produits_paginated($offset = 0, $limit = 20) {
+function get_all_produits_paginated($offset = 0, $limit = 20)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
@@ -110,12 +114,12 @@ function get_all_produits_paginated($offset = 0, $limit = 20) {
             ORDER BY p.date_creation DESC
             LIMIT :limit OFFSET :offset
         ");
-        
+
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return [];
@@ -129,13 +133,14 @@ function get_all_produits_paginated($offset = 0, $limit = 20) {
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits($recherche, $offset = 0, $limit = 20) {
+function search_produits($recherche, $offset = 0, $limit = 20)
+{
     global $db;
-    
+
     if (empty(trim($recherche))) {
         return get_all_produits_paginated($offset, $limit);
     }
-    
+
     try {
         $term = '%' . trim($recherche) . '%';
         $stmt = $db->prepare("
@@ -152,7 +157,7 @@ function search_produits($recherche, $offset = 0, $limit = 20) {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return [];
@@ -164,13 +169,14 @@ function search_produits($recherche, $offset = 0, $limit = 20) {
  * @param string $recherche Terme de recherche
  * @return int Nombre de produits
  */
-function count_search_produits($recherche) {
+function count_search_produits($recherche)
+{
     global $db;
-    
+
     if (empty(trim($recherche))) {
         return count_all_produits_actifs();
     }
-    
+
     try {
         $term = '%' . trim($recherche) . '%';
         $stmt = $db->prepare("
@@ -196,7 +202,8 @@ function count_search_produits($recherche) {
  * @param int $limit Nombre max de résultats
  * @return array Tableau des produits trouvés
  */
-function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50) {
+function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50)
+{
     global $db;
 
     try {
@@ -266,7 +273,8 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
 /**
  * Compte les produits avec les mêmes filtres que search_produits_with_filters
  */
-function count_search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null) {
+function count_search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null)
+{
     global $db;
 
     try {
@@ -312,9 +320,10 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
  * Compte le nombre total de produits actifs
  * @return int Nombre total de produits actifs
  */
-function count_all_produits_actifs() {
+function count_all_produits_actifs()
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE statut = 'actif'");
         $stmt->execute();
@@ -330,7 +339,8 @@ function count_all_produits_actifs() {
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits en promo
  */
-function get_produits_en_promo($offset = 0, $limit = 50) {
+function get_produits_en_promo($offset = 0, $limit = 50)
+{
     global $db;
 
     try {
@@ -359,7 +369,8 @@ function get_produits_en_promo($offset = 0, $limit = 50) {
  * Compte les produits en promotion
  * @return int Nombre de produits en promo
  */
-function count_produits_en_promo() {
+function count_produits_en_promo()
+{
     global $db;
 
     try {
@@ -382,9 +393,10 @@ function count_produits_en_promo() {
  * @param int $limit Nombre maximum de produits à retourner (par défaut 4)
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes($limit = 4) {
+function get_produits_nouveautes($limit = 4)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
@@ -394,11 +406,11 @@ function get_produits_nouveautes($limit = 4) {
             ORDER BY p.date_creation DESC, p.date_modification DESC
             LIMIT :limit
         ");
-        
+
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         return [];
@@ -411,9 +423,10 @@ function get_produits_nouveautes($limit = 4) {
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits les plus récents
  */
-function get_produits_nouveautes_paginated($offset = 0, $limit = 20) {
+function get_produits_nouveautes_paginated($offset = 0, $limit = 20)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
@@ -438,9 +451,10 @@ function get_produits_nouveautes_paginated($offset = 0, $limit = 20) {
  * @param int $limit Nombre maximum de produits à retourner
  * @return array Tableau des produits vedettes mélangés aléatoirement
  */
-function get_produits_vedettes($limit = 20) {
+function get_produits_vedettes($limit = 20)
+{
     global $db;
-    
+
     try {
         // Récupérer les produits les plus ajoutés au panier et les plus commandés
         $stmt = $db->prepare("
@@ -467,31 +481,31 @@ function get_produits_vedettes($limit = 20) {
             ORDER BY score_popularite DESC, p.date_creation DESC
             LIMIT :limit
         ");
-        
+
         $stmt->bindValue(':limit', $limit * 2, PDO::PARAM_INT); // Récupérer plus pour avoir de la variété
         $stmt->execute();
         $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         // Si aucun produit vedette (pas encore de statistiques), récupérer tous les produits actifs
         if (empty($produits)) {
             $produits = get_all_produits('actif');
         }
-        
+
         // Mélanger aléatoirement les produits à chaque appel
         if (!empty($produits)) {
             // Utiliser une graine basée sur le temps pour varier l'ordre
-            mt_srand(time() + (int)(microtime(true) * 1000000));
+            mt_srand(time() + (int) (microtime(true) * 1000000));
             shuffle($produits);
             // Limiter au nombre demandé après le mélange
             $produits = array_slice($produits, 0, $limit);
         }
-        
+
         return $produits ? $produits : [];
     } catch (PDOException $e) {
         // En cas d'erreur, retourner tous les produits actifs mélangés
         $produits = get_all_produits('actif');
         if (!empty($produits)) {
-            mt_srand(time() + (int)(microtime(true) * 1000000));
+            mt_srand(time() + (int) (microtime(true) * 1000000));
             shuffle($produits);
             $produits = array_slice($produits, 0, $limit);
         }
@@ -504,9 +518,10 @@ function get_produits_vedettes($limit = 20) {
  * @param array $data Les données du produit
  * @return int|false L'ID du produit créé ou False en cas d'erreur
  */
-function create_produit($data) {
+function create_produit($data)
+{
     global $db;
-    
+
     try {
         $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
         $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
@@ -544,11 +559,11 @@ function create_produit($data) {
                 throw $e;
             }
         }
-        
+
         if ($result) {
             return $db->lastInsertId();
         }
-        
+
         return false;
     } catch (PDOException $e) {
         return false;
@@ -561,9 +576,10 @@ function create_produit($data) {
  * @param array $data Les nouvelles données du produit
  * @return bool True en cas de succès, False sinon
  */
-function update_produit($id, $data) {
+function update_produit($id, $data)
+{
     global $db;
-    
+
     try {
         $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
         $params = [
@@ -608,9 +624,10 @@ function update_produit($id, $data) {
  * @param int $id L'ID du produit
  * @return bool True en cas de succès, False sinon
  */
-function delete_produit($id) {
+function delete_produit($id)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("DELETE FROM produits WHERE id = :id");
         return $stmt->execute(['id' => $id]);
@@ -625,9 +642,10 @@ function delete_produit($id) {
  * @param string $statut Le nouveau statut
  * @return bool True en cas de succès, False sinon
  */
-function update_produit_statut($id, $statut) {
+function update_produit_statut($id, $statut)
+{
     global $db;
-    
+
     try {
         $stmt = $db->prepare("UPDATE produits SET statut = :statut, date_modification = NOW() WHERE id = :id");
         return $stmt->execute(['id' => $id, 'statut' => $statut]);
@@ -636,5 +654,59 @@ function update_produit_statut($id, $statut) {
     }
 }
 
-?>
+/**
+ * Parse poids ou taille avec surcoûts (JSON ou comma-separated)
+ * @param string|null $raw Valeur brute (JSON [{"v":"500g","s":300}] ou "500g, 1kg")
+ * @return array [["v"=>"500g","s"=>0], ["v"=>"1kg","s"=>300]]
+ */
+function parse_options_with_surcharge($raw)
+{
+    if (empty(trim($raw ?? '')))
+        return [];
+    $raw = trim($raw);
+    if ($raw === '[]' || $raw === '[ ]' || strtolower($raw) === 'null') {
+        return [];
+    }
+    $dec = json_decode($raw, true);
+    if (json_last_error() === JSON_ERROR_NONE) {
+        if (!is_array($dec) || empty($dec)) {
+            return [];
+        }
+        $out = [];
+        foreach ($dec as $item) {
+            if (is_array($item) && isset($item['v']) && trim((string) $item['v']) !== '') {
+                $out[] = ['v' => trim($item['v']), 's' => isset($item['s']) ? (float) $item['s'] : 0];
+            } elseif (is_string($item) && trim($item) !== '') {
+                $out[] = ['v' => trim($item), 's' => 0];
+            }
+        }
+        return $out;
+    }
+    $arr = array_map('trim', array_filter(explode(',', $raw)));
+    $arr = array_values(array_filter($arr, function ($x) {
+        $v = trim((string) $x);
+        return $v !== '' && $v !== '[]' && $v !== '[ ]' && strtolower($v) !== 'null';
+    }));
+    return array_map(function ($x) {
+        return ['v' => $x, 's' => 0]; }, $arr);
+}
 
+/**
+ * Récupère le surcoût pour une option (poids ou taille)
+ * @param array $options Résultat de parse_options_with_surcharge
+ * @param string $value Valeur sélectionnée (ex: "1kg")
+ * @return float Surcoût en FCFA
+ */
+function get_surcharge_for_option($options, $value)
+{
+    if (empty($value))
+        return 0;
+    foreach ($options as $opt) {
+        if (trim($opt['v']) === trim($value)) {
+            return (float) ($opt['s'] ?? 0);
+        }
+    }
+    return 0;
+}
+
+?>

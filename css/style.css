@@ -451,7 +451,7 @@ body::before {
   .section3 div {
     width: 75%;
     margin-bottom: 8px;
-    gap: 12px;
+    gap: 5px;
   }
 
   .section3 div img {
@@ -854,7 +854,7 @@ body::before {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 40px 20px;
+  padding: 40px 5px;
   background: transparent;
 }
 
@@ -883,7 +883,7 @@ body::before {
 }
 
 .produit_vedete .articles {
-  width: 85%;
+  width: 98%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1619,4 +1619,10 @@ footer span {
   background: var(--couleur-dominante);
   margin: 10px auto 0;
   border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .produit_vedete {
+    padding: 20px 5px;
+  }
 }

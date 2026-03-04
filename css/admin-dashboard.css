@@ -2322,7 +2322,19 @@ body::before {
   margin: 0;
 }
 
-/* Options commande : couleur, poids, taille - affichage agrandi */
+.produit-info .produit-info-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.produit-info .produit-info-lignes .info-ligne {
+  font-size: 14px;
+  color: var(--titres);
+}
+
+/* Options commande : couleur, poids, taille - affichage agrandi, une info par ligne */
 .produit-options-detail {
   margin-top: 12px;
   padding: 14px;
@@ -2330,9 +2342,9 @@ body::before {
   border-radius: 10px;
   border: 1px solid rgba(145, 138, 68, 0.2);
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px 24px;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
 }
 
 .produit-options-detail .option-detail {
@@ -2361,6 +2373,25 @@ body::before {
   border: 3px solid rgba(0, 0, 0, 0.2);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   vertical-align: middle;
+}
+
+.produit-options-detail .option-detail.option-poids,
+.produit-options-detail .option-detail.option-taille {
+  align-items: flex-start;
+}
+
+.produit-options-detail .options-lignes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.produit-options-detail .options-lignes .option-ligne {
+  margin-bottom: 2px;
+}
+
+.produit-options-detail .options-lignes .option-ligne:last-child {
+  margin-bottom: 0;
 }
 
 .produit-total {
