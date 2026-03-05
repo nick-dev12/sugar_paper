@@ -266,17 +266,21 @@ function get_commande_produits($commande_id) {
     global $db;
     
     try {
-        $join_variante = _commande_produits_has_variante_columns()
+        $has_var = _commande_produits_has_variante_columns();
+        $join_variante = $has_var
             ? "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id"
             : "";
-        $img = _commande_produits_has_variante_columns()
+        $img = $has_var
             ? "COALESCE(pv.image, p.image_principale) as image_afficher"
             : "p.image_principale as image_afficher";
+        $var_nom = $has_var
+            ? ", COALESCE(NULLIF(TRIM(cp.variante_nom), ''), pv.nom) as variante_nom"
+            : "";
         $stmt = $db->prepare("
             SELECT cp.*, p.id as produit_id, p.nom, p.image_principale, p.poids, p.unite,
                    c.nom as categorie_nom, c.id as categorie_id,
                    cmd.numero_commande, cmd.date_commande, cmd.statut as statut_commande,
-                   $img
+                   $img $var_nom
             FROM commande_produits cp
             INNER JOIN produits p ON cp.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id

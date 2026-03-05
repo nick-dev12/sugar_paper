@@ -742,10 +742,29 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         padding: 18px 20px;
     }
 
+    .variantes-carousel-wrapper {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .variantes-scroll-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .variantes-scroll-container::-webkit-scrollbar {
+        display: none;
+    }
+
     .variantes-select {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 10px;
+        padding: 4px 0;
     }
 
     .variante-option {
@@ -757,7 +776,57 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         border-radius: 10px;
         cursor: pointer;
         transition: all 0.2s;
-        min-width: 100px;
+        flex: 0 0 calc(50% - 5px);
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 768px) {
+        .variante-option {
+            flex: 0 0 calc(33.333% - 7px);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .variante-option {
+            flex: 0 0 calc(25% - 8px);
+        }
+    }
+
+    .variantes-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid var(--couleur-dominante);
+        background: #fff;
+        color: var(--couleur-dominante);
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .variantes-arrow:hover {
+        background: var(--couleur-dominante);
+        color: #fff;
+    }
+
+    .variantes-arrow.visible {
+        display: flex;
+    }
+
+    .variantes-arrow-left {
+        left: 8px;
+    }
+
+    .variantes-arrow-right {
+        right: 8px;
     }
 
     .variante-option:hover,
@@ -957,19 +1026,29 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
                 <!-- Variantes du produit -->
                 <?php if ($has_variantes): ?>
+                <?php $total_variantes = 1 + count($variantes); ?>
                 <div class="produit-variantes-section produit-section-bg">
                     <div class="quantite-label" style="margin-bottom: 10px;"><i class="fas fa-layer-group"></i> Autres
                         quantités disponibles</div>
-                    <div class="variantes-select">
-                        <?php if (isset($_SESSION['user_id'])): ?>
-                        <input type="hidden" name="option_variante_id" id="option-variante-id" value="">
-                        <input type="hidden" name="option_variante_nom" id="option-variante-nom"
-                            value="<?php echo htmlspecialchars($produit['nom']); ?>">
-                        <input type="hidden" name="option_variante_image" id="option-variante-image"
-                            value="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
-                        <?php endif; ?>
+                    <div class="variantes-carousel-wrapper" data-total="<?php echo $total_variantes; ?>">
+                        <button type="button" class="variantes-arrow variantes-arrow-left" aria-label="Variantes précédentes" title="Précédent">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button type="button" class="variantes-arrow variantes-arrow-right" aria-label="Variantes suivantes" title="Suivant">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="variantes-scroll-container">
+                            <div class="variantes-select">
+                        <?php
+                        $base_prix_orig = $prix_original ? (float)$produit['prix'] : 0;
+                        $base_prix_promo = $prix_affichage;
+                        $base_pct = $pourcentage_reduction;
+                        ?>
                         <label class="variante-option variante-base selected" data-id=""
-                            data-prix="<?php echo $prix_affichage; ?>"
+                            data-prix="<?php echo $base_prix_promo; ?>"
+                            data-prix-original="<?php echo $base_prix_orig; ?>"
+                            data-prix-promo="<?php echo $base_prix_promo; ?>"
+                            data-pourcentage="<?php echo $base_pct; ?>"
                             data-nom="<?php echo htmlspecialchars($produit['nom']); ?>"
                             data-image="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
                             <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
@@ -982,9 +1061,17 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                                 FCFA</span>
                         </label>
                         <?php foreach ($variantes as $var): ?>
-                        <?php $vp = !empty($var['prix_promotion']) && $var['prix_promotion'] < $var['prix'] ? $var['prix_promotion'] : $var['prix']; ?>
+                        <?php
+                        $vp = !empty($var['prix_promotion']) && $var['prix_promotion'] < $var['prix'] ? $var['prix_promotion'] : $var['prix'];
+                        $v_prix_orig = (!empty($var['prix_promotion']) && $var['prix_promotion'] < $var['prix']) ? (float)$var['prix'] : 0;
+                        $v_pct = $v_prix_orig > 0 ? round((($var['prix'] - $var['prix_promotion']) / $var['prix']) * 100) : 0;
+                        ?>
                         <label class="variante-option" data-id="<?php echo $var['id']; ?>"
-                            data-prix="<?php echo $vp; ?>" data-nom="<?php echo htmlspecialchars($var['nom']); ?>"
+                            data-prix="<?php echo $vp; ?>"
+                            data-prix-original="<?php echo $v_prix_orig; ?>"
+                            data-prix-promo="<?php echo $vp; ?>"
+                            data-pourcentage="<?php echo $v_pct; ?>"
+                            data-nom="<?php echo htmlspecialchars($var['nom']); ?>"
                             data-image="<?php echo htmlspecialchars($var['image'] ?? ''); ?>">
                             <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
                                 value="<?php echo $var['id']; ?>"><?php endif; ?>
@@ -995,6 +1082,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             <span class="variante-prix"><?php echo number_format($vp, 0, ',', ' '); ?> FCFA</span>
                         </label>
                         <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -1007,6 +1096,10 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 <form method="POST" action="" id="add-to-panier-form">
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                    <?php if ($has_variantes): ?>
+                    <input type="hidden" name="option_variante_id" id="option-variante-id" value="">
+                    <input type="hidden" name="option_variante_nom" id="option-variante-nom" value="<?php echo htmlspecialchars($produit['nom']); ?>">
+                    <input type="hidden" name="option_variante_image" id="option-variante-image" value="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
                     <?php endif; ?>
 
                     <?php if ($has_selectable_options): ?>
@@ -1145,7 +1238,6 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                     <?php endif; ?>
 
                     <!-- Sélection de quantité et ajout au panier -->
-                    <?php if (isset($_SESSION['user_id'])): ?>
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
                     <div class="quantite-section">
@@ -1284,16 +1376,32 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     function updatePrixEtNomAffichage() {
         var prixUnitaire = getPrixUnitaire();
         var selVariante = document.querySelector('.variante-option.selected, .variante-option input:checked');
+        var el = selVariante && selVariante.classList ? selVariante : (selVariante ? selVariante.closest('.variante-option') : null);
         var nomAffichage = produitNomBase;
-        if (selVariante) {
-            var el = selVariante.classList && selVariante.classList.contains ? selVariante : selVariante.closest(
-                '.variante-option');
-            if (el && el.dataset.nom) nomAffichage = el.dataset.nom;
-        }
+        if (el && el.dataset.nom) nomAffichage = el.dataset.nom;
+
         var elNom = document.getElementById('produit-nom');
         var elPrix = document.getElementById('produit-prix-affichage');
         if (elNom) elNom.textContent = nomAffichage;
-        if (elPrix) elPrix.textContent = prixUnitaire.toLocaleString('fr-FR') + ' FCFA';
+
+        if (elPrix) {
+            var prixOrig = parseFloat(el && el.dataset.prixOriginal ? el.dataset.prixOriginal : 0) || 0;
+            var pourcentage = parseInt(el && el.dataset.pourcentage ? el.dataset.pourcentage : 0) || 0;
+            var surcP = 0, surcT = 0;
+            var spH = document.getElementById('option-surcout-poids');
+            if (spH && spH.value) surcP = parseFloat(spH.value) || 0;
+            var stH = document.getElementById('option-surcout-taille');
+            if (stH && stH.value) surcT = parseFloat(stH.value) || 0;
+            var prixOriginalAvecSurc = prixOrig + surcP + surcT;
+
+            if (prixOrig > 0 && pourcentage > 0) {
+                elPrix.innerHTML = '<span class="prix-original">' + prixOriginalAvecSurc.toLocaleString('fr-FR') + ' FCFA</span> ' +
+                    '<span class="prix-promo">' + prixUnitaire.toLocaleString('fr-FR') + ' FCFA</span> ' +
+                    '<span class="promo-badge">-' + pourcentage + '%</span>';
+            } else {
+                elPrix.textContent = prixUnitaire.toLocaleString('fr-FR') + ' FCFA';
+            }
+        }
     }
 
     document.querySelectorAll('.variante-option').forEach(function(el) {
@@ -1318,6 +1426,52 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
         });
     });
+
+    (function initVariantesCarousel() {
+        var wrapper = document.querySelector('.variantes-carousel-wrapper');
+        if (!wrapper) return;
+        var scrollContainer = wrapper.querySelector('.variantes-scroll-container');
+        var arrowLeft = wrapper.querySelector('.variantes-arrow-left');
+        var arrowRight = wrapper.querySelector('.variantes-arrow-right');
+        var total = parseInt(wrapper.dataset.total || 0, 10);
+        if (!scrollContainer || !arrowLeft || !arrowRight || total <= 0) return;
+
+        function getVisibleCount() {
+            var w = window.innerWidth;
+            if (w >= 1024) return 4;
+            if (w >= 768) return 3;
+            return 2;
+        }
+
+        function updateArrows() {
+            var visible = getVisibleCount();
+            if (total <= visible) {
+                arrowLeft.classList.remove('visible');
+                arrowRight.classList.remove('visible');
+                return;
+            }
+            var sc = scrollContainer.scrollLeft;
+            var maxScroll = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+            arrowLeft.classList.toggle('visible', sc > 5);
+            arrowRight.classList.toggle('visible', sc < maxScroll - 5);
+        }
+
+        scrollContainer.addEventListener('scroll', updateArrows);
+        window.addEventListener('resize', function() {
+            updateArrows();
+        });
+
+        arrowLeft.addEventListener('click', function() {
+            var step = scrollContainer.clientWidth;
+            scrollContainer.scrollBy({ left: -step, behavior: 'smooth' });
+        });
+        arrowRight.addEventListener('click', function() {
+            var step = scrollContainer.clientWidth;
+            scrollContainer.scrollBy({ left: step, behavior: 'smooth' });
+        });
+
+        updateArrows();
+    })();
 
     function setupOptionSwatchListeners() {
         document.querySelectorAll('.poids-options-list .option-swatch-select').forEach(function(lbl) {

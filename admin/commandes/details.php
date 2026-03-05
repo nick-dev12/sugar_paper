@@ -164,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         <div class="produits-list">
             <?php foreach ($produits as $produit): ?>
                 <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : $produit['image_principale']; ?>
-                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' - ' . $produit['variante_nom'] : $produit['produit_nom']; ?>
+                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : $produit['produit_nom']; ?>
                 <div class="produit-item">
                     <img src="/upload/<?php echo htmlspecialchars($img_src); ?>"
                         alt="<?php echo htmlspecialchars($nom_affichage); ?>"

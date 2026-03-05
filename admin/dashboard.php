@@ -187,9 +187,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
                                 </p>
                                 <p class="produit-card-stock">
                                     Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
-                                    <?php if ($produit['poids']): ?>
-                                        (<?php echo htmlspecialchars($produit['poids']); ?>)
-                                    <?php endif; ?>
+
                                 </p>
                                 <div class="produit-card-actions">
                                     <a href="produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">

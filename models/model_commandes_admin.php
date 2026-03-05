@@ -110,7 +110,7 @@ function get_produits_by_commande($commande_id) {
         $cols = "cp.*, p.nom as produit_nom, p.image_principale, c.nom as categorie_nom";
         if ($has_opts) $cols .= ", cp.couleur, cp.poids, cp.taille";
         if ($has_var) {
-            $cols .= ", cp.variante_id, cp.variante_nom, cp.surcout_poids, cp.surcout_taille";
+            $cols .= ", cp.variante_id, COALESCE(NULLIF(TRIM(cp.variante_nom), ''), pv.nom) as variante_nom, cp.surcout_poids, cp.surcout_taille";
             $cols .= ", COALESCE(pv.image, p.image_principale) as image_afficher";
             $join_pv = "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id";
         } else {

@@ -129,9 +129,13 @@ $all_categories = get_all_categories();
         .produit-card-commande {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
-            padding: 15px;
+            padding: 15px 7px;
             border: 1px solid var(--glass-border);
             transition: all 0.3s;
+            width: 100%;
+            max-width: 300px;
+            min-width: 300px;
+            margin: 0 auto;
         }
 
         .produit-card-commande:hover {
@@ -143,8 +147,9 @@ $all_categories = get_all_categories();
         .produit-card-header {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 8px;
             margin-bottom: 15px;
+            width: 280px;
         }
 
         .produit-card-commande .produit-card-image {
@@ -156,7 +161,8 @@ $all_categories = get_all_categories();
         }
 
         .produit-card-info {
-            flex: 1;
+            width: 200px !important;
+            padding: 0 10px;
         }
 
         .produit-card-commande .produit-card-nom {
@@ -357,7 +363,7 @@ $all_categories = get_all_categories();
                         <?php foreach ($categorie_data['produits'] as $produit): ?>
                             <?php
                             $produit_nom = $produit['nom'] ?? $produit['produit_nom'] ?? 'Produit sans nom';
-                            $produit_nom_affichage = !empty($produit['variante_nom']) ? $produit_nom . ' - ' . $produit['variante_nom'] : $produit_nom;
+                            $produit_nom_affichage = !empty($produit['variante_nom']) ? $produit_nom . ' → ' . $produit['variante_nom'] : $produit_nom;
                             $produit_image = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? '');
                             ?>
                             <div class="produit-card-commande">

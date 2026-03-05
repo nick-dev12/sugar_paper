@@ -117,20 +117,26 @@ function process_add_produit() {
     $taille = null;
     if (isset($_POST['poids']) && trim($_POST['poids']) !== '') {
         $raw = trim($_POST['poids']);
-        $dec = json_decode($raw, true);
-        $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
-        if (!$poids && $raw) {
-            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
-            $poids = !empty($arr) ? json_encode($arr) : null;
+        if ($raw !== '[]') {
+            $dec = json_decode($raw, true);
+            $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
+            if (!$poids && $raw) {
+                $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+                $arr = array_filter($arr, function($x) { return !empty($x['v']) && $x['v'] !== '[]'; });
+                $poids = !empty($arr) ? json_encode(array_values($arr)) : null;
+            }
         }
     }
     if (isset($_POST['taille']) && trim($_POST['taille']) !== '') {
         $raw = trim($_POST['taille']);
-        $dec = json_decode($raw, true);
-        $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
-        if (!$taille && $raw) {
-            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
-            $taille = !empty($arr) ? json_encode($arr) : null;
+        if ($raw !== '[]') {
+            $dec = json_decode($raw, true);
+            $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
+            if (!$taille && $raw) {
+                $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+                $arr = array_filter($arr, function($x) { return !empty($x['v']) && $x['v'] !== '[]'; });
+                $taille = !empty($arr) ? json_encode(array_values($arr)) : null;
+            }
         }
     }
     
@@ -301,20 +307,26 @@ function process_update_produit($produit_id) {
     $taille = null;
     if (isset($_POST['poids']) && trim($_POST['poids']) !== '') {
         $raw = trim($_POST['poids']);
-        $dec = json_decode($raw, true);
-        $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
-        if (!$poids && $raw) {
-            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
-            $poids = !empty($arr) ? json_encode($arr) : null;
+        if ($raw !== '[]') {
+            $dec = json_decode($raw, true);
+            $poids = (is_array($dec) && !empty($dec)) ? $raw : null;
+            if (!$poids && $raw) {
+                $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+                $arr = array_filter($arr, function($x) { return !empty($x['v']) && $x['v'] !== '[]'; });
+                $poids = !empty($arr) ? json_encode(array_values($arr)) : null;
+            }
         }
     }
     if (isset($_POST['taille']) && trim($_POST['taille']) !== '') {
         $raw = trim($_POST['taille']);
-        $dec = json_decode($raw, true);
-        $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
-        if (!$taille && $raw) {
-            $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
-            $taille = !empty($arr) ? json_encode($arr) : null;
+        if ($raw !== '[]') {
+            $dec = json_decode($raw, true);
+            $taille = (is_array($dec) && !empty($dec)) ? $raw : null;
+            if (!$taille && $raw) {
+                $arr = array_map(function($x) { return ['v' => trim($x), 's' => 0]; }, array_filter(explode(',', $raw)));
+                $arr = array_filter($arr, function($x) { return !empty($x['v']) && $x['v'] !== '[]'; });
+                $taille = !empty($arr) ? json_encode(array_values($arr)) : null;
+            }
         }
     }
     

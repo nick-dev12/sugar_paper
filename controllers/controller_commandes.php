@@ -157,7 +157,7 @@ function process_create_commande() {
             $c = isset($choix[$panier_id]) ? $choix[$panier_id] : [];
             $nom_affichage = $item['nom'];
             if (!empty($item['panier_variante_nom'])) {
-                $nom_affichage .= ' - ' . $item['panier_variante_nom'];
+                $nom_affichage .= ' → ' . $item['panier_variante_nom'];
             }
             $produits_email[] = [
                 'nom' => $nom_affichage,
