@@ -7,9 +7,16 @@
 require_once __DIR__ . '/../includes/session_user.php';
 session_start();
 
-// Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
+// Redirection après connexion (page demandée ou index)
+$redirect_after = isset($_POST['redirect']) ? trim($_POST['redirect']) : (isset($_GET['redirect']) ? trim($_GET['redirect']) : '');
+if ($redirect_after && $redirect_after[0] !== '/') {
+    $redirect_after = '/' . $redirect_after;
+}
+$redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
+
+// Si l'utilisateur est déjà connecté, rediriger
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
-    header('Location: /index.php');
+    header('Location: ' . $redirect_url);
     exit;
 }
 
@@ -26,7 +33,7 @@ if (isset($result['success']) && $result['success'] && $result['user']) {
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
 
-    header('Location: /index.php');
+    header('Location: ' . $redirect_url);
     exit;
 }
 
@@ -407,6 +414,9 @@ if (isset($_SESSION['inscription_success'])) {
             <?php endif; ?>
 
             <form method="POST" action="" id="loginForm">
+                <?php if (!empty($redirect_after)): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
+                <?php endif; ?>
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email *</label>
                     <div class="input-wrapper">

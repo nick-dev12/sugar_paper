@@ -36,10 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($result['success']) {
         header('Location: /panier.php?added=1');
         exit;
-    } else {
-        $message = $result['message'];
-        $message_type = 'error';
     }
+    // Redirection vers la connexion si non connecté
+    if (!$result['success'] && strpos($result['message'] ?? '', 'connecté') !== false) {
+        $pid = isset($_POST['produit_id']) ? (int) $_POST['produit_id'] : 0;
+        $redirect = $pid > 0 ? '/produit.php?id=' . $pid : '/panier';
+        header('Location: /user/connexion.php?redirect=' . urlencode($redirect));
+        exit;
+    }
+    $message = $result['message'] ?? '';
+    $message_type = 'error';
 }
 
 // Récupérer les informations du produit
@@ -1051,8 +1057,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             data-pourcentage="<?php echo $base_pct; ?>"
                             data-nom="<?php echo htmlspecialchars($produit['nom']); ?>"
                             data-image="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
-                            <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
-                                value="" checked required><?php endif; ?>
+                            <input type="radio" name="option_variante_radio" value="" checked required>
                             <?php if (!empty($produit['image_principale'])): ?><img
                                 src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" alt=""
                                 class="variante-thumb" onerror="this.style.display='none'"><?php endif; ?>
@@ -1073,8 +1078,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             data-pourcentage="<?php echo $v_pct; ?>"
                             data-nom="<?php echo htmlspecialchars($var['nom']); ?>"
                             data-image="<?php echo htmlspecialchars($var['image'] ?? ''); ?>">
-                            <?php if (isset($_SESSION['user_id'])): ?><input type="radio" name="option_variante_radio"
-                                value="<?php echo $var['id']; ?>"><?php endif; ?>
+                            <input type="radio" name="option_variante_radio" value="<?php echo $var['id']; ?>">
                             <?php if (!empty($var['image'])): ?><img
                                 src="/upload/<?php echo htmlspecialchars($var['image']); ?>" alt=""
                                 class="variante-thumb" onerror="this.style.display='none'"><?php endif; ?>
@@ -1092,7 +1096,6 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
 
                 <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
-                <?php if (isset($_SESSION['user_id'])): ?>
                 <form method="POST" action="" id="add-to-panier-form">
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
@@ -1110,10 +1113,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <div class="option-group">
                             <label class="option-label">Couleur</label>
                             <?php if (count($couleurs_options) === 1): ?>
-                            <?php if (isset($_SESSION['user_id'])): ?>
                             <input type="hidden" name="option_couleur"
                                 value="<?php echo htmlspecialchars($couleurs_options[0]); ?>">
-                            <?php endif; ?>
                             <span class="couleurs-swatches-select">
                                 <?php $hex = $couleurs_options[0]; ?>
                                 <span class="couleur-swatch-select is-hex" style="opacity:0.9;">
@@ -1132,11 +1133,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                                 <?php foreach ($couleurs_options as $hex): ?>
                                 <label
                                     class="couleur-swatch-select <?php echo preg_match('/^#[0-9A-Fa-f]{6}$/', $hex) ? 'is-hex' : ''; ?>">
-                                    <?php if (isset($_SESSION['user_id'])): ?>
                                     <input type="radio" name="option_couleur"
-                                        value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur"
-                                        >
-                                    <?php endif; ?>
+                                        value="<?php echo htmlspecialchars($hex); ?>" class="option-radio-couleur">
                                     <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)): ?>
                                     <span class="swatch-preview"
                                         style="background-color:<?php echo htmlspecialchars($hex); ?>;"
@@ -1153,26 +1151,19 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <?php if (!empty($poids_options) && count($poids_options) > 1): ?>
                         <div class="option-group">
                             <label class="option-label">Poids</label>
-                            <?php if (isset($_SESSION['user_id'])): ?>
                             <input type="hidden" name="option_surcout_poids" id="option-surcout-poids" value="0">
-                            <?php endif; ?>
                             <span class="options-list-select poids-options-list">
                                 <label class="option-swatch-select selected"
                                     data-value="" data-surcout="0">
-                                    <?php if (isset($_SESSION['user_id'])): ?>
-                                    <input type="radio" name="option_poids"
-                                        value="" checked>
-                                    <?php endif; ?>
+                                    <input type="radio" name="option_poids" value="" checked>
                                     <span class="option-swatch-text">Prix de base (<?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA)</span>
                                 </label>
                                 <?php foreach ($poids_options as $opt): ?>
                                 <label class="option-swatch-select"
                                     data-value="<?php echo htmlspecialchars($opt['v']); ?>"
                                     data-surcout="<?php echo (float) ($opt['s'] ?? 0); ?>">
-                                    <?php if (isset($_SESSION['user_id'])): ?>
                                     <input type="radio" name="option_poids"
                                         value="<?php echo htmlspecialchars($opt['v']); ?>">
-                                    <?php endif; ?>
                                     <span
                                         class="option-swatch-text"><?php echo htmlspecialchars($opt['v']); ?><?php echo ($opt['s'] ?? 0) > 0 ? ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
                                 </label>
@@ -1182,12 +1173,10 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <?php elseif (!empty($poids_options)): ?>
                         <div class="option-group">
                             <label class="option-label">Poids</label>
-                            <?php if (isset($_SESSION['user_id'])): ?>
                             <input type="hidden" name="option_poids"
                                 value="<?php echo htmlspecialchars($poids_options[0]['v']); ?>">
                             <input type="hidden" name="option_surcout_poids" id="option-surcout-poids"
                                 value="<?php echo (float) ($poids_options[0]['s'] ?? 0); ?>">
-                            <?php endif; ?>
                             <span
                                 class="option-value-display"><?php echo htmlspecialchars($poids_options[0]['v']); ?><?php echo ($poids_options[0]['s'] ?? 0) > 0 ? ' (+' . number_format($poids_options[0]['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
                         </div>
@@ -1195,26 +1184,19 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <?php if (!empty($taille_options) && count($taille_options) > 1): ?>
                         <div class="option-group">
                             <label class="option-label">Taille</label>
-                            <?php if (isset($_SESSION['user_id'])): ?>
                             <input type="hidden" name="option_surcout_taille" id="option-surcout-taille" value="0">
-                            <?php endif; ?>
                             <span class="options-list-select taille-options-list">
                                 <label class="option-swatch-select selected"
                                     data-value="" data-surcout="0">
-                                    <?php if (isset($_SESSION['user_id'])): ?>
-                                    <input type="radio" name="option_taille"
-                                        value="" checked>
-                                    <?php endif; ?>
+                                    <input type="radio" name="option_taille" value="" checked>
                                     <span class="option-swatch-text">Prix de base (<?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA)</span>
                                 </label>
                                 <?php foreach ($taille_options as $opt): ?>
                                 <label class="option-swatch-select"
                                     data-value="<?php echo htmlspecialchars($opt['v']); ?>"
                                     data-surcout="<?php echo (float) ($opt['s'] ?? 0); ?>">
-                                    <?php if (isset($_SESSION['user_id'])): ?>
                                     <input type="radio" name="option_taille"
                                         value="<?php echo htmlspecialchars($opt['v']); ?>">
-                                    <?php endif; ?>
                                     <span
                                         class="option-swatch-text"><?php echo htmlspecialchars($opt['v']); ?><?php echo ($opt['s'] ?? 0) > 0 ? ' (+' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
                                 </label>
@@ -1224,12 +1206,10 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                         <?php elseif (!empty($taille_options)): ?>
                         <div class="option-group">
                             <label class="option-label">Taille</label>
-                            <?php if (isset($_SESSION['user_id'])): ?>
                             <input type="hidden" name="option_taille"
                                 value="<?php echo htmlspecialchars($taille_options[0]['v']); ?>">
                             <input type="hidden" name="option_surcout_taille" id="option-surcout-taille"
                                 value="<?php echo (float) ($taille_options[0]['s'] ?? 0); ?>">
-                            <?php endif; ?>
                             <span
                                 class="option-value-display"><?php echo htmlspecialchars($taille_options[0]['v']); ?><?php echo ($taille_options[0]['s'] ?? 0) > 0 ? ' (+' . number_format($taille_options[0]['s'], 0, ',', ' ') . ' FCFA)' : ''; ?></span>
                         </div>
@@ -1264,18 +1244,9 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
                     <button type="submit" class="btn-add-panier" id="btn-add-panier">
                         <i class="fa-solid fa-cart-shopping"></i>
-                        Ajouter au panier
+                        <?php echo isset($_SESSION['user_id']) ? 'Ajouter au panier' : 'Se connecter pour ajouter au panier'; ?>
                     </button>
                 </form>
-                <?php else: ?>
-
-                <div class="produit-connect-cta">
-                    <p>Vous devez être connecté pour ajouter des produits au panier.</p>
-                    <a href="/user/connexion.php" class="btn-connect-produit">
-                        <i class="fa-solid fa-right-to-bracket"></i> Se connecter
-                    </a>
-                </div>
-                <?php endif; ?>
 
                 <!-- Description (en bas) -->
                 <!-- <?php if (!empty($produit['description'])): ?>

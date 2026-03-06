@@ -761,7 +761,7 @@ $categories = get_all_categories();
                         couleurs.</small>
                     <?php endif; ?>
                 </div>
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label>Tailles disponibles</label>
                     <div class="options-add-block options-with-surcharge">
                         <div class="options-add-row">
@@ -793,7 +793,7 @@ $categories = get_all_categories();
                     </div>
                     <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Taille + montant
                         optionnel (ex: L + 200). Laissez vide pour 0.</small>
-                </div>
+                </div> -->
             </div>
 
             <div class="form-group">
