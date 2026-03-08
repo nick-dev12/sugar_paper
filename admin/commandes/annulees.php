@@ -24,6 +24,9 @@ $commandes_annulees = array_filter($toutes_commandes, function($commande) {
 // Statistiques
 $total_commandes = count_commandes_by_statut();
 $annulees = count_commandes_by_statut('annulee');
+
+// Comptabilité : montant total des commandes annulées
+$montant_total_annulees = get_montant_total_commandes('annulee');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -257,6 +260,12 @@ $annulees = count_commandes_by_statut('annulee');
             <h3>Commandes Annulées</h3>
             <div class="stat-value"><?php echo $annulees; ?></div>
         </div>
+    </div>
+
+    <!-- Comptabilité -->
+    <div class="comptabilite-box">
+        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes annulées</div>
+        <div class="comptabilite-value"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?> FCFA</div>
     </div>
 
     <!-- Liste des commandes -->

@@ -23,10 +23,12 @@ if ($commande_id <= 0) {
 // Récupérer la commande et ses produits
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../models/model_factures.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
+$facture = get_facture_by_commande($commande_id);
 
 if (!$commande) {
     header('Location: index.php');
@@ -59,14 +61,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     }
 
     if ($statut_mis_a_jour !== null) {
-        require_once __DIR__ . '/../../services/send_commande_notification.php';
-        send_commande_status_notification(
-            (int) $commande['user_id'],
-            $commande['numero_commande'],
-            $statut_mis_a_jour,
-            $commande['user_email'] ?? ''
-        );
-        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Une notification et un email ont été envoyés au client.';
+        $user_email = trim($commande['user_email'] ?? '');
+        if (!empty($user_email)) {
+            require_once __DIR__ . '/../../services/send_commande_notification.php';
+            send_commande_status_notification(
+                (int) ($commande['user_id'] ?? 0),
+                $commande['numero_commande'],
+                $statut_mis_a_jour,
+                $user_email
+            );
+        }
+        $_SESSION['success_message'] = !empty($user_email)
+            ? 'Statut de la commande mis à jour avec succès. Une notification et un email ont été envoyés au client.'
+            : 'Statut de la commande mis à jour avec succès.';
         header('Location: details.php?id=' . $commande_id);
         exit;
     }
@@ -78,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?> - Administration</title>
+    <title>Détails Commande #<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?> - Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
@@ -89,9 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 
     <div class="content-header">
         <h1>
-            <i class="fas fa-shopping-bag"></i> Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?>
+            <i class="fas fa-shopping-bag"></i> Commande #<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?>
         </h1>
         <div class="header-actions">
+            <?php if ($facture): ?>
+                <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank">
+                    <i class="fas fa-file-invoice"></i> Voir la facture
+                </a>
+            <?php else: ?>
+                <a href="generer_facture.php?id=<?php echo $commande_id; ?>" class="btn-primary">
+                    <i class="fas fa-file-invoice"></i> Générer une facture
+                </a>
+            <?php endif; ?>
             <a href="index.php" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
@@ -101,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="message success">
             <i class="fas fa-check-circle"></i>
-            <span><?php echo htmlspecialchars($_SESSION['success_message']);
+            <span><?php echo htmlspecialchars($_SESSION['success_message'] ?? '');
             unset($_SESSION['success_message']); ?></span>
         </div>
     <?php endif; ?>
@@ -113,16 +129,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             <div class="detail-item">
                 <label>Nom complet</label>
                 <div class="value">
-                    <?php echo htmlspecialchars($commande['user_prenom'] . ' ' . $commande['user_nom']); ?>
+                    <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?>
                 </div>
             </div>
             <div class="detail-item">
                 <label>Email</label>
-                <div class="value"><?php echo htmlspecialchars($commande['user_email']); ?></div>
+                <div class="value"><?php echo htmlspecialchars($commande['user_email'] ?? ''); ?></div>
             </div>
             <div class="detail-item">
                 <label>Téléphone</label>
-                <div class="value"><?php echo htmlspecialchars($commande['user_telephone']); ?></div>
+                <div class="value"><?php echo htmlspecialchars($commande['user_telephone'] ?? ''); ?></div>
             </div>
         </div>
 
@@ -130,11 +146,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             <h3><i class="fas fa-map-marker-alt"></i> Livraison</h3>
             <div class="detail-item">
                 <label>Adresse</label>
-                <div class="value"><?php echo nl2br(htmlspecialchars($commande['adresse_livraison'])); ?></div>
+                <div class="value"><?php echo nl2br(htmlspecialchars($commande['adresse_livraison'] ?? '')); ?></div>
             </div>
             <div class="detail-item">
                 <label>Téléphone livraison</label>
-                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison'] ?? ''); ?></div>
             </div>
             <?php if (!empty($commande['frais_livraison'])): ?>
                 <div class="detail-item">
@@ -163,14 +179,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 
         <div class="produits-list">
             <?php foreach ($produits as $produit): ?>
-                <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : $produit['image_principale']; ?>
-                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : $produit['produit_nom']; ?>
+                <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? ''); ?>
+                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? ''); ?>
                 <div class="produit-item">
-                    <img src="/upload/<?php echo htmlspecialchars($img_src); ?>"
-                        alt="<?php echo htmlspecialchars($nom_affichage); ?>"
+                    <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
+                        alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
                         onerror="this.src='/image/produit1.jpg'">
                     <div class="produit-info">
-                        <h4><?php echo htmlspecialchars($nom_affichage); ?></h4>
+                        <h4><?php echo htmlspecialchars($nom_affichage ?? ''); ?></h4>
                         <div class="produit-info-lignes">
                             <div class="info-ligne">Quantité: <?php echo $produit['quantite']; ?></div>
                             <div class="info-ligne">Prix unitaire: <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
@@ -180,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                             <?php if (!empty($produit['variante_nom'])): ?>
                             <div class="option-detail option-variante">
                                 <span class="option-label">Variante:</span>
-                                <span class="option-value"><?php echo htmlspecialchars($produit['variante_nom']); ?></span>
+                                <span class="option-value"><?php echo htmlspecialchars($produit['variante_nom'] ?? ''); ?></span>
                             </div>
                             <?php endif; ?>
                             <?php if (!empty($produit['couleur'])): ?>
@@ -192,9 +208,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                             <div class="option-detail option-couleur">
                                 <span class="option-label">Couleur:</span>
                                 <?php if ($is_hex): ?>
-                                <span class="couleur-swatch-large" style="background-color:<?php echo htmlspecialchars($hex); ?>;" title="<?php echo htmlspecialchars($hex); ?>"></span>
+                                <span class="couleur-swatch-large" style="background-color:<?php echo htmlspecialchars($hex ?? ''); ?>;" title="<?php echo htmlspecialchars($hex ?? ''); ?>"></span>
                                 <?php endif; ?>
-                                <span class="option-value"><?php echo htmlspecialchars($nom_couleur); ?></span>
+                                <span class="option-value"><?php echo htmlspecialchars($nom_couleur ?? ''); ?></span>
                             </div>
                             <?php endif; ?>
                             <?php 
@@ -213,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                                 <div class="option-value options-lignes">
                                     <?php foreach ($poids_lignes as $opt): ?>
                                     <div class="option-ligne"><?php 
-                                    echo htmlspecialchars($opt['v']); 
+                                    echo htmlspecialchars($opt['v'] ?? ''); 
                                     if (($opt['s'] ?? 0) > 0) echo ' (poids +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
                                     ?></div>
                                     <?php endforeach; ?>
@@ -226,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                                 <div class="option-value options-lignes">
                                     <?php foreach ($taille_lignes as $opt): ?>
                                     <div class="option-ligne"><?php 
-                                    echo htmlspecialchars($opt['v']); 
+                                    echo htmlspecialchars($opt['v'] ?? ''); 
                                     if (($opt['s'] ?? 0) > 0) echo ' (taille +' . number_format($opt['s'], 0, ',', ' ') . ' FCFA)';
                                     ?></div>
                                     <?php endforeach; ?>
@@ -352,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                             <div class="form-group">
                                 <label>Notes</label>
                                 <div class="notes-box">
-                                    <?php echo nl2br(htmlspecialchars($commande['notes'])); ?>
+                                    <?php echo nl2br(htmlspecialchars($commande['notes'] ?? '')); ?>
                                 </div>
                             </div>
                         <?php endif; ?>

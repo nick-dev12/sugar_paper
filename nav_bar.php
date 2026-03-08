@@ -6,7 +6,10 @@ $asset_version = isset($asset_version) ? $asset_version : get_asset_version();
 // Compter les articles du panier si l'utilisateur est connecté
 $panier_count = 0;
 if (isset($_SESSION['user_id'])) {
-    // Déterminer le chemin correct selon l'emplacement du fichier
+    $conn_path = file_exists(__DIR__ . '/conn/conn.php') ? __DIR__ . '/conn/conn.php' : dirname(__DIR__) . '/conn/conn.php';
+    if (file_exists($conn_path)) {
+        require_once $conn_path;
+    }
     $model_path = file_exists(__DIR__ . '/models/model_panier.php')
         ? __DIR__ . '/models/model_panier.php'
         : dirname(__DIR__) . '/models/model_panier.php';

@@ -7,30 +7,74 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Vérifie si la colonne image_reference existe dans commandes_personnalisees
+ * @return bool
+ */
+function _cp_has_image_reference_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db ? $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'image_reference'") : null;
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+/**
  * Crée une commande personnalisée
  * @param array $data Les données de la commande
  * @return int|false L'ID créé ou False
  */
 function create_commande_personnalisee($data) {
     global $db;
+    if (!$db) {
+        return false;
+    }
+
+    $has_img = _cp_has_image_reference_column();
+    $image_ref = $data['image_reference'] ?? null;
 
     try {
-        $stmt = $db->prepare("
-            INSERT INTO commandes_personnalisees 
-            (user_id, nom, prenom, email, telephone, description, type_produit, quantite, date_souhaitee) 
-            VALUES (:user_id, :nom, :prenom, :email, :telephone, :description, :type_produit, :quantite, :date_souhaitee)
-        ");
-        $stmt->execute([
-            'user_id' => $data['user_id'],
-            'nom' => $data['nom'],
-            'prenom' => $data['prenom'],
-            'email' => $data['email'],
-            'telephone' => $data['telephone'],
-            'description' => $data['description'],
-            'type_produit' => $data['type_produit'] ?? null,
-            'quantite' => $data['quantite'] ?? null,
-            'date_souhaitee' => !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null
-        ]);
+        if ($has_img) {
+            $stmt = $db->prepare("
+                INSERT INTO commandes_personnalisees 
+                (user_id, nom, prenom, email, telephone, description, image_reference, type_produit, quantite, date_souhaitee) 
+                VALUES (:user_id, :nom, :prenom, :email, :telephone, :description, :image_reference, :type_produit, :quantite, :date_souhaitee)
+            ");
+            $stmt->execute([
+                'user_id' => $data['user_id'],
+                'nom' => $data['nom'],
+                'prenom' => $data['prenom'],
+                'email' => $data['email'],
+                'telephone' => $data['telephone'],
+                'description' => $data['description'],
+                'image_reference' => $image_ref,
+                'type_produit' => $data['type_produit'] ?? null,
+                'quantite' => $data['quantite'] ?? null,
+                'date_souhaitee' => !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO commandes_personnalisees 
+                (user_id, nom, prenom, email, telephone, description, type_produit, quantite, date_souhaitee) 
+                VALUES (:user_id, :nom, :prenom, :email, :telephone, :description, :type_produit, :quantite, :date_souhaitee)
+            ");
+            $stmt->execute([
+                'user_id' => $data['user_id'],
+                'nom' => $data['nom'],
+                'prenom' => $data['prenom'],
+                'email' => $data['email'],
+                'telephone' => $data['telephone'],
+                'description' => $data['description'],
+                'type_produit' => $data['type_produit'] ?? null,
+                'quantite' => $data['quantite'] ?? null,
+                'date_souhaitee' => !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null
+            ]);
+        }
         return $db->lastInsertId();
     } catch (PDOException $e) {
         return false;

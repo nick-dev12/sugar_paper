@@ -136,7 +136,7 @@ if (!empty($produits)) {
         <h1><i class="fas fa-box"></i> Liste des Produits</h1>
         <div class="header-actions">
             <a href="ajouter.php" class="btn-primary">
-                <i class="fas fa-plus"></i> Nouveau Produit
+                <i class="fas fa-upload"></i> Publier un produit
             </a>
         </div>
     </div>
@@ -185,7 +185,7 @@ if (!empty($produits)) {
                 <i class="fas fa-box-open"></i>
                 <p>Aucun produit enregistré pour le moment.</p>
                 <a href="ajouter.php" class="btn-primary">
-                    <i class="fas fa-plus"></i> Ajouter le premier produit
+                    <i class="fas fa-upload"></i> Publier le premier produit
                 </a>
             </div>
         <?php else: ?>

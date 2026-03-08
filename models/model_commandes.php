@@ -6,6 +6,9 @@
 
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/model_stock.php';
+require_once __DIR__ . '/model_produits.php';
+require_once __DIR__ . '/model_mouvements_stock.php';
 
 function _commande_produits_has_option_columns() {
     static $has = null;
@@ -27,6 +30,20 @@ function _commandes_has_zone_columns() {
         global $db;
         try {
             $r = $db->query("SHOW COLUMNS FROM commandes LIKE 'zone_livraison_id'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+function _commande_produits_has_nom_produit() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commande_produits LIKE 'nom_produit'");
             $has = $r && $r->rowCount() > 0;
         } catch (PDOException $e) {
             $has = false;
@@ -188,7 +205,54 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             $stmt = $db->prepare("INSERT INTO commande_produits ($cols) VALUES ($vals)");
             $stmt->execute($params);
         }
-        
+
+        // Décrémenter le stock et enregistrer les mouvements de sortie
+        foreach ($panier_items as $item) {
+            $produit_id = (int) $item['id'];
+            $quantite = (int) $item['quantite'];
+            $stock_article_id = isset($item['stock_article_id']) && $item['stock_article_id'] ? (int) $item['stock_article_id'] : null;
+
+            if ($stock_article_id) {
+                $article = get_stock_article_by_id($stock_article_id);
+                if ($article) {
+                    $quantite_avant = (int) $article['quantite'];
+                    decrement_stock_article($stock_article_id, $quantite);
+                    $quantite_apres = max(0, $quantite_avant - $quantite);
+                    create_stock_mouvement([
+                        'type' => 'sortie',
+                        'stock_article_id' => $stock_article_id,
+                        'produit_id' => $produit_id,
+                        'quantite' => $quantite,
+                        'quantite_avant' => $quantite_avant,
+                        'quantite_apres' => $quantite_apres,
+                        'reference_type' => 'commande',
+                        'reference_id' => $commande_id,
+                        'reference_numero' => $numero_commande,
+                        'notes' => 'Vente commande ' . $numero_commande
+                    ]);
+                }
+            } else {
+                $produit = get_produit_by_id($produit_id);
+                if ($produit) {
+                    $quantite_avant = (int) $produit['stock'];
+                    decrement_produit_stock($produit_id, $quantite);
+                    $quantite_apres = max(0, $quantite_avant - $quantite);
+                    create_stock_mouvement([
+                        'type' => 'sortie',
+                        'stock_article_id' => null,
+                        'produit_id' => $produit_id,
+                        'quantite' => $quantite,
+                        'quantite_avant' => $quantite_avant,
+                        'quantite_apres' => $quantite_apres,
+                        'reference_type' => 'commande',
+                        'reference_id' => $commande_id,
+                        'reference_numero' => $numero_commande,
+                        'notes' => 'Vente commande ' . $numero_commande
+                    ]);
+                }
+            }
+        }
+
         // Valider la transaction
         $db->commit();
         
@@ -202,6 +266,201 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
         // Annuler la transaction en cas d'erreur
         $db->rollBack();
         error_log('[create_commande] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Crée une commande manuelle (admin, sans utilisateur connecté)
+ * @param array $items [['produit_id'=>int, 'quantite'=>int, 'prix_unitaire'=>float, 'prix_promotion'=>float|null, 'nom_produit'=>string|null], ...]
+ * @param string $client_nom Nom du client
+ * @param string $client_prenom Prénom du client
+ * @param string $client_telephone Téléphone du client
+ * @param string $adresse_livraison Adresse de livraison
+ * @param string|null $client_email Email (optionnel, si vide pas d'envoi email)
+ * @param string|null $notes Notes optionnelles
+ * @param int|null $zone_livraison_id ID zone de livraison (optionnel)
+ * @param float $frais_livraison Frais de livraison en FCFA (défaut 0)
+ * @return array|false ['success'=>true, 'commande_id'=>int, 'numero_commande'=>string] ou false
+ */
+function create_commande_manuelle($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0) {
+    global $db;
+
+    if (empty($items) || empty(trim($client_nom)) || empty(trim($client_prenom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
+        return false;
+    }
+
+    try {
+        $db->beginTransaction();
+
+        $montant_total = 0;
+        $panier_items = [];
+        foreach ($items as $it) {
+            $produit_id = (int) ($it['produit_id'] ?? 0);
+            $quantite = max(1, (int) ($it['quantite'] ?? 1));
+            $prix_promo = isset($it['prix_promotion']) && $it['prix_promotion'] !== '' && (float) $it['prix_promotion'] > 0 ? (float) $it['prix_promotion'] : null;
+            $prix_unitaire = $prix_promo !== null ? $prix_promo : (float) ($it['prix_unitaire'] ?? 0);
+            if ($produit_id <= 0 || $prix_unitaire <= 0) continue;
+
+            $produit = get_produit_by_id($produit_id);
+            if (!$produit) continue;
+
+            $stock_dispo = (int) ($produit['stock'] ?? 0);
+            if ($stock_dispo < $quantite) {
+                $db->rollBack();
+                return false;
+            }
+
+            $nom_produit = isset($it['nom_produit']) && trim($it['nom_produit']) !== '' ? trim($it['nom_produit']) : null;
+            $panier_items[] = [
+                'id' => $produit_id,
+                'quantite' => $quantite,
+                'stock_article_id' => $produit['stock_article_id'] ?? null,
+                'prix' => $produit['prix'],
+                'prix_promotion' => $prix_promo ?? ($produit['prix_promotion'] ?? null),
+                'panier_prix_unitaire' => $prix_unitaire,
+                'nom_produit' => $nom_produit
+            ];
+            $montant_total += $prix_unitaire * $quantite;
+        }
+
+        $frais_livraison = (float) ($frais_livraison ?? 0);
+        $montant_total += $frais_livraison;
+
+        if (empty($panier_items)) {
+            $db->rollBack();
+            return false;
+        }
+
+        $numero_commande = generate_numero_commande();
+        $stmt = $db->prepare("SELECT id FROM commandes WHERE numero_commande = :numero");
+        $stmt->execute(['numero' => $numero_commande]);
+        if ($stmt->fetch()) {
+            $numero_commande = generate_numero_commande() . '-' . rand(100, 999);
+        }
+
+        $has_zone = _commandes_has_zone_columns();
+        $params_exec = [
+            'numero_commande' => $numero_commande,
+            'montant_total' => $montant_total,
+            'adresse_livraison' => trim($adresse_livraison),
+            'telephone_livraison' => trim($client_telephone),
+            'notes' => $notes ? trim($notes) : null,
+            'client_nom' => trim($client_nom),
+            'client_prenom' => trim($client_prenom),
+            'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
+            'client_telephone' => trim($client_telephone)
+        ];
+
+        if ($has_zone) {
+            $params_exec['zone_livraison_id'] = $zone_livraison_id && (int) $zone_livraison_id > 0 ? (int) $zone_livraison_id : null;
+            $params_exec['frais_livraison'] = $frais_livraison;
+            $stmt = $db->prepare("
+                INSERT INTO commandes (
+                    user_id, numero_commande, montant_total, adresse_livraison,
+                    zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes,
+                    client_nom, client_prenom, client_email, client_telephone
+                ) VALUES (
+                    NULL, :numero_commande, :montant_total, :adresse_livraison,
+                    :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes,
+                    :client_nom, :client_prenom, :client_email, :client_telephone
+                )
+            ");
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO commandes (
+                    user_id, numero_commande, montant_total, adresse_livraison,
+                    telephone_livraison, statut, date_commande, notes,
+                    client_nom, client_prenom, client_email, client_telephone
+                ) VALUES (
+                    NULL, :numero_commande, :montant_total, :adresse_livraison,
+                    :telephone_livraison, 'en_attente', NOW(), :notes,
+                    :client_nom, :client_prenom, :client_email, :client_telephone
+                )
+            ");
+        }
+
+        $stmt->execute($params_exec);
+
+        $commande_id = $db->lastInsertId();
+
+        $has_options = _commande_produits_has_option_columns();
+        $has_variantes = _commande_produits_has_variante_columns();
+        $has_nom_produit = _commande_produits_has_nom_produit();
+        $cols = 'commande_id, produit_id, quantite, prix_unitaire, prix_total';
+        $vals = ':commande_id, :produit_id, :quantite, :prix_unitaire, :prix_total';
+        if ($has_nom_produit) { $cols .= ', nom_produit'; $vals .= ', :nom_produit'; }
+        if ($has_options) { $cols .= ', couleur, poids, taille'; $vals .= ', NULL, NULL, NULL'; }
+        if ($has_variantes) { $cols .= ', variante_id, variante_nom, surcout_poids, surcout_taille'; $vals .= ', NULL, NULL, 0, 0'; }
+
+        foreach ($panier_items as $item) {
+            $prix_unitaire = (float) $item['panier_prix_unitaire'];
+            $prix_total = $prix_unitaire * $item['quantite'];
+            $params = [
+                'commande_id' => $commande_id,
+                'produit_id' => $item['id'],
+                'quantite' => $item['quantite'],
+                'prix_unitaire' => $prix_unitaire,
+                'prix_total' => $prix_total
+            ];
+            if ($has_nom_produit) {
+                $params['nom_produit'] = $item['nom_produit'] ?? null;
+            }
+            $stmt = $db->prepare("INSERT INTO commande_produits ($cols) VALUES ($vals)");
+            $stmt->execute($params);
+        }
+
+        foreach ($panier_items as $item) {
+            $produit_id = (int) $item['id'];
+            $quantite = (int) $item['quantite'];
+            $stock_article_id = $item['stock_article_id'] ?? null;
+
+            if ($stock_article_id) {
+                $article = get_stock_article_by_id($stock_article_id);
+                if ($article) {
+                    $quantite_avant = (int) $article['quantite'];
+                    decrement_stock_article($stock_article_id, $quantite);
+                    $quantite_apres = max(0, $quantite_avant - $quantite);
+                    create_stock_mouvement([
+                        'type' => 'sortie',
+                        'stock_article_id' => $stock_article_id,
+                        'produit_id' => $produit_id,
+                        'quantite' => $quantite,
+                        'quantite_avant' => $quantite_avant,
+                        'quantite_apres' => $quantite_apres,
+                        'reference_type' => 'commande',
+                        'reference_id' => $commande_id,
+                        'reference_numero' => $numero_commande,
+                        'notes' => 'Commande manuelle ' . $numero_commande
+                    ]);
+                }
+            } else {
+                $produit = get_produit_by_id($produit_id);
+                if ($produit) {
+                    $quantite_avant = (int) $produit['stock'];
+                    decrement_produit_stock($produit_id, $quantite);
+                    $quantite_apres = max(0, $quantite_avant - $quantite);
+                    create_stock_mouvement([
+                        'type' => 'sortie',
+                        'stock_article_id' => null,
+                        'produit_id' => $produit_id,
+                        'quantite' => $quantite,
+                        'quantite_avant' => $quantite_avant,
+                        'quantite_apres' => $quantite_apres,
+                        'reference_type' => 'commande',
+                        'reference_id' => $commande_id,
+                        'reference_numero' => $numero_commande,
+                        'notes' => 'Commande manuelle ' . $numero_commande
+                    ]);
+                }
+            }
+        }
+
+        $db->commit();
+        return ['success' => true, 'commande_id' => $commande_id, 'numero_commande' => $numero_commande];
+    } catch (PDOException $e) {
+        $db->rollBack();
+        error_log('[create_commande_manuelle] ' . $e->getMessage());
         return false;
     }
 }
@@ -276,8 +535,9 @@ function get_commande_produits($commande_id) {
         $var_nom = $has_var
             ? ", COALESCE(NULLIF(TRIM(cp.variante_nom), ''), pv.nom) as variante_nom"
             : "";
+        $nom_col = _commande_produits_has_nom_produit() ? "COALESCE(NULLIF(TRIM(cp.nom_produit), ''), p.nom) as nom" : "p.nom";
         $stmt = $db->prepare("
-            SELECT cp.*, p.id as produit_id, p.nom, p.image_principale, p.poids, p.unite,
+            SELECT cp.*, p.id as produit_id, $nom_col, p.image_principale, p.poids, p.unite,
                    c.nom as categorie_nom, c.id as categorie_id,
                    cmd.numero_commande, cmd.date_commande, cmd.statut as statut_commande,
                    $img $var_nom
@@ -311,7 +571,8 @@ function get_commandes_by_categorie($user_id, $categorie_id = null) {
         $has_opts = _commande_produits_has_option_columns();
         $has_var = _commande_produits_has_variante_columns();
         $img = $has_var ? "COALESCE(pv.image, p.image_principale) as image_principale" : "p.image_principale as image_principale";
-        $cols = "c.id as categorie_id, c.nom as categorie_nom, cmd.id as commande_id, cmd.numero_commande, cmd.date_commande, cmd.statut as statut_commande, cmd.montant_total, cp.produit_id, p.nom as produit_nom, $img, p.poids, p.unite, cp.quantite, cp.prix_unitaire, cp.prix_total";
+        $produit_nom_col = _commande_produits_has_nom_produit() ? "COALESCE(NULLIF(TRIM(cp.nom_produit), ''), p.nom) as produit_nom" : "p.nom as produit_nom";
+        $cols = "c.id as categorie_id, c.nom as categorie_nom, cmd.id as commande_id, cmd.numero_commande, cmd.date_commande, cmd.statut as statut_commande, cmd.montant_total, cp.produit_id, $produit_nom_col, $img, p.poids, p.unite, cp.quantite, cp.prix_unitaire, cp.prix_total";
         if ($has_opts) $cols .= ", cp.couleur, cp.poids as choix_poids, cp.taille";
         if ($has_var) $cols .= ", cp.variante_nom, cp.surcout_poids, cp.surcout_taille";
         $join_pv = $has_var ? "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id" : "";

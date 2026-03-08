@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS `commandes_personnalisees` (
   `email` VARCHAR(255) NOT NULL,
   `telephone` VARCHAR(50) NOT NULL,
   `description` TEXT NOT NULL,
+  `image_reference` VARCHAR(255) NULL DEFAULT NULL,
   `type_produit` VARCHAR(255) NULL DEFAULT NULL,
   `quantite` VARCHAR(100) NULL DEFAULT NULL,
   `date_souhaitee` DATE NULL DEFAULT NULL,

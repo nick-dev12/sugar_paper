@@ -59,6 +59,73 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         .form-group textarea { min-height: 120px; resize: vertical; }
         .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--couleur-dominante); }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .upload-reference-box {
+            border: 2px dashed rgba(229, 72, 138, 0.25);
+            border-radius: 14px;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.75);
+        }
+        .upload-reference-box input[type="file"] {
+            padding: 12px;
+            border-style: dashed;
+            background: #fff;
+            cursor: pointer;
+        }
+        .upload-help {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--texte-fonce);
+            line-height: 1.5;
+        }
+        .upload-help strong {
+            color: var(--couleur-dominante);
+        }
+        .preview-reference {
+            display: none;
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(229, 72, 138, 0.08);
+            border: 1px solid rgba(229, 72, 138, 0.16);
+        }
+        .preview-reference.show {
+            display: block;
+        }
+        .preview-reference img {
+            display: block;
+            width: 100%;
+            max-height: 280px;
+            object-fit: contain;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+        .preview-reference-actions {
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .preview-reference-note {
+            font-size: 13px;
+            color: var(--texte-fonce);
+        }
+        .btn-remove-preview {
+            border: none;
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--titres);
+            border-radius: 999px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-remove-preview:hover {
+            background: rgba(229, 72, 138, 0.14);
+            color: var(--couleur-dominante);
+        }
         @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
         .error-message { background: rgba(229, 72, 138, 0.1); border-left: 4px solid var(--couleur-dominante); padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; color: var(--titres); }
         .btn-submit { width: 100%; padding: 14px; background: var(--couleur-dominante); color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
@@ -82,7 +149,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="" class="form-commande-perso">
+        <form method="POST" action="" class="form-commande-perso" enctype="multipart/form-data">
             <div class="form-row">
                 <div class="form-group">
                     <label for="nom"><i class="fas fa-user"></i> Nom *</label>
@@ -110,7 +177,14 @@ $seo_canonical = $base . '/commande-personnalisee.php';
             <div class="form-row">
                 <div class="form-group">
                     <label for="type_produit"><i class="fas fa-tag"></i> Type de produit (optionnel)</label>
-                    <input type="text" id="type_produit" name="type_produit" value="<?php echo htmlspecialchars($_POST['type_produit'] ?? ''); ?>" placeholder="Ex: Huile de coco, Noix de cajou...">
+                    <select id="type_produit" name="type_produit">
+                        <option value="">— Choisir un type —</option>
+                        <option value="Cake Topper non comestible"<?php echo (($_POST['type_produit'] ?? '') === 'Cake Topper non comestible') ? ' selected' : ''; ?>>Cake Topper non comestible</option>
+                        <option value="Papier sucre A4"<?php echo (($_POST['type_produit'] ?? '') === 'Papier sucre A4') ? ' selected' : ''; ?>>Papier sucre A4</option>
+                        <option value="Papier sucre A3"<?php echo (($_POST['type_produit'] ?? '') === 'Papier sucre A3') ? ' selected' : ''; ?>>Papier sucre A3</option>
+                        <option value="Papier Azym A4"<?php echo (($_POST['type_produit'] ?? '') === 'Papier Azym A4') ? ' selected' : ''; ?>>Papier Azym A4</option>
+                        <option value="Papier choco transfert A4"<?php echo (($_POST['type_produit'] ?? '') === 'Papier choco transfert A4') ? ' selected' : ''; ?>>Papier choco transfert A4</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="quantite"><i class="fas fa-cubes"></i> Quantité souhaitée (optionnel)</label>
@@ -121,6 +195,25 @@ $seo_canonical = $base . '/commande-personnalisee.php';
                 <label for="date_souhaitee"><i class="fas fa-calendar"></i> Date souhaitée (optionnel)</label>
                 <input type="date" id="date_souhaitee" name="date_souhaitee" value="<?php echo htmlspecialchars($_POST['date_souhaitee'] ?? ''); ?>">
             </div>
+            <div class="form-group">
+                <label for="image_reference"><i class="fas fa-image"></i> Image de référence (optionnel)</label>
+                <div class="upload-reference-box">
+                    <input type="file" id="image_reference" name="image_reference" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif">
+                    <p class="upload-help">
+                        Ajoutez une photo d'inspiration si vous en avez une.
+                        <strong>Formats acceptés :</strong> JPG, PNG, WEBP, GIF.
+                    </p>
+                    <div class="preview-reference" id="preview-reference">
+                        <img id="preview-reference-image" src="" alt="Prévisualisation de l'image sélectionnée">
+                        <div class="preview-reference-actions">
+                            <span class="preview-reference-note">Aperçu de l'image qui sera jointe à votre demande.</span>
+                            <button type="button" class="btn-remove-preview" id="btn-remove-preview">
+                                <i class="fas fa-times"></i> Retirer l'image
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button type="submit" class="btn-submit">
                 <i class="fas fa-paper-plane"></i> Envoyer ma demande
             </button>
@@ -130,5 +223,40 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     </div>
 
     <?php include 'footer.php'; ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var fileInput = document.getElementById('image_reference');
+            var previewBox = document.getElementById('preview-reference');
+            var previewImage = document.getElementById('preview-reference-image');
+            var removeButton = document.getElementById('btn-remove-preview');
+
+            if (!fileInput || !previewBox || !previewImage || !removeButton) {
+                return;
+            }
+
+            function hidePreview() {
+                previewBox.classList.remove('show');
+                previewImage.removeAttribute('src');
+                fileInput.value = '';
+            }
+
+            fileInput.addEventListener('change', function () {
+                if (!fileInput.files || !fileInput.files[0]) {
+                    previewBox.classList.remove('show');
+                    previewImage.removeAttribute('src');
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImage.src = event.target.result;
+                    previewBox.classList.add('show');
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            });
+
+            removeButton.addEventListener('click', hidePreview);
+        });
+    </script>
 </body>
 </html>

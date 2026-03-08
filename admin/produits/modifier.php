@@ -42,9 +42,11 @@ if (isset($result['success']) && $result['success']) {
     exit;
 }
 
-// Récupérer les catégories
+// Récupérer les catégories et articles en stock
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../models/model_stock.php';
 $categories = get_all_categories();
+$articles_stock = get_all_stock_articles();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -557,6 +559,20 @@ $categories = get_all_categories();
         <?php endif; ?>
 
         <form method="POST" action="" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="stock_article_id"><i class="fas fa-boxes-stacked"></i> Lier à un article en stock</label>
+                <select id="stock_article_id" name="stock_article_id">
+                    <option value="">Aucun (stock géré manuellement)</option>
+                    <?php foreach ($articles_stock as $a): ?>
+                        <option value="<?php echo (int) $a['id']; ?>"
+                            <?php echo (isset($produit['stock_article_id']) && (int)$produit['stock_article_id'] === (int)$a['id']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($a['nom']); ?> (<?php echo (int) $a['quantite']; ?> en stock)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Si lié, le stock affiché proviendra de l'article et sera décrémenté automatiquement à chaque vente. <a href="../stock/index.php" style="color: #918a44;">Gérer le stock</a></small>
+            </div>
+
             <div class="form-group">
                 <label for="nom">Nom du produit *</label>
                 <input type="text" id="nom" name="nom" required

@@ -21,6 +21,20 @@ function _admin_cp_has_option_columns() {
     return $has;
 }
 
+function _admin_cp_has_nom_produit() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commande_produits LIKE 'nom_produit'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 function _admin_cp_has_variante_columns() {
     static $has = null;
     if ($has === null) {
@@ -42,29 +56,28 @@ function _admin_cp_has_variante_columns() {
  */
 function get_all_commandes($statut = null) {
     global $db;
-    
+
     try {
+        $sql = "
+            SELECT c.*,
+                   COALESCE(u.nom, c.client_nom) as user_nom,
+                   COALESCE(u.prenom, c.client_prenom) as user_prenom,
+                   COALESCE(u.email, c.client_email) as user_email
+            FROM commandes c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
         if ($statut) {
-            $stmt = $db->prepare("
-                SELECT c.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email
-                FROM commandes c
-                INNER JOIN users u ON c.user_id = u.id
-                WHERE c.statut = :statut
-                ORDER BY c.date_commande DESC
-            ");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT c.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email
-                FROM commandes c
-                INNER JOIN users u ON c.user_id = u.id
-                ORDER BY c.date_commande DESC
-            ");
-            $stmt->execute();
+            $sql .= " AND c.statut = :statut";
+            $params['statut'] = $statut;
         }
-        
+        $sql .= " ORDER BY c.date_commande DESC";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         $commandes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         return $commandes ? $commandes : [];
     } catch (PDOException $e) {
         return false;
@@ -78,17 +91,21 @@ function get_all_commandes($statut = null) {
  */
 function get_commande_by_id($commande_id) {
     global $db;
-    
+
     try {
         $stmt = $db->prepare("
-            SELECT c.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email, u.telephone as user_telephone
+            SELECT c.*,
+                   COALESCE(u.nom, c.client_nom) as user_nom,
+                   COALESCE(u.prenom, c.client_prenom) as user_prenom,
+                   COALESCE(u.email, c.client_email) as user_email,
+                   COALESCE(u.telephone, c.client_telephone, c.telephone_livraison) as user_telephone
             FROM commandes c
-            INNER JOIN users u ON c.user_id = u.id
+            LEFT JOIN users u ON c.user_id = u.id
             WHERE c.id = :id
         ");
         $stmt->execute(['id' => $commande_id]);
         $commande = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         return $commande ? $commande : false;
     } catch (PDOException $e) {
         return false;
@@ -107,7 +124,8 @@ function get_produits_by_commande($commande_id) {
         $has_opts = _admin_cp_has_option_columns();
         $has_var = _admin_cp_has_variante_columns();
         
-        $cols = "cp.*, p.nom as produit_nom, p.image_principale, c.nom as categorie_nom";
+        $produit_nom_col = _admin_cp_has_nom_produit() ? "COALESCE(NULLIF(TRIM(cp.nom_produit), ''), p.nom) as produit_nom" : "p.nom as produit_nom";
+        $cols = "cp.*, $produit_nom_col, p.image_principale, c.nom as categorie_nom";
         if ($has_opts) $cols .= ", cp.couleur, cp.poids, cp.taille";
         if ($has_var) {
             $cols .= ", cp.variante_id, COALESCE(NULLIF(TRIM(cp.variante_nom), ''), pv.nom) as variante_nom, cp.surcout_poids, cp.surcout_taille";
@@ -185,6 +203,127 @@ function count_commandes_by_statut($statut = null) {
     } catch (PDOException $e) {
         return 0;
     }
+}
+
+/**
+ * Retourne le montant total des commandes (comptabilité)
+ * @param string|null $statut Filtrer par statut (optionnel). Si null, toutes les commandes.
+ * @return float Montant total en FCFA
+ */
+function get_montant_total_commandes($statut = null) {
+    global $db;
+    
+    try {
+        if ($statut) {
+            $stmt = $db->prepare("SELECT COALESCE(SUM(montant_total), 0) FROM commandes WHERE statut = :statut");
+            $stmt->execute(['statut' => $statut]);
+        } else {
+            $stmt = $db->query("SELECT COALESCE(SUM(montant_total), 0) FROM commandes");
+        }
+        
+        return (float) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0.0;
+    }
+}
+
+/**
+ * Récupère les commandes par période (pour historique ventes / comptabilité)
+ * @param string $periode 'jour'|'plage'|'annee'
+ * @param int|null $annee Année (optionnel, défaut: année courante)
+ * @param int|null $mois Mois 1-12 (optionnel, pour mois/annee)
+ * @param string|null $date_debut Date début Y-m-d (pour plage)
+ * @param string|null $date_fin Date fin Y-m-d (pour plage)
+ * @param int|null $jour Jour du mois 1-31 (optionnel, pour jour)
+ * @return array Tableau des commandes
+ */
+function get_commandes_by_periode($periode, $annee = null, $mois = null, $date_debut = null, $date_fin = null, $jour = null) {
+    global $db;
+    $annee = $annee ?? (int) date('Y');
+    $mois = $mois ?? (int) date('n');
+    $jour = $jour ?? (int) date('j');
+    
+    try {
+        $sql = "
+            SELECT c.*,
+                   COALESCE(u.nom, c.client_nom) as user_nom,
+                   COALESCE(u.prenom, c.client_prenom) as user_prenom,
+                   COALESCE(u.email, c.client_email) as user_email
+            FROM commandes c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE 1=1
+        ";
+        $params = [];
+        
+        switch ($periode) {
+            case 'jour':
+                $sql .= " AND DATE(c.date_commande) = :date_jour";
+                $params['date_jour'] = sprintf('%04d-%02d-%02d', $annee, $mois, $jour);
+                break;
+            case 'plage':
+                if (!empty($date_debut) && !empty($date_fin)) {
+                    $sql .= " AND DATE(c.date_commande) BETWEEN :date_debut AND :date_fin";
+                    $params['date_debut'] = $date_debut;
+                    $params['date_fin'] = $date_fin;
+                } elseif (!empty($date_debut)) {
+                    $sql .= " AND DATE(c.date_commande) >= :date_debut";
+                    $params['date_debut'] = $date_debut;
+                } elseif (!empty($date_fin)) {
+                    $sql .= " AND DATE(c.date_commande) <= :date_fin";
+                    $params['date_fin'] = $date_fin;
+                } else {
+                    $sql .= " AND DATE(c.date_commande) = CURDATE()";
+                }
+                break;
+            case 'annee':
+                $sql .= " AND YEAR(c.date_commande) = :annee";
+                $params['annee'] = $annee;
+                break;
+            default:
+                $sql .= " AND DATE(c.date_commande) = CURDATE()";
+        }
+        
+        $sql .= " ORDER BY c.date_commande DESC";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Statistiques comptabilité par période
+ * @param array $commandes Tableau des commandes (déjà filtrées)
+ * @return array [montant_total, nb_commandes, montant_livrees, montant_non_traitees, nb_livrees, nb_non_traitees]
+ */
+function get_stats_comptabilite_periode($commandes) {
+    $montant_total = 0;
+    $montant_livrees = 0;
+    $montant_non_traitees = 0;
+    $nb_livrees = 0;
+    $nb_non_traitees = 0;
+    
+    foreach ($commandes as $c) {
+        $mt = (float) ($c['montant_total'] ?? 0);
+        $montant_total += $mt;
+        if ($c['statut'] === 'livree') {
+            $montant_livrees += $mt;
+            $nb_livrees++;
+        } elseif ($c['statut'] !== 'annulee') {
+            $montant_non_traitees += $mt;
+            $nb_non_traitees++;
+        }
+    }
+    
+    return [
+        'montant_total' => $montant_total,
+        'nb_commandes' => count($commandes),
+        'montant_livrees' => $montant_livrees,
+        'montant_non_traitees' => $montant_non_traitees,
+        'nb_livrees' => $nb_livrees,
+        'nb_non_traitees' => $nb_non_traitees
+    ];
 }
 
 ?>

@@ -21,9 +21,23 @@ $commandes_livrees = array_filter($toutes_commandes, function($commande) {
     return $commande['statut'] === 'livree';
 });
 
+// Par défaut : afficher uniquement les livraisons du jour. Option pour inclure les jours précédents
+$jours_precedents = isset($_GET['jours_precedents']) && $_GET['jours_precedents'] === '1';
+if (!$jours_precedents) {
+    $aujourd_hui = date('Y-m-d');
+    $commandes_livrees = array_filter($commandes_livrees, function($c) use ($aujourd_hui) {
+        $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : $c['date_commande'];
+        $date_c = date('Y-m-d', strtotime($date_ref));
+        return $date_c === $aujourd_hui;
+    });
+}
+
 // Statistiques
 $total_commandes = count_commandes_by_statut();
 $livrees = count_commandes_by_statut('livree');
+
+// Comptabilité : montant total des commandes livrées
+$montant_total_livrees = get_montant_total_commandes('livree');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -37,6 +51,13 @@ $livrees = count_commandes_by_statut('livree');
 </head>
 <body>
     <?php include '../includes/nav.php'; ?>
+
+    <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="message success">
+            <i class="fas fa-check-circle"></i>
+            <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+        </div>
+    <?php endif; ?>
     
     <div class="content-header">
         <h1><i class="fas fa-check-circle"></i> Commandes Livrées</h1>
@@ -57,6 +78,12 @@ $livrees = count_commandes_by_statut('livree');
         </div>
     </div>
 
+    <!-- Comptabilité -->
+    <div class="comptabilite-box">
+        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes livrées</div>
+        <div class="comptabilite-value"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?> FCFA</div>
+    </div>
+
     <!-- Liste des commandes -->
     <section class="content-section">
         <div class="section-header">
@@ -64,6 +91,15 @@ $livrees = count_commandes_by_statut('livree');
                 <h2><i class="fas fa-check-circle"></i> Commandes Reçues (<?php echo count($commandes_livrees); ?>)</h2>
             </div>
             <div class="form-actions" style="flex-wrap: wrap;">
+                <?php if ($jours_precedents): ?>
+                <a href="livrees.php" class="btn-link">
+                    <i class="fas fa-calendar-day"></i> Voir uniquement les livraisons du jour
+                </a>
+                <?php else: ?>
+                <a href="livrees.php?jours_precedents=1" class="btn-link">
+                    <i class="fas fa-calendar-alt"></i> Voir aussi les livraisons des jours précédents
+                </a>
+                <?php endif; ?>
                 <a href="index.php" class="btn-link">
                     <i class="fas fa-shopping-bag"></i> Voir les commandes à traiter
                 </a>
@@ -87,8 +123,8 @@ $livrees = count_commandes_by_statut('livree');
                             <div class="commande-info">
                                 <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
                                 <p>
-                                    <strong>Client:</strong> <?php echo htmlspecialchars($commande['user_prenom'] . ' ' . $commande['user_nom']); ?><br>
-                                    <span class="client-email"><?php echo htmlspecialchars($commande['user_email']); ?></span>
+                                    <strong>Client:</strong> <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
+                                    <span class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
                                 </p>
                                 <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
                             </div>

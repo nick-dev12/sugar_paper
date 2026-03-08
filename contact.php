@@ -44,7 +44,7 @@ if (!isset($_SESSION['contact_csrf'])) {
 }
 
 $email_contact = 'sugarpaper26@gmail.com';
-$telephones_contact = ['+221 77 416 12 12', '+221 33 823 35 14'];
+$telephones_contact = ['+221 77 416 12 12', '+221 77 32 92 123', '+221 33 823 35 14'];
 $adresse_contact = 'Hann Mariste 2 LOT R/01';
 
 // Meta SEO
@@ -273,8 +273,9 @@ $seo_canonical = $base . '/contact.php';
                     <i class="fas fa-phone"></i>
                     <div>
                         <strong>Téléphones</strong><br>
-                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[0]); ?>"><?php echo htmlspecialchars($telephones_contact[0]); ?></a><br>
-                        <a href="tel:<?php echo preg_replace('/\s+/', '', $telephones_contact[1]); ?>"><?php echo htmlspecialchars($telephones_contact[1]); ?></a>
+                        <?php foreach ($telephones_contact as $tel): ?>
+                        <a href="tel:<?php echo preg_replace('/\s+/', '', $tel); ?>"><?php echo htmlspecialchars($tel); ?></a><br>
+                        <?php endforeach; ?>
                     </div>
                 </div>
                 <div class="contact-item">

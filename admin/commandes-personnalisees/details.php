@@ -18,7 +18,10 @@ if ($cp_id <= 0) {
 }
 
 require_once __DIR__ . '/../../models/model_commandes_personnalisees.php';
+require_once __DIR__ . '/../../models/model_factures_personnalisees.php';
+require_once __DIR__ . '/../../includes/site_url.php';
 $cp = get_commande_personnalisee_by_id($cp_id);
+$facture_cp = get_facture_personnalisee_by_cp($cp_id);
 
 if (!$cp) {
     header('Location: index.php');
@@ -69,6 +72,32 @@ $cp = get_commande_personnalisee_by_id($cp_id);
     <div class="cp-details-header">
         <h1><i class="fas fa-palette"></i> Demande #<?php echo $cp['id']; ?></h1>
         <div class="header-actions">
+            <?php if ($facture_cp): ?>
+                <a href="facture.php?id=<?php echo (int) $facture_cp['id']; ?>" class="btn-primary" target="_blank">
+                    <i class="fas fa-file-invoice"></i> Voir la facture
+                </a>
+                <?php
+                $tel = preg_replace('/\D/', '', $cp['telephone'] ?? '');
+                if (strlen($tel) === 9 && in_array(substr($tel, 0, 2), ['70', '76', '77', '78'])) $tel = '221' . $tel;
+                elseif (strlen($tel) === 10 && $tel[0] === '0') $tel = '221' . substr($tel, 1);
+                $base = get_site_base_url();
+                $token = $facture_cp['token'] ?? '';
+                $facture_url = $base . '/facture-cp.php?token=' . $token;
+                $client_nom = trim(($cp['prenom'] ?? '') . ' ' . ($cp['nom'] ?? ''));
+                $montant_aff = ($facture_cp['montant_total'] ?? 0) > 0 ? number_format($facture_cp['montant_total'], 0, ',', ' ') . ' CFA' : 'À définir';
+                $msg_wa = "Bonjour " . $client_nom . ",\n\nVotre devis/facture n°" . ($facture_cp['numero_facture'] ?? '') . " pour la demande #" . $cp['id'] . " est prête.\n\nMontant : " . $montant_aff . "\n\nConsultez : " . $facture_url . "\n\nCordialement, Sugar Paper";
+                $wa_url = !empty($tel) ? 'https://wa.me/' . $tel . '?text=' . urlencode($msg_wa) : '';
+                ?>
+                <?php if (!empty($wa_url)): ?>
+                <a href="<?php echo htmlspecialchars($wa_url); ?>" class="btn-whatsapp-cp" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-whatsapp"></i> Envoyer sur WhatsApp
+                </a>
+                <?php endif; ?>
+            <?php else: ?>
+                <a href="generer_facture.php?id=<?php echo $cp_id; ?>" class="btn-primary">
+                    <i class="fas fa-file-invoice"></i> Générer une facture
+                </a>
+            <?php endif; ?>
             <a href="index.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour à la liste</a>
         </div>
     </div>
@@ -125,6 +154,21 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <div class="value"><?php echo date('d/m/Y', strtotime($cp['date_souhaitee'])); ?></div>
             </div>
             <?php endif; ?>
+            <?php if (!empty($cp['image_reference'])): ?>
+            <div class="cp-detail-item">
+                <label>Image de référence</label>
+                <button type="button" class="cp-image-trigger" id="cpImageTrigger">
+                    <img src="/upload/<?php echo htmlspecialchars($cp['image_reference'] ?? ''); ?>"
+                        alt="Image de référence de la commande personnalisée"
+                        onerror="this.src='/image/produit1.jpg'">
+                    <span class="cp-image-trigger-caption">
+                        <strong>Voir l'image jointe</strong>
+                        <small>Cliquez pour l'afficher en grand format</small>
+                    </span>
+                    <span class="cp-image-zoom-icon"><i class="fas fa-up-right-and-down-left-from-center"></i></span>
+                </button>
+            </div>
+            <?php endif; ?>
             <div class="cp-detail-item">
                 <label>Date de demande</label>
                 <div class="value"><?php echo date('d/m/Y à H:i', strtotime($cp['date_creation'])); ?></div>
@@ -177,6 +221,66 @@ $cp = get_commande_personnalisee_by_id($cp_id);
             </div>
         <?php endif; ?>
     </section>
+
+    <?php if (!empty($cp['image_reference'])): ?>
+    <div class="cp-image-modal" id="cpImageModal" aria-hidden="true">
+        <div class="cp-image-modal-backdrop" data-close-image-modal="1"></div>
+        <div class="cp-image-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cpImageModalTitle">
+            <button type="button" class="cp-image-modal-close" id="cpImageModalClose" aria-label="Fermer l'image">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="cp-image-modal-header">
+                <h3 id="cpImageModalTitle"><i class="fas fa-image"></i> Image de référence</h3>
+                <p>Demande personnalisée #<?php echo (int) $cp['id']; ?></p>
+            </div>
+            <div class="cp-image-modal-body">
+                <img src="/upload/<?php echo htmlspecialchars($cp['image_reference'] ?? ''); ?>"
+                    alt="Image de référence de la demande personnalisée"
+                    onerror="this.src='/image/produit1.jpg'">
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var modal = document.getElementById('cpImageModal');
+            var trigger = document.getElementById('cpImageTrigger');
+            var closeButton = document.getElementById('cpImageModalClose');
+            var closeBackdrop = modal ? modal.querySelector('[data-close-image-modal="1"]') : null;
+
+            if (!modal || !trigger) {
+                return;
+            }
+
+            function openImageModal() {
+                modal.classList.add('show');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeImageModal() {
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            trigger.addEventListener('click', openImageModal);
+
+            if (closeButton) {
+                closeButton.addEventListener('click', closeImageModal);
+            }
+
+            if (closeBackdrop) {
+                closeBackdrop.addEventListener('click', closeImageModal);
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('show')) {
+                    closeImageModal();
+                }
+            });
+        })();
+    </script>
+    <?php endif; ?>
 
     <?php include '../includes/footer.php'; ?>
 </body>

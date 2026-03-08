@@ -55,7 +55,7 @@ $produits = get_produits_by_categorie($categorie_id);
                 <i class="fas fa-arrow-left"></i> Retour aux catégories
             </a>
             <a href="../produits/ajouter.php" class="btn-primary">
-                <i class="fas fa-plus"></i> Ajouter un produit
+                <i class="fas fa-upload"></i> Publier un produit
             </a>
         </div>
     </div>
@@ -74,7 +74,7 @@ $produits = get_produits_by_categorie($categorie_id);
                 <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                 <p>Aucun produit dans cette catégorie pour le moment.</p>
                 <a href="../produits/ajouter.php" class="btn-primary" style="margin-top: 20px; display: inline-block;">
-                    <i class="fas fa-plus"></i> Ajouter un produit à cette catégorie
+                    <i class="fas fa-upload"></i> Publier un produit à cette catégorie
                 </a>
             </div>
         <?php else: ?>

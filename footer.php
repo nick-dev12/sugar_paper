@@ -23,6 +23,10 @@
                 </li>
                 <li class="li footer_list_item">
                     <i class="fas fa-phone"></i>
+                    <a href="tel:+221773292123">+221 77 32 92 123</a>
+                </li>
+                <li class="li footer_list_item">
+                    <i class="fas fa-phone"></i>
                     <a href="tel:+221338233514">+221 33 823 35 14</a>
                 </li>
                 <li class="li footer_list_item">

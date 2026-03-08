@@ -17,20 +17,24 @@ function get_all_produits($statut = null)
     global $db;
 
     try {
+        $join_s = _produits_has_stock_article_id() ? "LEFT JOIN stock_articles s ON p.stock_article_id = s.id" : "";
+        $stock_s = _produits_has_stock_article_id() ? ", COALESCE(s.quantite, p.stock) as stock" : "";
         if ($statut) {
             $stmt = $db->prepare("
-                SELECT p.*, c.nom as categorie_nom 
+                SELECT p.*, c.nom as categorie_nom $stock_s
                 FROM produits p 
                 LEFT JOIN categories c ON p.categorie_id = c.id 
+                $join_s
                 WHERE p.statut = :statut 
                 ORDER BY p.date_creation DESC
             ");
             $stmt->execute(['statut' => $statut]);
         } else {
             $stmt = $db->prepare("
-                SELECT p.*, c.nom as categorie_nom 
+                SELECT p.*, c.nom as categorie_nom $stock_s
                 FROM produits p 
                 LEFT JOIN categories c ON p.categorie_id = c.id 
+                $join_s
                 ORDER BY p.date_creation DESC
             ");
             $stmt->execute();
@@ -80,15 +84,20 @@ function get_produit_by_id($id)
     global $db;
 
     try {
+        $join_stock = _produits_has_stock_article_id() ? "LEFT JOIN stock_articles s ON p.stock_article_id = s.id" : "";
+        $stock_select = _produits_has_stock_article_id() ? ", COALESCE(s.quantite, p.stock) as stock" : "";
         $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
+            SELECT p.*, c.nom as categorie_nom $stock_select
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
+            $join_stock
             WHERE p.id = :id
         ");
         $stmt->execute(['id' => $id]);
         $produit = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        if ($produit && $stock_select) {
+            $produit['stock'] = $produit['stock'] ?? 0;
+        }
         return $produit ? $produit : false;
     } catch (PDOException $e) {
         return false;
@@ -523,6 +532,7 @@ function create_produit($data)
     global $db;
 
     try {
+        $has_stock_col = _produits_has_stock_article_id();
         $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
         $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
         $params = [
@@ -538,6 +548,11 @@ function create_produit($data)
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
         ];
+        if ($has_stock_col && isset($data['stock_article_id'])) {
+            $cols .= ", stock_article_id";
+            $vals .= ", :stock_article_id";
+            $params['stock_article_id'] = $data['stock_article_id'] ? (int) $data['stock_article_id'] : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $cols .= ", couleurs, taille";
@@ -552,6 +567,10 @@ function create_produit($data)
             if ($with_extras && (strpos($e->getMessage(), 'couleurs') !== false || strpos($e->getMessage(), 'taille') !== false)) {
                 $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
                 $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
+                if ($has_stock_col && isset($params['stock_article_id'])) {
+                    $cols .= ", stock_article_id";
+                    $vals .= ", :stock_article_id";
+                }
                 unset($params['couleurs'], $params['taille']);
                 $stmt = $db->prepare("INSERT INTO produits ($cols) VALUES ($vals)");
                 $result = $stmt->execute($params);
@@ -581,6 +600,7 @@ function update_produit($id, $data)
     global $db;
 
     try {
+        $has_stock_col = _produits_has_stock_article_id();
         $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
         $params = [
             'id' => $id,
@@ -596,6 +616,10 @@ function update_produit($id, $data)
             'unite' => $data['unite'] ?? 'unité',
             'statut' => $data['statut'] ?? 'actif'
         ];
+        if ($has_stock_col && array_key_exists('stock_article_id', $data)) {
+            $sets .= ", stock_article_id = :stock_article_id";
+            $params['stock_article_id'] = $data['stock_article_id'] ? (int) $data['stock_article_id'] : null;
+        }
         $with_extras = isset($data['couleurs']) || isset($data['taille']);
         if ($with_extras) {
             $sets .= ", couleurs = :couleurs, taille = :taille";
@@ -608,6 +632,9 @@ function update_produit($id, $data)
         } catch (PDOException $e) {
             if ($with_extras && (strpos($e->getMessage(), 'couleurs') !== false || strpos($e->getMessage(), 'taille') !== false)) {
                 $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
+                if ($has_stock_col && array_key_exists('stock_article_id', $data)) {
+                    $sets .= ", stock_article_id = :stock_article_id";
+                }
                 unset($params['couleurs'], $params['taille']);
                 $stmt = $db->prepare("UPDATE produits SET $sets WHERE id = :id");
                 return $stmt->execute($params);
@@ -707,6 +734,126 @@ function get_surcharge_for_option($options, $value)
         }
     }
     return 0;
+}
+
+/**
+ * Décrémente le stock d'un produit (pour produits sans stock_article_id)
+ * @param int $produit_id ID du produit
+ * @param int $quantite Quantité à soustraire
+ * @return int|false Nouvelle quantité ou False en cas d'erreur
+ */
+function decrement_produit_stock($produit_id, $quantite)
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("UPDATE produits SET stock = GREATEST(0, stock - :qty), date_modification = NOW() WHERE id = :id");
+        $stmt->execute(['id' => (int) $produit_id, 'qty' => (int) $quantite]);
+        $stmt = $db->prepare("SELECT stock FROM produits WHERE id = :id");
+        $stmt->execute(['id' => (int) $produit_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int) $row['stock'] : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Recherche des produits en stock pour commande manuelle
+ * @param string $recherche Terme de recherche (nom produit ou catégorie)
+ * @param int $limit Nombre max de résultats
+ * @return array Produits avec stock > 0
+ */
+function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30)
+{
+    global $db;
+
+    try {
+        $join_s = _produits_has_stock_article_id() ? "LEFT JOIN stock_articles s ON p.stock_article_id = s.id" : "";
+        $stock_cond = _produits_has_stock_article_id()
+            ? "(COALESCE(s.quantite, p.stock) > 0)"
+            : "(p.stock > 0)";
+        $sql = "
+            SELECT p.id, p.nom, p.prix, p.prix_promotion, p.stock, p.image_principale, p.stock_article_id,
+                   c.nom as categorie_nom,
+                   " . (_produits_has_stock_article_id() ? "COALESCE(s.quantite, p.stock) as stock_dispo" : "p.stock as stock_dispo") . "
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            $join_s
+            WHERE p.statut = 'actif' AND $stock_cond
+        ";
+        $params = ['limit' => (int) $limit];
+
+        if (!empty(trim($recherche))) {
+            $sql .= " AND (p.nom LIKE :term OR c.nom LIKE :term2" .
+                (_produits_has_stock_article_id() ? " OR s.nom LIKE :term3" : "") . ")";
+            $params['term'] = '%' . trim($recherche) . '%';
+            $params['term2'] = '%' . trim($recherche) . '%';
+            if (_produits_has_stock_article_id()) {
+                $params['term3'] = '%' . trim($recherche) . '%';
+            }
+        }
+
+        $sql .= " ORDER BY p.nom ASC LIMIT :limit";
+        $stmt = $db->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Récupère les produits publiés (statut actif) liés à un article en stock
+ * @param int $stock_article_id ID de l'article en stock
+ * @return array Tableau des produits
+ */
+function get_produits_by_stock_article($stock_article_id)
+{
+    global $db;
+
+    if (!$stock_article_id || !_produits_has_stock_article_id()) {
+        return [];
+    }
+
+    try {
+        $join_s = "LEFT JOIN stock_articles s ON p.stock_article_id = s.id";
+        $stock_s = ", COALESCE(s.quantite, p.stock) as stock";
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom $stock_s
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            $join_s
+            WHERE p.stock_article_id = :stock_article_id AND p.statut = 'actif'
+            ORDER BY p.nom ASC
+        ");
+        $stmt->execute(['stock_article_id' => (int) $stock_article_id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Vérifie si la colonne stock_article_id existe dans produits
+ */
+function _produits_has_stock_article_id()
+{
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM produits LIKE 'stock_article_id'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
 }
 
 ?>

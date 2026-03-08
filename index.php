@@ -49,10 +49,189 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <style>
+    .commande-perso-showcase {
+        margin-top: 20px;
+        padding: 20px 24px;
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    .commande-perso-showcase-inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+
+    .commande-perso-content {
+        flex: 1;
+        min-width: 260px;
+    }
+
+    .commande-perso-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        background: rgba(229, 72, 138, 0.1);
+        color: var(--couleur-dominante);
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .commande-perso-title {
+        margin: 0 0 8px;
+        font-size: clamp(18px, 2.5vw, 22px);
+        line-height: 1.3;
+        color: var(--titres);
+        font-family: var(--font-titres);
+    }
+
+    .commande-perso-text {
+        margin: 0 0 14px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--texte-fonce);
+    }
+
+    .commande-perso-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 14px;
+        padding: 0;
+        list-style: none;
+    }
+
+    .commande-perso-features li {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #f8f8f8;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        color: var(--titres);
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .commande-perso-features i {
+        color: var(--couleur-dominante);
+        font-size: 12px;
+    }
+
+    .commande-perso-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-commande-perso {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: var(--couleur-dominante);
+        color: #fff !important;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
     .btn-commande-perso:hover {
-        background: rgba(229, 72, 138, 0.9) !important;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(229, 72, 138, 0.4);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(229, 72, 138, 0.3);
+    }
+
+    .commande-perso-note {
+        font-size: 12px;
+        color: var(--texte-fonce);
+        opacity: 0.85;
+    }
+
+    .commande-perso-visual {
+        flex-shrink: 0;
+    }
+
+    .commande-perso-card {
+        padding: 16px 20px;
+        border-radius: 10px;
+        background: #fafafa;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .commande-perso-card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(229, 72, 138, 0.1);
+        color: var(--couleur-dominante);
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    .commande-perso-card h3 {
+        margin: 0 0 8px;
+        color: var(--titres);
+        font-size: 16px;
+        font-family: var(--font-titres);
+    }
+
+    .commande-perso-card p {
+        margin: 0 0 12px;
+        color: var(--texte-fonce);
+        line-height: 1.5;
+        font-size: 13px;
+    }
+
+    .commande-perso-steps {
+        display: grid;
+        gap: 8px;
+    }
+
+    .commande-perso-step {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .commande-perso-step-number {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(229, 72, 138, 0.12);
+        color: var(--couleur-dominante);
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .commande-perso-step strong {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--titres);
+        font-size: 13px;
+    }
+
+    .commande-perso-step span {
+        color: var(--texte-fonce);
+        font-size: 12px;
+        line-height: 1.45;
     }
 
     /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
@@ -85,6 +264,28 @@ $seo_canonical = $base . '/';
         .carousel-produits-outer .carousel1.carousel1-flex-mode {
             gap: 12px;
             padding: 12px;
+        }
+
+        .commande-perso-showcase {
+            padding: 16px;
+        }
+
+        .commande-perso-showcase-inner {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .commande-perso-visual {
+            order: -1;
+        }
+
+        .commande-perso-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .btn-commande-perso {
+            justify-content: center;
         }
     }
 
@@ -180,13 +381,27 @@ $seo_canonical = $base . '/';
                 <p>Réception en temps record</p>
             </div>
         </div>
-        <div class="commande-perso-cta" style="margin-top: 25px; text-align: center;">
-            <a href="commande-personnalisee.php" class="btn-commande-perso"
-                style="display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; background: var(--couleur-dominante); color: #fff !important; text-decoration: none; border-radius: 25px; font-weight: 600; font-size: 15px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(229, 72, 138, 0.3);">
-                <i class="fas fa-palette"></i> Commande personnalisée
-            </a>
-            <p style="margin-top: 10px; font-size: 13px; color: var(--texte-fonce); opacity: 0.9;">Des produits sur
-                mesure ? Décrivez-nous vos besoins</p>
+        <div class="commande-perso-showcase" data-aos="fade-up" data-aos-duration="900">
+            <div class="commande-perso-showcase-inner">
+                <div class="commande-perso-content">
+                    <span class="commande-perso-badge"><i class="fas fa-palette"></i> Sur mesure</span>
+                    <h2 class="commande-perso-title">Commande personnalisée</h2>
+                    <p class="commande-perso-text">Décrivez votre besoin, joignez une image d'inspiration si vous en
+                        avez. Notre équipe vous recontacte rapidement.</p>
+                    <ul class="commande-perso-features">
+                        <li><i class="fas fa-pen"></i> Formulaire simple</li>
+                        <li><i class="fas fa-image"></i> Image de référence</li>
+                        <li><i class="fas fa-headset"></i> Accompagnement</li>
+                    </ul>
+                    <div class="commande-perso-actions">
+                        <a href="commande-personnalisee.php" class="btn-commande-perso">
+                            <i class="fas fa-palette"></i> Faire une demande
+                        </a>
+                        <span class="commande-perso-note">Réponse rapide</span>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </section>
 

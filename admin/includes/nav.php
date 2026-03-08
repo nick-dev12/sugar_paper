@@ -8,11 +8,14 @@
 $current_dir = dirname($_SERVER['PHP_SELF']);
 $is_produits = strpos($current_dir, '/produits') !== false;
 $is_categories = strpos($current_dir, '/categories') !== false;
+$is_stock = strpos($current_dir, '/stock') !== false;
 $is_slider = strpos($current_dir, '/slider') !== false;
 $is_parametres = strpos($current_dir, '/parametres') !== false;
 $is_commandes = strpos($current_dir, '/commandes') !== false;
 $is_commandes_perso = strpos($current_dir, '/commandes-personnalisees') !== false;
+$is_devis = strpos($current_dir, '/devis') !== false;
 $is_users = strpos($current_dir, '/users') !== false;
+$is_contacts = strpos($current_dir, '/contacts') !== false;
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 $is_comptes = strpos($current_dir, '/comptes') !== false;
 
@@ -20,7 +23,7 @@ $admin_role = $_SESSION['admin_role'] ?? 'admin';
 $can_manage_users = ($admin_role === 'admin');
 $can_manage_comptes = ($admin_role === 'admin');
 
-if ($is_produits || $is_categories || $is_slider || $is_parametres || $is_commandes || $is_commandes_perso || $is_users || $is_zones_livraison || $is_comptes) {
+if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_commandes_perso || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes) {
     $base_path = '../';
 } else {
     $base_path = '';
@@ -75,10 +78,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
             </a>
-            <a href="<?php echo $base_path; ?>categories/index.php"
+            <!-- <a href="<?php echo $base_path; ?>categories/index.php"
                 class="menu-item <?php echo ($is_categories && $current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="fas fa-tags"></i>
                 <span>Catégories</span>
+            </a> -->
+            <a href="<?php echo $base_path; ?>stock/index.php"
+                class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Stock</span>
             </a>
 
             <a href="<?php echo $base_path; ?>commandes/index.php"
@@ -91,11 +99,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-palette"></i>
                 <span>Commandes personnalisées</span>
             </a>
+            <a href="<?php echo $base_path; ?>devis/index.php"
+                class="menu-item <?php echo ($is_devis && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
+                <i class="fas fa-file-invoice"></i>
+                <span>Devis</span>
+            </a>
             <?php if ($can_manage_users): ?>
                 <a href="<?php echo $base_path; ?>users/index.php"
                     class="menu-item <?php echo ($is_users && $current_page == 'index.php') ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Utilisateurs</span>
+                </a>
+                <a href="<?php echo $base_path; ?>contacts/index.php"
+                    class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
+                    <i class="fas fa-address-book"></i>
+                    <span>Contacts</span>
                 </a>
             <?php endif; ?>
             <?php if ($can_manage_comptes): ?>

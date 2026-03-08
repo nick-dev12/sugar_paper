@@ -65,6 +65,11 @@ $users_inactifs = count(array_filter($users, function($u) { return $u['statut'] 
 
     <div class="content-header">
         <h1><i class="fas fa-users"></i> Gestion des Utilisateurs</h1>
+        <div class="header-actions">
+            <a href="contacts/index.php" class="btn-primary btn-secondary-style">
+                <i class="fas fa-address-book"></i> Contacts
+            </a>
+        </div>
     </div>
 
     <!-- Messages -->
