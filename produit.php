@@ -139,6 +139,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             max-width: 1200px;
             margin: 30px auto;
             padding: 0 20px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         .produit-detail-wrapper {
@@ -192,6 +193,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             padding: 5px 0;
             flex: 1;
             scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
 
         .gallery-thumbs-list::-webkit-scrollbar {
@@ -704,32 +706,359 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             color: #ffffff;
         }
 
-        /* Responsive */
+        /* Responsive - Tablette */
+        @media (max-width: 992px) {
+            .produit-detail-wrapper {
+                gap: 24px;
+            }
+
+            .produit-image-main {
+                height: 360px;
+            }
+
+            .produit-nom {
+                font-size: 22px;
+            }
+
+            .produit-prix-section {
+                padding: 14px 16px;
+            }
+
+            .prix-principal {
+                font-size: 24px;
+            }
+
+            .produit-options-section,
+            .produit-variantes-section.produit-section-bg {
+                padding: 14px 16px;
+            }
+
+            .produit-description {
+                padding: 18px 20px;
+            }
+
+            .produits-similaires {
+                margin-top: 40px;
+            }
+
+            .produits-similaires h2 {
+                font-size: 24px;
+                margin-bottom: 24px;
+            }
+        }
+
+        /* Responsive - Mobile */
         @media (max-width: 768px) {
             .produit-detail-wrapper {
                 grid-template-columns: 1fr;
                 gap: 20px;
+                margin-bottom: 30px;
             }
 
             .produit-image-main {
-                height: 300px;
+                height: 280px;
+                border-radius: 12px;
+            }
+
+            .produit-gallery-main {
+                margin-bottom: 12px;
+            }
+
+            .gallery-thumb {
+                width: 56px;
+                height: 56px;
+            }
+
+            .gallery-nav {
+                width: 36px;
+                height: 36px;
+                font-size: 12px;
             }
 
             .produit-nom {
-                font-size: 20px;
+                font-size: 19px;
+                line-height: 1.35;
+                margin-bottom: 8px;
+            }
+
+            .produit-prix-section {
+                padding: 12px 14px;
+                margin-bottom: 12px;
             }
 
             .prix-principal {
-                font-size: 22px;
+                font-size: 20px;
+            }
+
+            .prix-original {
+                font-size: 15px;
+            }
+
+            .prix-promo {
+                font-size: 18px;
+            }
+
+            .promo-badge {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+
+            .produit-description {
+                padding: 16px 18px;
+                margin-bottom: 18px;
+                font-size: 14px;
+            }
+
+            .produit-description h3 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+            .produit-section-bg {
+                padding: 14px 16px;
+                margin-bottom: 16px;
+            }
+
+            .produit-variantes-section.produit-section-bg {
+                padding: 14px 16px;
+            }
+
+            .variante-option {
+                flex: 0 0 140px;
+                min-width: 140px;
+                padding: 10px 12px;
+            }
+
+            .variante-option .variante-thumb {
+                width: 42px;
+                height: 42px;
+            }
+
+            .variante-option .variante-nom {
+                font-size: 12px;
+            }
+
+            .variante-option .variante-prix {
+                font-size: 11px;
+            }
+
+            .variantes-arrow {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+
+            .produit-options-section .quantite-label {
+                font-size: 13px;
+            }
+
+            .option-group {
+                margin-bottom: 12px;
+            }
+
+            .options-list-select {
+                gap: 8px;
+            }
+
+            .option-label {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+
+            .couleur-swatch-select {
+                padding: 5px 8px;
+            }
+
+            .couleur-swatch-select .swatch-preview {
+                width: 24px;
+                height: 24px;
+            }
+
+            .couleur-swatch-select .swatch-text {
+                font-size: 12px;
+            }
+
+            .option-swatch-select {
+                min-width: 70px;
+                padding: 8px 12px;
+            }
+
+            .option-swatch-select .option-swatch-text {
+                font-size: 12px;
+            }
+
+            .quantite-section {
+                margin-bottom: 16px;
+            }
+
+            .quantite-label {
+                font-size: 13px;
+            }
+
+            .quantite-input-wrapper {
+                border-radius: 10px;
+            }
+
+            .quantite-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+            }
+
+            .quantite-input {
+                width: 50px;
+                height: 42px;
+                font-size: 15px;
+            }
+
+            .prix-total-section {
+                padding: 14px 16px;
+                margin-bottom: 16px;
+            }
+
+            .prix-total-label {
+                font-size: 12px;
             }
 
             .prix-total-value {
                 font-size: 20px;
             }
 
+            .btn-add-panier {
+                padding: 12px 20px;
+                font-size: 15px;
+                border-radius: 20px;
+            }
+
             .produit-detail-container {
-                margin: 15px auto;
-                padding: 0 15px;
+                margin: 12px auto;
+                padding: 0 12px;
+            }
+
+            .produits-similaires {
+                margin-top: 36px;
+                padding: 0 4px;
+            }
+
+            .produits-similaires h2 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+
+            .produits-similaires .produit_vedetes .articles,
+            .produits-similaires .carousel11 {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .produits-similaires .carousel {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .message {
+                padding: 12px 16px;
+                padding-right: 40px;
+                font-size: 14px;
+            }
+        }
+
+        /* Responsive - Petit mobile */
+        @media (max-width: 480px) {
+            .produit-detail-container {
+                padding: 0 10px;
+                margin: 10px auto;
+            }
+
+            .produit-image-main {
+                height: 240px;
+            }
+
+            .gallery-thumb {
+                width: 48px;
+                height: 48px;
+            }
+
+            .produit-nom {
+                font-size: 17px;
+            }
+
+            .prix-principal {
+                font-size: 18px;
+            }
+
+            .prix-original {
+                font-size: 14px;
+            }
+
+            .prix-promo {
+                font-size: 16px;
+            }
+
+            .variante-option {
+                flex: 0 0 120px;
+                min-width: 120px;
+                padding: 8px 10px;
+            }
+
+            .variante-option .variante-thumb {
+                width: 36px;
+                height: 36px;
+            }
+
+            .variante-option .variante-nom {
+                font-size: 11px;
+            }
+
+            .variante-option .variante-prix {
+                font-size: 10px;
+            }
+
+            .option-swatch-select {
+                min-width: 65px;
+                padding: 6px 10px;
+            }
+
+            .option-swatch-select .option-swatch-text {
+                font-size: 11px;
+                line-height: 1.3;
+            }
+
+            .quantite-btn {
+                width: 40px;
+                height: 42px;
+            }
+
+            .quantite-input {
+                width: 44px;
+            }
+
+            .prix-total-value {
+                font-size: 18px;
+            }
+
+            .btn-add-panier {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .produits-similaires h2 {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+
+            .produits-similaires .produit_vedetes .articles,
+            .produits-similaires .carousel11 {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                justify-content: center;
+            }
+
+            .produits-similaires .carousel {
+                width: 100% !important;
+                max-width: 100% !important;
             }
         }
 
@@ -901,6 +1230,12 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             font-size: 13px;
             font-weight: 500;
             color: var(--titres);
+            word-break: break-word;
+            text-align: center;
+        }
+
+        .options-list-select {
+            flex-wrap: wrap;
         }
     </style>
 </head>
