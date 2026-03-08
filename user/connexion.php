@@ -14,18 +14,38 @@ if ($redirect_after && $redirect_after[0] !== '/') {
 }
 $redirect_url = (!empty($redirect_after) && strpos($redirect_after, '//') === false) ? $redirect_after : '/index.php';
 
+// Si l'admin est déjà connecté, rediriger vers l'espace admin
+if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
+    header('Location: /admin/dashboard.php');
+    exit;
+}
+
 // Si l'utilisateur est déjà connecté, rediriger
 if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
     header('Location: ' . $redirect_url);
     exit;
 }
 
-// Traiter le formulaire de connexion
+// Traiter le formulaire de connexion (admin + user)
 require_once __DIR__ . '/../controllers/controller_users.php';
-$result = process_user_login();
+$result = process_unified_login();
 
-// Si la connexion est réussie, créer la session et rediriger
-if (isset($result['success']) && $result['success'] && $result['user']) {
+// Connexion admin : session + redirection vers l'espace admin
+if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
+    $_SESSION['admin_id'] = $result['admin']['id'];
+    $_SESSION['admin_nom'] = $result['admin']['nom'];
+    $_SESSION['admin_prenom'] = $result['admin']['prenom'];
+    $_SESSION['admin_email'] = $result['admin']['email'];
+    $_SESSION['admin_statut'] = $result['admin']['statut'];
+    $_SESSION['admin_role'] = $result['admin']['role'] ?? 'admin';
+
+    // Redirection vers l'espace admin. Si l'admin utilise "retour", connexion.php le redirigera à nouveau.
+    header('Location: /admin/dashboard.php');
+    exit;
+}
+
+// Connexion utilisateur : session + redirection
+if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];

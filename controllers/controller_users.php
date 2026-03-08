@@ -9,6 +9,71 @@ if (file_exists($autoload)) {
     require_once $autoload;
 }
 require_once __DIR__ . '/../models/model_users.php';
+require_once __DIR__ . '/../models/model_admin.php';
+
+/**
+ * Connexion unifiée : vérifie admin puis users.
+ * Permet aux admins de se connecter depuis la page user/connexion.php.
+ * @return array ['success' => bool, 'message' => string, 'type' => 'admin'|'user'|null, 'admin' => array|null, 'user' => array|null]
+ */
+function process_unified_login() {
+    $errors = [];
+    $success = false;
+    $message = '';
+    $type = null;
+    $admin = null;
+    $user = null;
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null];
+    }
+
+    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+    $accepte_conditions = isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] == '1';
+
+    if (empty($email)) {
+        $errors[] = 'L\'email est obligatoire.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'L\'email n\'est pas valide.';
+    }
+    if (empty($password)) {
+        $errors[] = 'Le mot de passe est obligatoire.';
+    }
+
+    if (!empty($errors)) {
+        return ['success' => false, 'message' => implode('<br>', $errors), 'type' => null, 'admin' => null, 'user' => null];
+    }
+
+    // 1. Vérifier d'abord la table admin
+    $admin = get_admin_by_email($email);
+    if ($admin && $admin['statut'] === 'actif' && password_verify($password, $admin['password'])) {
+        update_admin_last_login($admin['id']);
+        return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null];
+    }
+
+    // 2. Sinon vérifier la table users
+    $user = get_user_by_email($email);
+    if ($user) {
+        if ($user['statut'] !== 'actif') {
+            $errors[] = 'Votre compte est désactivé. Contactez le support.';
+        } elseif (!$accepte_conditions) {
+            $errors[] = 'Vous devez accepter les conditions d\'utilisation pour vous connecter.';
+        } elseif (password_verify($password, $user['password'])) {
+            if ($accepte_conditions) {
+                update_user_accepte_conditions($user['id'], true);
+            }
+            return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user];
+        } else {
+            $errors[] = 'Email ou mot de passe incorrect.';
+        }
+    } else {
+        $errors[] = 'Email ou mot de passe incorrect.';
+    }
+
+    $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
+    return ['success' => false, 'message' => $message, 'type' => null, 'admin' => null, 'user' => null];
+}
 
 /**
  * Traite l'inscription d'un nouvel utilisateur
