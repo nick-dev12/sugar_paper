@@ -9,13 +9,22 @@
 $montant_aff = ($facture['montant_total'] ?? 0) > 0
     ? number_format($facture['montant_total'], 0, ',', ' ') . ' CFA'
     : 'À définir';
+require_once __DIR__ . '/site_url.php';
+$facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - Sugar Paper';
+$facture_og_desc = 'Facture Sugar Paper - Demande personnalisée - Montant : ' . $montant_aff;
+$facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facture <?php echo htmlspecialchars($facture['numero_facture']); ?> - Sugar Paper</title>
+    <title><?php echo $facture_og_title; ?></title>
+    <meta property="og:title" content="<?php echo htmlspecialchars($facture_og_title); ?>">
+    <meta property="og:description" content="<?php echo htmlspecialchars($facture_og_desc); ?>">
+    <meta property="og:image" content="<?php echo htmlspecialchars($facture_og_image); ?>">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Sugar Paper">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>
