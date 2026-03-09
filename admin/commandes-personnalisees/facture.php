@@ -51,9 +51,9 @@ if (strlen($tel_whatsapp) === 9 && in_array(substr($tel_whatsapp, 0, 2), ['70', 
     $tel_whatsapp = '221' . substr($tel_whatsapp, 1);
 }
 
-$mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+$mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 $d_facture = strtotime($facture['date_facture']);
-$date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int)date('n', $d_facture) - 1] . ' ' . date('Y', $d_facture);
+$date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int) date('n', $d_facture) - 1] . ' ' . date('Y', $d_facture);
 
 $base_url = get_site_base_url();
 $facture_url = $base_url . '/facture-cp.php?token=' . ($token ?? '');
@@ -77,7 +77,7 @@ $entreprise_ninea = '009116684';
 $entreprise_adresse = 'Hlm Hann Maristes';
 $entreprise_tel1 = '774161212';
 $entreprise_tel2 = '773292123';
-$entreprise_site = 'https://www.sugar-paper.sn';
+$entreprise_site = 'https://www.sugar-paper.com';
 $entreprise_email = 'sugarpaper26@gmail.com';
 
 $is_public = false;

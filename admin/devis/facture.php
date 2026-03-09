@@ -92,7 +92,7 @@ $entreprise_ninea = '009116684';
 $entreprise_adresse = 'Hlm Hann Maristes';
 $entreprise_tel1 = '774161212';
 $entreprise_tel2 = '773292123';
-$entreprise_site = 'https://www.sugar-paper.sn';
+$entreprise_site = 'https://www.sugar-paper.com';
 $entreprise_email = 'sugarpaper26@gmail.com';
 
 $is_public = false;

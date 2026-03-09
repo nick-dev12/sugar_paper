@@ -136,26 +136,42 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         }
 
         .produit-detail-container {
+            width: 100%;
             max-width: 1200px;
             margin: 30px auto;
             padding: 0 20px;
             padding-bottom: env(safe-area-inset-bottom, 20px);
+            box-sizing: border-box;
         }
 
         .produit-detail-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-wrap: wrap;
             gap: 30px;
             margin-bottom: 40px;
+            width: 100%;
         }
 
         .produit-image-section {
             position: relative;
+            flex: 1 1 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (min-width: 769px) {
+            .produit-image-section {
+                flex: 1 1 calc(50% - 15px);
+                max-width: calc(50% - 15px);
+            }
         }
 
         .produit-gallery-main {
             position: relative;
             margin-bottom: 15px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .produit-gallery-thumbs {
@@ -163,6 +179,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             align-items: center;
             gap: 10px;
             padding: 10px 0;
+            width: 100%;
+            max-width: 100%;
         }
 
         .gallery-nav {
@@ -192,6 +210,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             overflow-x: auto;
             padding: 5px 0;
             flex: 1;
+            min-width: 0;
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
         }
@@ -236,6 +255,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
         .produit-image-main {
             width: 100%;
+            max-width: 100%;
             height: 400px;
             object-fit: contain;
             object-position: center;
@@ -248,6 +268,16 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         .produit-info-section {
             display: flex;
             flex-direction: column;
+            flex: 1 1 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (min-width: 769px) {
+            .produit-info-section {
+                flex: 1 1 calc(50% - 15px);
+                max-width: calc(50% - 15px);
+            }
         }
 
         .produit-nom {
@@ -360,6 +390,9 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             background: rgba(255, 255, 255, 0.95);
             border-radius: 12px;
             border: 1px solid rgba(229, 72, 138, 0.15);
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .option-group {
@@ -383,6 +416,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
+            width: 100%;
+            max-width: 100%;
         }
 
         .couleur-swatch-select {
@@ -490,6 +525,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             align-items: center;
             gap: 12px;
             margin-bottom: 15px;
+            width: 100%;
+            max-width: 100%;
         }
 
         .quantite-input-wrapper {
@@ -498,6 +535,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             border: 2px solid rgba(229, 72, 138, 0.4);
             border-radius: 12px;
             overflow: hidden;
+            flex-shrink: 0;
         }
 
         .quantite-btn {
@@ -546,6 +584,12 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         .prix-total-value {
             font-size: 24px;
             font-weight: 700;
+        }
+
+        .produit-add-form {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .btn-add-panier {
@@ -661,6 +705,9 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
         .produits-similaires {
             margin-top: 60px;
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .produits-similaires h2 {
@@ -712,6 +759,12 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 gap: 24px;
             }
 
+            .produit-image-section,
+            .produit-info-section {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+
             .produit-image-main {
                 height: 360px;
             }
@@ -750,9 +803,15 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         /* Responsive - Mobile */
         @media (max-width: 768px) {
             .produit-detail-wrapper {
-                grid-template-columns: 1fr;
+                flex-direction: column;
                 gap: 20px;
                 margin-bottom: 30px;
+            }
+
+            .produit-image-section,
+            .produit-info-section {
+                flex: 1 1 100%;
+                max-width: 100%;
             }
 
             .produit-image-main {
@@ -947,14 +1006,16 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
             .produits-similaires .produit_vedetes .articles,
             .produits-similaires .carousel11 {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                display: flex;
+                flex-wrap: wrap;
                 gap: 16px;
+                width: 100%;
             }
 
             .produits-similaires .carousel {
-                width: 100% !important;
-                max-width: 100% !important;
+                flex: 1 1 calc(50% - 8px);
+                min-width: 0;
+                max-width: calc(50% - 8px);
             }
 
             .message {
@@ -1050,15 +1111,24 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
             .produits-similaires .produit_vedetes .articles,
             .produits-similaires .carousel11 {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
+                display: flex;
+                flex-wrap: wrap;
                 gap: 12px;
-                justify-content: center;
+                width: 100%;
             }
 
             .produits-similaires .carousel {
-                width: 100% !important;
-                max-width: 100% !important;
+                flex: 1 1 calc(50% - 6px);
+                min-width: 0;
+                max-width: calc(50% - 6px);
+            }
+        }
+
+        /* Très petit écran : produits similaires en 1 colonne */
+        @media (max-width: 360px) {
+            .produits-similaires .carousel {
+                flex: 1 1 100%;
+                max-width: 100%;
             }
         }
 
@@ -1068,6 +1138,9 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             border-radius: 12px;
             border: 1px solid rgba(229, 72, 138, 0.15);
             margin-bottom: 20px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .produit-variantes-section {
@@ -1081,6 +1154,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
         .variantes-carousel-wrapper {
             position: relative;
             overflow: hidden;
+            width: 100%;
+            max-width: 100%;
         }
 
         .variantes-scroll-container {
@@ -1090,6 +1165,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            width: 100%;
+            max-width: 100%;
         }
 
         .variantes-scroll-container::-webkit-scrollbar {
@@ -1101,6 +1178,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             flex-wrap: nowrap;
             gap: 10px;
             padding: 4px 0;
+            width: 100%;
+            min-width: 0;
         }
 
         .variante-option {
@@ -1195,6 +1274,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            width: 100%;
+            max-width: 100%;
         }
 
         .option-swatch-select {
@@ -1208,6 +1289,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             cursor: pointer;
             transition: all 0.2s;
             min-width: 80px;
+            flex: 1 1 auto;
+            max-width: 100%;
         }
 
         .option-swatch-select:hover {
@@ -1232,10 +1315,19 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             color: var(--titres);
             word-break: break-word;
             text-align: center;
+            overflow-wrap: break-word;
+            min-width: 0;
         }
 
         .options-list-select {
             flex-wrap: wrap;
+        }
+
+        .produit_vedetes,
+        .produit_vedetes .articles,
+        .produit_vedetes .carousel11 {
+            width: 100%;
+            max-width: 100%;
         }
     </style>
 </head>
@@ -1436,7 +1528,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
 
                 <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
-                <form method="POST" action="" id="add-to-panier-form">
+                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form">
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                     <?php if ($has_variantes): ?>
