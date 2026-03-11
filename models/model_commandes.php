@@ -241,7 +241,7 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
     global $db;
 
     if (empty($items) || empty(trim($client_nom)) || empty(trim($client_prenom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
-        return false;
+        return ['success' => false, 'error' => 'Données client ou produits manquants.'];
     }
 
     try {
@@ -259,10 +259,16 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
             $produit = get_produit_by_id($produit_id);
             if (!$produit) continue;
 
-            $stock_dispo = (int) ($produit['stock'] ?? 0);
+            // Utiliser uniquement la colonne stock de la table produits (pas stock_articles)
+            $stmt_stock = $db->prepare("SELECT stock FROM produits WHERE id = :id");
+            $stmt_stock->execute(['id' => $produit_id]);
+            $row_stock = $stmt_stock->fetch(PDO::FETCH_ASSOC);
+            $stock_dispo = $row_stock ? (int) $row_stock['stock'] : 0;
+
             if ($stock_dispo < $quantite) {
                 $db->rollBack();
-                return false;
+                error_log('[create_commande_manuelle] Stock insuffisant: produit_id=' . $produit_id . ', stock=' . $stock_dispo . ', quantite_demandee=' . $quantite);
+                return ['success' => false, 'error' => 'Stock insuffisant pour "' . ($produit['nom'] ?? 'produit #' . $produit_id) . '" (disponible: ' . $stock_dispo . ', demandé: ' . $quantite . ').'];
             }
 
             $nom_produit = isset($it['nom_produit']) && trim($it['nom_produit']) !== '' ? trim($it['nom_produit']) : null;
@@ -283,7 +289,7 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
 
         if (empty($panier_items)) {
             $db->rollBack();
-            return false;
+            return ['success' => false, 'error' => 'Aucun produit valide à enregistrer. Vérifiez les IDs et les prix.'];
         }
 
         $numero_commande = generate_numero_commande();
@@ -371,7 +377,7 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
     } catch (PDOException $e) {
         $db->rollBack();
         error_log('[create_commande_manuelle] ' . $e->getMessage());
-        return false;
+        return ['success' => false, 'error' => 'Erreur base de données. Vérifiez les logs serveur.'];
     }
 }
 

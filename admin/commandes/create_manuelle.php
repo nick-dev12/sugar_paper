@@ -62,7 +62,7 @@ require_once __DIR__ . '/../../models/model_contacts.php';
 
 $result = create_commande_manuelle($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email ?: null, $notes ?: null, $zone_livraison_id, $frais_livraison);
 
-if ($result && $result['success']) {
+if ($result && isset($result['success']) && $result['success']) {
     // Si le téléphone n'existe pas en base (users ou contacts), enregistrer le contact
     if (!telephone_exists_in_users_or_contacts($client_telephone)) {
         create_contact($client_nom, $client_prenom, $client_telephone, $client_email ?: null);
@@ -72,6 +72,7 @@ if ($result && $result['success']) {
     exit;
 }
 
-$_SESSION['commande_manuelle_erreur'] = 'Erreur lors de l\'enregistrement. Vérifiez les quantités et le stock disponible.';
+$msg_erreur = (is_array($result) && !empty($result['error'])) ? $result['error'] : 'Erreur lors de l\'enregistrement. Vérifiez les quantités et le stock disponible.';
+$_SESSION['commande_manuelle_erreur'] = $msg_erreur;
 $_SESSION['commande_manuelle_post'] = $_POST;
 header('Location: index.php?modal=commande_manuelle');

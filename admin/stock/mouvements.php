@@ -310,7 +310,7 @@ if ($categorie_id > 0) {
                                         <span class="<?php echo $badge; ?>"><?php echo $label; ?></span>
                                     </td>
                                     <td>
-                                        <?php echo htmlspecialchars($m['article_nom'] ?: ($m['produit_nom'] ?: '-')); ?>
+                                        <?php echo htmlspecialchars($m['produit_nom'] ?? '-'); ?>
                                     </td>
                                     <td><?php echo (int) $m['quantite']; ?></td>
                                     <td><?php echo $m['quantite_avant'] !== null ? (int) $m['quantite_avant'] : '-'; ?></td>
@@ -346,7 +346,7 @@ if ($categorie_id > 0) {
                         <div class="mouvement-card-body">
                             <div class="mouvement-card-row">
                                 <span class="label">Article / Produit</span>
-                                <span class="value"><?php echo htmlspecialchars($m['article_nom'] ?: ($m['produit_nom'] ?: '-')); ?></span>
+                                <span class="value"><?php echo htmlspecialchars($m['produit_nom'] ?? '-'); ?></span>
                             </div>
                             <div class="mouvement-card-row">
                                 <span class="label">Quantité</span>

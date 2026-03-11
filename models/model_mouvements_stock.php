@@ -1,14 +1,14 @@
 <?php
 /**
  * Modèle pour les mouvements de stock (entrées, sorties, inventaires)
- * Programmation procédurale uniquement
+ * Stock géré uniquement par produits.stock (table stock_articles supprimée)
  */
 
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
  * Enregistre un mouvement de stock
- * @param array $data ['type', 'stock_article_id'?, 'produit_id'?, 'quantite', 'quantite_avant'?, 'quantite_apres'?, 'reference_type'?, 'reference_id'?, 'reference_numero'?, 'notes'?]
+ * @param array $data ['type', 'produit_id'?, 'quantite', 'quantite_avant'?, 'quantite_apres'?, 'reference_type'?, 'reference_id'?, 'reference_numero'?, 'notes'?]
  * @return int|false ID du mouvement ou False
  */
 function create_stock_mouvement($data)
@@ -18,16 +18,15 @@ function create_stock_mouvement($data)
     try {
         $stmt = $db->prepare("
             INSERT INTO stock_mouvements (
-                type, stock_article_id, produit_id, quantite, quantite_avant, quantite_apres,
+                type, produit_id, quantite, quantite_avant, quantite_apres,
                 reference_type, reference_id, reference_numero, date_mouvement, notes
             ) VALUES (
-                :type, :stock_article_id, :produit_id, :quantite, :quantite_avant, :quantite_apres,
+                :type, :produit_id, :quantite, :quantite_avant, :quantite_apres,
                 :reference_type, :reference_id, :reference_numero, NOW(), :notes
             )
         ");
         $stmt->execute([
             'type' => $data['type'],
-            'stock_article_id' => $data['stock_article_id'] ?? null,
             'produit_id' => $data['produit_id'] ?? null,
             'quantite' => (int) $data['quantite'],
             'quantite_avant' => isset($data['quantite_avant']) ? (int) $data['quantite_avant'] : null,
@@ -44,10 +43,10 @@ function create_stock_mouvement($data)
 }
 
 /**
- * Récupère les mouvements avec filtres
- * @param int|null $stock_article_id Filtrer par article
+ * Récupère les mouvements avec filtres (produits uniquement)
+ * @param int|null $stock_article_id Ignoré (conservé pour compatibilité)
  * @param int|null $produit_id Filtrer par produit
- * @param int|null $categorie_id Filtrer par catégorie (produits ou articles)
+ * @param int|null $categorie_id Filtrer par catégorie
  * @param string|null $type Filtrer par type (entree, sortie, inventaire)
  * @param int $limit Nombre max
  * @return array
@@ -57,23 +56,18 @@ function get_stock_mouvements($stock_article_id = null, $produit_id = null, $cat
     global $db;
 
     try {
-        $sql = "SELECT m.*, s.nom as article_nom, p.nom as produit_nom, p.categorie_id as produit_categorie_id, s.categorie_id as article_categorie_id
+        $sql = "SELECT m.*, p.nom as produit_nom, p.categorie_id as produit_categorie_id
                 FROM stock_mouvements m
-                LEFT JOIN stock_articles s ON m.stock_article_id = s.id
                 LEFT JOIN produits p ON m.produit_id = p.id
                 WHERE 1=1";
         $params = ['limit' => (int) $limit];
 
-        if ($stock_article_id !== null && $stock_article_id > 0) {
-            $sql .= " AND m.stock_article_id = :stock_article_id";
-            $params['stock_article_id'] = (int) $stock_article_id;
-        }
         if ($produit_id !== null && $produit_id > 0) {
             $sql .= " AND m.produit_id = :produit_id";
             $params['produit_id'] = (int) $produit_id;
         }
         if ($categorie_id !== null && $categorie_id > 0) {
-            $sql .= " AND ((m.produit_id IS NOT NULL AND p.categorie_id = :categorie_id) OR (m.stock_article_id IS NOT NULL AND s.categorie_id = :categorie_id))";
+            $sql .= " AND m.produit_id IS NOT NULL AND p.categorie_id = :categorie_id";
             $params['categorie_id'] = (int) $categorie_id;
         }
         if ($type !== null && in_array($type, ['entree', 'sortie', 'inventaire'])) {

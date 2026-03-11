@@ -150,34 +150,16 @@ function delete_from_panier($panier_id)
 
 /**
  * Récupère tous les produits du panier d'un utilisateur
+ * Stock géré uniquement par produits.stock (table stock_articles supprimée)
  * @param int $user_id L'ID de l'utilisateur
  * @return array Tableau des produits du panier avec leurs détails
  */
-function _produits_has_stock_article_for_panier()
-{
-    static $has = null;
-    if ($has === null) {
-        global $db;
-        try {
-            $r = $db->query("SHOW COLUMNS FROM produits LIKE 'stock_article_id'");
-            $has = $r && $r->rowCount() > 0;
-        } catch (PDOException $e) {
-            $has = false;
-        }
-    }
-    return $has;
-}
-
 function get_panier_by_user($user_id)
 {
     global $db;
 
     try {
-        $join_stock = _produits_has_stock_article_for_panier() ? "LEFT JOIN stock_articles s ON p.stock_article_id = s.id" : "";
         $cols = "p.*, pan.id as panier_id, pan.quantite, pan.date_ajout, pan.couleur as panier_couleur, pan.poids as panier_poids, pan.taille as panier_taille";
-        if (_produits_has_stock_article_for_panier()) {
-            $cols .= ", COALESCE(s.quantite, p.stock) as stock";
-        }
         if (_panier_has_variante_columns()) {
             $cols .= ", pan.variante_id as panier_variante_id, pan.variante_nom as panier_variante_nom, pan.variante_image as panier_variante_image, pan.surcout_poids as panier_surcout_poids, pan.surcout_taille as panier_surcout_taille, pan.prix_unitaire as panier_prix_unitaire";
         }
@@ -186,7 +168,6 @@ function get_panier_by_user($user_id)
             FROM panier pan
             INNER JOIN produits p ON pan.produit_id = p.id
             LEFT JOIN categories c ON p.categorie_id = c.id
-            $join_stock
             WHERE pan.user_id = :user_id
             ORDER BY pan.date_ajout DESC
         ");
