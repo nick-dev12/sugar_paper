@@ -9,6 +9,11 @@ require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/model_produits.php';
 require_once __DIR__ . '/model_commandes_admin.php'; // fournit get_commande_by_id()
 
+// Charger config debug si présente (affichage erreur détaillée sur la page)
+if (file_exists(__DIR__ . '/../config/config_debug.php')) {
+    require_once __DIR__ . '/../config/config_debug.php';
+}
+
 function _commande_produits_has_option_columns() {
     static $has = null;
     if ($has === null) {
@@ -376,8 +381,18 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
         return ['success' => true, 'commande_id' => $commande_id, 'numero_commande' => $numero_commande];
     } catch (PDOException $e) {
         $db->rollBack();
-        error_log('[create_commande_manuelle] ' . $e->getMessage());
-        return ['success' => false, 'error' => 'Erreur base de données. Vérifiez les logs serveur.'];
+        $msg = $e->getMessage();
+        error_log('[create_commande_manuelle] ' . $msg);
+        // Écrire dans un fichier log du projet (accessible via cPanel > Gestionnaire de fichiers)
+        $log_dir = dirname(__DIR__) . '/logs';
+        if (!is_dir($log_dir)) @mkdir($log_dir, 0755, true);
+        $log_file = $log_dir . '/commande_manuelle_errors.log';
+        @file_put_contents($log_file, date('Y-m-d H:i:s') . ' - ' . $msg . "\n", FILE_APPEND | LOCK_EX);
+        // Si DEBUG_SHOW_ERREUR_COMMANDE activé : afficher l'erreur directement sur la page
+        $msg_affichage = (defined('DEBUG_SHOW_ERREUR_COMMANDE') && DEBUG_SHOW_ERREUR_COMMANDE)
+            ? 'Erreur base de données : ' . $msg
+            : 'Erreur base de données. Vérifiez le fichier logs/commande_manuelle_errors.log ou les logs cPanel.';
+        return ['success' => false, 'error' => $msg_affichage];
     }
 }
 

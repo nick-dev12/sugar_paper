@@ -3112,6 +3112,13 @@ body::before {
 }
 .modal-commande-erreur {
   margin-bottom: 20px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.modal-commande-erreur span {
+  display: block;
 }
 .form-commande-manuelle-grid {
   display: grid;
