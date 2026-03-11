@@ -72,6 +72,14 @@ try {
 
     alter_si_manquant('factures', 'token', 'VARCHAR(64) NULL DEFAULT NULL');
 
+    // Rendre user_id nullable pour commandes manuelles
+    try {
+        $db->exec("ALTER TABLE `commandes` MODIFY COLUMN `user_id` INT(11) NULL DEFAULT NULL");
+        echo "  ~ commandes.user_id (nullable pour commandes manuelles)\n";
+    } catch (PDOException $e) {
+        echo "  ! user_id: " . $e->getMessage() . "\n";
+    }
+
     echo "\nTerminé.\n";
 } catch (PDOException $e) {
     echo "Erreur: " . $e->getMessage() . "\n";

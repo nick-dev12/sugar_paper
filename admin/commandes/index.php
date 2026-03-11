@@ -25,19 +25,10 @@ if (isset($_SESSION['commande_manuelle_erreur'])) unset($_SESSION['commande_manu
 if (isset($_SESSION['commande_manuelle_post'])) unset($_SESSION['commande_manuelle_post']);
 
 // Filtrer pour exclure les commandes avec le statut "livree", "paye" et "annulee" (commandes non traitées)
+// Afficher toutes les commandes non traitées (du jour et des jours précédents)
 $commandes = array_filter($toutes_commandes, function($commande) {
     return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
 });
-
-// Par défaut : afficher uniquement les commandes du jour. Option pour inclure les jours précédents
-$jours_precedents = isset($_GET['jours_precedents']) && $_GET['jours_precedents'] === '1';
-if (!$jours_precedents) {
-    $aujourd_hui = date('Y-m-d');
-    $commandes = array_filter($commandes, function($c) use ($aujourd_hui) {
-        $date_c = date('Y-m-d', strtotime($c['date_commande']));
-        return $date_c === $aujourd_hui;
-    });
-}
 
 // Statistiques
 $total_commandes = count_commandes_by_statut();
@@ -52,6 +43,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
@@ -61,9 +53,10 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
 </head>
+
 <body>
     <?php include '../includes/nav.php'; ?>
-    
+
     <div class="content-header">
         <h1><i class="fas fa-shopping-bag"></i> Commandes Non Traitées</h1>
         <div class="header-actions">
@@ -76,10 +69,10 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     </div>
 
     <?php if (isset($_SESSION['success_message'])): ?>
-        <div class="message success">
-            <i class="fas fa-check-circle"></i>
-            <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
-        </div>
+    <div class="message success">
+        <i class="fas fa-check-circle"></i>
+        <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+    </div>
     <?php endif; ?>
 
     <!-- Statistiques -->
@@ -119,17 +112,9 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 <h2><i class="fas fa-list"></i> Commandes à Traiter (<?php echo count($commandes); ?>)</h2>
             </div>
             <div class="form-actions" style="flex-wrap: wrap;">
-                <?php if ($jours_precedents): ?>
-                <a href="index.php" class="btn-link">
-                    <i class="fas fa-calendar-day"></i> Voir uniquement les commandes du jour
-                </a>
-                <?php else: ?>
-                <a href="index.php?jours_precedents=1" class="btn-link">
-                    <i class="fas fa-calendar-alt"></i> Voir aussi les commandes des jours précédents
-                </a>
-                <?php endif; ?>
-                <button type="button" class="btn-primary" id="btn-commande-manuelle" aria-label="Ajouter une commande manuellement">
-                    <i class="fas fa-plus-circle"></i> Ajouter une commande manuellement
+                <button type="button" class="btn-primary" id="btn-commande-manuelle"
+                    aria-label="Ajouter une commande manuellement">
+                    <i class="fas fa-plus-circle"></i> Ajouter une commande
                 </button>
                 <a href="livrees.php" class="btn-link">
                     <i class="fas fa-check-circle"></i> Voir les commandes livrées
@@ -141,70 +126,78 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         </div>
 
         <?php if (empty($commandes)): ?>
-            <div class="empty-state">
-                <i class="fas fa-shopping-bag"></i>
-                <h3>Aucune commande à traiter</h3>
-                <p>Toutes les commandes ont été traitées et livrées.</p>
-            </div>
+        <div class="empty-state">
+            <i class="fas fa-shopping-bag"></i>
+            <h3>Aucune commande à traiter</h3>
+            <p>Toutes les commandes ont été traitées et livrées.</p>
+        </div>
         <?php else: ?>
-            <div class="commandes-grid">
-                <?php foreach ($commandes as $commande): ?>
-                    <div class="commande-item">
-                        <div class="commande-header">
-                            <div class="commande-info">
-                                <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                                <p>
-                                    <strong>Client:</strong> <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                                    <span class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
-                                </p>
-                                <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                            </div>
-                            <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
-                                <?php echo ucfirst(str_replace('_', ' ', $commande['statut'])); ?>
-                            </span>
-                        </div>
-                        <div class="commande-details">
-                            <div class="detail-item">
-                                <label>Montant total</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Adresse</label>
-                                <div class="value small">
-                                    <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Téléphone</label>
-                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                            </div>
-                        </div>
-                        
-                        <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
-                            <i class="fas fa-eye"></i> Voir les détails
-                        </a>
+        <div class="commandes-grid">
+            <?php foreach ($commandes as $commande): ?>
+            <div class="commande-item">
+                <div class="commande-header">
+                    <div class="commande-info">
+                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
+                        <p>
+                            <strong>Client:</strong>
+                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
+                            <span
+                                class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
+                        </p>
+                        <p class="commande-date">Date:
+                            <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
                     </div>
-                <?php endforeach; ?>
+                    <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
+                        <?php echo ucfirst(str_replace('_', ' ', $commande['statut'])); ?>
+                    </span>
+                </div>
+                <div class="commande-details">
+                    <div class="detail-item">
+                        <label>Montant total</label>
+                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Adresse</label>
+                        <div class="value small">
+                            <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Téléphone</label>
+                        <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                    </div>
+                </div>
+
+                <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
+                    <i class="fas fa-eye"></i> Voir les détails
+                </a>
             </div>
+            <?php endforeach; ?>
+        </div>
         <?php endif; ?>
     </section>
 
     <!-- Modal commande manuelle (plein écran) -->
-    <div id="modal-commande-manuelle" class="modal-commande-manuelle <?php echo $show_modal_commande_manuelle ? 'modal-open' : ''; ?>" role="dialog" aria-modal="true" aria-labelledby="modal-commande-manuelle-title">
+    <div id="modal-commande-manuelle"
+        class="modal-commande-manuelle <?php echo $show_modal_commande_manuelle ? 'modal-open' : ''; ?>" role="dialog"
+        aria-modal="true" aria-labelledby="modal-commande-manuelle-title">
         <div class="modal-commande-manuelle-backdrop"></div>
         <div class="modal-commande-manuelle-content">
             <div class="modal-commande-manuelle-header">
-                <h2 id="modal-commande-manuelle-title"><i class="fas fa-plus-circle"></i> Nouvelle commande manuelle</h2>
-                <button type="button" class="modal-commande-manuelle-close" id="modal-commande-manuelle-close" aria-label="Fermer">
+                <h2 id="modal-commande-manuelle-title"><i class="fas fa-plus-circle"></i> Nouvelle commande manuelle
+                </h2>
+                <button type="button" class="modal-commande-manuelle-close" id="modal-commande-manuelle-close"
+                    aria-label="Fermer">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-commande-manuelle-body">
                 <?php if ($commande_manuelle_erreur): ?>
-                    <div class="message error modal-commande-erreur">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span><?php echo htmlspecialchars($commande_manuelle_erreur); ?></span>
-                    </div>
+                <div class="message error modal-commande-erreur">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span><?php echo htmlspecialchars($commande_manuelle_erreur); ?></span>
+                </div>
                 <?php endif; ?>
 
                 <form method="POST" action="create_manuelle.php" id="form-commande-manuelle">
@@ -217,13 +210,18 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                                 </div>
                                 <div class="form-group search-group">
                                     <div class="search-input-wrapper">
-                                        <input type="text" id="search-produit" name="search_produit" placeholder="Tapez le nom du produit ou de la catégorie..." autocomplete="off">
+                                        <input type="text" id="search-produit" name="search_produit"
+                                            placeholder="Tapez le nom du produit ou de la catégorie..."
+                                            autocomplete="off">
                                         <i class="fas fa-search search-icon"></i>
-                                        <span class="search-loading" id="search-loading" aria-hidden="true"><i class="fas fa-spinner fa-spin"></i></span>
+                                        <span class="search-loading" id="search-loading" aria-hidden="true"><i
+                                                class="fas fa-spinner fa-spin"></i></span>
                                     </div>
-                                    <div id="search-produit-results" class="search-produit-results" role="listbox" aria-hidden="true"></div>
+                                    <div id="search-produit-results" class="search-produit-results" role="listbox"
+                                        aria-hidden="true"></div>
                                 </div>
-                                <p class="form-hint"><i class="fas fa-info-circle"></i> Tapez au moins 1 caractère ou laissez vide pour afficher tous les produits en stock.</p>
+                                <p class="form-hint"><i class="fas fa-info-circle"></i> Tapez au moins 1 caractère ou
+                                    laissez vide pour afficher tous les produits en stock.</p>
                             </div>
 
                             <div class="form-section-card">
@@ -250,12 +248,17 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                                 <div class="form-group search-group" style="position:relative;">
                                     <label for="search-client">Rechercher un client</label>
                                     <div class="search-input-wrapper">
-                                        <input type="text" id="search-client" placeholder="Nom, téléphone ou email..." autocomplete="off">
+                                        <input type="text" id="search-client" placeholder="Nom, téléphone ou email..."
+                                            autocomplete="off">
                                         <i class="fas fa-search search-icon"></i>
-                                        <span class="search-loading" id="search-client-loading" style="visibility:hidden;"><i class="fas fa-spinner fa-spin"></i></span>
+                                        <span class="search-loading" id="search-client-loading"
+                                            style="visibility:hidden;"><i class="fas fa-spinner fa-spin"></i></span>
                                     </div>
-                                    <div id="search-client-results" class="search-produit-results" role="listbox" aria-hidden="true" style="position:absolute; left:0; right:0; top:100%; z-index:100;"></div>
-                                    <p class="form-hint"><i class="fas fa-info-circle"></i> Recherchez un client existant ou saisissez manuellement ci-dessous.</p>
+                                    <div id="search-client-results" class="search-produit-results" role="listbox"
+                                        aria-hidden="true"
+                                        style="position:absolute; left:0; right:0; top:100%; z-index:100;"></div>
+                                    <p class="form-hint"><i class="fas fa-info-circle"></i> Recherchez un client
+                                        existant ou saisissez manuellement ci-dessous.</p>
                                 </div>
                                 <div class="form-row-2">
                                     <div class="form-group">
@@ -277,11 +280,13 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                                 </div>
                                 <div class="form-group">
                                     <label for="client_email">Email <span class="optional">(optionnel)</span></label>
-                                    <input type="email" id="client_email" name="client_email" placeholder="Si vide, aucun email de confirmation envoyé"
+                                    <input type="email" id="client_email" name="client_email"
+                                        placeholder="Si vide, aucun email de confirmation envoyé"
                                         value="<?php echo htmlspecialchars($commande_manuelle_post['client_email'] ?? ''); ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label for="zone_livraison_id"><i class="fas fa-map-marker-alt"></i> Adresse de livraison <span class="required">*</span></label>
+                                    <label for="zone_livraison_id"><i class="fas fa-map-marker-alt"></i> Adresse de
+                                        livraison <span class="required">*</span></label>
                                     <select id="zone_livraison_id" name="zone_livraison_id">
                                         <option value="">— Sélectionnez une adresse —</option>
                                         <?php foreach ($zones_livraison as $z): ?>
@@ -293,22 +298,30 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                                             (<?php echo number_format($z['prix_livraison'], 0, ',', ' '); ?> FCFA)
                                         </option>
                                         <?php endforeach; ?>
-                                        <option value="custom" <?php echo (isset($commande_manuelle_post['zone_livraison_id']) && $commande_manuelle_post['zone_livraison_id'] === 'custom') ? 'selected' : ''; ?>>— Adresse personnalisée —</option>
+                                        <option value="custom"
+                                            <?php echo (isset($commande_manuelle_post['zone_livraison_id']) && $commande_manuelle_post['zone_livraison_id'] === 'custom') ? 'selected' : ''; ?>>
+                                            — Adresse personnalisée —</option>
                                     </select>
-                                    <div id="adresse-custom-wrap" class="adresse-custom-wrap" style="display:none; margin-top:10px;">
-                                        <textarea id="adresse_livraison_ta" rows="3" placeholder="Saisissez l'adresse complète"><?php echo htmlspecialchars($commande_manuelle_post['adresse_livraison'] ?? ''); ?></textarea>
+                                    <div id="adresse-custom-wrap" class="adresse-custom-wrap"
+                                        style="display:none; margin-top:10px;">
+                                        <textarea id="adresse_livraison_ta" rows="3"
+                                            placeholder="Saisissez l'adresse complète"><?php echo htmlspecialchars($commande_manuelle_post['adresse_livraison'] ?? ''); ?></textarea>
                                     </div>
-                                    <div id="adresse-zone-display" class="adresse-zone-display" style="display:none; margin-top:8px; padding:10px; background:#f5f5f4; border-radius:8px;"></div>
+                                    <div id="adresse-zone-display" class="adresse-zone-display"
+                                        style="display:none; margin-top:8px; padding:10px; background:#f5f5f4; border-radius:8px;">
+                                    </div>
                                     <input type="hidden" name="adresse_livraison" id="adresse_livraison" value="">
                                     <input type="hidden" name="frais_livraison" id="frais_livraison" value="0">
                                 </div>
                                 <div class="form-group">
                                     <label for="notes">Notes</label>
-                                    <textarea id="notes" name="notes" rows="2" placeholder="Instructions supplémentaires..."><?php echo htmlspecialchars($commande_manuelle_post['notes'] ?? ''); ?></textarea>
+                                    <textarea id="notes" name="notes" rows="2"
+                                        placeholder="Instructions supplémentaires..."><?php echo htmlspecialchars($commande_manuelle_post['notes'] ?? ''); ?></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Date de la commande</label>
-                                    <div class="value-static"><i class="fas fa-calendar-alt"></i> <?php echo date('d/m/Y à H:i'); ?></div>
+                                    <div class="value-static"><i class="fas fa-calendar-alt"></i>
+                                        <?php echo date('d/m/Y à H:i'); ?></div>
                                 </div>
                                 <div class="commande-manuelle-recap">
                                     <div class="recap-line">
@@ -361,6 +374,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             if (modal) modal.classList.add('modal-open');
             document.body.style.overflow = 'hidden';
         }
+
         function closeModal() {
             if (modal) modal.classList.remove('modal-open');
             document.body.style.overflow = '';
@@ -384,7 +398,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
 
         function addLigne(produit) {
             var prix = parseFloat(produit.prix) || 0;
-            var prixPromo = produit.prix_promotion && parseFloat(produit.prix_promotion) > 0 ? parseFloat(produit.prix_promotion) : '';
+            var prixPromo = produit.prix_promotion && parseFloat(produit.prix_promotion) > 0 ? parseFloat(produit
+                .prix_promotion) : '';
             var nom = (produit.nom || '');
             var idx = ligneIndex++;
             var div = document.createElement('div');
@@ -392,10 +407,15 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             div.dataset.produitId = produit.id;
             div.innerHTML =
                 '<input type="hidden" name="lignes[' + idx + '][produit_id]" value="' + produit.id + '">' +
-                '<input type="text" name="lignes[' + idx + '][nom_produit]" value="' + (nom.replace(/"/g, '&quot;')) + '" placeholder="Nom du produit (modifiable)" class="ligne-nom-input" title="Modifier le nom affiché">' +
-                '<input type="number" name="lignes[' + idx + '][quantite]" value="1" min="1" max="' + (produit.stock_dispo || produit.stock || 999) + '" class="ligne-qte" title="Quantité">' +
-                '<input type="number" name="lignes[' + idx + '][prix_unitaire]" value="' + (prixPromo || prix) + '" min="0" step="0.01" class="ligne-prix" title="Prix unitaire (FCFA)">' +
-                '<input type="number" name="lignes[' + idx + '][prix_promotion]" value="' + (prixPromo || '') + '" min="0" step="0.01" placeholder="Optionnel" class="ligne-prix-promo" title="Prix promo (optionnel)">' +
+                '<input type="text" name="lignes[' + idx + '][nom_produit]" value="' + (nom.replace(/"/g,
+                '&quot;')) +
+                '" placeholder="Nom du produit (modifiable)" class="ligne-nom-input" title="Modifier le nom affiché">' +
+                '<input type="number" name="lignes[' + idx + '][quantite]" value="1" min="1" max="' + (produit
+                    .stock_dispo || produit.stock || 999) + '" class="ligne-qte" title="Quantité">' +
+                '<input type="number" name="lignes[' + idx + '][prix_unitaire]" value="' + (prixPromo || prix) +
+                '" min="0" step="0.01" class="ligne-prix" title="Prix unitaire (FCFA)">' +
+                '<input type="number" name="lignes[' + idx + '][prix_promotion]" value="' + (prixPromo || '') +
+                '" min="0" step="0.01" placeholder="Optionnel" class="ligne-prix-promo" title="Prix promo (optionnel)">' +
                 '<button type="button" class="ligne-remove" aria-label="Retirer"><i class="fas fa-trash"></i></button>';
             if (lignesEmpty) lignesEmpty.style.display = 'none';
             div.querySelector('.ligne-remove').addEventListener('click', function() {
@@ -411,12 +431,15 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         function doSearch(q) {
             if (searchLoading) searchLoading.style.visibility = 'visible';
             fetch(ajaxUrl + '?q=' + encodeURIComponent(q) + '&limit=25')
-                .then(function(r) { return r.json(); })
+                .then(function(r) {
+                    return r.json();
+                })
                 .then(function(data) {
                     var items = data.items || [];
                     searchResults.innerHTML = '';
                     if (items.length === 0) {
-                        searchResults.innerHTML = '<div class="search-no-results"><i class="fas fa-box-open"></i> Aucun produit en stock trouvé.</div>';
+                        searchResults.innerHTML =
+                            '<div class="search-no-results"><i class="fas fa-box-open"></i> Aucun produit en stock trouvé.</div>';
                     } else {
                         items.forEach(function(p) {
                             var el = document.createElement('div');
@@ -426,7 +449,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                             var stock = p.stock_dispo || p.stock || 0;
                             var prix = parseFloat(p.prix) || 0;
                             el.innerHTML = '<span class="sr-nom">' + (p.nom || '') + '</span>' +
-                                '<span class="sr-meta">' + (p.categorie_nom || '') + ' &bull; Stock: ' + stock + ' &bull; ' + prix + ' FCFA</span>';
+                                '<span class="sr-meta">' + (p.categorie_nom || '') + ' &bull; Stock: ' +
+                                stock + ' &bull; ' + prix + ' FCFA</span>';
                             el.addEventListener('mousedown', function(ev) {
                                 ev.preventDefault();
                                 addLigne(p);
@@ -449,7 +473,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                     searchResults.setAttribute('aria-hidden', 'false');
                 })
                 .catch(function() {
-                    searchResults.innerHTML = '<div class="search-no-results"><i class="fas fa-exclamation-triangle"></i> Erreur de recherche. Vérifiez la connexion.</div>';
+                    searchResults.innerHTML =
+                        '<div class="search-no-results"><i class="fas fa-exclamation-triangle"></i> Erreur de recherche. Vérifiez la connexion.</div>';
                 })
                 .finally(function() {
                     if (searchLoading) searchLoading.style.visibility = 'hidden';
@@ -478,7 +503,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 var qte = parseFloat(row.querySelector('.ligne-qte').value) || 0;
                 var prix = parseFloat(row.querySelector('.ligne-prix').value) || 0;
                 var promo = row.querySelector('.ligne-prix-promo');
-                var p = promo && promo.value && parseFloat(promo.value) > 0 ? parseFloat(promo.value) : prix;
+                var p = promo && promo.value && parseFloat(promo.value) > 0 ? parseFloat(promo.value) :
+                prix;
                 total += p * qte;
             });
             return total;
@@ -532,7 +558,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         }
         if (lignesContainer) {
             lignesContainer.addEventListener('input', function(ev) {
-                if (ev.target.classList.contains('ligne-qte') || ev.target.classList.contains('ligne-prix') || ev.target.classList.contains('ligne-prix-promo')) {
+                if (ev.target.classList.contains('ligne-qte') || ev.target.classList.contains(
+                    'ligne-prix') || ev.target.classList.contains('ligne-prix-promo')) {
                     updateRecap();
                 }
             });
@@ -547,7 +574,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 }
                 if (adresseLivraison && !adresseLivraison.value.trim()) {
                     ev.preventDefault();
-                    alert('Veuillez sélectionner une adresse de livraison ou saisir une adresse personnalisée.');
+                    alert(
+                        'Veuillez sélectionner une adresse de livraison ou saisir une adresse personnalisée.');
                     return false;
                 }
             });
@@ -564,7 +592,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             });
             searchInput.addEventListener('focus', function() {
                 var q = searchInput.value.trim();
-                if (searchResults.getAttribute('aria-hidden') === 'true' || searchResults.innerHTML === '') {
+                if (searchResults.getAttribute('aria-hidden') === 'true' || searchResults.innerHTML ===
+                    '') {
                     doSearch(q);
                 }
             });
@@ -598,24 +627,30 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                 }
                 if (searchClientLoading) searchClientLoading.style.visibility = 'visible';
                 fetch('ajax_search_clients.php?q=' + encodeURIComponent(q) + '&limit=15')
-                    .then(function(r) { return r.json(); })
+                    .then(function(r) {
+                        return r.json();
+                    })
                     .then(function(data) {
                         searchClientResults.innerHTML = '';
                         if (data.length === 0) {
-                            searchClientResults.innerHTML = '<div class="search-no-results">Aucun client trouvé.</div>';
+                            searchClientResults.innerHTML =
+                                '<div class="search-no-results">Aucun client trouvé.</div>';
                         } else {
                             data.forEach(function(c) {
                                 var el = document.createElement('div');
                                 el.className = 'search-result-item';
                                 el.setAttribute('role', 'option');
-                                el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') + '</span>' +
-                                    '<span class="sr-meta">' + (c.telephone || '') + (c.email ? ' &bull; ' + c.email : '') + '</span>';
+                                el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') +
+                                    '</span>' +
+                                    '<span class="sr-meta">' + (c.telephone || '') + (c.email ?
+                                        ' &bull; ' + c.email : '') + '</span>';
                                 el.addEventListener('mousedown', function(ev) {
                                     ev.preventDefault();
                                     clientNomInput.value = c.nom || '';
                                     clientPrenomInput.value = c.prenom || '';
                                     clientTelInput.value = c.telephone || '';
-                                    if (clientEmailInput) clientEmailInput.value = c.email || '';
+                                    if (clientEmailInput) clientEmailInput.value = c.email ||
+                                    '';
                                     searchClientInput.value = '';
                                     searchClientResults.innerHTML = '';
                                     searchClientResults.setAttribute('aria-hidden', 'true');
@@ -626,7 +661,8 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                         searchClientResults.setAttribute('aria-hidden', 'false');
                     })
                     .catch(function() {
-                        searchClientResults.innerHTML = '<div class="search-no-results">Erreur de recherche.</div>';
+                        searchClientResults.innerHTML =
+                            '<div class="search-no-results">Erreur de recherche.</div>';
                     })
                     .finally(function() {
                         if (searchClientLoading) searchClientLoading.style.visibility = 'hidden';
@@ -635,7 +671,9 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             searchClientInput.addEventListener('input', function() {
                 clearTimeout(clientSearchTimeout);
                 var q = searchClientInput.value.trim();
-                clientSearchTimeout = setTimeout(function() { doClientSearch(q); }, 300);
+                clientSearchTimeout = setTimeout(function() {
+                    doClientSearch(q);
+                }, 300);
             });
             searchClientInput.addEventListener('focus', function() {
                 var q = searchClientInput.value.trim();
@@ -649,7 +687,9 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                     }
                 }, 150);
             });
-            searchClientResults.addEventListener('mousedown', function(ev) { ev.preventDefault(); });
+            searchClientResults.addEventListener('mousedown', function(ev) {
+                ev.preventDefault();
+            });
         }
 
         updateLignesUI();
@@ -660,4 +700,5 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     </script>
 
 </body>
+
 </html>

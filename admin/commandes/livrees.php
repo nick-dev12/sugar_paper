@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../models/model_commandes_admin.php';
 $toutes_commandes = get_all_commandes();
 
 // Filtrer pour ne garder que les commandes avec le statut "livree" ou "paye"
-$commandes_livrees = array_filter($toutes_commandes, function($commande) {
+$commandes_livrees = array_filter($toutes_commandes, function ($commande) {
     return $commande['statut'] === 'livree' || $commande['statut'] === 'paye';
 });
 
@@ -25,7 +25,7 @@ $commandes_livrees = array_filter($toutes_commandes, function($commande) {
 $jours_precedents = isset($_GET['jours_precedents']) && $_GET['jours_precedents'] === '1';
 if (!$jours_precedents) {
     $aujourd_hui = date('Y-m-d');
-    $commandes_livrees = array_filter($commandes_livrees, function($c) use ($aujourd_hui) {
+    $commandes_livrees = array_filter($commandes_livrees, function ($c) use ($aujourd_hui) {
         $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : $c['date_commande'];
         $date_c = date('Y-m-d', strtotime($date_ref));
         return $date_c === $aujourd_hui;
@@ -41,6 +41,7 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
@@ -50,16 +51,18 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
 </head>
+
 <body>
     <?php include '../includes/nav.php'; ?>
 
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="message success">
             <i class="fas fa-check-circle"></i>
-            <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+            <span><?php echo htmlspecialchars($_SESSION['success_message']);
+            unset($_SESSION['success_message']); ?></span>
         </div>
     <?php endif; ?>
-    
+
     <div class="content-header">
         <h1><i class="fas fa-check-circle"></i> Commandes Livrées</h1>
         <div class="header-actions">
@@ -93,13 +96,11 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
             </div>
             <div class="form-actions" style="flex-wrap: wrap;">
                 <?php if ($jours_precedents): ?>
-                <a href="livrees.php" class="btn-link">
-                    <i class="fas fa-calendar-day"></i> Voir uniquement les livraisons du jour
-                </a>
+                    <a href="livrees.php" class="btn-link">
+                        <i class="fas fa-calendar-day"></i> Voir uniquement les livraisons du jour
+                    </a>
                 <?php else: ?>
-                <a href="livrees.php?jours_precedents=1" class="btn-link">
-                    <i class="fas fa-calendar-alt"></i> Voir aussi les livraisons des jours précédents
-                </a>
+
                 <?php endif; ?>
                 <a href="index.php" class="btn-link">
                     <i class="fas fa-shopping-bag"></i> Voir les commandes à traiter
@@ -124,10 +125,14 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
                             <div class="commande-info">
                                 <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
                                 <p>
-                                    <strong>Client:</strong> <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                                    <span class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
+                                    <strong>Client:</strong>
+                                    <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
+                                    <span
+                                        class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
                                 </p>
-                                <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
+                                <p class="commande-date">Date:
+                                    <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
+                                </p>
                             </div>
                             <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
                                 <?php echo $commande['statut'] === 'paye' ? '<i class="fas fa-money-bill-wave"></i> Payée' : '<i class="fas fa-check-circle"></i> Reçu'; ?>
@@ -136,7 +141,8 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
                         <div class="commande-details">
                             <div class="detail-item">
                                 <label>Montant total</label>
-                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                                <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
+                                </div>
                             </div>
                             <div class="detail-item">
                                 <label>Adresse</label>
@@ -155,7 +161,7 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
                                 </div>
                             <?php endif; ?>
                         </div>
-                        
+
                         <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
                             <i class="fas fa-eye"></i> Voir les détails
                         </a>
@@ -168,5 +174,5 @@ $montant_total_livrees = get_montant_total_commandes('livree') + get_montant_tot
     <?php include '../includes/footer.php'; ?>
 
 </body>
-</html>
 
+</html>

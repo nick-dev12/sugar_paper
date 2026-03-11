@@ -50,3 +50,6 @@ ALTER TABLE `produits` ADD COLUMN `taille` VARCHAR(255) NULL DEFAULT NULL COMMEN
 
 -- FACTURES: token
 ALTER TABLE `factures` ADD COLUMN `token` VARCHAR(64) NULL DEFAULT NULL AFTER `date_creation`;
+
+-- COMMANDES: user_id nullable (pour commandes manuelles sans client connecté)
+ALTER TABLE `commandes` MODIFY COLUMN `user_id` INT(11) NULL DEFAULT NULL;
