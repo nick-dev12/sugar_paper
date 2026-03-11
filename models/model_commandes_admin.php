@@ -87,13 +87,14 @@ function get_all_commandes($statut = null) {
 /**
  * Récupère une commande par son ID
  * @param int $commande_id L'ID de la commande
+ * @param int|null $user_id L'ID de l'utilisateur (optionnel, pour vérifier l'appartenance côté client)
  * @return array|false Les données de la commande ou False si non trouvé
  */
-function get_commande_by_id($commande_id) {
+function get_commande_by_id($commande_id, $user_id = null) {
     global $db;
 
     try {
-        $stmt = $db->prepare("
+        $sql = "
             SELECT c.*,
                    COALESCE(u.nom, c.client_nom) as user_nom,
                    COALESCE(u.prenom, c.client_prenom) as user_prenom,
@@ -102,8 +103,14 @@ function get_commande_by_id($commande_id) {
             FROM commandes c
             LEFT JOIN users u ON c.user_id = u.id
             WHERE c.id = :id
-        ");
-        $stmt->execute(['id' => $commande_id]);
+        ";
+        $params = ['id' => $commande_id];
+        if ($user_id !== null) {
+            $sql .= " AND c.user_id = :user_id";
+            $params['user_id'] = (int) $user_id;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         $commande = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $commande ? $commande : false;

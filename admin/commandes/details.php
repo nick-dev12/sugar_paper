@@ -57,6 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         if (in_array($nouveau_statut, ['en_attente', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'paye', 'annulee'])) {
             if (update_commande_statut($commande_id, $nouveau_statut)) {
                 $statut_mis_a_jour = $nouveau_statut;
+            } else {
+                $_SESSION['error_message'] = 'Impossible de mettre à jour le statut. Vérifiez que la migration "add_statut_paye_commandes" a été exécutée et que la commande contient des produits.';
             }
         }
     }
@@ -121,6 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             <i class="fas fa-check-circle"></i>
             <span><?php echo htmlspecialchars($_SESSION['success_message'] ?? '');
             unset($_SESSION['success_message']); ?></span>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="message error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span><?php echo htmlspecialchars($_SESSION['error_message'] ?? '');
+            unset($_SESSION['error_message']); ?></span>
         </div>
     <?php endif; ?>
 

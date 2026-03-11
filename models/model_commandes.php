@@ -7,6 +7,7 @@
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/model_produits.php';
+require_once __DIR__ . '/model_commandes_admin.php'; // fournit get_commande_by_id()
 
 function _commande_produits_has_option_columns() {
     static $has = null;
@@ -394,34 +395,6 @@ function get_commandes_by_user($user_id) {
         return $commandes ? $commandes : [];
     } catch (PDOException $e) {
         return [];
-    }
-}
-
-/**
- * Récupère une commande par son ID
- * @param int $commande_id L'ID de la commande
- * @param int $user_id L'ID de l'utilisateur (pour vérification)
- * @return array|false Les données de la commande ou False
- */
-function get_commande_by_id($commande_id, $user_id = null) {
-    global $db;
-    
-    try {
-        $sql = "SELECT * FROM commandes WHERE id = :commande_id";
-        $params = ['commande_id' => $commande_id];
-        
-        if ($user_id !== null) {
-            $sql .= " AND user_id = :user_id";
-            $params['user_id'] = $user_id;
-        }
-        
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        $commande = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return $commande ? $commande : false;
-    } catch (PDOException $e) {
-        return false;
     }
 }
 

@@ -25,7 +25,7 @@ $categories = get_all_categories();
 <html lang="fr">
 
 <head>
-    <?php include __DIR__ . '/../includes/favicon.php'; ?>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion du Stock - Catégories - Administration</title>
@@ -48,6 +48,7 @@ $categories = get_all_categories();
             color: #6b2f20;
             box-shadow: 0 2px 8px rgba(145, 138, 68, 0.15);
         }
+
         .btn-history:hover {
             background: linear-gradient(135deg, #918a44 0%, #7a7340 100%);
             color: #fff;
@@ -55,6 +56,7 @@ $categories = get_all_categories();
             transform: translateY(-2px);
             box-shadow: 0 4px 16px rgba(145, 138, 68, 0.3);
         }
+
         .btn-history i {
             font-size: 16px;
         }
@@ -77,9 +79,9 @@ $categories = get_all_categories();
     </div>
 
     <?php if (!empty($success_message)): ?>
-    <div class="message success">
-        <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
-    </div>
+        <div class="message success">
+            <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+        </div>
     <?php endif; ?>
 
     <section class="produits-section categories-section">
@@ -88,51 +90,57 @@ $categories = get_all_categories();
         </div>
 
         <?php if (empty($categories)): ?>
-        <div class="empty-state">
-            <i class="fas fa-tags"></i>
-            <h3>Aucune catégorie</h3>
-            <p>Aucune catégorie enregistrée pour le moment.</p>
-            <a href="../categories/ajouter.php" class="btn-primary">
-                <i class="fas fa-plus"></i> Ajouter la première catégorie
-            </a>
-        </div>
-        <?php else: ?>
-        <div class="categories-grid">
-            <?php foreach ($categories as $categorie): ?>
-            <div class="categorie-card">
-                <div class="categorie-card-image-wrap">
-                    <?php if ($categorie['image']): ?>
-                    <img src="/upload/<?php echo htmlspecialchars($categorie['image']); ?>"
-                        alt="<?php echo htmlspecialchars($categorie['nom']); ?>" class="categorie-image"
-                        onerror="this.src='/image/produit1.jpg'">
-                    <?php else: ?>
-                    <div class="categorie-image-placeholder">
-                        <i class="fas fa-tag"></i>
-                    </div>
-                    <?php endif; ?>
-                </div>
-                <div class="categorie-card-body">
-                    <h3 class="categorie-nom"><?php echo htmlspecialchars($categorie['nom']); ?></h3>
-                    <p class="categorie-description">
-                        <?php echo htmlspecialchars($categorie['description'] ?? 'Aucune description'); ?>
-                    </p>
-                    <div class="categorie-actions">
-                        <a href="../categories/produits.php?id=<?php echo $categorie['id']; ?>" class="btn-card btn-view">
-                            <i class="fas fa-box"></i> Voir produits
-                        </a>
-                        <a href="../categories/modifier.php?id=<?php echo $categorie['id']; ?>" class="btn-card btn-edit">
-                            <i class="fas fa-edit"></i> Modifier
-                        </a>
-                        <a href="../categories/supprimer.php?id=<?php echo $categorie['id']; ?>" class="btn-card btn-delete"
-                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?');">
-                            <i class="fas fa-trash"></i> Supprimer
-                        </a>
-                    </div>
-                </div>
+            <div class="empty-state">
+                <i class="fas fa-tags"></i>
+                <h3>Aucune catégorie</h3>
+                <p>Aucune catégorie enregistrée pour le moment.</p>
+                <a href="../categories/ajouter.php" class="btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter la première catégorie
+                </a>
             </div>
-            <?php endforeach; ?>
-        </div>
+        <?php else: ?>
+            <div class="categories-grid">
+                <?php foreach ($categories as $categorie): ?>
+                    <div class="categorie-card">
+                        <div class="categorie-card-image-wrap">
+                            <?php if ($categorie['image']): ?>
+                                <img src="/upload/<?php echo htmlspecialchars($categorie['image']); ?>"
+                                    alt="<?php echo htmlspecialchars($categorie['nom']); ?>" class="categorie-image"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            <?php else: ?>
+                                <div class="categorie-image-placeholder">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="categorie-card-body">
+                            <h3 class="categorie-nom"><?php echo htmlspecialchars($categorie['nom']); ?></h3>
+                            <p class="categorie-description">
+                                <?php echo htmlspecialchars($categorie['description'] ?? 'Aucune description'); ?>
+                            </p>
+                            <div class="categorie-actions">
+                                <a href="../categories/produits.php?id=<?php echo $categorie['id']; ?>"
+                                    class="btn-card btn-view">
+                                    <i class="fas fa-box"></i> Voir produits
+                                </a>
+                                <a href="../categories/modifier.php?id=<?php echo $categorie['id']; ?>"
+                                    class="btn-card btn-edit">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                                <a href="../categories/supprimer.php?id=<?php echo $categorie['id']; ?>"
+                                    class="btn-card btn-delete"
+                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?');">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </section>
 
     <?php include '../includes/footer.php'; ?>
+</body>
+
+</html>
