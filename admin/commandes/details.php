@@ -38,6 +38,7 @@ if (!$commande) {
 // Vérifier si la commande est annulée ou livrée (pas de modification possible)
 $is_annulee = $commande['statut'] === 'annulee';
 $is_livree = $commande['statut'] === 'livree';
+$is_paye = $commande['statut'] === 'paye';
 
 // Traiter les actions de statut (uniquement si la commande n'est pas annulée)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
@@ -53,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         }
     } elseif (isset($_POST['changer_statut'])) {
         $nouveau_statut = $_POST['statut'] ?? '';
-        if (in_array($nouveau_statut, ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'expediee', 'livree', 'annulee'])) {
+        if (in_array($nouveau_statut, ['en_attente', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'paye', 'annulee'])) {
             if (update_commande_statut($commande_id, $nouveau_statut)) {
                 $statut_mis_a_jour = $nouveau_statut;
             }
@@ -83,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
 <html lang="fr">
 
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Détails Commande #<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?> - Administration</title>
@@ -295,6 +297,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <p>Le client a confirmé la réception du colis. La commande est terminée. Aucune modification n'est possible.
                 </p>
             </div>
+        <?php elseif ($is_paye): ?>
+            <div class="alert-livree">
+                <h3><i class="fas fa-money-bill-wave"></i> Commande payée</h3>
+                <p>La commande a été marquée comme payée. Le stock a été décrémenté. La commande est terminée.
+                </p>
+            </div>
         <?php else: ?>
             <div class="statut-form">
                 <div class="form-group">
@@ -305,6 +313,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                             $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
                             if ($commande['statut'] == 'annulee') {
                                 $statut_display = 'Annulée';
+                            } elseif ($commande['statut'] == 'paye') {
+                                $statut_display = 'Payée';
                             }
                             echo $statut_display;
                             ?>
@@ -330,17 +340,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                     <?php elseif ($commande['statut'] == 'livraison_en_cours'): ?>
                         <div class="alert-livraison">
                             <p><i class="fas fa-truck"></i> Commande en cours de livraison</p>
-                            <p class="sub">Vous pouvez changer le statut manuellement ci-dessous pour la marquer comme
-                                "Expédiée" ou "Livrée"</p>
-                        </div>
-                    <?php elseif ($commande['statut'] == 'expediee'): ?>
-                        <div class="alert-livree">
-                            <p><i class="fas fa-check-circle"></i> Commande expédiée</p>
+                            <p class="sub">Vous pouvez changer le statut manuellement ci-dessous pour la marquer comme "Payée" (décrémente le stock)</p>
                         </div>
                     <?php endif; ?>
                 </div>
 
-                <!-- Formulaire de changement manuel de statut (masqué si livrée) -->
+                <!-- Formulaire de changement manuel de statut (masqué si livrée ou payée) -->
                 <div class="actions-divider">
                     <h3>Changer le statut manuellement</h3>
                     <form method="POST" action="">
@@ -348,20 +353,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                             <label for="statut">Nouveau statut</label>
                             <select id="statut" name="statut" required>
                                 <option value="en_attente" <?php echo $commande['statut'] == 'en_attente' ? 'selected' : ''; ?>>En Attente</option>
-                                <option value="confirmee" <?php echo $commande['statut'] == 'confirmee' ? 'selected' : ''; ?>>
-                                    Confirmée</option>
-                                <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en
-                                    charge</option>
-                                <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation
-                                </option>
-                                <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison
-                                    en cours</option>
-                                <option value="expediee" <?php echo $commande['statut'] == 'expediee' ? 'selected' : ''; ?>>
-                                    Expédiée</option>
-                                <option value="livree" <?php echo $commande['statut'] == 'livree' ? 'selected' : ''; ?>>
-                                    Livrée</option>
-                                <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>
-                                    Annulée</option>
+                                <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en charge</option>
+                                <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation</option>
+                                <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison en cours</option>
+                                <option value="paye" <?php echo $commande['statut'] == 'paye' ? 'selected' : ''; ?>>Payée (décrémente le stock)</option>
+                                <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>Annulée</option>
                             </select>
                         </div>
                         <?php if ($commande['notes']): ?>

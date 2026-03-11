@@ -36,6 +36,7 @@ if (isset($result['success']) && $result['success']) {
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modifier une zone de livraison - Administration</title>

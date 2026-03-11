@@ -7,7 +7,7 @@
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../models/model_variantes.php';
-require_once __DIR__ . '/../models/model_stock.php';
+require_once __DIR__ . '/../models/model_mouvements_stock.php';
 
 /**
  * Upload une image de produit
@@ -92,19 +92,13 @@ function process_add_produit() {
         return ['success' => false, 'message' => ''];
     }
     
-    // Récupération et validation des données
-    $stock_article_id = isset($_POST['stock_article_id']) ? (int) $_POST['stock_article_id'] : 0;
-    $article = null;
-    if ($stock_article_id > 0) {
-        $article = get_stock_article_by_id($stock_article_id);
-    }
-
-    $nom = isset($_POST['nom']) ? trim($_POST['nom']) : ($article ? $article['nom'] : '');
+    // Récupération et validation des données (stock géré via produits.stock)
+    $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
     $prix = isset($_POST['prix']) ? trim($_POST['prix']) : '';
     $prix_promotion = isset($_POST['prix_promotion']) && !empty($_POST['prix_promotion']) ? trim($_POST['prix_promotion']) : null;
-    $stock = isset($_POST['stock']) ? intval($_POST['stock']) : ($article ? (int) $article['quantite'] : 0);
-    $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : ($article ? (int) $article['categorie_id'] : 0);
+    $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
+    $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $couleurs = null;
@@ -188,11 +182,8 @@ function process_add_produit() {
             $images_supp = array_slice($uploaded, 1);
         }
     }
-    if (!$image_principale && $article && !empty($article['image_principale'])) {
-        $image_principale = $article['image_principale'];
-    }
     if (!$image_principale) {
-        $errors[] = 'Au moins une image est obligatoire (ou sélectionnez un article en stock).';
+        $errors[] = 'Au moins une image est obligatoire.';
     }
     
     // Construire le tableau images (principale + supplémentaires) en JSON
@@ -219,9 +210,6 @@ function process_add_produit() {
             'taille' => $taille,
             'statut' => $stock > 0 ? $statut : 'rupture_stock'
         ];
-        if ($stock_article_id > 0) {
-            $data['stock_article_id'] = $stock_article_id;
-        }
         
         $produit_id = create_produit($data);
         
@@ -295,8 +283,7 @@ function process_update_produit($produit_id) {
         return ['success' => false, 'message' => 'Produit introuvable.'];
     }
     
-    // Récupération et validation des données
-    $stock_article_id = isset($_POST['stock_article_id']) ? (int) $_POST['stock_article_id'] : 0;
+    // Récupération et validation des données (stock géré via produits.stock)
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
     $prix = isset($_POST['prix']) ? trim($_POST['prix']) : '';
@@ -422,9 +409,9 @@ function process_update_produit($produit_id) {
             'unite' => $unite,
             'couleurs' => $couleurs,
             'taille' => $taille,
-            'statut' => $stock > 0 ? $statut : 'rupture_stock'
+            'statut' => $stock > 0 ? $statut : 'rupture_stock',
+            'stock_article_id' => null
         ];
-        $data['stock_article_id'] = $stock_article_id > 0 ? $stock_article_id : null;
 
         if (update_produit($produit_id, $data)) {
             $success = true;
@@ -529,6 +516,58 @@ function process_delete_produit($produit_id) {
     } else {
         return ['success' => false, 'message' => 'Une erreur est survenue lors de la suppression.'];
     }
+}
+
+/**
+ * Traite l'ajustement du stock d'un produit
+ * @param int $produit_id ID du produit
+ * @return array ['success' => bool, 'message' => string]
+ */
+function process_ajuster_stock_produit($produit_id) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['ajuster_stock'])) {
+        return ['success' => false, 'message' => ''];
+    }
+
+    $produit = get_produit_by_id($produit_id);
+    if (!$produit) {
+        return ['success' => false, 'message' => 'Produit introuvable.'];
+    }
+
+    $nouveau_stock = isset($_POST['nouveau_stock']) ? (int) $_POST['nouveau_stock'] : -1;
+    if ($nouveau_stock < 0) {
+        return ['success' => false, 'message' => 'La quantité doit être un nombre positif ou zéro.'];
+    }
+
+    $quantite_avant = (int) ($produit['stock'] ?? 0);
+    if ($nouveau_stock === $quantite_avant) {
+        return ['success' => false, 'message' => 'La nouvelle quantité est identique au stock actuel.'];
+    }
+
+    $statut = $produit['statut'];
+    if ($nouveau_stock <= 0) {
+        $statut = 'rupture_stock';
+    } elseif ($produit['statut'] === 'rupture_stock') {
+        $statut = 'actif';
+    }
+    $data_update = array_merge($produit, ['stock' => $nouveau_stock, 'statut' => $statut]);
+    if (update_produit($produit_id, $data_update)) {
+        $quantite_diff = $nouveau_stock - $quantite_avant;
+        create_stock_mouvement([
+            'type' => 'inventaire',
+            'stock_article_id' => null,
+            'produit_id' => $produit_id,
+            'quantite' => abs($quantite_diff),
+            'quantite_avant' => $quantite_avant,
+            'quantite_apres' => $nouveau_stock,
+            'reference_type' => 'ajustement',
+            'reference_id' => null,
+            'reference_numero' => null,
+            'notes' => 'Ajustement manuel : ' . ($quantite_diff >= 0 ? '+' : '') . $quantite_diff
+        ]);
+        return ['success' => true, 'message' => 'Stock ajusté avec succès.'];
+    }
+
+    return ['success' => false, 'message' => 'Erreur lors de la mise à jour du stock.'];
 }
 
 ?>

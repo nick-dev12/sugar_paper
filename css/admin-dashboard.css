@@ -449,6 +449,17 @@ body::before {
   color: var(--texte-clair);
 }
 
+.btn-stock {
+  background: #918a44;
+  color: #fff;
+}
+
+.btn-stock:hover {
+  background: #7a7340;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
 .btn-card i {
   font-size: 11px;
 }
@@ -1652,6 +1663,7 @@ body::before {
 }
 
 .statut-livree,
+.statut-paye,
 .statut-terminee,
 .statut-devis_envoye,
 .statut-acceptee,

@@ -769,29 +769,20 @@ function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30
     global $db;
 
     try {
-        $join_s = _produits_has_stock_article_id() ? "LEFT JOIN stock_articles s ON p.stock_article_id = s.id" : "";
-        $stock_cond = _produits_has_stock_article_id()
-            ? "(COALESCE(s.quantite, p.stock) > 0)"
-            : "(p.stock > 0)";
         $sql = "
-            SELECT p.id, p.nom, p.prix, p.prix_promotion, p.stock, p.image_principale, p.stock_article_id,
+            SELECT p.id, p.nom, p.prix, p.prix_promotion, p.stock, p.image_principale,
                    c.nom as categorie_nom,
-                   " . (_produits_has_stock_article_id() ? "COALESCE(s.quantite, p.stock) as stock_dispo" : "p.stock as stock_dispo") . "
+                   p.stock as stock_dispo
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
-            $join_s
-            WHERE p.statut = 'actif' AND $stock_cond
+            WHERE p.statut = 'actif' AND p.stock > 0
         ";
         $params = ['limit' => (int) $limit];
 
         if (!empty(trim($recherche))) {
-            $sql .= " AND (p.nom LIKE :term OR c.nom LIKE :term2" .
-                (_produits_has_stock_article_id() ? " OR s.nom LIKE :term3" : "") . ")";
+            $sql .= " AND (p.nom LIKE :term OR c.nom LIKE :term2)";
             $params['term'] = '%' . trim($recherche) . '%';
             $params['term2'] = '%' . trim($recherche) . '%';
-            if (_produits_has_stock_article_id()) {
-                $params['term3'] = '%' . trim($recherche) . '%';
-            }
         }
 
         $sql .= " ORDER BY p.nom ASC LIMIT :limit";

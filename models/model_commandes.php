@@ -6,9 +6,7 @@
 
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
-require_once __DIR__ . '/model_stock.php';
 require_once __DIR__ . '/model_produits.php';
-require_once __DIR__ . '/model_mouvements_stock.php';
 
 function _commande_produits_has_option_columns() {
     static $has = null;
@@ -206,52 +204,7 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             $stmt->execute($params);
         }
 
-        // Décrémenter le stock et enregistrer les mouvements de sortie
-        foreach ($panier_items as $item) {
-            $produit_id = (int) $item['id'];
-            $quantite = (int) $item['quantite'];
-            $stock_article_id = isset($item['stock_article_id']) && $item['stock_article_id'] ? (int) $item['stock_article_id'] : null;
-
-            if ($stock_article_id) {
-                $article = get_stock_article_by_id($stock_article_id);
-                if ($article) {
-                    $quantite_avant = (int) $article['quantite'];
-                    decrement_stock_article($stock_article_id, $quantite);
-                    $quantite_apres = max(0, $quantite_avant - $quantite);
-                    create_stock_mouvement([
-                        'type' => 'sortie',
-                        'stock_article_id' => $stock_article_id,
-                        'produit_id' => $produit_id,
-                        'quantite' => $quantite,
-                        'quantite_avant' => $quantite_avant,
-                        'quantite_apres' => $quantite_apres,
-                        'reference_type' => 'commande',
-                        'reference_id' => $commande_id,
-                        'reference_numero' => $numero_commande,
-                        'notes' => 'Vente commande ' . $numero_commande
-                    ]);
-                }
-            } else {
-                $produit = get_produit_by_id($produit_id);
-                if ($produit) {
-                    $quantite_avant = (int) $produit['stock'];
-                    decrement_produit_stock($produit_id, $quantite);
-                    $quantite_apres = max(0, $quantite_avant - $quantite);
-                    create_stock_mouvement([
-                        'type' => 'sortie',
-                        'stock_article_id' => null,
-                        'produit_id' => $produit_id,
-                        'quantite' => $quantite,
-                        'quantite_avant' => $quantite_avant,
-                        'quantite_apres' => $quantite_apres,
-                        'reference_type' => 'commande',
-                        'reference_id' => $commande_id,
-                        'reference_numero' => $numero_commande,
-                        'notes' => 'Vente commande ' . $numero_commande
-                    ]);
-                }
-            }
-        }
+        // Le stock est décrémenté uniquement lorsque le statut de la commande passe à 'paye' (via update_commande_statut)
 
         // Valider la transaction
         $db->commit();
@@ -315,7 +268,7 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
             $panier_items[] = [
                 'id' => $produit_id,
                 'quantite' => $quantite,
-                'stock_article_id' => $produit['stock_article_id'] ?? null,
+                'stock_article_id' => null,
                 'prix' => $produit['prix'],
                 'prix_promotion' => $prix_promo ?? ($produit['prix_promotion'] ?? null),
                 'panier_prix_unitaire' => $prix_unitaire,
@@ -410,51 +363,7 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
             $stmt->execute($params);
         }
 
-        foreach ($panier_items as $item) {
-            $produit_id = (int) $item['id'];
-            $quantite = (int) $item['quantite'];
-            $stock_article_id = $item['stock_article_id'] ?? null;
-
-            if ($stock_article_id) {
-                $article = get_stock_article_by_id($stock_article_id);
-                if ($article) {
-                    $quantite_avant = (int) $article['quantite'];
-                    decrement_stock_article($stock_article_id, $quantite);
-                    $quantite_apres = max(0, $quantite_avant - $quantite);
-                    create_stock_mouvement([
-                        'type' => 'sortie',
-                        'stock_article_id' => $stock_article_id,
-                        'produit_id' => $produit_id,
-                        'quantite' => $quantite,
-                        'quantite_avant' => $quantite_avant,
-                        'quantite_apres' => $quantite_apres,
-                        'reference_type' => 'commande',
-                        'reference_id' => $commande_id,
-                        'reference_numero' => $numero_commande,
-                        'notes' => 'Commande manuelle ' . $numero_commande
-                    ]);
-                }
-            } else {
-                $produit = get_produit_by_id($produit_id);
-                if ($produit) {
-                    $quantite_avant = (int) $produit['stock'];
-                    decrement_produit_stock($produit_id, $quantite);
-                    $quantite_apres = max(0, $quantite_avant - $quantite);
-                    create_stock_mouvement([
-                        'type' => 'sortie',
-                        'stock_article_id' => null,
-                        'produit_id' => $produit_id,
-                        'quantite' => $quantite,
-                        'quantite_avant' => $quantite_avant,
-                        'quantite_apres' => $quantite_apres,
-                        'reference_type' => 'commande',
-                        'reference_id' => $commande_id,
-                        'reference_numero' => $numero_commande,
-                        'notes' => 'Commande manuelle ' . $numero_commande
-                    ]);
-                }
-            }
-        }
+        // Le stock est décrémenté uniquement lorsque le statut de la commande passe à 'paye' (via update_commande_statut)
 
         $db->commit();
         return ['success' => true, 'commande_id' => $commande_id, 'numero_commande' => $numero_commande];
@@ -513,6 +422,28 @@ function get_commande_by_id($commande_id, $user_id = null) {
         return $commande ? $commande : false;
     } catch (PDOException $e) {
         return false;
+    }
+}
+
+/**
+ * Récupère la quantité totale vendue d'un produit (commandes non annulées)
+ * @param int $produit_id ID du produit
+ * @return int Quantité vendue
+ */
+function get_quantite_vendue_produit($produit_id) {
+    global $db;
+    try {
+        $stmt = $db->prepare("
+            SELECT COALESCE(SUM(cp.quantite), 0) as total
+            FROM commande_produits cp
+            INNER JOIN commandes c ON cp.commande_id = c.id
+            WHERE cp.produit_id = :produit_id AND c.statut != 'annulee'
+        ");
+        $stmt->execute(['produit_id' => (int) $produit_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int) $row['total'] : 0;
+    } catch (PDOException $e) {
+        return 0;
     }
 }
 

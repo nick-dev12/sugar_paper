@@ -36,6 +36,7 @@ $produits = get_produits_by_categorie($categorie_id);
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Produits de <?php echo htmlspecialchars($categorie['nom']); ?> - Administration</title>
@@ -51,11 +52,11 @@ $produits = get_produits_by_categorie($categorie_id);
             <i class="fas fa-box"></i> Produits de la catégorie: <?php echo htmlspecialchars($categorie['nom']); ?>
         </h1>
         <div class="header-actions">
-            <a href="index.php" class="btn-back" style="margin-right: 10px;">
-                <i class="fas fa-arrow-left"></i> Retour aux catégories
+            <a href="../stock/index.php" class="btn-back" style="margin-right: 10px;">
+                <i class="fas fa-arrow-left"></i> Retour au stock
             </a>
-            <a href="../produits/ajouter.php" class="btn-primary">
-                <i class="fas fa-upload"></i> Publier un produit
+            <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary">
+                <i class="fas fa-plus"></i> Ajouter un produit
             </a>
         </div>
     </div>
@@ -73,8 +74,8 @@ $produits = get_produits_by_categorie($categorie_id);
             <div style="text-align: center; padding: 40px; color: #666;">
                 <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
                 <p>Aucun produit dans cette catégorie pour le moment.</p>
-                <a href="../produits/ajouter.php" class="btn-primary" style="margin-top: 20px; display: inline-block;">
-                    <i class="fas fa-upload"></i> Publier un produit à cette catégorie
+                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary" style="margin-top: 20px; display: inline-block;">
+                    <i class="fas fa-plus"></i> Ajouter un produit à cette catégorie
                 </a>
             </div>
         <?php else: ?>
@@ -114,6 +115,9 @@ $produits = get_produits_by_categorie($categorie_id);
                                 <?php endif; ?>
                             </p>
                             <div class="produit-card-actions">
+                                <a href="../produits/ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
+                                    <i class="fas fa-boxes-stacked"></i> Stock
+                                </a>
                                 <a href="../produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>

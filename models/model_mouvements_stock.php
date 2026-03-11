@@ -47,16 +47,17 @@ function create_stock_mouvement($data)
  * Récupère les mouvements avec filtres
  * @param int|null $stock_article_id Filtrer par article
  * @param int|null $produit_id Filtrer par produit
+ * @param int|null $categorie_id Filtrer par catégorie (produits ou articles)
  * @param string|null $type Filtrer par type (entree, sortie, inventaire)
  * @param int $limit Nombre max
  * @return array
  */
-function get_stock_mouvements($stock_article_id = null, $produit_id = null, $type = null, $limit = 100)
+function get_stock_mouvements($stock_article_id = null, $produit_id = null, $categorie_id = null, $type = null, $limit = 100)
 {
     global $db;
 
     try {
-        $sql = "SELECT m.*, s.nom as article_nom, p.nom as produit_nom
+        $sql = "SELECT m.*, s.nom as article_nom, p.nom as produit_nom, p.categorie_id as produit_categorie_id, s.categorie_id as article_categorie_id
                 FROM stock_mouvements m
                 LEFT JOIN stock_articles s ON m.stock_article_id = s.id
                 LEFT JOIN produits p ON m.produit_id = p.id
@@ -70,6 +71,10 @@ function get_stock_mouvements($stock_article_id = null, $produit_id = null, $typ
         if ($produit_id !== null && $produit_id > 0) {
             $sql .= " AND m.produit_id = :produit_id";
             $params['produit_id'] = (int) $produit_id;
+        }
+        if ($categorie_id !== null && $categorie_id > 0) {
+            $sql .= " AND ((m.produit_id IS NOT NULL AND p.categorie_id = :categorie_id) OR (m.stock_article_id IS NOT NULL AND s.categorie_id = :categorie_id))";
+            $params['categorie_id'] = (int) $categorie_id;
         }
         if ($type !== null && in_array($type, ['entree', 'sortie', 'inventaire'])) {
             $sql .= " AND m.type = :type";

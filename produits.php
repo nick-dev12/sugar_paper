@@ -32,8 +32,8 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Tous nos produits - Sugar Paper';
-$seo_description = 'Découvrez notre catalogue de produits naturels : noix, feuilles, fruits, huiles, céréales, racines. Produits 100% naturels, livraison au Sénégal.';
+$seo_title = 'Produits décoratifs pour gâteaux - Sugar Paper';
+$seo_description = 'Catalogue de produits décoratifs pour gâteaux : gâteaux d\'anniversaire, mariage, cérémonies. Décoration comestible et non comestible. Personnalisation à grande échelle.';
 $seo_canonical = $base . '/produits.php';
 ?>
 

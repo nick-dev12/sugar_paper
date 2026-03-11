@@ -60,6 +60,7 @@ if (!empty($produits)) {
 <html lang="fr">
 
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liste des Produits - Administration</title>
@@ -225,6 +226,9 @@ if (!empty($produits)) {
 
                             </p>
                             <div class="produit-card-actions">
+                                <a href="ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
+                                    <i class="fas fa-boxes-stacked"></i> Stock
+                                </a>
                                 <a href="modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>

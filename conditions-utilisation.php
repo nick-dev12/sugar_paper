@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = "Conditions d'Utilisation - Sugar Paper";
-$seo_description = "Conditions générales d'utilisation du site Sugar Paper. Règles et modalités d'utilisation de notre boutique en ligne.";
+$seo_description = "Conditions générales d'utilisation du site Sugar Paper. Règles et modalités de notre boutique de produits décoratifs pour gâteaux.";
 $seo_canonical = $base . '/conditions-utilisation.php';
 ?>
 <!DOCTYPE html>

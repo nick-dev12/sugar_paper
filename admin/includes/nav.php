@@ -104,16 +104,16 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-file-invoice"></i>
                 <span>Devis</span>
             </a>
+            <a href="<?php echo $base_path; ?>contacts/index.php"
+                class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
+                <i class="fas fa-address-book"></i>
+                <span>Contacts</span>
+            </a>
             <?php if ($can_manage_users): ?>
                 <a href="<?php echo $base_path; ?>users/index.php"
                     class="menu-item <?php echo ($is_users && $current_page == 'index.php') ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Utilisateurs</span>
-                </a>
-                <a href="<?php echo $base_path; ?>contacts/index.php"
-                    class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
-                    <i class="fas fa-address-book"></i>
-                    <span>Contacts</span>
                 </a>
             <?php endif; ?>
             <?php if ($can_manage_comptes): ?>

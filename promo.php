@@ -18,8 +18,8 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Produits en promotion - Sugar Paper';
-$seo_description = 'Profitez des promotions sur nos produits naturels : noix, huiles, céréales. Offres limitées, livraison au Sénégal.';
+$seo_title = 'Promotions décoration gâteaux - Sugar Paper';
+$seo_description = 'Promotions sur les produits décoratifs pour gâteaux : anniversaire, mariage, cérémonies. Décoration comestible et non comestible. Offres limitées.';
 $seo_canonical = $base . '/promo.php';
 ?>
 <!DOCTYPE html>

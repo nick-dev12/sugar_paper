@@ -41,7 +41,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = $categorie_nom . ' - Sugar Paper';
-$desc_cat = !empty($categorie['description']) ? strip_tags($categorie['description']) : 'Produits ' . $categorie_nom . ' - Sugar Paper';
+$desc_cat = !empty($categorie['description']) ? strip_tags($categorie['description']) : 'Produits décoratifs pour gâteaux ' . $categorie_nom . ' : anniversaire, mariage, cérémonies. Sugar Paper - Personnalisez vos gâteaux.';
 $seo_description = mb_substr($desc_cat, 0, 160);
 $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
 ?>

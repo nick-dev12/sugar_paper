@@ -18,8 +18,8 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Nouveautés - Sugar Paper';
-$seo_description = 'Découvrez les derniers produits naturels ajoutés à notre catalogue : noix, huiles, céréales, cosmétiques.';
+$seo_title = 'Nouveautés décoration gâteaux - Sugar Paper';
+$seo_description = 'Découvrez les derniers produits décoratifs pour gâteaux : décoration d\'anniversaire, mariage, cérémonies. Comestible et non comestible.';
 $seo_canonical = $base . '/nouveautes.php';
 ?>
 <!DOCTYPE html>

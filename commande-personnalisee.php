@@ -33,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Commande personnalisée - Sugar Paper';
-$seo_description = 'Demandez une commande personnalisée de produits naturels. Décrivez vos besoins et nous vous répondrons rapidement.';
+$seo_title = 'Commande personnalisée gâteau - Sugar Paper';
+$seo_description = 'Commande personnalisée de décoration pour gâteaux : anniversaire, mariage, cérémonies. Produits décoratifs comestibles et non comestibles à grande échelle.';
 $seo_canonical = $base . '/commande-personnalisee.php';
 ?>
 <!DOCTYPE html>

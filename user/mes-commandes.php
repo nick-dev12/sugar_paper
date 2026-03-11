@@ -25,12 +25,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirmer_livraison']
     $commande_id = isset($_POST['commande_id']) ? (int) $_POST['commande_id'] : 0;
 
     if ($commande_id > 0) {
-        if (update_commande_statut_user($commande_id, $_SESSION['user_id'], 'livree')) {
-            $success_message = 'Colis reçu confirmé avec succès !';
-            // Recharger les commandes pour afficher le nouveau statut
-            header('Location: mes-commandes.php?livraison_confirmee=1');
-            exit;
-        } else {
+        $commande = get_commande_by_id($commande_id, $_SESSION['user_id']);
+        if ($commande && $commande['statut'] === 'livraison_en_cours') {
+            require_once __DIR__ . '/../models/model_commandes_admin.php';
+            if (update_commande_statut($commande_id, 'paye')) {
+                $success_message = 'Colis reçu confirmé avec succès !';
+                header('Location: mes-commandes.php?livraison_confirmee=1');
+                exit;
+            }
+        }
+        if (empty($success_message)) {
             $error_message = 'Une erreur est survenue lors de la confirmation de la réception du colis.';
         }
     }
@@ -132,9 +136,9 @@ if (isset($_GET['commande_annulee']) && $_GET['commande_annulee'] == '1') {
 
 $commandes = get_commandes_by_user($_SESSION['user_id']);
 
-// Filtrer pour exclure les commandes avec le statut "livree" et "annulee"
+// Filtrer pour exclure les commandes avec le statut "livree", "paye" et "annulee"
 $commandes_actives = array_filter($commandes, function ($commande) {
-    return $commande['statut'] !== 'livree' && $commande['statut'] !== 'annulee';
+    return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
 });
 
 // Commandes personnalisées actives (en cours, hors terminées/refusées/annulées)
@@ -287,7 +291,7 @@ $statuts_labels = get_statuts_commande_personnalisee();
                                 // Formater l'affichage du statut
                                 $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
                                 // Remplacer "Livree" par "Reçu"
-                                if ($commande['statut'] == 'livree') {
+                                if ($commande['statut'] == 'livree' || $commande['statut'] == 'paye') {
                                     $statut_display = 'Reçu';
                                 }
                                 // Remplacer "Annulee" par "Annulée"

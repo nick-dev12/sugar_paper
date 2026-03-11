@@ -13,8 +13,8 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
-$seo_title = 'Sugar Paper - Produits naturels de qualité';
-$seo_description = 'Sugar Paper, boutique en ligne de produits naturels : noix, feuilles, fruits, huiles, céréales, racines. Produits 100% naturels issus de notre production.';
+$seo_title = 'Sugar Paper - Décoration de gâteaux personnalisée';
+$seo_description = 'Sugar Paper : produits décoratifs pour gâteaux d\'anniversaire, mariage et cérémonies. Décoration comestible et non comestible à grande échelle. Personnalisez vos gâteaux !';
 $seo_canonical = $base . '/';
 ?>
 

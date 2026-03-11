@@ -8,12 +8,12 @@ if (!function_exists('get_asset_version')) {
 }
 $asset_version = get_asset_version();
 ?>
+<?php include __DIR__ . '/favicon.php'; ?>
 <meta name="theme-color" content="#E5488A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Sugar Paper">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icons/icon-192.png">
 <script>
 (function() {
     if ('serviceWorker' in navigator) {

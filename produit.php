@@ -94,7 +94,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = $produit['nom'] . ' - Sugar Paper';
-$desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Produit naturel Sugar Paper';
+$desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Produit décoratif pour gâteau Sugar Paper. Décoration comestible et non comestible.';
 $seo_description = mb_substr($desc, 0, 160);
 $seo_canonical = $base . '/produit.php?id=' . (int) $produit['id'];
 $seo_og_type = 'product';

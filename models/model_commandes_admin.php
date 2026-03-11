@@ -158,25 +158,84 @@ function get_produits_by_commande($commande_id) {
 
 /**
  * Met à jour le statut d'une commande
+ * Lorsque le statut passe à 'paye', le stock est décrémenté et l'historique des mouvements est enregistré
  * @param int $commande_id L'ID de la commande
  * @param string $statut Le nouveau statut
  * @return bool True en cas de succès, False sinon
  */
 function update_commande_statut($commande_id, $statut) {
     global $db;
-    
+
+    $commande = get_commande_by_id($commande_id);
+    if (!$commande) return false;
+
+    $ancien_statut = $commande['statut'] ?? '';
+    $numero_commande = $commande['numero_commande'] ?? '';
+
+    if ($statut === 'paye' && $ancien_statut !== 'paye') {
+        require_once __DIR__ . '/model_produits.php';
+        require_once __DIR__ . '/model_mouvements_stock.php';
+        require_once __DIR__ . '/model_commandes.php';
+
+        $produits_commande = get_commande_produits($commande_id);
+        if (empty($produits_commande)) {
+            return false;
+        }
+
+        try {
+            $db->beginTransaction();
+
+            foreach ($produits_commande as $item) {
+                $produit_id = (int) ($item['produit_id'] ?? $item['id'] ?? 0);
+                $quantite = (int) ($item['quantite'] ?? 0);
+                if ($produit_id <= 0 || $quantite <= 0) continue;
+
+                $produit = get_produit_by_id($produit_id);
+                if (!$produit) continue;
+
+                $quantite_avant = (int) ($produit['stock'] ?? 0);
+                decrement_produit_stock($produit_id, $quantite);
+                $quantite_apres = max(0, $quantite_avant - $quantite);
+
+                create_stock_mouvement([
+                    'type' => 'sortie',
+                    'stock_article_id' => null,
+                    'produit_id' => $produit_id,
+                    'quantite' => $quantite,
+                    'quantite_avant' => $quantite_avant,
+                    'quantite_apres' => $quantite_apres,
+                    'reference_type' => 'commande',
+                    'reference_id' => $commande_id,
+                    'reference_numero' => $numero_commande,
+                    'notes' => 'Vente commande ' . $numero_commande . ' (statut payé)'
+                ]);
+            }
+
+            $stmt = $db->prepare("
+                UPDATE commandes
+                SET statut = :statut,
+                    date_livraison = CASE WHEN :statut IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
+                WHERE id = :id
+            ");
+            $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
+
+            $db->commit();
+            return true;
+        } catch (PDOException $e) {
+            $db->rollBack();
+            error_log('[update_commande_statut paye] ' . $e->getMessage());
+            return false;
+        }
+    }
+
     try {
         $stmt = $db->prepare("
-            UPDATE commandes 
+            UPDATE commandes
             SET statut = :statut,
-                date_livraison = CASE WHEN :statut = 'livree' THEN NOW() ELSE date_livraison END
+                date_livraison = CASE WHEN :statut IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
             WHERE id = :id
         ");
-        
-        return $stmt->execute([
-            'id' => $commande_id,
-            'statut' => $statut
-        ]);
+        return $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
     } catch (PDOException $e) {
         return false;
     }

@@ -1,59 +1,42 @@
 <?php
 /**
  * Page d'ajout de produit
- * Programmation procédurale uniquement
+ * Formulaire direct - stock géré via la colonne produits.stock (plus de lien stock_articles)
  */
 
 session_start();
 
-// Vérifier si l'admin est connecté
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
     exit;
 }
 
-// Traiter le formulaire
 require_once __DIR__ . '/../../controllers/controller_produits.php';
 $result = process_add_produit();
 
-// Si l'ajout est réussi, rediriger vers la liste
 if (isset($result['success']) && $result['success']) {
     $_SESSION['success_message'] = $result['message'];
-    header('Location: index.php');
+    $categorie_id = isset($_POST['categorie_id']) ? (int) $_POST['categorie_id'] : 0;
+    if ($categorie_id > 0) {
+        header('Location: ../categories/produits.php?id=' . $categorie_id);
+    } else {
+        header('Location: ../stock/index.php');
+    }
     exit;
 }
 
-// Récupérer les catégories et articles en stock
 require_once __DIR__ . '/../../models/model_categories.php';
-require_once __DIR__ . '/../../models/model_stock.php';
 $categories = get_all_categories();
-
-$stock_article_id = isset($_GET['stock_article_id']) ? (int) $_GET['stock_article_id'] : 0;
-if (!$stock_article_id && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['stock_article_id']) && (int)$_POST['stock_article_id'] > 0) {
-    $stock_article_id = (int) $_POST['stock_article_id'];
-}
-$no_stock = isset($_GET['no_stock']) && $_GET['no_stock'] === '1';
-$article = null;
-if ($stock_article_id > 0) {
-    $article = get_stock_article_by_id($stock_article_id);
-    if (!$article) {
-        $stock_article_id = 0;
-    }
-}
-
-// Afficher la sélection stock uniquement si pas d'article choisi et pas "no_stock"
-$show_stock_selection = ($stock_article_id <= 0 && !$no_stock);
-$recherche_stock = trim($_GET['recherche_stock'] ?? '');
-$categorie_stock = isset($_GET['categorie_stock']) ? (int) $_GET['categorie_stock'] : 0;
-$articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock, $categorie_stock > 0 ? $categorie_stock : null, 50) : get_all_stock_articles();
+$categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Publier un produit - Administration</title>
+    <title>Ajouter un produit - Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
@@ -63,65 +46,22 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
     <?php include '../includes/nav.php'; ?>
     
     <div class="content-header content-header-form">
-        <h1><i class="fas fa-upload"></i> Publier un produit</h1>
+        <h1><i class="fas fa-plus"></i> Ajouter un produit</h1>
         <div class="header-actions">
-            <a href="index.php" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Retour à la liste
+            <?php if ($categorie_id_prefill > 0): ?>
+            <a href="../categories/produits.php?id=<?php echo $categorie_id_prefill; ?>" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Retour aux produits
             </a>
+            <?php else: ?>
+            <a href="../stock/index.php" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Retour au stock
+            </a>
+            <?php endif; ?>
         </div>
     </div>
 
     <section class="form-add-section">
     <div class="form-add-container">
-            <?php if ($show_stock_selection): ?>
-                <div class="form-add-block" style="margin-bottom: 30px;">
-                    <h3 class="form-add-section-title"><i class="fas fa-boxes-stacked"></i> Choisir un article en stock</h3>
-                    <p class="form-help" style="margin-bottom: 16px;">Sélectionnez un article en stock pour publier un produit. Les informations (nom, image, catégorie, stock) proviendront de l'article.</p>
-                    <form method="GET" action="" class="stock-search-bar">
-                        <div class="stock-search-input-wrap">
-                            <i class="fas fa-search stock-search-icon"></i>
-                            <input type="text" id="recherche_stock" name="recherche_stock" placeholder="Rechercher un article par nom..."
-                                value="<?php echo htmlspecialchars($recherche_stock); ?>" class="stock-search-input">
-                        </div>
-                        <div class="stock-search-select-wrap">
-                            <select id="categorie_stock" name="categorie_stock" class="stock-search-select">
-                                <option value="0">Toutes les catégories</option>
-                                <?php foreach ($categories as $c): ?>
-                                    <option value="<?php echo (int) $c['id']; ?>" <?php echo $categorie_stock === (int) $c['id'] ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($c['nom']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn-primary stock-search-btn">
-                            <i class="fas fa-search"></i> Rechercher
-                        </button>
-                    </form>
-                    <?php if (empty($articles_stock)): ?>
-                        <p class="form-help" style="margin-bottom: 12px;">Aucun article en stock. <a href="../stock/index.php" class="link-accent">Ajouter des articles au stock</a> ou créez un produit sans lien.</p>
-                    <?php else: ?>
-                        <div class="stock-select-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
-                            <?php foreach ($articles_stock as $a): ?>
-                                <div class="stock-select-card" style="border: 1px solid #ececec; border-radius: 10px; overflow: hidden; background: #fff;">
-                                    <img src="/upload/<?php echo htmlspecialchars($a['image_principale'] ?? ''); ?>" alt="" style="width: 100%; height: 120px; object-fit: cover;" onerror="this.src='/image/produit1.jpg'">
-                                    <div style="padding: 12px;">
-                                        <strong style="font-size: 14px;"><?php echo htmlspecialchars($a['nom']); ?></strong>
-                                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;"><?php echo htmlspecialchars($a['categorie_nom'] ?? ''); ?> · Stock: <?php echo (int) $a['quantite']; ?></p>
-                                        <a href="ajouter.php?stock_article_id=<?php echo (int) $a['id']; ?>" class="btn-primary" style="display: block; text-align: center; margin-top: 10px; padding: 8px; font-size: 13px;">
-                                            <i class="fas fa-upload"></i> Publier un produit
-                                        </a>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                    <p style="margin-top: 20px;">
-                        <a href="ajouter.php?no_stock=1" class="link-accent"><i class="fas fa-edit"></i> Créer un produit sans lien au stock</a>
-                    </p>
-                </div>
-            <?php endif; ?>
-
-            <?php if (!$show_stock_selection): ?>
         <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
             <div class="message error">
                 <i class="fas fa-exclamation-circle"></i>
@@ -129,36 +69,13 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
             </div>
         <?php endif; ?>
         
-            <form method="POST" action="<?php echo $stock_article_id > 0 ? '?stock_article_id=' . $stock_article_id : ''; ?>" enctype="multipart/form-data" class="form-add">
-                <div class="form-add-block" style="margin-bottom: 24px;">
-                    <h3 class="form-add-section-title"><i class="fas fa-boxes-stacked"></i> Lier à un article en stock</h3>
-                    <?php if ($article): ?>
-                        <input type="hidden" name="stock_article_id" value="<?php echo $stock_article_id; ?>">
-                        <p class="form-help" style="margin: 0; padding: 12px 16px; background: #f0f7f0; border-radius: 8px; border-left: 4px solid #918a44;">
-                            <i class="fas fa-link"></i> Publication selon l'article : <strong><?php echo htmlspecialchars($article['nom']); ?></strong>
-                            <a href="ajouter.php" style="margin-left: 12px; font-size: 13px; color: #918a44;">Changer d'article</a>
-                        </p>
-                    <?php else: ?>
-                    <div class="form-group">
-                        <select id="stock_article_id" name="stock_article_id">
-                            <option value="">Aucun (stock géré manuellement)</option>
-                            <?php foreach ($articles_stock as $a): ?>
-                                <option value="<?php echo (int) $a['id']; ?>">
-                                    <?php echo htmlspecialchars($a['nom']); ?> (<?php echo (int) $a['quantite']; ?> en stock)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <small class="form-help">Si lié, le stock proviendra de l'article et sera décrémenté automatiquement à chaque vente. <a href="../stock/index.php" class="link-accent">Gérer le stock</a></small>
-                    </div>
-                    <?php endif; ?>
-                </div>
-
+            <form method="POST" action="" enctype="multipart/form-data" class="form-add">
             <div class="form-add-block">
                 <h3 class="form-add-section-title"><i class="fas fa-info-circle"></i> Informations générales</h3>
                 <div class="form-group">
                     <label for="nom">Nom du produit <span class="required">*</span></label>
                     <input type="text" id="nom" name="nom" required placeholder="Ex: Miel naturel pur"
-                            value="<?php echo isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : ($article ? htmlspecialchars($article['nom']) : ''); ?>">
+                            value="<?php echo isset($_POST['nom']) ? htmlspecialchars($_POST['nom']) : ''; ?>">
                 </div>
 
                 <div class="form-group">
@@ -167,21 +84,14 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
                             rows="4"><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
                 </div>
 
-                    <?php if ($article): ?>
-                        <input type="hidden" name="categorie_id" value="<?php echo (int) $article['categorie_id']; ?>">
-                        <input type="hidden" name="stock" value="<?php echo (int) $article['quantite']; ?>">
-                        <p class="form-help" style="margin: 0; padding: 10px 14px; background: #f0f7f0; border-radius: 8px; border-left: 4px solid #918a44;">
-                            <i class="fas fa-info-circle"></i> Catégorie et stock proviennent de l'article : <strong><?php echo htmlspecialchars($article['categorie_nom'] ?? ''); ?></strong> · Stock : <?php echo (int) $article['quantite']; ?>
-                        </p>
-                    <?php else: ?>
                 <div class="form-group">
                     <label for="categorie_id">Catégorie <span class="required">*</span></label>
                     <select id="categorie_id" name="categorie_id" required>
                         <option value="">Sélectionner une catégorie</option>
                         <?php if ($categories && count($categories) > 0): ?>
-                            <?php foreach ($categories as $categorie): ?>
-                                    <option value="<?php echo $categorie['id']; ?>" <?php echo (isset($_POST['categorie_id']) && $_POST['categorie_id'] == $categorie['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($categorie['nom']); ?>
+                            <?php foreach ($categories as $c): ?>
+                                <option value="<?php echo $c['id']; ?>" <?php echo ((isset($_POST['categorie_id']) && $_POST['categorie_id'] == $c['id']) || ($categorie_id_prefill > 0 && $c['id'] == $categorie_id_prefill)) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($c['nom']); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php else: ?>
@@ -195,11 +105,10 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
                         </small>
                     <?php endif; ?>
                 </div>
-                    <?php endif; ?>
             </div>
 
             <div class="form-add-block">
-                    <h3 class="form-add-section-title"><i class="fas fa-tag"></i> Prix<?php if (!$article): ?> et stock<?php endif; ?></h3>
+                    <h3 class="form-add-section-title"><i class="fas fa-tag"></i> Prix et stock</h3>
                 <div class="form-group-row">
                     <div class="form-group">
                         <label for="prix">Prix (FCFA) <span class="required">*</span></label>
@@ -214,13 +123,11 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
                                value="<?php echo isset($_POST['prix_promotion']) ? htmlspecialchars($_POST['prix_promotion']) : ''; ?>">
                     </div>
 
-                        <?php if (!$article): ?>
                     <div class="form-group">
                         <label for="stock">Stock <span class="required">*</span></label>
                         <input type="number" id="stock" name="stock" min="0" required placeholder="0"
                                value="<?php echo isset($_POST['stock']) ? htmlspecialchars($_POST['stock']) : '0'; ?>">
-                        </div>
-                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
 
@@ -285,21 +192,15 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
                 </div>
             </div>
 
-            <div class="form-add-block">
-                <h3 class="form-add-section-title"><i class="fas fa-image"></i> Images du produit</h3>
-                    <?php if ($article && !empty($article['image_principale'])): ?>
-                        <p class="form-help" style="margin-bottom: 12px;">
-                            <i class="fas fa-check-circle" style="color: #918a44;"></i> Image de l'article en stock utilisée par défaut. Vous pouvez ajouter d'autres images pour la galerie.
-                        </p>
-                    <?php endif; ?>
+                <div class="form-add-block">
+                    <h3 class="form-add-section-title"><i class="fas fa-image"></i> Images du produit</h3>
                 <div class="form-group">
-                        <label>Images <?php if (!$article): ?><span class="required">*</span><?php endif; ?> <small
+                        <label>Images <span class="required">*</span> <small
                                 style="font-weight: normal; color: #666;">(1ère = principale, les autres pour la
                                 galerie)</small></label>
                         <div class="file-input-wrapper file-input-single"
                             onclick="document.getElementById('images_produit').click()">
-                            <input type="file" id="images_produit" name="images_produit[]" accept="image/*" multiple
-                                <?php if (!$article): ?>required<?php endif; ?>
+                            <input type="file" id="images_produit" name="images_produit[]" accept="image/*" multiple required
                                 class="file-input" style="display: none;">
                         <label class="file-input-label" style="cursor: pointer; margin: 0;">
                             <i class="fas fa-cloud-upload-alt"></i>
@@ -354,12 +255,15 @@ $articles_stock = $show_stock_selection ? search_stock_articles($recherche_stock
 
             <div class="form-add-actions">
                 <button type="submit" class="btn-primary btn-submit-large">
-                        <i class="fas fa-upload"></i> Publier le produit
+                        <i class="fas fa-plus"></i> Ajouter le produit
                 </button>
-                <a href="index.php" class="btn-cancel">Annuler</a>
+                <?php if ($categorie_id_prefill > 0): ?>
+                <a href="../categories/produits.php?id=<?php echo $categorie_id_prefill; ?>" class="btn-cancel">Annuler</a>
+                <?php else: ?>
+                <a href="../stock/index.php" class="btn-cancel">Annuler</a>
+                <?php endif; ?>
             </div>
         </form>
-            <?php endif; ?>
     </div>
     </section>
 

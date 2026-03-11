@@ -16,9 +16,9 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 $toutes_commandes = get_all_commandes();
 
-// Filtrer pour ne garder que les commandes avec le statut "livree"
+// Filtrer pour ne garder que les commandes avec le statut "livree" ou "paye"
 $commandes_livrees = array_filter($toutes_commandes, function($commande) {
-    return $commande['statut'] === 'livree';
+    return $commande['statut'] === 'livree' || $commande['statut'] === 'paye';
 });
 
 // Par défaut : afficher uniquement les livraisons du jour. Option pour inclure les jours précédents
@@ -34,14 +34,15 @@ if (!$jours_precedents) {
 
 // Statistiques
 $total_commandes = count_commandes_by_statut();
-$livrees = count_commandes_by_statut('livree');
+$livrees = count_commandes_by_statut('livree') + count_commandes_by_statut('paye');
 
 // Comptabilité : montant total des commandes livrées
-$montant_total_livrees = get_montant_total_commandes('livree');
+$montant_total_livrees = get_montant_total_commandes('livree') + get_montant_total_commandes('paye');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commandes Livrées - Administration</title>
@@ -128,8 +129,8 @@ $montant_total_livrees = get_montant_total_commandes('livree');
                                 </p>
                                 <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
                             </div>
-                            <span class="commande-statut statut-livree">
-                                <i class="fas fa-check-circle"></i> Reçu
+                            <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
+                                <?php echo $commande['statut'] === 'paye' ? '<i class="fas fa-money-bill-wave"></i> Payée' : '<i class="fas fa-check-circle"></i> Reçu'; ?>
                             </span>
                         </div>
                         <div class="commande-details">

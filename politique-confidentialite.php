@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
 $seo_title = 'Politique de Confidentialité - Sugar Paper';
-$seo_description = 'Politique de confidentialité et protection des données personnelles de Sugar Paper. Vos informations sont sécurisées.';
+$seo_description = 'Politique de confidentialité et protection des données personnelles de Sugar Paper, boutique de décoration pour gâteaux. Vos informations sont sécurisées.';
 $seo_canonical = $base . '/politique-confidentialite.php';
 ?>
 <!DOCTYPE html>

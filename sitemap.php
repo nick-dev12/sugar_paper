@@ -2,18 +2,19 @@
 /**
  * Sitemap XML pour le référencement
  * Accessible via /sitemap.php ou /sitemap.xml (avec rewrite)
+ * Catégories exclues : les IDs peuvent changer. Produits et pages statiques uniquement.
  */
 header('Content-Type: application/xml; charset=utf-8');
 
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/models/model_produits.php';
-require_once __DIR__ . '/models/model_categories.php';
 
 $base = get_site_base_url();
+$logo_url = $base . '/image/sugar_paper.jpg';
 
-// Pages statiques
+// Pages statiques (logo inclus pour la page d'accueil)
 $static_pages = [
-    ['loc' => '/', 'priority' => '1.0', 'changefreq' => 'daily'],
+    ['loc' => '/', 'priority' => '1.0', 'changefreq' => 'daily', 'image' => $logo_url, 'image_title' => 'Sugar Paper - Décoration de gâteaux personnalisée'],
     ['loc' => '/contact.php', 'priority' => '0.8', 'changefreq' => 'monthly'],
     ['loc' => '/produits.php', 'priority' => '0.9', 'changefreq' => 'daily'],
     ['loc' => '/nouveautes.php', 'priority' => '0.9', 'changefreq' => 'daily'],
@@ -23,21 +24,7 @@ $static_pages = [
     ['loc' => '/conditions-utilisation.php', 'priority' => '0.4', 'changefreq' => 'yearly'],
 ];
 
-// Catégories
-$categories = get_all_categories();
-$category_pages = [];
-foreach ($categories as $cat) {
-    if (!empty($cat['nom'])) {
-        $category_pages[] = [
-            'loc' => '/categorie.php?id=' . (int)$cat['id'],
-            'priority' => '0.85',
-            'changefreq' => 'weekly',
-            'lastmod' => isset($cat['date_modification']) ? $cat['date_modification'] : null
-        ];
-    }
-}
-
-// Produits actifs
+// Produits actifs (catégories retirées : IDs peuvent changer)
 $produits = get_all_produits('actif');
 $product_pages = [];
 foreach ($produits as $p) {
@@ -49,14 +36,12 @@ foreach ($produits as $p) {
     ];
 }
 
-$urls = array_merge($static_pages, $category_pages, $product_pages);
+$urls = array_merge($static_pages, $product_pages);
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 ?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 <?php foreach ($urls as $u):
     $loc = $base . $u['loc'];
     $lastmod = '';
@@ -71,6 +56,14 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         <lastmod><?php echo $lastmod; ?></lastmod>
         <changefreq><?php echo htmlspecialchars($u['changefreq'] ?? 'weekly'); ?></changefreq>
         <priority><?php echo htmlspecialchars($u['priority'] ?? '0.5'); ?></priority>
+        <?php if (!empty($u['image'])): ?>
+        <image:image>
+            <image:loc><?php echo htmlspecialchars($u['image']); ?></image:loc>
+            <?php if (!empty($u['image_title'])): ?>
+            <image:title><?php echo htmlspecialchars($u['image_title']); ?></image:title>
+            <?php endif; ?>
+        </image:image>
+        <?php endif; ?>
     </url>
 <?php endforeach; ?>
 </urlset>

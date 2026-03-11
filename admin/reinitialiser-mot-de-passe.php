@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
 <html lang="fr">
 
 <head>
+    <?php include __DIR__ . '/../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Réinitialiser le mot de passe - Admin Sugar Paper</title>

@@ -44,6 +44,7 @@ try {
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <title>Migration produits</title>
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>

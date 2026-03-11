@@ -24,6 +24,7 @@ $result = process_forgot_password();
 <html lang="fr">
 
 <head>
+    <?php include __DIR__ . '/../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mot de passe oublié - Admin Sugar Paper</title>

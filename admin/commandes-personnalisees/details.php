@@ -58,6 +58,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commande personnalisée #<?php echo $cp['id']; ?> - Administration</title>

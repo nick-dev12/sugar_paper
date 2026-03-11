@@ -24,9 +24,9 @@ $commande_manuelle_post = $_SESSION['commande_manuelle_post'] ?? null;
 if (isset($_SESSION['commande_manuelle_erreur'])) unset($_SESSION['commande_manuelle_erreur']);
 if (isset($_SESSION['commande_manuelle_post'])) unset($_SESSION['commande_manuelle_post']);
 
-// Filtrer pour exclure les commandes avec le statut "livree" et "annulee" (commandes non traitées)
+// Filtrer pour exclure les commandes avec le statut "livree", "paye" et "annulee" (commandes non traitées)
 $commandes = array_filter($toutes_commandes, function($commande) {
-    return $commande['statut'] !== 'livree' && $commande['statut'] !== 'annulee';
+    return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
 });
 
 // Par défaut : afficher uniquement les commandes du jour. Option pour inclure les jours précédents
@@ -43,7 +43,7 @@ if (!$jours_precedents) {
 $total_commandes = count_commandes_by_statut();
 $en_attente = count_commandes_by_statut('en_attente');
 $confirmees = count_commandes_by_statut('confirmee');
-$livrees = count_commandes_by_statut('livree');
+$livrees = count_commandes_by_statut('livree') + count_commandes_by_statut('paye');
 $prise_en_charge = count_commandes_by_statut('prise_en_charge');
 $livraison_en_cours = count_commandes_by_statut('livraison_en_cours');
 
@@ -53,6 +53,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Commandes Non Traitées - Administration</title>
@@ -212,29 +213,29 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                             <div class="form-section-card">
                                 <div class="form-section-header">
                                     <i class="fas fa-search"></i>
-                                    <h3>Rechercher un article en stock</h3>
+                                    <h3>Rechercher un produit</h3>
                                 </div>
                                 <div class="form-group search-group">
                                     <div class="search-input-wrapper">
-                                        <input type="text" id="search-produit" name="search_produit" placeholder="Tapez le nom du produit, catégorie ou article..." autocomplete="off">
+                                        <input type="text" id="search-produit" name="search_produit" placeholder="Tapez le nom du produit ou de la catégorie..." autocomplete="off">
                                         <i class="fas fa-search search-icon"></i>
                                         <span class="search-loading" id="search-loading" aria-hidden="true"><i class="fas fa-spinner fa-spin"></i></span>
                                     </div>
                                     <div id="search-produit-results" class="search-produit-results" role="listbox" aria-hidden="true"></div>
                                 </div>
-                                <p class="form-hint"><i class="fas fa-info-circle"></i> Tapez au moins 1 caractère ou laissez vide pour afficher tous les articles disponibles.</p>
+                                <p class="form-hint"><i class="fas fa-info-circle"></i> Tapez au moins 1 caractère ou laissez vide pour afficher tous les produits en stock.</p>
                             </div>
 
                             <div class="form-section-card">
                                 <div class="form-section-header">
                                     <i class="fas fa-shopping-cart"></i>
-                                    <h3>Articles de la commande</h3>
-                                    <span class="lignes-count" id="lignes-count">0 article(s)</span>
+                                    <h3>Produits de la commande</h3>
+                                    <span class="lignes-count" id="lignes-count">0 produit(s)</span>
                                 </div>
                                 <div id="lignes-commande" class="lignes-commande">
                                     <div class="lignes-empty" id="lignes-empty">
                                         <i class="fas fa-inbox"></i>
-                                        <p>Aucun article ajouté. Utilisez la recherche ci-dessus.</p>
+                                        <p>Aucun produit ajouté. Utilisez la recherche ci-dessus.</p>
                                     </div>
                                 </div>
                             </div>
@@ -378,7 +379,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             var items = lignesContainer ? lignesContainer.querySelectorAll('.ligne-commande-item') : [];
             var n = items.length;
             if (lignesEmpty) lignesEmpty.style.display = n === 0 ? 'flex' : 'none';
-            if (lignesCount) lignesCount.textContent = n + ' article(s)';
+            if (lignesCount) lignesCount.textContent = n + ' produit(s)';
         }
 
         function addLigne(produit) {
