@@ -50,6 +50,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_refusee) {
             header('Location: details.php?id=' . $cp_id);
             exit;
         }
+    } elseif (isset($_POST['enregistrer_prix'])) {
+        $prix_raw = isset($_POST['prix']) ? trim($_POST['prix']) : '';
+        $prix = $prix_raw !== '' ? (float) str_replace([' ', ','], ['', '.'], $prix_raw) : null;
+        if ($prix !== null && $prix < 0) {
+            $_SESSION['error_message'] = 'Le prix ne peut pas être négatif.';
+        } elseif (update_commande_personnalisee_prix($cp_id, $prix)) {
+            $_SESSION['success_message'] = $prix !== null ? 'Prix enregistré : ' . number_format($prix, 0, ',', ' ') . ' CFA.' : 'Prix supprimé.';
+            header('Location: details.php?id=' . $cp_id);
+            exit;
+        } else {
+            $_SESSION['error_message'] = 'Erreur lors de l\'enregistrement du prix. Vérifiez que la migration a été exécutée.';
+        }
     }
 }
 
@@ -107,6 +119,12 @@ $cp = get_commande_personnalisee_by_id($cp_id);
         <div class="message success">
             <i class="fas fa-check-circle"></i>
             <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
+        </div>
+    <?php endif; ?>
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="message error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></span>
         </div>
     <?php endif; ?>
 
@@ -176,6 +194,35 @@ $cp = get_commande_personnalisee_by_id($cp_id);
             </div>
         </div>
     </div>
+
+    <section class="cp-prix-section">
+        <h2><i class="fas fa-tag"></i> Prix de la commande</h2>
+        <div class="cp-prix-form-wrap">
+            <?php
+            $prix_actuel = isset($cp['prix']) && $cp['prix'] !== null && $cp['prix'] !== '' ? (float) $cp['prix'] : null;
+            $prix_aff = $prix_actuel !== null ? number_format($prix_actuel, 0, ',', ' ') . ' CFA' : 'Non défini';
+            ?>
+            <div class="cp-prix-current">
+                <label>Prix actuel</label>
+                <div class="value"><?php echo htmlspecialchars($prix_aff); ?></div>
+            </div>
+            <form method="POST" action="" class="cp-prix-form">
+                <div class="form-group">
+                    <label for="prix">Définir ou modifier le prix (CFA)</label>
+                    <input type="text" id="prix" name="prix" placeholder="Ex: 15000" value="<?php echo $prix_actuel !== null ? (int) $prix_actuel : ''; ?>" inputmode="numeric" pattern="[0-9\s,]*">
+                </div>
+                <div class="cp-prix-buttons">
+                    <button type="submit" name="enregistrer_prix" class="cp-btn-submit">
+                        <i class="fas fa-save"></i> <?php echo $prix_actuel !== null ? 'Modifier le prix' : 'Enregistrer le prix'; ?>
+                    </button>
+                </div>
+            </form>
+            <p class="cp-prix-hint">
+                <i class="fas fa-info-circle"></i>
+                Le prix défini ici sera utilisé dans la facture. Si une facture existe déjà, elle sera mise à jour automatiquement. Laissez le champ vide et enregistrez pour supprimer le prix.
+            </p>
+        </div>
+    </section>
 
     <section class="cp-traitement-section">
         <h2><i class="fas fa-cog"></i> Traitement</h2>

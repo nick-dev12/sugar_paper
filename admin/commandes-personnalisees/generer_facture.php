@@ -29,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'])) {
     $montant = (float) str_replace([' ', ','], ['', '.'], $_POST['montant']);
 } elseif (isset($_GET['montant'])) {
     $montant = (float) str_replace([' ', ','], ['', '.'], $_GET['montant']);
+} elseif (isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0) {
+    $montant = (float) $cp['prix'];
 }
 
 $existant = get_facture_personnalisee_by_cp($cp_id);

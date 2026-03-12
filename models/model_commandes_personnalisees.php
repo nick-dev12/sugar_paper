@@ -164,6 +164,41 @@ function update_commande_personnalisee_statut($id, $statut, $notes_admin = null)
 }
 
 /**
+ * Met à jour le prix d'une commande personnalisée
+ * Synchronise aussi le montant de la facture si elle existe
+ * @param int $id
+ * @param float|null $prix Prix en CFA (null pour effacer)
+ * @return bool
+ */
+function update_commande_personnalisee_prix($id, $prix) {
+    global $db;
+    if (!$db) return false;
+
+    try {
+        $stmt = $db->prepare("
+            UPDATE commandes_personnalisees 
+            SET prix = :prix, date_modification = NOW()
+            WHERE id = :id
+        ");
+        $ok = $stmt->execute([
+            'id' => $id,
+            'prix' => $prix !== null && $prix !== '' ? (float) $prix : null
+        ]);
+        if (!$ok) return false;
+
+        require_once __DIR__ . '/model_factures_personnalisees.php';
+        $facture = get_facture_personnalisee_by_cp($id);
+        if ($facture) {
+            $montant = ($prix !== null && $prix !== '') ? (float) $prix : 0;
+            update_facture_personnalisee_montant($facture['id'], $montant);
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Met à jour les notes admin
  * @param int $id
  * @param string $notes_admin

@@ -158,6 +158,26 @@ function get_facture_personnalisee_by_token($token) {
 }
 
 /**
+ * Met à jour le montant total d'une facture personnalisée
+ * @param int $facture_id
+ * @param float $montant_total
+ * @return bool
+ */
+function update_facture_personnalisee_montant($facture_id, $montant_total) {
+    global $db;
+    if (!$db || (int) $facture_id <= 0) return false;
+    try {
+        $stmt = $db->prepare("UPDATE factures_personnalisees SET montant_total = :montant WHERE id = :id");
+        return $stmt->execute([
+            'id' => (int) $facture_id,
+            'montant' => (float) $montant_total
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * S'assure qu'une facture personnalisée a un token
  */
 function ensure_facture_personnalisee_token($facture_id) {

@@ -6,8 +6,11 @@
  *   $entreprise_tel1, $entreprise_tel2, $entreprise_site, $entreprise_email,
  *   $is_public, $whatsapp_url
  */
-$montant_aff = ($facture['montant_total'] ?? 0) > 0
-    ? number_format($facture['montant_total'], 0, ',', ' ') . ' CFA'
+$montant_facture = (float) ($facture['montant_total'] ?? 0);
+$montant_cp = isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0 ? (float) $cp['prix'] : 0;
+$montant_affiche = $montant_facture > 0 ? $montant_facture : $montant_cp;
+$montant_aff = $montant_affiche > 0
+    ? number_format($montant_affiche, 0, ',', ' ') . ' CFA'
     : 'À définir';
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - Sugar Paper';
