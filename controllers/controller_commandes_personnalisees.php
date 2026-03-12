@@ -150,6 +150,7 @@ function process_commande_personnalisee() {
     $type_produit = isset($_POST['type_produit']) ? trim($_POST['type_produit']) : '';
     $quantite = isset($_POST['quantite']) ? trim($_POST['quantite']) : '';
     $date_souhaitee = isset($_POST['date_souhaitee']) ? trim($_POST['date_souhaitee']) : '';
+    $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : null;
     $image_reference = null;
     $image_file = $_FILES['image_reference'] ?? null;
 
@@ -217,7 +218,8 @@ function process_commande_personnalisee() {
             'image_reference' => $image_reference,
             'type_produit' => $type_produit ?: null,
             'quantite' => $quantite ?: null,
-            'date_souhaitee' => $date_souhaitee ?: null
+            'date_souhaitee' => $date_souhaitee ?: null,
+            'zone_livraison_id' => $zone_livraison_id > 0 ? $zone_livraison_id : null
         ];
 
         $id = create_commande_personnalisee($data);

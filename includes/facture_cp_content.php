@@ -6,12 +6,19 @@
  *   $entreprise_tel1, $entreprise_tel2, $entreprise_site, $entreprise_email,
  *   $is_public, $whatsapp_url
  */
+$prix_commande = isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0 ? (float) $cp['prix'] : 0;
+$frais_livraison = isset($cp['zone_prix_livraison']) && (float) $cp['zone_prix_livraison'] > 0 ? (float) $cp['zone_prix_livraison'] : 0;
 $montant_facture = (float) ($facture['montant_total'] ?? 0);
-$montant_cp = isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0 ? (float) $cp['prix'] : 0;
-$montant_affiche = $montant_facture > 0 ? $montant_facture : $montant_cp;
-$montant_aff = $montant_affiche > 0
-    ? number_format($montant_affiche, 0, ',', ' ') . ' CFA'
+$montant_total = $prix_commande + $frais_livraison;
+if ($montant_total <= 0 && $montant_facture > 0) {
+    $montant_total = $montant_facture;
+}
+$montant_aff = $montant_total > 0
+    ? number_format($montant_total, 0, ',', ' ') . ' CFA'
     : 'À définir';
+$prix_commande_aff = $prix_commande > 0 ? number_format($prix_commande, 0, ',', ' ') . ' CFA' : null;
+$frais_livraison_aff = $frais_livraison > 0 ? number_format($frais_livraison, 0, ',', ' ') . ' CFA' : null;
+$zone_libelle = (!empty($cp['zone_ville']) || !empty($cp['zone_quartier'])) ? trim(($cp['zone_ville'] ?? '') . ' - ' . ($cp['zone_quartier'] ?? ''), ' -') : '';
 require_once __DIR__ . '/site_url.php';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - Sugar Paper';
 $facture_og_desc = 'Facture Sugar Paper - Demande personnalisée - Montant : ' . $montant_aff;
@@ -137,6 +144,25 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if ($prix_commande > 0): ?>
+                    <tr>
+                        <td>Demande personnalisée #<?php echo (int) $cp['id']; ?></td>
+                        <td>
+                            <?php if (!empty($cp['type_produit'])): ?>Type: <?php echo htmlspecialchars($cp['type_produit']); ?>. <?php endif; ?>
+                            <?php if (!empty($cp['quantite'])): ?>Quantité: <?php echo htmlspecialchars($cp['quantite']); ?>. <?php endif; ?>
+                            <?php if (!empty($cp['date_souhaitee'])): ?>Date souhaitée: <?php echo date('d/m/Y', strtotime($cp['date_souhaitee'])); ?>.<?php endif; ?>
+                        </td>
+                        <td><?php echo htmlspecialchars($prix_commande_aff); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if ($frais_livraison > 0): ?>
+                    <tr>
+                        <td>Livraison</td>
+                        <td><?php echo $zone_libelle ? htmlspecialchars($zone_libelle) : 'Zone de livraison'; ?></td>
+                        <td><?php echo htmlspecialchars($frais_livraison_aff); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if ($prix_commande <= 0 && $frais_livraison <= 0): ?>
                     <tr>
                         <td>Demande personnalisée #<?php echo (int) $cp['id']; ?></td>
                         <td>
@@ -146,6 +172,7 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                         </td>
                         <td><?php echo htmlspecialchars($montant_aff); ?></td>
                     </tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -156,6 +183,16 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                 <p style="font-size:13px; color:#666;">Devis établi suite à votre demande personnalisée. Contactez-nous pour finaliser.</p>
             </div>
             <div class="facture-summary">
+                <?php if ($prix_commande > 0 && $frais_livraison > 0): ?>
+                <div class="row">
+                    <span>Prix commande</span>
+                    <span><?php echo htmlspecialchars($prix_commande_aff); ?></span>
+                </div>
+                <div class="row">
+                    <span>Frais de livraison</span>
+                    <span><?php echo htmlspecialchars($frais_livraison_aff); ?></span>
+                </div>
+                <?php endif; ?>
                 <div class="row total">
                     <span>TOTAL</span>
                     <span><?php echo htmlspecialchars($montant_aff); ?></span>

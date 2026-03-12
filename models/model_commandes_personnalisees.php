@@ -7,6 +7,24 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Vérifie si la colonne zone_livraison_id existe dans commandes_personnalisees
+ * @return bool
+ */
+function _cp_has_zone_livraison_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db ? $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'zone_livraison_id'") : null;
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+/**
  * Vérifie si la colonne image_reference existe dans commandes_personnalisees
  * @return bool
  */
@@ -36,45 +54,44 @@ function create_commande_personnalisee($data) {
     }
 
     $has_img = _cp_has_image_reference_column();
+    $has_zone = _cp_has_zone_livraison_column();
     $image_ref = $data['image_reference'] ?? null;
+    $zone_id = isset($data['zone_livraison_id']) && (int) $data['zone_livraison_id'] > 0 ? (int) $data['zone_livraison_id'] : null;
+
+    $cols = ['user_id', 'nom', 'prenom', 'email', 'telephone', 'description'];
+    $placeholders = [':user_id', ':nom', ':prenom', ':email', ':telephone', ':description'];
+    $params = [
+        'user_id' => $data['user_id'],
+        'nom' => $data['nom'],
+        'prenom' => $data['prenom'],
+        'email' => $data['email'],
+        'telephone' => $data['telephone'],
+        'description' => $data['description']
+    ];
+
+    if ($has_img) {
+        $cols[] = 'image_reference';
+        $placeholders[] = ':image_reference';
+        $params['image_reference'] = $image_ref;
+    }
+    $cols = array_merge($cols, ['type_produit', 'quantite', 'date_souhaitee']);
+    $placeholders = array_merge($placeholders, [':type_produit', ':quantite', ':date_souhaitee']);
+    $params['type_produit'] = $data['type_produit'] ?? null;
+    $params['quantite'] = $data['quantite'] ?? null;
+    $params['date_souhaitee'] = !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null;
+
+    if ($has_zone) {
+        $cols[] = 'zone_livraison_id';
+        $placeholders[] = ':zone_livraison_id';
+        $params['zone_livraison_id'] = $zone_id;
+    }
 
     try {
-        if ($has_img) {
-            $stmt = $db->prepare("
-                INSERT INTO commandes_personnalisees 
-                (user_id, nom, prenom, email, telephone, description, image_reference, type_produit, quantite, date_souhaitee) 
-                VALUES (:user_id, :nom, :prenom, :email, :telephone, :description, :image_reference, :type_produit, :quantite, :date_souhaitee)
-            ");
-            $stmt->execute([
-                'user_id' => $data['user_id'],
-                'nom' => $data['nom'],
-                'prenom' => $data['prenom'],
-                'email' => $data['email'],
-                'telephone' => $data['telephone'],
-                'description' => $data['description'],
-                'image_reference' => $image_ref,
-                'type_produit' => $data['type_produit'] ?? null,
-                'quantite' => $data['quantite'] ?? null,
-                'date_souhaitee' => !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null
-            ]);
-        } else {
-            $stmt = $db->prepare("
-                INSERT INTO commandes_personnalisees 
-                (user_id, nom, prenom, email, telephone, description, type_produit, quantite, date_souhaitee) 
-                VALUES (:user_id, :nom, :prenom, :email, :telephone, :description, :type_produit, :quantite, :date_souhaitee)
-            ");
-            $stmt->execute([
-                'user_id' => $data['user_id'],
-                'nom' => $data['nom'],
-                'prenom' => $data['prenom'],
-                'email' => $data['email'],
-                'telephone' => $data['telephone'],
-                'description' => $data['description'],
-                'type_produit' => $data['type_produit'] ?? null,
-                'quantite' => $data['quantite'] ?? null,
-                'date_souhaitee' => !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null
-            ]);
-        }
+        $stmt = $db->prepare("
+            INSERT INTO commandes_personnalisees (" . implode(', ', $cols) . ")
+            VALUES (" . implode(', ', $placeholders) . ")
+        ");
+        $stmt->execute($params);
         return $db->lastInsertId();
     } catch (PDOException $e) {
         return false;
@@ -121,14 +138,35 @@ function get_commande_personnalisee_by_id($id) {
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            SELECT cp.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email, u.telephone as user_telephone
-            FROM commandes_personnalisees cp
-            LEFT JOIN users u ON cp.user_id = u.id
-            WHERE cp.id = :id
-        ");
+        $has_zone = _cp_has_zone_livraison_column();
+        if ($has_zone) {
+            $stmt = $db->prepare("
+                SELECT cp.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email, u.telephone as user_telephone,
+                       zl.ville as zone_ville, zl.quartier as zone_quartier, zl.prix_livraison as zone_prix_livraison
+                FROM commandes_personnalisees cp
+                LEFT JOIN users u ON cp.user_id = u.id
+                LEFT JOIN zones_livraison zl ON cp.zone_livraison_id = zl.id
+                WHERE cp.id = :id
+            ");
+        } else {
+            $stmt = $db->prepare("
+                SELECT cp.*, u.nom as user_nom, u.prenom as user_prenom, u.email as user_email, u.telephone as user_telephone
+                FROM commandes_personnalisees cp
+                LEFT JOIN users u ON cp.user_id = u.id
+                WHERE cp.id = :id
+            ");
+        }
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && $has_zone && !empty($row['zone_livraison_id']) && empty($row['zone_ville'])) {
+            require_once __DIR__ . '/model_zones_livraison.php';
+            $zone = get_zone_livraison_by_id($row['zone_livraison_id']);
+            if ($zone) {
+                $row['zone_ville'] = $zone['ville'];
+                $row['zone_quartier'] = $zone['quartier'];
+                $row['zone_prix_livraison'] = $zone['prix_livraison'];
+            }
+        }
         return $row ?: false;
     } catch (PDOException $e) {
         return false;
@@ -189,8 +227,11 @@ function update_commande_personnalisee_prix($id, $prix) {
         require_once __DIR__ . '/model_factures_personnalisees.php';
         $facture = get_facture_personnalisee_by_cp($id);
         if ($facture) {
-            $montant = ($prix !== null && $prix !== '') ? (float) $prix : 0;
-            update_facture_personnalisee_montant($facture['id'], $montant);
+            $cp_data = get_commande_personnalisee_by_id($id);
+            $prix_cp = ($prix !== null && $prix !== '') ? (float) $prix : 0;
+            $frais_liv = isset($cp_data['zone_prix_livraison']) && (float) $cp_data['zone_prix_livraison'] > 0 ? (float) $cp_data['zone_prix_livraison'] : 0;
+            $montant_total = $prix_cp + $frais_liv;
+            update_facture_personnalisee_montant($facture['id'], $montant_total);
         }
         return true;
     } catch (PDOException $e) {

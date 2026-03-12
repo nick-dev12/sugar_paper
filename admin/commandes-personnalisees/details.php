@@ -173,6 +173,25 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <div class="value"><?php echo date('d/m/Y', strtotime($cp['date_souhaitee'])); ?></div>
             </div>
             <?php endif; ?>
+            <?php if (!empty($cp['zone_livraison_id']) && (!empty($cp['zone_ville']) || !empty($cp['zone_quartier']))): ?>
+            <?php
+            $zone_libelle = trim(($cp['zone_ville'] ?? '') . ' - ' . ($cp['zone_quartier'] ?? ''), ' -');
+            ?>
+            <div class="cp-detail-item">
+                <label>Zone de livraison</label>
+                <div class="value">
+                    <?php echo htmlspecialchars($zone_libelle); ?>
+                    <?php if (isset($cp['zone_prix_livraison']) && (float) $cp['zone_prix_livraison'] > 0): ?>
+                        <span class="zone-prix">(<?php echo number_format($cp['zone_prix_livraison'], 0, ',', ' '); ?> FCFA)</span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php elseif (!empty($cp['zone_livraison_id'])): ?>
+            <div class="cp-detail-item">
+                <label>Zone de livraison</label>
+                <div class="value">Zone #<?php echo (int) $cp['zone_livraison_id']; ?></div>
+            </div>
+            <?php endif; ?>
             <?php if (!empty($cp['image_reference'])): ?>
             <div class="cp-detail-item">
                 <label>Image de référence</label>

@@ -7,7 +7,9 @@
 session_start();
 
 require_once __DIR__ . '/controllers/controller_commandes_personnalisees.php';
+require_once __DIR__ . '/models/model_zones_livraison.php';
 $result = process_commande_personnalisee();
+$zones_livraison = get_all_zones_livraison('actif');
 
 if ($result['success']) {
     $_SESSION['commande_perso_success'] = $result['message'];
@@ -191,9 +193,23 @@ $seo_canonical = $base . '/commande-personnalisee.php';
                     <input type="text" id="quantite" name="quantite" value="<?php echo htmlspecialchars($_POST['quantite'] ?? ''); ?>" placeholder="Ex: 5 kg, 10 bouteilles...">
                 </div>
             </div>
-            <div class="form-group">
-                <label for="date_souhaitee"><i class="fas fa-calendar"></i> Date souhaitée (optionnel)</label>
-                <input type="date" id="date_souhaitee" name="date_souhaitee" value="<?php echo htmlspecialchars($_POST['date_souhaitee'] ?? ''); ?>">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="date_souhaitee"><i class="fas fa-calendar"></i> Date souhaitée (optionnel)</label>
+                    <input type="date" id="date_souhaitee" name="date_souhaitee" value="<?php echo htmlspecialchars($_POST['date_souhaitee'] ?? ''); ?>">
+                </div>
+                <div class="form-group">
+                    <label for="zone_livraison_id"><i class="fas fa-map-marker-alt"></i> Zone de livraison<?php echo !empty($zones_livraison) ? ' *' : ''; ?></label>
+                    <select id="zone_livraison_id" name="zone_livraison_id"<?php echo !empty($zones_livraison) ? ' required' : ''; ?>>
+                        <option value="">— Choisir une zone —</option>
+                        <?php foreach ($zones_livraison as $z): ?>
+                        <option value="<?php echo (int) $z['id']; ?>" data-prix="<?php echo (float) $z['prix_livraison']; ?>"
+                            <?php echo (isset($_POST['zone_livraison_id']) && (int)$_POST['zone_livraison_id'] === (int)$z['id']) ? ' selected' : ''; ?>>
+                            <?php echo htmlspecialchars($z['ville'] . ' - ' . $z['quartier']); ?> (<?php echo number_format($z['prix_livraison'], 0, ',', ' '); ?> FCFA)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
             <div class="form-group">
                 <label for="image_reference"><i class="fas fa-image"></i> Image de référence (optionnel)</label>

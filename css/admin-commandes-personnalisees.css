@@ -344,6 +344,11 @@
     opacity: 0.9;
 }
 
+.cp-detail-item .value .zone-prix {
+    font-weight: 600;
+    color: var(--couleur-dominante);
+}
+
 .cp-detail-item .value {
     font-size: 15px;
     color: var(--titres);

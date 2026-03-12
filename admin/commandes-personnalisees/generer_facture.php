@@ -29,8 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['montant'])) {
     $montant = (float) str_replace([' ', ','], ['', '.'], $_POST['montant']);
 } elseif (isset($_GET['montant'])) {
     $montant = (float) str_replace([' ', ','], ['', '.'], $_GET['montant']);
-} elseif (isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0) {
-    $montant = (float) $cp['prix'];
+} else {
+    $prix_cp = isset($cp['prix']) && $cp['prix'] !== null && (float) $cp['prix'] > 0 ? (float) $cp['prix'] : 0;
+    $frais_liv = isset($cp['zone_prix_livraison']) && (float) $cp['zone_prix_livraison'] > 0 ? (float) $cp['zone_prix_livraison'] : 0;
+    $montant = $prix_cp + $frais_liv;
 }
 
 $existant = get_facture_personnalisee_by_cp($cp_id);
