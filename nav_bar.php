@@ -42,6 +42,7 @@ if (isset($_SESSION['user_id'])) {
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
         border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        overflow: visible;
     }
 
     .section1 {
@@ -79,7 +80,7 @@ if (isset($_SESSION['user_id'])) {
         order: 4;
     }
 
-    /* Barre de recherche avec filtres */
+    /* Barre de recherche */
     .nav-search-wrapper {
         display: flex;
         flex: 1;
@@ -87,6 +88,8 @@ if (isset($_SESSION['user_id'])) {
         margin: 0 20px;
         position: relative;
         z-index: 9999;
+        align-items: center;
+        overflow: visible;
     }
 
     .nav-search-form {
@@ -98,130 +101,84 @@ if (isset($_SESSION['user_id'])) {
         box-shadow: 0 2px 12px rgba(229, 72, 138, 0.15);
     }
 
-    .nav-search-filters-btn {
+    /* GTranslate — sélecteur de langue (https://gtranslate.io) */
+    .nav-gtranslate-wrapper {
         margin-left: 8px;
-        padding: 12px 14px;
-        background: rgba(229, 72, 138, 0.15);
-        border: 2px solid rgba(229, 72, 138, 0.3);
-        border-radius: 12px;
-        color: var(--couleur-dominante);
-        cursor: pointer;
-        transition: all 0.3s;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 10000;
         display: flex;
         align-items: center;
-        justify-content: center;
+        align-self: center;
+        height: auto;
     }
 
-    .nav-search-filters-btn:hover,
-    .nav-search-filters-btn.active {
-        background: var(--couleur-dominante);
-        color: #fff;
-        border-color: var(--couleur-dominante);
+    .nav-gtranslate-wrapper #gt_float_wrapper {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        z-index: 10000 !important;
+        height: auto !important;
+        display: block !important;
     }
 
-    .nav-search-filters-panel {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        margin-top: 10px;
-        background: #fff;
-        border-radius: 14px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        padding: 20px;
-        z-index: 10001;
-        display: none;
-        border: 1px solid rgba(229, 72, 138, 0.2);
+    .nav-gtranslate-wrapper .gt_float_switcher {
+        position: relative !important;
+        border-radius: 12px !important;
+        border: 2px solid rgba(229, 72, 138, 0.3) !important;
+        box-shadow: 0 2px 12px rgba(229, 72, 138, 0.12) !important;
+        font-size: 14px !important;
+        line-height: 1.3 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+        width: max-content;
+        max-width: 100%;
     }
 
-    .nav-search-filters-panel.show {
-        display: block;
+    .nav-gtranslate-wrapper .gt_float_switcher .gt-selected .gt-current-lang {
+        padding: 8px 12px !important;
     }
 
-    .nav-search-filters-panel h4 {
-        font-size: 14px;
-        color: var(--titres);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    .nav-gtranslate-wrapper .gt_float_switcher img {
+        width: 28px !important;
+        max-height: 22px !important;
+        object-fit: contain;
     }
 
-    .nav-search-filters-panel h4 i {
-        color: var(--couleur-dominante);
+    /* Menu langues : hors flux pour ne pas étirer le header (flex stretch) */
+    .nav-gtranslate-wrapper .gt_float_switcher .gt_options {
+        position: absolute !important;
+        left: 0 !important;
+        top: calc(100% + 4px) !important;
+        right: auto !important;
+        z-index: 10002 !important;
+        min-width: 200px;
+        max-height: min(70vh, 320px) !important;
+        overflow-y: auto !important;
+        background: #fff !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18) !important;
+        border: 1px solid rgba(229, 72, 138, 0.25) !important;
+        margin: 0 !important;
+        transform: none !important;
+        float: none !important;
     }
 
-    .nav-search-filters-row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-bottom: 15px;
+    .nav-gtranslate-wrapper .gt_float_switcher .gt_options.gt-open {
+        transform: none !important;
     }
 
-    .nav-search-filters-row:last-of-type {
-        margin-bottom: 0;
+    .nav-gtranslate-wrapper .gt_float_switcher .gt_options a {
+        color: #333 !important;
+        white-space: nowrap;
     }
 
-    .nav-search-filters-group {
-        flex: 1;
-        min-width: 120px;
-    }
-
-    .nav-search-filters-group label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--texte-fonce);
-        margin-bottom: 6px;
-    }
-
-    .nav-search-filters-group input,
-    .nav-search-filters-group select {
-        width: 100%;
-        padding: 10px 12px;
-        border: 2px solid rgba(229, 72, 138, 0.2);
-        border-radius: 8px;
-        font-size: 14px;
-    }
-
-    .nav-search-filters-group input:focus,
-    .nav-search-filters-group select:focus {
-        outline: none;
-        border-color: var(--couleur-dominante);
-    }
-
-    .nav-search-filters-actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 15px;
-    }
-
-    .nav-search-filters-actions button {
-        padding: 10px 18px;
-        border: none;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .nav-search-filters-actions .btn-apply {
-        background: var(--couleur-dominante);
-        color: #fff;
-    }
-
-    .nav-search-filters-actions .btn-apply:hover {
-        background: rgba(229, 72, 138, 0.9);
-    }
-
-    .nav-search-filters-actions .btn-reset {
-        background: #ffffff;
-        color: var(--texte-fonce);
-    }
-
-    .nav-search-filters-actions .btn-reset:hover {
-        background: #e5dcdc;
+    .nav-gtranslate-wrapper .gt_float_switcher .gt_options a:hover {
+        color: #fff !important;
     }
 
     .nav-search-btn {
@@ -360,8 +317,8 @@ if (isset($_SESSION['user_id'])) {
             max-width: 320px;
         }
 
-        .nav-search-filters-btn {
-            padding: 10px 12px;
+        .nav-gtranslate-wrapper .gt_float_switcher .gt-selected .gt-current-lang {
+            padding: 6px 10px !important;
         }
 
         .nav-search-input {
@@ -467,15 +424,8 @@ if (isset($_SESSION['user_id'])) {
             font-size: 14px;
         }
 
-        .nav-search-filters-btn {
-            padding: 10px 12px;
-            flex-shrink: 0;
-        }
-
-        .nav-search-filters-panel {
-            left: 0;
-            right: 0;
-            padding: 15px;
+        .nav-gtranslate-wrapper {
+            margin-left: 6px;
         }
     }
 
@@ -514,10 +464,6 @@ if (isset($_SESSION['user_id'])) {
         .nav-search-input {
             padding: 8px 12px;
             font-size: 13px;
-        }
-
-        .nav-search-filters-btn {
-            padding: 8px 10px;
         }
     }
 </style>
@@ -578,101 +524,13 @@ if (isset($_SESSION['user_id'])) {
             <input type="hidden" name="tri" id="nav-tri"
                 value="<?php echo isset($_GET['tri']) ? htmlspecialchars($_GET['tri']) : ''; ?>">
         </form>
-        <button type="button" class="nav-search-filters-btn" id="nav-filters-toggle" aria-label="Filtres"
-            title="Filtres de recherche">
-            <i class="fa-solid fa-sliders"></i>
-        </button>
-        <div class="nav-search-filters-panel" id="nav-filters-panel">
-            <h4><i class="fa-solid fa-filter"></i> Filtres</h4>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group">
-                    <label for="filter-prix-min">Prix min (FCFA)</label>
-                    <input type="number" id="filter-prix-min" name="prix_min" placeholder="0" min="0" step="100"
-                        value="<?php echo isset($_GET['prix_min']) ? htmlspecialchars($_GET['prix_min']) : ''; ?>">
-                </div>
-                <div class="nav-search-filters-group">
-                    <label for="filter-prix-max">Prix max (FCFA)</label>
-                    <input type="number" id="filter-prix-max" name="prix_max" placeholder="Aucune limite" min="0"
-                        step="100"
-                        value="<?php echo isset($_GET['prix_max']) ? htmlspecialchars($_GET['prix_max']) : ''; ?>">
-                </div>
-            </div>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group" style="flex: 1;">
-                    <label for="filter-categorie">Catégorie</label>
-                    <select id="filter-categorie" name="categorie">
-                        <option value="">Toutes les catégories</option>
-                        <?php if (!empty($categories_menu)): ?>
-                            <?php foreach ($categories_menu as $cat): ?>
-                                <option value="<?php echo $cat['id']; ?>" <?php echo (isset($_GET['categorie']) && $_GET['categorie'] == $cat['id']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($cat['nom']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
-                </div>
-            </div>
-            <div class="nav-search-filters-row">
-                <div class="nav-search-filters-group" style="flex: 1;">
-                    <label for="filter-tri">Trier par</label>
-                    <select id="filter-tri" name="tri">
-                        <option value="">Plus récents</option>
-                        <option value="prix_asc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_asc') ? 'selected' : ''; ?>>Prix
-                            croissant</option>
-                        <option value="prix_desc" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'prix_desc') ? 'selected' : ''; ?>>Prix
-                            décroissant</option>
-                        <option value="nom" <?php echo (isset($_GET['tri']) && $_GET['tri'] == 'nom') ? 'selected' : ''; ?>>Nom A-Z
-                        </option>
-                    </select>
-                </div>
-            </div>
-            <div class="nav-search-filters-actions">
-                <button type="button" class="btn-apply" onclick="appliquerFiltres()"><i class="fa-solid fa-check"></i>
-                    Appliquer</button>
-                <button type="button" class="btn-reset" onclick="reinitialiserFiltres()"><i
-                        class="fa-solid fa-rotate-left"></i> Réinitialiser</button>
-            </div>
-        </div>
+        <?php
+        $gtranslate_path = __DIR__ . '/includes/gtranslate.php';
+        if (is_file($gtranslate_path)) {
+            include $gtranslate_path;
+        }
+        ?>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var toggle = document.getElementById('nav-filters-toggle');
-            var panel = document.getElementById('nav-filters-panel');
-            if (toggle && panel) {
-                toggle.addEventListener('click', function () {
-                    panel.classList.toggle('show');
-                    toggle.classList.toggle('active', panel.classList.contains('show'));
-                });
-                document.addEventListener('click', function (e) {
-                    if (!toggle.contains(e.target) && !panel.contains(e.target)) {
-                        panel.classList.remove('show');
-                        toggle.classList.remove('active');
-                    }
-                });
-            }
-        });
-
-        function appliquerFiltres() {
-            document.getElementById('nav-prix-min').value = document.getElementById('filter-prix-min').value;
-            document.getElementById('nav-prix-max').value = document.getElementById('filter-prix-max').value;
-            document.getElementById('nav-categorie').value = document.getElementById('filter-categorie').value;
-            document.getElementById('nav-tri').value = document.getElementById('filter-tri').value;
-            document.getElementById('nav-search-form').submit();
-        }
-
-        function reinitialiserFiltres() {
-            document.getElementById('filter-prix-min').value = '';
-            document.getElementById('filter-prix-max').value = '';
-            document.getElementById('filter-categorie').value = '';
-            document.getElementById('filter-tri').value = '';
-            document.getElementById('nav-prix-min').value = '';
-            document.getElementById('nav-prix-max').value = '';
-            document.getElementById('nav-categorie').value = '';
-            document.getElementById('nav-tri').value = '';
-            document.getElementById('nav-search').value = '';
-            document.getElementById('nav-search-form').submit();
-        }
-    </script>
 </nav>
 
 <?php
