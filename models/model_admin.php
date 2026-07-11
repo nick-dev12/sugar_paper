@@ -608,5 +608,3 @@ function delete_admin_account($admin_id)
         return ['ok' => false, 'error' => 'Suppression impossible (données liées ou erreur technique).'];
     }
 }
-
-?>

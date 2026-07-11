@@ -1,15 +1,20 @@
 /**
  * Serveur Socket.io — diffusion positions livreurs en temps réel.
  * Authentification déléguée à PHP (api/tracking/*).
+ *
+ * Webuzo (samapiece.com) : Apache PHP écoute sur 127.0.0.1:8081 (HTTP).
+ * Port 8082 = HTTPS interne — ne pas utiliser pour les appels Node → PHP.
  */
 require('dotenv').config();
 
 const http = require('http');
+const https = require('https');
+const { URL } = require('url');
 const { Server } = require('socket.io');
 
 const PORT = parseInt(process.env.TRACKING_PORT || '3001', 10);
-const PHP_BASE = (process.env.TRACKING_PHP_BASE || 'http://127.0.0.1').replace(/\/$/, '');
-const PHP_HOST = (process.env.TRACKING_PHP_HOST || '').trim();
+const PHP_BASE = (process.env.TRACKING_PHP_BASE || 'http://127.0.0.1:8081').replace(/\/$/, '');
+const PHP_HOST = (process.env.TRACKING_PHP_HOST || 'samapiece.com').trim();
 const INTERNAL_SECRET = process.env.TRACKING_INTERNAL_SECRET || '';
 const SOCKET_PATH = process.env.TRACKING_SOCKET_PATH || '/socket.io';
 
@@ -45,34 +50,73 @@ const io = new Server(server, {
 });
 
 async function callPhp(path, payload) {
-  const url = `${PHP_BASE}${path}`;
+  const baseUrl = new URL(PHP_BASE);
+  const isHttps = baseUrl.protocol === 'https:';
+  const transport = isHttps ? https : http;
   const body = JSON.stringify({
     ...payload,
     internal_secret: INTERNAL_SECRET,
   });
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Tracking-Secret': INTERNAL_SECRET,
-  };
-  if (PHP_HOST) {
-    headers.Host = PHP_HOST;
-  }
+  const port = baseUrl.port
+    ? parseInt(baseUrl.port, 10)
+    : (isHttps ? 443 : 80);
 
-  const response = await fetch(url, {
+  const options = {
+    hostname: baseUrl.hostname,
+    port,
+    path,
     method: 'POST',
-    headers,
-    body,
-  });
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+      'X-Tracking-Secret': INTERNAL_SECRET,
+    },
+  };
 
-  let data = {};
-  try {
-    data = await response.json();
-  } catch (_) {
-    data = {};
+  /* fetch() ignore l'en-tête Host — obligatoire sur Webuzo (vhost samapiece.com) */
+  if (PHP_HOST) {
+    options.headers.Host = PHP_HOST;
   }
 
-  return { status: response.status, data };
+  return new Promise(function (resolve, reject) {
+    const req = transport.request(options, function (res) {
+      let raw = '';
+      res.on('data', function (chunk) {
+        raw += chunk;
+      });
+      res.on('end', function () {
+        let data = {};
+        try {
+          data = JSON.parse(raw);
+        } catch (_) {
+          data = {};
+        }
+        resolve({ status: res.statusCode || 0, data });
+      });
+    });
+
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+async function checkPhpConnection() {
+  if (!PHP_HOST) {
+    console.warn('[tracking] TRACKING_PHP_HOST vide — requis sur Webuzo (ex. samapiece.com)');
+    return;
+  }
+  try {
+    const { status } = await callPhp('/api/tracking/verify-livreur.php', { token: '__startup_check__' });
+    if (status === 200 || status === 401 || status === 403) {
+      console.log(`[tracking] PHP joignable (${PHP_BASE}, Host: ${PHP_HOST})`);
+      return;
+    }
+    console.warn(`[tracking] PHP réponse inattendue HTTP ${status} (${PHP_BASE})`);
+  } catch (err) {
+    console.error(`[tracking] PHP injoignable (${PHP_BASE}, Host: ${PHP_HOST}): ${err.message}`);
+  }
 }
 
 async function verifyLivreurToken(token) {
@@ -259,4 +303,6 @@ io.on('connection', (socket) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[tracking] Socket.io écoute sur 127.0.0.1:${PORT} path=${SOCKET_PATH}`);
+  console.log(`[tracking] PHP cible: ${PHP_BASE} (Host: ${PHP_HOST || 'non défini'})`);
+  checkPhpConnection();
 });

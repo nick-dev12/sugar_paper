@@ -435,5 +435,3 @@ function mark_user_reset_token_used($token) {
     }
 }
 
-?>
-
