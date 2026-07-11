@@ -716,9 +716,11 @@ function livreur_get_commandes_trackables() {
 }
 
 /**
- * Un compte admin (rôle livreur) prend une commande du jour.
+ * Un compte admin (rôle livreur) prend une commande.
+ *
+ * @param bool $require_today Si true, limite aux commandes du jour (vue livreur).
  */
-function livreur_prendre_commande($commande_id, $admin_livreur_id) {
+function livreur_prendre_commande($commande_id, $admin_livreur_id, $require_today = true) {
     global $db;
 
     $commande_id = (int) $commande_id;
@@ -728,17 +730,20 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id) {
     }
 
     try {
-        $stmt = $db->prepare("
+        $sql = "
             SELECT id, livreur_id, statut, numero_commande
             FROM commandes
             WHERE id = :id
-              AND DATE(date_commande) = CURDATE()
-            LIMIT 1
-        ");
+        ";
+        if ($require_today) {
+            $sql .= " AND DATE(date_commande) = CURDATE()";
+        }
+        $sql .= " LIMIT 1";
+        $stmt = $db->prepare($sql);
         $stmt->execute(['id' => $commande_id]);
         $commande = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$commande) {
-            return ['ok' => false, 'error' => 'Commande introuvable ou pas du jour.'];
+            return ['ok' => false, 'error' => $require_today ? 'Commande introuvable ou pas du jour.' : 'Commande introuvable.'];
         }
 
         if (in_array($commande['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
@@ -750,7 +755,7 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id) {
             return ['ok' => false, 'error' => 'Cette commande a déjà été prise par un autre livreur.'];
         }
         if ($current_livreur === $admin_livreur_id) {
-            return ['ok' => true, 'message' => 'Vous avez déjà pris cette commande.', 'already' => true];
+            return ['ok' => true, 'message' => 'Vous avez déjà pris cette commande.', 'already' => true, 'commande_id' => $commande_id];
         }
 
         $stmt_admin = $db->prepare("SELECT id, role, statut FROM admin WHERE id = :id LIMIT 1");
@@ -788,12 +793,217 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id) {
         return [
             'ok' => true,
             'message' => 'Commande ' . ($commande['numero_commande'] ?? '') . ' prise en charge.',
+            'commande_id' => $commande_id,
         ];
     } catch (PDOException $e) {
         if ($db->inTransaction()) {
             $db->rollBack();
         }
         return ['ok' => false, 'error' => 'Erreur lors de la prise de commande.'];
+    }
+}
+
+/**
+ * Un compte admin (rôle livreur) prend une facture B2B.
+ *
+ * @param bool $require_today Si true, limite aux factures du jour (vue livreur).
+ * @return array{ok:bool,error?:string,message?:string,bl_id?:int,already?:bool}
+ */
+function livreur_prendre_facture($bl_id, $admin_livreur_id, $require_today = true) {
+    global $db;
+
+    if (!livreur_bl_livraison_columns_ok()) {
+        return ['ok' => false, 'error' => 'Module factures livraison non installé.'];
+    }
+
+    $bl_id = (int) $bl_id;
+    $admin_livreur_id = (int) $admin_livreur_id;
+    if ($bl_id < 1 || $admin_livreur_id < 1) {
+        return ['ok' => false, 'error' => 'Paramètres invalides.'];
+    }
+
+    try {
+        $sql = "
+            SELECT b.id, b.livreur_id, b.numero_bl, b.date_bl, b.date_creation
+            FROM bons_livraison b
+            WHERE b.id = :id
+        ";
+        if ($require_today) {
+            $sql .= " AND DATE(COALESCE(b.date_bl, b.date_creation)) = CURDATE()";
+        }
+        $sql .= " LIMIT 1";
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['id' => $bl_id]);
+        $facture = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$facture) {
+            return ['ok' => false, 'error' => $require_today ? 'Facture introuvable ou pas du jour.' : 'Facture introuvable.'];
+        }
+
+        $current_livreur = $facture['livreur_id'] !== null ? (int) $facture['livreur_id'] : null;
+        if ($current_livreur !== null && $current_livreur !== $admin_livreur_id) {
+            return ['ok' => false, 'error' => 'Cette facture a déjà été prise par un autre livreur.'];
+        }
+        if ($current_livreur === $admin_livreur_id) {
+            return ['ok' => true, 'message' => 'Vous avez déjà pris cette facture.', 'already' => true, 'bl_id' => $bl_id];
+        }
+
+        $stmt_admin = $db->prepare("SELECT id, role, statut FROM admin WHERE id = :id LIMIT 1");
+        $stmt_admin->execute(['id' => $admin_livreur_id]);
+        $admin_row = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+        if (!$admin_row || !in_array($admin_row['role'] ?? '', ['livreur', 'admin'], true) || ($admin_row['statut'] ?? '') !== 'actif') {
+            return ['ok' => false, 'error' => 'Compte livreur invalide.'];
+        }
+
+        $upd = $db->prepare("
+            UPDATE bons_livraison
+            SET livreur_id = :livreur_id
+            WHERE id = :id AND (livreur_id IS NULL OR livreur_id = :livreur_id2)
+        ");
+        $upd->execute([
+            'livreur_id' => $admin_livreur_id,
+            'id' => $bl_id,
+            'livreur_id2' => $admin_livreur_id,
+        ]);
+        if ($upd->rowCount() < 1) {
+            return ['ok' => false, 'error' => 'Impossible de prendre cette facture.'];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Facture ' . ($facture['numero_bl'] ?? '') . ' prise en charge.',
+            'bl_id' => $bl_id,
+        ];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'error' => 'Erreur lors de la prise de la facture.'];
+    }
+}
+
+/**
+ * Annule une prise en charge commande (avant démarrage GPS).
+ *
+ * @return array{ok:bool,error?:string,message?:string,commande_id?:int}
+ */
+function livreur_abandonner_prise_commande($commande_id, $admin_livreur_id) {
+    global $db;
+
+    $commande_id = (int) $commande_id;
+    $admin_livreur_id = (int) $admin_livreur_id;
+    if ($commande_id < 1 || $admin_livreur_id < 1) {
+        return ['ok' => false, 'error' => 'Paramètres invalides.'];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT id, livreur_id, statut, tracking_active, numero_commande
+            FROM commandes
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $commande_id]);
+        $commande = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$commande) {
+            return ['ok' => false, 'error' => 'Commande introuvable.'];
+        }
+        if ((int) ($commande['livreur_id'] ?? 0) !== $admin_livreur_id) {
+            return ['ok' => false, 'error' => 'Cette commande ne vous est pas assignée.'];
+        }
+        if ((int) ($commande['tracking_active'] ?? 0) === 1) {
+            return ['ok' => false, 'error' => 'La livraison est déjà démarrée.'];
+        }
+
+        $db->beginTransaction();
+
+        $upd = $db->prepare("
+            UPDATE commandes
+            SET livreur_id = NULL
+            WHERE id = :id AND livreur_id = :livreur_id AND (tracking_active IS NULL OR tracking_active = 0)
+        ");
+        $upd->execute([
+            'id' => $commande_id,
+            'livreur_id' => $admin_livreur_id,
+        ]);
+        if ($upd->rowCount() < 1) {
+            $db->rollBack();
+            return ['ok' => false, 'error' => 'Impossible d\'annuler cette prise en charge.'];
+        }
+
+        $db->commit();
+
+        if (($commande['statut'] ?? '') === 'livraison_en_cours') {
+            require_once __DIR__ . '/model_commandes_admin.php';
+            update_commande_statut($commande_id, 'confirmee');
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Prise en charge annulée.',
+            'commande_id' => $commande_id,
+        ];
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        return ['ok' => false, 'error' => 'Erreur lors de l\'annulation.'];
+    }
+}
+
+/**
+ * Annule une prise en charge facture (avant démarrage GPS).
+ *
+ * @return array{ok:bool,error?:string,message?:string,bl_id?:int}
+ */
+function livreur_abandonner_prise_facture($bl_id, $admin_livreur_id) {
+    global $db;
+
+    if (!livreur_bl_livraison_columns_ok()) {
+        return ['ok' => false, 'error' => 'Module factures livraison non installé.'];
+    }
+
+    $bl_id = (int) $bl_id;
+    $admin_livreur_id = (int) $admin_livreur_id;
+    if ($bl_id < 1 || $admin_livreur_id < 1) {
+        return ['ok' => false, 'error' => 'Paramètres invalides.'];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT id, livreur_id, tracking_active, numero_bl
+            FROM bons_livraison
+            WHERE id = :id
+            LIMIT 1
+        ");
+        $stmt->execute(['id' => $bl_id]);
+        $facture = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$facture) {
+            return ['ok' => false, 'error' => 'Facture introuvable.'];
+        }
+        if ((int) ($facture['livreur_id'] ?? 0) !== $admin_livreur_id) {
+            return ['ok' => false, 'error' => 'Cette facture ne vous est pas assignée.'];
+        }
+        if ((int) ($facture['tracking_active'] ?? 0) === 1) {
+            return ['ok' => false, 'error' => 'La livraison est déjà démarrée.'];
+        }
+
+        $upd = $db->prepare("
+            UPDATE bons_livraison
+            SET livreur_id = NULL
+            WHERE id = :id AND livreur_id = :livreur_id AND (tracking_active IS NULL OR tracking_active = 0)
+        ");
+        $upd->execute([
+            'id' => $bl_id,
+            'livreur_id' => $admin_livreur_id,
+        ]);
+        if ($upd->rowCount() < 1) {
+            return ['ok' => false, 'error' => 'Impossible d\'annuler cette prise en charge.'];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Prise en charge annulée.',
+            'bl_id' => $bl_id,
+        ];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'error' => 'Erreur lors de l\'annulation.'];
     }
 }
 
@@ -1173,6 +1383,86 @@ function livreur_parse_coord($value) {
         return null;
     }
     return $f;
+}
+
+/**
+ * Livraisons (commandes + factures) assignées à un admin livreur.
+ *
+ * @return list<array<string, mixed>>
+ */
+function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1) {
+        return [];
+    }
+
+    $items = [];
+
+    foreach (livreur_get_commandes_livraison_list($only_today) as $cmd) {
+        if ((int) ($cmd['livreur_id'] ?? 0) !== $admin_id) {
+            continue;
+        }
+        $lat = livreur_parse_coord($cmd['delivery_latitude'] ?? null);
+        $lng = livreur_parse_coord($cmd['delivery_longitude'] ?? null);
+        $prenom = trim((string) ($cmd['user_prenom'] ?? $cmd['client_prenom'] ?? ''));
+        $nom = trim((string) ($cmd['user_nom'] ?? $cmd['client_nom'] ?? ''));
+        $client_nom = trim($prenom . ' ' . $nom);
+        $tel = trim((string) ($cmd['user_telephone'] ?? $cmd['client_telephone'] ?? $cmd['telephone_livraison'] ?? ''));
+        $items[] = [
+            'type' => 'commande',
+            'id' => (int) $cmd['id'],
+            'numero' => (string) ($cmd['numero_commande'] ?? ''),
+            'client_nom' => $client_nom,
+            'client_tel' => $tel,
+            'adresse' => (string) ($cmd['adresse_livraison'] ?? ''),
+            'tracking_active' => (int) ($cmd['tracking_active'] ?? 0),
+            'statut' => (string) ($cmd['statut'] ?? ''),
+            'statut_label' => livreur_statut_label($cmd['statut'] ?? ''),
+            'geo_ready' => $lat !== null && $lng !== null,
+            'suivi_url' => 'suivi.php?commande_id=' . (int) $cmd['id'],
+            'terminee' => false,
+        ];
+    }
+
+    if (livreur_bl_livraison_columns_ok()) {
+        foreach (livreur_get_factures_livraison_list($only_today) as $facture) {
+            if ((int) ($facture['livreur_id'] ?? 0) !== $admin_id) {
+                continue;
+            }
+            $statut_bl = strtolower(trim((string) ($facture['statut_bl'] ?? $facture['statut'] ?? '')));
+            if (in_array($statut_bl, ['livree', 'livré', 'livre', 'annulee', 'annulée', 'annule'], true)) {
+                continue;
+            }
+            $lat = livreur_parse_coord($facture['delivery_latitude'] ?? null);
+            $lng = livreur_parse_coord($facture['delivery_longitude'] ?? null);
+            $adresse = trim((string) ($facture['adresse_livraison'] ?? $facture['adresse_client'] ?? $facture['client_adresse'] ?? ''));
+            $items[] = [
+                'type' => 'facture',
+                'id' => (int) $facture['id'],
+                'numero' => (string) ($facture['numero_bl'] ?? ''),
+                'client_nom' => trim((string) ($facture['raison_sociale'] ?? '')),
+                'client_tel' => trim((string) ($facture['client_telephone'] ?? '')),
+                'adresse' => $adresse,
+                'tracking_active' => (int) ($facture['tracking_active'] ?? 0),
+                'statut' => $statut_bl,
+                'statut_label' => livreur_facture_statut_livraison($facture),
+                'geo_ready' => $lat !== null && $lng !== null,
+                'suivi_url' => 'suivi.php?bl_id=' . (int) $facture['id'],
+                'terminee' => false,
+            ];
+        }
+    }
+
+    usort($items, function ($a, $b) {
+        $ta = !empty($a['tracking_active']) ? 0 : 1;
+        $tb = !empty($b['tracking_active']) ? 0 : 1;
+        if ($ta !== $tb) {
+            return $ta - $tb;
+        }
+        return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+    });
+
+    return $items;
 }
 
 /**

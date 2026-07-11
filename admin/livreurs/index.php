@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
         ], $is_livreur);
         if (!empty($result['ok'])) {
-            header('Location: suivi.php?commande_id=' . (int) ($result['commande_id'] ?? $commande_id));
+            header('Location: suivi.php?commande_id=' . (int) ($result['commande_id'] ?? $commande_id) . '&autostart=1');
             exit;
         }
         $error = $result['error'] ?? 'Impossible de démarrer la livraison.';
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
         ], $is_livreur);
         if (!empty($result['ok'])) {
-            header('Location: suivi.php?bl_id=' . (int) ($result['bl_id'] ?? $bl_id));
+            header('Location: suivi.php?bl_id=' . (int) ($result['bl_id'] ?? $bl_id) . '&autostart=1');
             exit;
         }
         $error = $result['error'] ?? 'Impossible de démarrer la livraison de la facture.';
@@ -285,7 +285,7 @@ foreach ($factures_liste as $facture_row) {
                                     <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
                                 </button>
                             <?php elseif (($is_livreur || $is_admin) && $prise_par_moi): ?>
-                                <a href="suivi.php?commande_id=<?php echo (int) $cmd['id']; ?>" class="btn-secondary btn-sm livreur-btn-suivi">
+                                <a href="suivi.php?commande_id=<?php echo (int) $cmd['id']; ?>&amp;autostart=1" class="btn-secondary btn-sm livreur-btn-suivi">
                                     <i class="fas fa-map-location-dot" aria-hidden="true"></i>
                                     <span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">GPS</span>
@@ -380,7 +380,7 @@ foreach ($factures_liste as $facture_row) {
                                     <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
                                 </button>
                             <?php elseif (($is_livreur || $is_admin) && $prise_par_moi): ?>
-                                <a href="suivi.php?bl_id=<?php echo $fid; ?>" class="btn-secondary btn-sm livreur-btn-suivi">
+                                <a href="suivi.php?bl_id=<?php echo $fid; ?>&amp;autostart=1" class="btn-secondary btn-sm livreur-btn-suivi">
                                     <i class="fas fa-map-location-dot" aria-hidden="true"></i>
                                     <span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">GPS</span>
@@ -432,9 +432,12 @@ foreach ($factures_liste as $facture_row) {
                 <input type="text" id="livreur-driver-position" readonly placeholder="Capture GPS en cours…">
             </div>
 
-            <div class="livreur-demarrage-field">
+            <div class="livreur-demarrage-field livreur-demarrage-field--address">
                 <label for="livreur-demarrage-adresse">Adresse du client (arrivée)</label>
-                <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Quartier, rue, ville…"></textarea>
+                <div class="livreur-address-autocomplete" id="livreur-address-autocomplete">
+                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Quartier, rue, ville…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
+                    <ul id="livreur-address-suggest" class="livreur-address-suggest" role="listbox" hidden aria-label="Suggestions d'adresse"></ul>
+                </div>
             </div>
 
             <div id="livreur-demarrage-status" class="livreur-demarrage-status" data-state="pending" aria-live="polite"></div>

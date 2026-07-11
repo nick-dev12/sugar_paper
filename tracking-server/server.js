@@ -244,17 +244,19 @@ io.on('connection', (socket) => {
 
     const livreurId = socket.data.livreurId;
     const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId;
+    const blId = parseInt(raw && raw.bl_id, 10) || socket.data.blId || 0;
     const latitude = raw && raw.latitude;
     const longitude = raw && raw.longitude;
 
-    if (!commandeId || latitude == null || longitude == null) {
+    if ((!commandeId && !blId) || latitude == null || longitude == null) {
       socket.emit('livreur:error', { message: 'position_invalid' });
       return;
     }
 
     const payload = {
       livreur_id: livreurId,
-      commande_id: commandeId,
+      commande_id: commandeId || null,
+      bl_id: blId || null,
       latitude,
       longitude,
       accuracy: raw.accuracy != null ? raw.accuracy : null,
@@ -264,11 +266,17 @@ io.on('connection', (socket) => {
       livreur_nom: socket.data.livreurNom || '',
     };
 
-    io.to(`commande_${commandeId}`).emit('position:update', payload);
+    if (commandeId) {
+      io.to(`commande_${commandeId}`).emit('position:update', payload);
+    }
+    if (blId) {
+      io.to(`bl_${blId}`).emit('position:update', payload);
+    }
 
     persistPosition({
       livreur_id: livreurId,
-      commande_id: commandeId,
+      commande_id: commandeId || null,
+      bl_id: blId || null,
       latitude: payload.latitude,
       longitude: payload.longitude,
       accuracy: payload.accuracy,

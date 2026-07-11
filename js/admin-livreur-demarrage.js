@@ -13,7 +13,17 @@
     var routeLayer = null;
     var watchId = null;
     var geocodeTimer = null;
+    var suggestTimer = null;
+    var suggestAbort = null;
+    var activeSuggestIndex = -1;
+    var lastSuggestItems = [];
+    var isComposing = false;
+    var suppressSuggest = false;
     var activeBtn = null;
+    var activeRow = null;
+    var sessionReserved = false;
+    var formSubmitted = false;
+    var currentLivraisonType = 'commande';
 
     var DEFAULT_CENTER = [14.6937, -17.4441];
 
@@ -236,34 +246,296 @@
     }
 
     function geocodeAddress(address) {
+        geocodeBestMatch(address, true);
+    }
+
+    function setAddressSuggestExpanded(open) {
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (adresseInput) {
+            adresseInput.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+    }
+
+    function geocodeBestMatch(address, silentList) {
         var q = (address || '').trim();
-        if (q.length < 4) return;
+        if (q.length < 2) {
+            setStatus('warn', 'Saisissez au moins 2 caractères pour rechercher un lieu.');
+            return Promise.resolve(false);
+        }
 
         clearTimeout(geocodeTimer);
-        geocodeTimer = setTimeout(function () {
-            setStatus('pending', 'Recherche de l\'adresse sur la carte…');
-            var url = '/api/geo-geocode.php?q=' + encodeURIComponent(q);
-            fetch(url, { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (data) {
-                    if (data && data.ok && data.lat !== null && data.lng !== null) {
-                        updateClientOnMap(data.lat, data.lng);
-                        setStatus('ok', 'Adresse localisée sur la carte.');
-                    } else {
-                        setStatus('warn', 'Adresse non trouvée. Précisez quartier et ville.');
+        setStatus('pending', 'Recherche du lieu le plus proche…');
+
+        return fetch('/api/geo-geocode.php?q=' + encodeURIComponent(q), {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data && data.ok && data.lat !== null && data.lng !== null) {
+                    suppressSuggest = true;
+                    var adresseInput = qs('livreur-demarrage-adresse');
+                    if (adresseInput && data.label) {
+                        adresseInput.value = data.label;
                     }
-                })
-                .catch(function () {
-                    setStatus('error', 'Erreur lors de la recherche d\'adresse.');
+                    hideAddressSuggestions();
+                    updateClientOnMap(data.lat, data.lng);
+                    setStatus('ok', 'Lieu trouvé et placé sur la carte.');
+                    setTimeout(function () { suppressSuggest = false; }, 120);
+                    return true;
+                }
+                if (!silentList) {
+                    setStatus('warn', 'Aucun lieu trouvé. Précisez quartier et ville.');
+                }
+                return false;
+            })
+            .catch(function () {
+                setStatus('error', 'Erreur lors de la recherche du lieu.');
+                return false;
+            });
+    }
+
+    function escapeHtml(text) {
+        var el = document.createElement('span');
+        el.textContent = text || '';
+        return el.innerHTML;
+    }
+
+    function hideAddressSuggestions() {
+        var list = qs('livreur-address-suggest');
+        if (!list) return;
+        list.hidden = true;
+        list.innerHTML = '';
+        activeSuggestIndex = -1;
+        lastSuggestItems = [];
+        setAddressSuggestExpanded(false);
+    }
+
+    function highlightSuggestItem(items, index) {
+        for (var i = 0; i < items.length; i++) {
+            items[i].classList.toggle('is-active', i === index);
+        }
+    }
+
+    function selectAddressSuggestion(item) {
+        if (!item || item.lat === null || item.lng === null) return;
+
+        suppressSuggest = true;
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (adresseInput) {
+            adresseInput.value = item.label || item.full || '';
+        }
+        hideAddressSuggestions();
+        updateClientOnMap(item.lat, item.lng);
+        setStatus('ok', 'Adresse sélectionnée sur la carte.');
+        setTimeout(function () {
+            suppressSuggest = false;
+        }, 120);
+    }
+
+    function showAddressSuggestions(items) {
+        var list = qs('livreur-address-suggest');
+        if (!list) return;
+
+        lastSuggestItems = Array.isArray(items) ? items.slice() : [];
+        list.innerHTML = '';
+        if (!lastSuggestItems.length) {
+            var empty = document.createElement('li');
+            empty.className = 'livreur-address-suggest__empty';
+            empty.textContent = 'Aucun lieu trouvé. Appuyez sur Entrée pour relancer la recherche.';
+            list.appendChild(empty);
+            list.hidden = false;
+            activeSuggestIndex = -1;
+            setAddressSuggestExpanded(true);
+            return;
+        }
+
+        lastSuggestItems.forEach(function (item, index) {
+            var li = document.createElement('li');
+            li.className = 'livreur-address-suggest__item';
+            li.setAttribute('role', 'option');
+            li.setAttribute('data-index', String(index));
+            li.setAttribute('data-lat', String(item.lat));
+            li.setAttribute('data-lng', String(item.lng));
+            li.setAttribute('data-label', item.label || item.full || '');
+            if (item.full && item.full !== item.label) {
+                li.title = item.full;
+            }
+            li.innerHTML =
+                '<i class="fas fa-location-dot" aria-hidden="true"></i>' +
+                '<span>' + escapeHtml(item.label || item.full || '') + '</span>';
+            list.appendChild(li);
+        });
+
+        list.hidden = false;
+        activeSuggestIndex = -1;
+        setAddressSuggestExpanded(true);
+    }
+
+    function resolveAddressFromInput() {
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (!adresseInput) return;
+
+        var q = adresseInput.value.trim();
+        if (q.length < 2) {
+            setStatus('warn', 'Saisissez au moins 2 caractères.');
+            return;
+        }
+
+        if (activeSuggestIndex >= 0 && lastSuggestItems[activeSuggestIndex]) {
+            selectAddressSuggestion(lastSuggestItems[activeSuggestIndex]);
+            return;
+        }
+
+        if (lastSuggestItems.length > 0) {
+            selectAddressSuggestion(lastSuggestItems[0]);
+            return;
+        }
+
+        geocodeBestMatch(q, false);
+    }
+
+    function fetchAddressSuggestions(query) {
+        if (suggestAbort && typeof suggestAbort.abort === 'function') {
+            suggestAbort.abort();
+            suggestAbort = null;
+        }
+
+        var q = (query || '').trim();
+        if (q.length < 2) {
+            hideAddressSuggestions();
+            return;
+        }
+
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        suggestAbort = controller;
+
+        var url = '/api/geo-geocode-suggest.php?q=' + encodeURIComponent(q) + '&limit=6';
+        fetch(url, {
+            headers: { 'Accept': 'application/json' },
+            signal: controller ? controller.signal : undefined
+        })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.ok) {
+                    hideAddressSuggestions();
+                    return;
+                }
+                showAddressSuggestions(data.suggestions || []);
+            })
+            .catch(function (err) {
+                if (err && err.name === 'AbortError') return;
+                hideAddressSuggestions();
+            })
+            .finally(function () {
+                if (suggestAbort === controller) {
+                    suggestAbort = null;
+                }
+            });
+    }
+
+    function onAddressInput() {
+        if (suppressSuggest || isComposing) return;
+
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (!adresseInput) return;
+
+        clearTimeout(suggestTimer);
+        clearTimeout(geocodeTimer);
+
+        var value = adresseInput.value;
+        suggestTimer = setTimeout(function () {
+            fetchAddressSuggestions(value);
+        }, 220);
+    }
+
+    function scheduleAddressSuggest() {
+        clearTimeout(suggestTimer);
+        suggestTimer = setTimeout(onAddressInput, 80);
+    }
+
+    function bindAddressAutocomplete() {
+        var adresseInput = qs('livreur-demarrage-adresse');
+        var suggestList = qs('livreur-address-suggest');
+        if (!adresseInput) return;
+
+        adresseInput.addEventListener('input', onAddressInput);
+        adresseInput.addEventListener('compositionstart', function () {
+            isComposing = true;
+        });
+        adresseInput.addEventListener('compositionend', function () {
+            isComposing = false;
+            scheduleAddressSuggest();
+        });
+
+        /* Clavier virtuel mobile / tablette : secours si input tardif */
+        adresseInput.addEventListener('keyup', function (e) {
+            if (isComposing) return;
+            if (e.key === 'Enter') return;
+            scheduleAddressSuggest();
+        });
+
+        adresseInput.addEventListener('keydown', function (e) {
+            var list = qs('livreur-address-suggest');
+            var items = list ? list.querySelectorAll('.livreur-address-suggest__item') : [];
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isComposing) return;
+                resolveAddressFromInput();
+                return;
+            }
+
+            if (!list || list.hidden || !items.length) {
+                if (e.key === 'Escape') {
+                    hideAddressSuggestions();
+                }
+                return;
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestIndex = Math.min(activeSuggestIndex + 1, items.length - 1);
+                highlightSuggestItem(items, activeSuggestIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestIndex = Math.max(activeSuggestIndex - 1, 0);
+                highlightSuggestItem(items, activeSuggestIndex);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                hideAddressSuggestions();
+            }
+        });
+
+        adresseInput.addEventListener('blur', function () {
+            setTimeout(function () {
+                hideAddressSuggestions();
+            }, 220);
+        });
+
+        if (suggestList) {
+            suggestList.addEventListener('mousedown', function (e) {
+                var item = e.target.closest('.livreur-address-suggest__item');
+                if (!item) return;
+                e.preventDefault();
+                selectAddressSuggestion({
+                    lat: parseFloat(item.getAttribute('data-lat')),
+                    lng: parseFloat(item.getAttribute('data-lng')),
+                    label: item.getAttribute('data-label') || ''
                 });
-        }, 600);
+            });
+        }
     }
 
     function openPanel(btn) {
         if (!panel || !form) return;
 
         activeBtn = btn;
+        sessionReserved = false;
+        formSubmitted = false;
         var livraisonType = btn.getAttribute('data-livraison-type') || 'commande';
+        currentLivraisonType = livraisonType;
         var commandeId = btn.getAttribute('data-commande-id') || '';
         var blId = btn.getAttribute('data-bl-id') || '';
         var numero = btn.getAttribute('data-numero') || '';
@@ -288,6 +560,7 @@
             qs('livreur-demarrage-numero').textContent = numero;
         }
         qs('livreur-demarrage-adresse').value = adresse;
+        hideAddressSuggestions();
 
         fillCoord('livreur-driver-lat', '');
         fillCoord('livreur-driver-lng', '');
@@ -323,13 +596,40 @@
     }
 
     function closePanel() {
-        stopWatch();
-        if (panel) {
-            panel.hidden = true;
-            panel.setAttribute('aria-hidden', 'true');
+        var shouldAbandon = sessionReserved && !formSubmitted;
+
+        function finishClose() {
+            stopWatch();
+            hideAddressSuggestions();
+            if (suggestAbort && typeof suggestAbort.abort === 'function') {
+                suggestAbort.abort();
+                suggestAbort = null;
+            }
+            if (panel) {
+                panel.hidden = true;
+                panel.setAttribute('aria-hidden', 'true');
+            }
+            document.body.classList.remove('livreur-demarrage-open');
+            if (activeBtn) {
+                activeBtn.removeAttribute('disabled');
+            }
+            activeBtn = null;
+            activeRow = null;
+            sessionReserved = false;
+            formSubmitted = false;
+            currentLivraisonType = 'commande';
         }
-        document.body.classList.remove('livreur-demarrage-open');
-        activeBtn = null;
+
+        if (shouldAbandon) {
+            revertRowIfNeeded();
+            finishClose();
+            abandonReservation().catch(function () {
+                /* UI déjà réinitialisée — annulation BDD en arrière-plan */
+            });
+            return;
+        }
+
+        finishClose();
     }
 
     function onSubmit(e) {
@@ -348,7 +648,136 @@
         if (!adresse || adresse.value.trim() === '') {
             e.preventDefault();
             setStatus('error', 'L\'adresse de livraison est obligatoire.');
+            return;
         }
+        formSubmitted = true;
+    }
+
+    function abandonReservation() {
+        var blInput = qs('livreur-demarrage-bl-id');
+        var blId = blInput ? parseInt(blInput.value || '0', 10) : 0;
+        var livraisonType = blId > 0 ? 'facture' : (currentLivraisonType || 'commande');
+        var body = {
+            action: livraisonType === 'facture' ? 'annuler_facture' : 'annuler_commande'
+        };
+        if (livraisonType === 'facture') {
+            body.bl_id = blId;
+        } else {
+            body.commande_id = parseInt(qs('livreur-demarrage-commande-id') && qs('livreur-demarrage-commande-id').value || '0', 10);
+        }
+
+        return fetch('/api/tracking/prendre-livraison.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Annulation impossible.');
+                }
+                return data;
+            });
+        });
+    }
+
+    function revertRowIfNeeded() {
+        if (!activeRow) return;
+
+        var actions = activeRow.querySelector('.livreur-actions');
+        if (actions && activeRow.dataset.livreurOriginalActions) {
+            actions.innerHTML = activeRow.dataset.livreurOriginalActions;
+            delete activeRow.dataset.livreurOriginalActions;
+        }
+
+        var statusCell = activeRow.querySelector('td[data-label="Statut"]');
+        if (statusCell && activeRow.dataset.livreurOriginalStatut) {
+            statusCell.innerHTML = activeRow.dataset.livreurOriginalStatut;
+            delete activeRow.dataset.livreurOriginalStatut;
+        }
+    }
+
+    function reserveLivraison(btn) {
+        var livraisonType = btn.getAttribute('data-livraison-type') || 'commande';
+        var body = {
+            action: livraisonType === 'facture' ? 'prendre_facture' : 'prendre_commande'
+        };
+        if (livraisonType === 'facture') {
+            body.bl_id = parseInt(btn.getAttribute('data-bl-id') || '0', 10);
+        } else {
+            body.commande_id = parseInt(btn.getAttribute('data-commande-id') || '0', 10);
+        }
+
+        btn.setAttribute('disabled', 'disabled');
+
+        return fetch('/api/tracking/prendre-livraison.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).then(function (res) {
+            return res.json().then(function (data) {
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Prise en charge impossible.');
+                }
+                var reservedNow = !data.already;
+                if (panel && panel.hidden) {
+                    if (reservedNow) {
+                        sessionReserved = true;
+                        abandonReservation().catch(function () { /* ignore */ });
+                    }
+                    return data;
+                }
+                if (reservedNow) {
+                    sessionReserved = true;
+                }
+                btn.setAttribute('data-reserved', sessionReserved ? '1' : '0');
+                markRowAsTaken(btn, data.suivi_url || '');
+                return data;
+            });
+        }).finally(function () {
+            if (btn) {
+                btn.removeAttribute('disabled');
+            }
+        });
+    }
+
+    function markRowAsTaken(btn, suiviUrl) {
+        if (panel && panel.hidden) {
+            return;
+        }
+        var row = btn.closest('tr');
+        if (!row || !suiviUrl || !sessionReserved) return;
+        activeRow = row;
+        var actions = row.querySelector('.livreur-actions');
+        if (!actions) return;
+
+        if (!row.dataset.livreurOriginalActions) {
+            row.dataset.livreurOriginalActions = actions.innerHTML;
+        }
+
+        var statusCell = row.querySelector('td[data-label="Statut"]');
+        if (statusCell && !row.dataset.livreurOriginalStatut) {
+            row.dataset.livreurOriginalStatut = statusCell.innerHTML;
+        }
+        if (statusCell && statusCell.innerHTML.indexOf('livreur-cmd-mine') === -1) {
+            statusCell.innerHTML =
+                '<span class="livreur-badge livreur-badge--statut">En cours</span>' +
+                '<br><small class="livreur-cmd-mine">Votre livraison</small>';
+        }
+
+        actions.innerHTML =
+            '<a href="' + suiviUrl + '" class="btn-secondary btn-sm livreur-btn-suivi">' +
+            '<i class="fas fa-map-location-dot" aria-hidden="true"></i> ' +
+            '<span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>' +
+            '<span class="livreur-btn-text livreur-btn-text--short">GPS</span>' +
+            '</a>';
     }
 
     function init() {
@@ -370,6 +799,12 @@
             if (btn) {
                 e.preventDefault();
                 openPanel(btn);
+                setStatus('pending', 'Prise en charge de la livraison…');
+                reserveLivraison(btn).then(function () {
+                    setStatus('pending', 'Capture de votre position en cours… Autorisez l\'accès GPS.');
+                }).catch(function (err) {
+                    setStatus('error', err.message || 'Impossible de prendre cette livraison.');
+                });
                 return;
             }
             if (e.target.closest('[data-livreur-demarrage-close]')) {
@@ -379,16 +814,19 @@
         });
 
         var adresseInput = qs('livreur-demarrage-adresse');
-        if (adresseInput) {
-            adresseInput.addEventListener('input', function () {
-                geocodeAddress(adresseInput.value);
-            });
-        }
+        bindAddressAutocomplete();
 
         form.addEventListener('submit', onSubmit);
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && panel && !panel.hidden) closePanel();
+            if (e.key !== 'Escape' || !panel || panel.hidden) return;
+            var list = qs('livreur-address-suggest');
+            if (list && !list.hidden) {
+                e.preventDefault();
+                hideAddressSuggestions();
+                return;
+            }
+            closePanel();
         });
 
         window.addEventListener('resize', function () {

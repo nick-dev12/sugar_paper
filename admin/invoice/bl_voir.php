@@ -24,6 +24,7 @@ if (empty($_SESSION['admin_csrf'])) {
 require_once __DIR__ . '/../../models/model_bl.php';
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../includes/fiscal_tva.php';
+require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 
 $bl_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($bl_id <= 0 || !bl_tables_available()) {
@@ -61,6 +62,9 @@ $remise_pct = (float) ($bl['remise_globale_pct'] ?? 0);
 $total_ht = (float) ($bl['total_ht'] ?? 0);
 $tva_incl = bl_tva_columns_ok() && !empty($bl['tva_incluse']);
 $bl_peut_modifier = !bl_est_statut_verrouille($bl['statut'] ?? '') && ($bl['statut'] ?? 'brouillon') === 'brouillon';
+$bl_tracking = livreur_bl_livraison_columns_ok() ? livreur_get_facture_tracking($bl_id) : false;
+$bl_livraison_suivable = $bl_tracking && !empty($bl_tracking['livreur_id']);
+$bl_livraison_statut = $bl_livraison_suivable ? livreur_facture_statut_livraison($bl_tracking) : '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -86,6 +90,11 @@ $bl_peut_modifier = !bl_est_statut_verrouille($bl['statut'] ?? '') && ($bl['stat
             <a href="bl_facture.php?id=<?php echo (int) $bl_id; ?>" class="btn-primary" target="_blank">
                 <i class="fas fa-file-invoice"></i> Voir la facture
             </a>
+            <?php if ($bl_livraison_suivable): ?>
+            <a href="../livreurs/suivi.php?bl_id=<?php echo (int) $bl_id; ?>&amp;regarder=1" class="btn-secondary">
+                <i class="fas fa-map-location-dot"></i> Suivre la livraison
+            </a>
+            <?php endif; ?>
             <?php if (!$est_payee && bl_col_facture_payee_ok()): ?>
             <form method="post" action="bl_voir.php?id=<?php echo (int) $bl_id; ?>" class="header-actions__form" onsubmit="return confirm('Marquer cette facture comme payée ?');">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">

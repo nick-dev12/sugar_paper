@@ -124,6 +124,60 @@ function geo_geocode_address(string $address, ?string $country = null): ?array
 }
 
 /**
+ * Suggestions d'adresses (autocomplétion) via Nominatim.
+ *
+ * @return list<array{lat: float, lng: float, label: string, full: string}>
+ */
+function geo_geocode_suggest(string $query, ?string $country = null, int $limit = 6): array
+{
+    $query = trim($query);
+    if ($query === '' || mb_strlen($query) < 2) {
+        return [];
+    }
+
+    $limit = max(1, min(10, $limit));
+    $params = [
+        'q' => $query,
+        'format' => 'jsonv2',
+        'limit' => $limit,
+        'addressdetails' => 0,
+    ];
+    if ($country !== null && preg_match('/^[A-Za-z]{2}$/', $country)) {
+        $params['countrycodes'] = strtolower($country);
+    }
+
+    $data = geo_nominatim_request('/search', $params);
+    if (empty($data) || !is_array($data)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($data as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $lat = geo_parse_coord($row['lat'] ?? null);
+        $lng = geo_parse_coord($row['lon'] ?? null);
+        if (!geo_coords_valid($lat, $lng)) {
+            continue;
+        }
+        $full = isset($row['display_name']) ? trim((string) $row['display_name']) : '';
+        $label = $full !== '' ? geo_address_concise_from_display_name($full) : '';
+        if ($label === '') {
+            $label = $full;
+        }
+        $out[] = [
+            'lat' => $lat,
+            'lng' => $lng,
+            'label' => $label,
+            'full' => $full !== '' ? $full : $label,
+        ];
+    }
+
+    return $out;
+}
+
+/**
  * Géocodage inverse : coordonnées GPS -> adresse lisible concise.
  */
 function geo_reverse_geocode(float $lat, float $lng): ?string
