@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 
 const PORT = parseInt(process.env.TRACKING_PORT || '3001', 10);
 const PHP_BASE = (process.env.TRACKING_PHP_BASE || 'http://127.0.0.1').replace(/\/$/, '');
+const PHP_HOST = (process.env.TRACKING_PHP_HOST || '').trim();
 const INTERNAL_SECRET = process.env.TRACKING_INTERNAL_SECRET || '';
 const SOCKET_PATH = process.env.TRACKING_SOCKET_PATH || '/socket.io';
 
@@ -50,12 +51,17 @@ async function callPhp(path, payload) {
     internal_secret: INTERNAL_SECRET,
   });
 
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Tracking-Secret': INTERNAL_SECRET,
+  };
+  if (PHP_HOST) {
+    headers.Host = PHP_HOST;
+  }
+
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Tracking-Secret': INTERNAL_SECRET,
-    },
+    headers,
     body,
   });
 
