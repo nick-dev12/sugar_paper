@@ -245,6 +245,8 @@
     align-items: center;
     justify-content: center;
     pointer-events: none;
+    transform-origin: 50% 72%;
+    transition: transform 0.12s linear;
     filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.38));
 }
 
@@ -1192,8 +1194,8 @@ body.livreur-demarrage-open {
     min-height: 100dvh;
 }
 
-.page-livreur-suivi .livreur-tracking-map--nav-mode .leaflet-marker-icon {
-    transition: transform 0.2s ease-out;
+.page-livreur-suivi .livreur-tracking-map--nav-mode .leaflet-marker-icon.livreur-marker-wrap--nav {
+    transition: none;
 }
 
 .page-livreur-suivi .admin-content {
@@ -2215,6 +2217,7 @@ body.livreur-demarrage-open {
 .livreur-nav-arrow {
     width: 46px;
     height: 46px;
+    transform-origin: 50% 72%;
 }
 
 .livreur-nav-arrow svg {

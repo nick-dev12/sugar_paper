@@ -167,19 +167,17 @@
     var ROUTE_RECALC_PERIODIC_MS = 45000;
     var driverHeadingDeg = 0;
     var mapBearingDeg = 0;
-    var compassHeadingDeg = null;
-    var gpsCourseHeadingDeg = null;
     var lastGpsSpeed = null;
     var lastDriverLat = null;
     var lastDriverLng = null;
-    var deviceOrientationBound = false;
     var autoRecenterTimer = null;
     var suppressMapInteractionEvents = false;
     var navigationMode = false;
     var bearingAnimFrame = null;
     var NAV_ZOOM = cfg.navZoom || 19;
     var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 6000;
-    var MIN_HEADING_DELTA_NAV = 4;
+    var ROUTE_HEADING_LOOKAHEAD_M = 55;
+    var ROUTE_SNAP_MAX_M = 120;
     var MIN_MOVE_FOR_ANIMATED_FOLLOW = 0.00005;
     var MAP_FOLLOW_MIN_INTERVAL_MS = 900;
     var positionPollTimer = null;
@@ -187,6 +185,7 @@
     var observerStopped = false;
     var lastMapFollowAt = 0;
     var bearingTargetDeg = 0;
+    var lastRouteSegIdx = 0;
     var nativeDriverTracking = false;
 
     function isNativeDriverTrackingAvailable() {
@@ -253,14 +252,6 @@
             titleEl.className = 'livreur-suivi-sheet__status-title livreur-suivi-sheet__status-title--off';
         }
         setStatus('Suivi en temps réel arrêté', 'off');
-    }
-
-    function shouldUseCompassHeading() {
-        if (isObserverMode() || !cfg.canManage || !deliveryActive || !navigationMode) {
-            return false;
-        }
-        var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.8;
-        return !moving;
     }
 
     function applyRemoteDriverPosition(pos) {
@@ -418,6 +409,182 @@
         return min;
     }
 
+    function bearingBetween(lat1, lng1, lat2, lng2) {
+        var dLon = (lng2 - lng1) * Math.PI / 180;
+        var rLat1 = lat1 * Math.PI / 180;
+        var rLat2 = lat2 * Math.PI / 180;
+        var y = Math.sin(dLon) * Math.cos(rLat2);
+        var x = Math.cos(rLat1) * Math.sin(rLat2) - Math.sin(rLat1) * Math.cos(rLat2) * Math.cos(dLon);
+        return normalizeHeading(Math.atan2(y, x) * 180 / Math.PI);
+    }
+
+    function shouldShowNavMarker() {
+        return navigationMode || deliveryActive || observerFollowActive || cfg.trackingActive;
+    }
+
+    function getDriverNavArrowElement() {
+        if (!driverMarker) return null;
+        var el = driverMarker.getElement();
+        return el ? el.querySelector('.livreur-nav-arrow') : null;
+    }
+
+    function setNavArrowScreenRotation(screenDeg) {
+        var navArrow = getDriverNavArrowElement();
+        if (navArrow) {
+            navArrow.style.transform = 'rotate(' + screenDeg + 'deg)';
+        }
+        var arrow = getDriverArrowElement();
+        if (arrow) {
+            arrow.style.transform = 'rotate(' + screenDeg + 'deg)';
+        }
+    }
+
+    function snapToRoute(lat, lng, coords) {
+        if (!coords || coords.length < 2) {
+            return null;
+        }
+        var best = { score: Infinity, segIdx: 0, t: 0, lat: lat, lng: lng, dist: Infinity };
+        for (var i = 0; i < coords.length - 1; i++) {
+            var latA = coords[i][0];
+            var lngA = coords[i][1];
+            var latB = coords[i + 1][0];
+            var lngB = coords[i + 1][1];
+            var refLat = lat;
+            var p = toLocalMeters(lat, lng, refLat);
+            var a = toLocalMeters(latA, lngA, refLat);
+            var b = toLocalMeters(latB, lngB, refLat);
+            var abx = b.x - a.x;
+            var aby = b.y - a.y;
+            var apx = p.x - a.x;
+            var apy = p.y - a.y;
+            var abLenSq = abx * abx + aby * aby;
+            var t = abLenSq < 1e-6 ? 0 : Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq));
+            var cx = a.x + t * abx;
+            var cy = a.y + t * aby;
+            var dx = p.x - cx;
+            var dy = p.y - cy;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            var penalty = 0;
+            if (i < lastRouteSegIdx - 1) {
+                penalty = 100;
+            } else if (i < lastRouteSegIdx) {
+                penalty = 20;
+            }
+            var score = dist + penalty;
+            if (score < best.score) {
+                var cosLat = Math.cos(refLat * Math.PI / 180);
+                best = {
+                    score: score,
+                    segIdx: i,
+                    t: t,
+                    lat: (cy / 6371000) * (180 / Math.PI),
+                    lng: (cx / (6371000 * cosLat)) * (180 / Math.PI),
+                    dist: dist
+                };
+            }
+        }
+        if (best.score < Infinity) {
+            lastRouteSegIdx = best.segIdx;
+        }
+        return best;
+    }
+
+    function pointAlongRoute(coords, segIdx, t, extraMeters) {
+        if (!coords || coords.length < 2 || segIdx < 0 || segIdx >= coords.length - 1) {
+            return null;
+        }
+        var latA = coords[segIdx][0];
+        var lngA = coords[segIdx][1];
+        var latB = coords[segIdx + 1][0];
+        var lngB = coords[segIdx + 1][1];
+        var startLat = latA + (latB - latA) * t;
+        var startLng = lngA + (lngB - lngA) * t;
+        var remaining = Math.max(0, extraMeters);
+        var segLen = distanceMeters(startLat, startLng, latB, lngB);
+        if (segLen >= remaining) {
+            var ratio = segLen > 0.5 ? remaining / segLen : 0;
+            return {
+                lat: startLat + (latB - startLat) * ratio,
+                lng: startLng + (lngB - startLng) * ratio
+            };
+        }
+        remaining -= segLen;
+        var i = segIdx + 1;
+        while (i < coords.length - 1) {
+            latA = coords[i][0];
+            lngA = coords[i][1];
+            latB = coords[i + 1][0];
+            lngB = coords[i + 1][1];
+            segLen = distanceMeters(latA, lngA, latB, lngB);
+            if (segLen >= remaining) {
+                var r2 = segLen > 0.5 ? remaining / segLen : 0;
+                return {
+                    lat: latA + (latB - latA) * r2,
+                    lng: lngA + (lngB - lngA) * r2
+                };
+            }
+            remaining -= segLen;
+            i++;
+        }
+        var last = coords[coords.length - 1];
+        return { lat: last[0], lng: last[1] };
+    }
+
+    function bearingFromRoute(lat, lng, coords, lookAheadM) {
+        if (!coords || coords.length < 2) {
+            return null;
+        }
+        var snap = snapToRoute(lat, lng, coords);
+        if (!snap || snap.dist > ROUTE_SNAP_MAX_M) {
+            return null;
+        }
+        var lookM = lookAheadM || ROUTE_HEADING_LOOKAHEAD_M;
+        var segLatA = coords[snap.segIdx][0];
+        var segLngA = coords[snap.segIdx][1];
+        var segLatB = coords[snap.segIdx + 1][0];
+        var segLngB = coords[snap.segIdx + 1][1];
+        var segBearing = bearingBetween(segLatA, segLngA, segLatB, segLngB);
+        var ahead = pointAlongRoute(coords, snap.segIdx, snap.t, lookM);
+        if (!ahead) {
+            return segBearing;
+        }
+        var aheadDist = distanceMeters(snap.lat, snap.lng, ahead.lat, ahead.lng);
+        if (aheadDist < 6) {
+            return segBearing;
+        }
+        var lookBearing = bearingBetween(snap.lat, snap.lng, ahead.lat, ahead.lng);
+        if (snap.segIdx + 1 < coords.length - 1) {
+            var nextLatA = coords[snap.segIdx + 1][0];
+            var nextLngA = coords[snap.segIdx + 1][1];
+            var nextLatB = coords[snap.segIdx + 2][0];
+            var nextLngB = coords[snap.segIdx + 2][1];
+            var nextBearing = bearingBetween(nextLatA, nextLngA, nextLatB, nextLngB);
+            var turnDelta = Math.abs(shortestAngleDiff(segBearing, nextBearing));
+            if (turnDelta > 18) {
+                var remainOnSeg = distanceMeters(snap.lat, snap.lng, segLatB, segLngB);
+                var blend = remainOnSeg < 45 ? Math.max(0, 1 - remainOnSeg / 45) : 0;
+                if (blend > 0) {
+                    return normalizeHeading(
+                        segBearing + shortestAngleDiff(segBearing, nextBearing) * blend
+                    );
+                }
+            }
+        }
+        return lookBearing;
+    }
+
+    function refreshHeadingFromRoute(lat, lng) {
+        if (!activeRouteCoords || activeRouteCoords.length < 2) {
+            return false;
+        }
+        var routeHeading = bearingFromRoute(lat, lng, activeRouteCoords);
+        if (routeHeading == null) {
+            return false;
+        }
+        applyDriverHeading(routeHeading);
+        return true;
+    }
+
     function maybeRecalculateRoute(driverLat, driverLng, force) {
         var client = getClientCoords();
         if (client.lat === null || client.lng === null) {
@@ -524,10 +691,7 @@
     }
 
     function resetDriverArrowRotation() {
-        var arrow = getDriverArrowElement();
-        if (arrow) {
-            arrow.style.transform = 'rotate(0deg)';
-        }
+        setNavArrowScreenRotation(0);
     }
 
     function smoothSetMapBearing(targetHeading) {
@@ -542,14 +706,18 @@
 
         function step() {
             var diff = shortestAngleDiff(mapBearingDeg, bearingTargetDeg);
-            if (Math.abs(diff) < 0.6) {
+            if (Math.abs(diff) < 0.4) {
                 mapBearingDeg = bearingTargetDeg;
                 map.setBearing(mapBearingDeg);
+                setNavArrowScreenRotation(0);
                 bearingAnimFrame = null;
                 return;
             }
-            mapBearingDeg = normalizeHeading(mapBearingDeg + diff * 0.11);
+            var absDiff = Math.abs(diff);
+            var stepFactor = absDiff > 35 ? 0.42 : (absDiff > 15 ? 0.28 : 0.18);
+            mapBearingDeg = normalizeHeading(mapBearingDeg + diff * stepFactor);
             map.setBearing(mapBearingDeg);
+            setNavArrowScreenRotation(0);
             bearingAnimFrame = requestAnimationFrame(step);
         }
 
@@ -593,16 +761,19 @@
             paddingBottomRight: pad.bottomRight
         });
         setTimeout(function () { suppressMapInteractionEvents = false; }, shouldAnimate ? 400 : 50);
+        if (driverHeadingDeg > 0 && mapHasRotation()) {
+            smoothSetMapBearing(driverHeadingDeg);
+        }
     }
 
     function makeDriverArrowIcon() {
-        if (navigationMode) {
+        if (shouldShowNavMarker()) {
             return L.divIcon({
                 className: 'livreur-marker-wrap livreur-marker-wrap--driver livreur-marker-wrap--nav',
                 html: '<div class="livreur-marker-icon livreur-marker-icon--driver">' +
                     '<div class="livreur-nav-arrow">' + NAV_CHEVRON_SVG + '</div></div>',
                 iconSize: [52, 52],
-                iconAnchor: [26, 30],
+                iconAnchor: [26, 38],
             });
         }
         return L.divIcon({
@@ -631,23 +802,26 @@
         return el ? el.querySelector('.livreur-marker-arrow') : null;
     }
 
-    function applyDriverHeading(deg) {
+    function applyDriverHeading(deg, force) {
         if (deg === null || deg === undefined || !isFinite(deg)) return;
         var normalized = normalizeHeading(deg);
         var delta = Math.abs(shortestAngleDiff(driverHeadingDeg, normalized));
-        if (delta < MIN_HEADING_DELTA_NAV && navigationMode) return;
+        if (!force && delta < 0.4) return;
         driverHeadingDeg = normalized;
 
         if (navigationMode && mapHasRotation()) {
-            resetDriverArrowRotation();
+            setNavArrowScreenRotation(0);
             smoothSetMapBearing(normalized);
             return;
         }
 
-        var arrow = getDriverArrowElement();
-        if (arrow) {
-            arrow.style.transform = 'rotate(' + normalized + 'deg)';
+        if (mapHasRotation()) {
+            smoothSetMapBearing(normalized);
+            setNavArrowScreenRotation(0);
+            return;
         }
+
+        setNavArrowScreenRotation(normalized);
     }
 
     function bearingFromMovement(lat, lng) {
@@ -655,43 +829,19 @@
         var dLat = lat - lastDriverLat;
         var dLng = lng - lastDriverLng;
         if ((dLat * dLat + dLng * dLng) < 0.000000008) return null;
-        var dLon = dLng * Math.PI / 180;
-        var lat1 = lastDriverLat * Math.PI / 180;
-        var lat2 = lat * Math.PI / 180;
-        var y = Math.sin(dLon) * Math.cos(lat2);
-        var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-        return normalizeHeading(Math.atan2(y, x) * 180 / Math.PI);
+        return bearingBetween(lastDriverLat, lastDriverLng, lat, lng);
     }
 
     function resolveHeadingFromPosition(coords, lat, lng) {
         if (coords && coords.speed != null && isFinite(coords.speed)) {
             lastGpsSpeed = coords.speed;
         }
-        var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.8;
-        var heading = coords && coords.heading != null ? coords.heading : null;
 
-        if (isObserverMode()) {
-            if (heading != null && isFinite(heading) && heading >= 0) {
-                applyDriverHeading(heading);
-                return;
-            }
-            if (lat != null && lng != null) {
-                var remoteMoveHeading = bearingFromMovement(lat, lng);
-                if (remoteMoveHeading != null) {
-                    applyDriverHeading(remoteMoveHeading);
-                }
-            }
+        if (lat != null && lng != null && refreshHeadingFromRoute(lat, lng)) {
             return;
         }
 
-        if (moving && heading != null && isFinite(heading) && heading >= 0) {
-            gpsCourseHeadingDeg = heading;
-            applyDriverHeading(heading);
-            return;
-        }
-        if (!moving) {
-            gpsCourseHeadingDeg = null;
-        }
+        var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.5;
         if (lat != null && lng != null && moving) {
             var moveHeading = bearingFromMovement(lat, lng);
             if (moveHeading != null) {
@@ -699,53 +849,11 @@
                 return;
             }
         }
-        if (shouldUseCompassHeading() && compassHeadingDeg != null) {
-            applyDriverHeading(compassHeadingDeg);
-        } else if (heading != null && isFinite(heading) && heading >= 0) {
+
+        var heading = coords && coords.heading != null ? coords.heading : null;
+        if (heading != null && isFinite(heading) && heading >= 0) {
             applyDriverHeading(heading);
         }
-    }
-
-    function onDeviceOrientation(event) {
-        if (!shouldUseCompassHeading()) {
-            return;
-        }
-        var heading = null;
-        if (event.webkitCompassHeading != null && isFinite(event.webkitCompassHeading)) {
-            heading = event.webkitCompassHeading;
-        } else if (event.alpha != null && isFinite(event.alpha)) {
-            heading = (360 - event.alpha) % 360;
-        }
-        if (heading == null) return;
-        compassHeadingDeg = heading;
-        applyDriverHeading(heading);
-    }
-
-    function bindDeviceOrientation() {
-        if (deviceOrientationBound) return;
-        window.addEventListener('deviceorientationabsolute', onDeviceOrientation, true);
-        window.addEventListener('deviceorientation', onDeviceOrientation, true);
-        deviceOrientationBound = true;
-    }
-
-    function unbindDeviceOrientation() {
-        if (!deviceOrientationBound) return;
-        window.removeEventListener('deviceorientationabsolute', onDeviceOrientation, true);
-        window.removeEventListener('deviceorientation', onDeviceOrientation, true);
-        deviceOrientationBound = false;
-    }
-
-    function requestDeviceOrientationAccess() {
-        if (typeof DeviceOrientationEvent === 'undefined') {
-            return Promise.resolve(false);
-        }
-        bindDeviceOrientation();
-        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-            return DeviceOrientationEvent.requestPermission()
-                .then(function (state) { return state === 'granted'; })
-                .catch(function () { return false; });
-        }
-        return Promise.resolve(true);
     }
 
     function focusMapOnDriver(animate) {
@@ -793,18 +901,32 @@
     function refreshDriverMarkerIcon() {
         if (!driverMarker) return;
         var latlng = driverMarker.getLatLng();
+        var heading = driverHeadingDeg;
         driverMarker.setIcon(makeDriverArrowIcon());
         driverMarker.setLatLng(latlng);
+        if (isFinite(heading)) {
+            applyDriverHeading(heading, true);
+        }
     }
 
     function enableNavigationMode() {
         if (navigationMode) {
             followDriverNavigation(true);
+            if (driverMarker) {
+                var ll = driverMarker.getLatLng();
+                refreshHeadingFromRoute(ll.lat, ll.lng);
+            }
             return;
         }
         setNavigationMode(true);
         refreshDriverMarkerIcon();
-        if (driverHeadingDeg > 0 && mapHasRotation()) {
+        if (driverMarker) {
+            var driverLatLng = driverMarker.getLatLng();
+            if (!refreshHeadingFromRoute(driverLatLng.lat, driverLatLng.lng) &&
+                driverHeadingDeg > 0 && mapHasRotation()) {
+                smoothSetMapBearing(driverHeadingDeg);
+            }
+        } else if (driverHeadingDeg > 0 && mapHasRotation()) {
             smoothSetMapBearing(driverHeadingDeg);
         }
         followDriverNavigation(false);
@@ -813,8 +935,14 @@
     function updateDriverMarker(lat, lng, coords, skipFollow) {
         var prevLat = lastDriverLat;
         var prevLng = lastDriverLng;
+        var needNavIcon = shouldShowNavMarker();
         if (driverMarker) {
             driverMarker.setLatLng([lat, lng]);
+            var markerEl = driverMarker.getElement();
+            if (needNavIcon && markerEl && markerEl.classList &&
+                !markerEl.classList.contains('livreur-marker-wrap--nav')) {
+                refreshDriverMarkerIcon();
+            }
         } else {
             driverMarker = L.marker([lat, lng], {
                 icon: makeDriverArrowIcon(),
@@ -823,7 +951,10 @@
         resolveHeadingFromPosition(coords || null, lat, lng);
         lastDriverLat = lat;
         lastDriverLng = lng;
-        if (navigationMode && !skipFollow) {
+        if ((navigationMode || needNavIcon) && !skipFollow) {
+            if (!navigationMode && needNavIcon) {
+                enableNavigationMode();
+            }
             var movedDist = 0;
             if (prevLat != null && prevLng != null) {
                 movedDist = Math.hypot(lat - prevLat, lng - prevLng);
@@ -853,6 +984,7 @@
         var layer = ensureRouteLayer();
         layer.clearLayers();
         activeRouteCoords = [from.slice(), to.slice()];
+        lastRouteSegIdx = 0;
         L.polyline([from, to], {
             color: '#c26638',
             weight: 4,
@@ -894,6 +1026,14 @@
                 activeRouteCoords = coords.map(function (pt) {
                     return [pt[0], pt[1]];
                 });
+                lastRouteSegIdx = 0;
+                if (driverMarker) {
+                    var ll = driverMarker.getLatLng();
+                    var routeHeading = bearingFromRoute(ll.lat, ll.lng, activeRouteCoords);
+                    if (routeHeading != null) {
+                        applyDriverHeading(routeHeading);
+                    }
+                }
                 var km = ((data.distance_m || 0) / 1000).toFixed(1);
                 var durationSec = data.duration_s || 0;
                 setEtaFromDuration(durationSec);
@@ -905,6 +1045,13 @@
             })
             .catch(function () {
                 drawStraightRoute([driverLat, driverLng], [clientLat, clientLng]);
+                if (driverMarker) {
+                    var ll = driverMarker.getLatLng();
+                    var routeHeading = bearingFromRoute(ll.lat, ll.lng, activeRouteCoords);
+                    if (routeHeading != null) {
+                        applyDriverHeading(routeHeading);
+                    }
+                }
                 var approxSec = estimateStraightDurationSeconds(driverLat, driverLng, clientLat, clientLng);
                 setEtaFromDuration(approxSec);
                 if (!silent) {
@@ -994,7 +1141,7 @@
             if (driverLat !== null && driverLng !== null && !isObserverMode()) {
                 routePromise = drawRoute(driverLat, driverLng, client.lat, client.lng);
             } else if (driverLat !== null && driverLng !== null && isObserverMode()) {
-                routePromise = Promise.resolve();
+                routePromise = drawRoute(driverLat, driverLng, client.lat, client.lng, true);
             } else if (isObserverMode()) {
                 setStatus('En attente de la position du livreur…', 'pending');
             } else {
@@ -1016,6 +1163,9 @@
         }
 
         return routePromise.then(function () {
+            if (driverMarker && (cfg.trackingActive || deliveryActive || isObserverMode())) {
+                enableNavigationMode();
+            }
             fitMapBounds();
         });
     }
@@ -1433,7 +1583,6 @@
             return;
         }
         if (startBtn) startBtn.setAttribute('disabled', 'disabled');
-        requestDeviceOrientationAccess();
 
         if (deliveryActive && watchId !== null) {
             beginRealtimeConnection().finally(function () {
@@ -1635,10 +1784,6 @@
         map.on('dragend', onUserMapInteraction);
         map.on('zoomend', onUserMapInteraction);
 
-        if (cfg.canManage) {
-            bindDeviceOrientation();
-        }
-
         window.addEventListener('resize', function () {
             setTimeout(function () { map.invalidateSize(); }, 120);
         });
@@ -1660,7 +1805,6 @@
         }
         setDeliveryActive(true);
         updateTrackingButtons();
-        requestDeviceOrientationAccess();
         startNativeDriverTracking().then(function (nativeOk) {
             if (!nativeOk && !startWatchStream()) {
                 setTrackingInactive('Suivi en temps réel inactif');
