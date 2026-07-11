@@ -20,7 +20,7 @@ const SOCKET_PATH = process.env.TRACKING_SOCKET_PATH || '/socket.io';
 
 const corsOrigins = (process.env.TRACKING_CORS_ORIGINS || '')
   .split(',')
-  .map((s) => s.trim())
+  .map((s) => s.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
 if (!INTERNAL_SECRET) {
@@ -178,6 +178,7 @@ io.use(async (socket, next) => {
       }
       const info = await verifyWatchToken(token, commandeId, blId);
       if (!info) {
+        console.warn('[tracking] watch_unauthorized commande=%s bl=%s', commandeId, blId);
         return next(new Error('watch_unauthorized'));
       }
       socket.data.role = 'watch';

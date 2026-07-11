@@ -974,6 +974,10 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
     }
     try {
         if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
+            $row = livreur_get_facture_tracking((int) $bl_id);
+            if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
+                return ['ok' => true];
+            }
             $stmt = $db->prepare('
                 UPDATE bons_livraison
                 SET tracking_active = 1, tracking_started_at = NOW()
@@ -981,6 +985,10 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
             ');
             $stmt->execute(['id' => (int) $bl_id, 'livreur_id' => (int) $admin_id]);
         } else {
+            $row = livreur_get_commande_tracking((int) $commande_id);
+            if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
+                return ['ok' => true];
+            }
             $stmt = $db->prepare('
                 UPDATE commandes
                 SET tracking_active = 1, tracking_started_at = NOW()

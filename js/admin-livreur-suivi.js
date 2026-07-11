@@ -102,7 +102,9 @@
             'URL testée : ' + socketUrl,
             'Chemin Socket.io : ' + (cfg.socketPath || '/socket.io'),
         ];
-        if (lastSocketError) {
+        if (lastSocketError.indexOf('unauthorized') !== -1 || lastSocketError.indexOf('watch_') !== -1) {
+            details.unshift('Token de suivi refusé — rechargez la page et réessayez');
+        } else if (lastSocketError) {
             details.unshift('Détail : ' + lastSocketError);
         }
         return {
@@ -542,18 +544,17 @@
                 lastSocketError = 'Délai de connexion dépassé (8 s)';
                 disconnectRealtime();
                 resolve(false);
-            }, timeoutMs || 8000);
+            }, timeoutMs || 15000);
 
             disconnectRealtime();
             var socketUrl = cfg.socketUrl || window.location.origin;
             socketClient = io(socketUrl, {
                 path: cfg.socketPath || '/socket.io',
-                /* polling d'abord : compatible Nginx/Webuzo ; websocket en upgrade ensuite */
-                transports: ['polling', 'websocket'],
-                upgrade: true,
-                rememberUpgrade: true,
+                /* Webuzo/Nginx : polling seul (websocket upgrade échoue souvent) */
+                transports: ['polling'],
+                upgrade: false,
                 reconnection: true,
-                timeout: 10000,
+                timeout: 15000,
                 auth: {
                     role: 'watch',
                     token: watchToken,
