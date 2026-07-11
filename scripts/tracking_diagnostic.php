@@ -91,6 +91,41 @@ if (is_array($verify) && !empty($verify['valid'])) {
     exit(1);
 }
 
+echo "\n--- Test enregistrement position (simulation livreur-web) ---\n";
+$test_lat = 14.692;
+$test_lng = -17.446;
+$save = livreur_save_web_position($livreur_id, $test_lat, $test_lng, null, $bl_id, 10);
+if (empty($save['ok'])) {
+    echo '  INSERT test      : ECHEC → ' . ($save['error'] ?? 'inconnu') . "\n";
+} else {
+    echo "  INSERT test      : OK ({$test_lat}, {$test_lng})\n";
+    $last2 = livreur_get_last_position($livreur_id, null, $bl_id);
+    echo '  last_position    : ' . ($last2 ? $last2['latitude'] . ', ' . $last2['longitude'] : 'aucune') . "\n";
+}
+
+echo "\n--- Positions récentes en BDD ---\n";
+try {
+    $stmt = $db->prepare("
+        SELECT latitude, longitude, recorded_at, bl_id
+        FROM livreur_positions
+        WHERE livreur_id = :lid
+        ORDER BY recorded_at DESC
+        LIMIT 5
+    ");
+    $stmt->execute(['lid' => $livreur_id > 0 ? $livreur_id : 1]);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    if (!$rows) {
+        echo "  (aucune ligne — le téléphone n'a pas encore envoyé de GPS)\n";
+    } else {
+        foreach ($rows as $r) {
+            echo '  ' . ($r['recorded_at'] ?? '') . ' → ' . $r['latitude'] . ', ' . $r['longitude']
+                . ' (bl_id=' . ($r['bl_id'] ?? 'null') . ")\n";
+        }
+    }
+} catch (PDOException $e) {
+    echo '  Erreur lecture positions : ' . $e->getMessage() . "\n";
+}
+
 echo "\n=== Tout est OK côté PHP. Si l'observateur ne voit rien :\n";
 echo "   - pm2 restart sugar-tracking\n";
 echo "   - Ctrl+F5 sur suivi.php?bl_id={$bl_id}&regarder=1\n";

@@ -227,8 +227,8 @@
             var ok = !!(result && result.success);
             nativeDriverTracking = ok;
             if (ok) {
-                stopWatch();
                 clearBackgroundTracking();
+                /* Garder le flux WebView en secours (HTTP + socket) si le canal natif n'enregistre pas */
             }
             return ok;
         }).catch(function () {
@@ -1550,9 +1550,6 @@
     }
 
     function postPosition(lat, lng, accuracy, coords) {
-        if (nativeDriverTracking) {
-            return;
-        }
         var now = Date.now();
         if (now - lastPostAt < 4000) {
             emitPositionToSocket(lat, lng, coords || { accuracy: accuracy });
@@ -1565,7 +1562,7 @@
             latitude: lat,
             longitude: lng,
             accuracy: accuracy
-        }).catch(function () { /* silencieux */ });
+        }).catch(function () { /* silencieux — prochaine position réessaiera */ });
     }
 
     function stopWatch() {
