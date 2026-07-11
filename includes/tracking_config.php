@@ -6,6 +6,10 @@
 
 if (!function_exists('tracking_load_config')) {
 
+    if (!function_exists('get_request_origin_base_url')) {
+        require_once __DIR__ . '/site_url.php';
+    }
+
     function tracking_load_config() {
         static $config = null;
         if ($config !== null) {
@@ -78,5 +82,28 @@ if (!function_exists('tracking_load_config')) {
         }
         $port = (int) tracking_config_get('node_port', 0);
         return $port > 0;
+    }
+
+    /**
+     * URL utilisée par le client JS (Socket.io).
+     * Préfère socket_url (ex. Node direct en local), sinon public_site_url, sinon l'hôte courant.
+     */
+    function tracking_client_socket_url() {
+        $direct = rtrim(trim((string) tracking_config_get('socket_url', '')), '/');
+        if ($direct !== '') {
+            return $direct;
+        }
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            if (function_exists('get_request_origin_base_url')) {
+                return rtrim(get_request_origin_base_url(), '/');
+            }
+            $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            return rtrim($scheme . '://' . $_SERVER['HTTP_HOST'], '/');
+        }
+        $public = rtrim(trim((string) tracking_config_get('public_site_url', '')), '/');
+        if ($public !== '') {
+            return $public;
+        }
+        return '';
     }
 }

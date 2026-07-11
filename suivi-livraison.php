@@ -69,7 +69,7 @@ $delivery_lat = livreur_parse_coord($livraison['delivery_latitude'] ?? null);
 $delivery_lng = livreur_parse_coord($livraison['delivery_longitude'] ?? null);
 
 $tracking_cfg = tracking_load_config();
-$public_site_url = rtrim((string) tracking_config_get('public_site_url', ''), '/');
+$socket_client_url = tracking_client_socket_url();
 $socket_path = tracking_config_get('socket_path', '/socket.io');
 $realtime_configured = tracking_realtime_available();
 $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
@@ -194,7 +194,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     commandeId: <?php echo $livraison_type === 'commande' ? (int) $commande_id : 0; ?>,
     blId: <?php echo $livraison_type === 'facture' ? (int) $bl_id : 0; ?>,
     livraisonType: <?php echo json_encode($livraison_type, JSON_UNESCAPED_UNICODE); ?>,
-    socketUrl: <?php echo json_encode($public_site_url !== '' ? $public_site_url : '', JSON_UNESCAPED_SLASHES); ?>,
+    socketUrl: <?php echo json_encode($socket_client_url, JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
     watchTokenUrl: '',
     embeddedWatchToken: <?php echo json_encode($token, JSON_UNESCAPED_UNICODE); ?>,

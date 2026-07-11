@@ -46,7 +46,14 @@ if (!empty($row['livreur_id'])) {
     }
 }
 
+
 $is_facture = !empty($row['bl_id']) || (($row['livraison_type'] ?? '') === 'facture');
+
+$livreur_id = !empty($row['livreur_id']) ? (int) $row['livreur_id'] : 0;
+$admin_id = !empty($row['admin_id']) ? (int) $row['admin_id'] : 0;
+$can_emit_position = $livreur_id > 0 && (
+    ($row['type'] ?? '') === 'admin' && $admin_id > 0 && $admin_id === $livreur_id
+);
 
 tracking_json_response([
     'valid' => true,
@@ -55,7 +62,9 @@ tracking_json_response([
     'commande_id' => !empty($row['commande_id']) ? (int) $row['commande_id'] : null,
     'bl_id' => !empty($row['bl_id']) ? (int) $row['bl_id'] : null,
     'numero_commande' => $is_facture ? ($row['numero_bl'] ?? null) : ($row['numero_commande'] ?? null),
-    'livreur_id' => $row['livreur_id'] ? (int) $row['livreur_id'] : null,
+    'livreur_id' => $livreur_id > 0 ? $livreur_id : null,
+    'livreur_nom' => trim((string) ($row['livreur_prenom'] ?? '') . ' ' . (string) ($row['livreur_nom'] ?? '')),
+    'can_emit_position' => $can_emit_position,
     'tracking_active' => (int) ($row['tracking_active'] ?? 0) === 1,
     'delivery_latitude' => livreur_parse_coord($row['delivery_latitude'] ?? null),
     'delivery_longitude' => livreur_parse_coord($row['delivery_longitude'] ?? null),

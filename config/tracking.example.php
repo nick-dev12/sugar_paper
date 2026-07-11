@@ -17,6 +17,10 @@ return [
     // URL publique du site (sans slash final) — utilisée par l'admin pour le client JS
     'public_site_url' => 'https://sugar-paper.com',
 
+    // URL Socket.io côté client (optionnel). En local WAMP : http://127.0.0.1:3001
+    // Si vide, le client utilise public_site_url (proxy Nginx /socket.io recommandé en prod).
+    'socket_url' => '',
+
     // Durée de validité du token livreur (heures)
     'livreur_token_ttl_hours' => 720,
 

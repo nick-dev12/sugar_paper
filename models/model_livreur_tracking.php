@@ -323,10 +323,12 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
             $sql = "
                 SELECT w.*, b.numero_bl, b.livreur_id, b.tracking_active,
                        b.delivery_latitude, b.delivery_longitude,
-                       COALESCE(b.adresse_livraison, b.adresse_client, c.adresse) AS adresse_livraison
+                       COALESCE(b.adresse_livraison, b.adresse_client, c.adresse) AS adresse_livraison,
+                       a.nom AS livreur_nom, a.prenom AS livreur_prenom
                 FROM tracking_watch_tokens w
                 INNER JOIN bons_livraison b ON b.id = w.bl_id
                 INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
+                LEFT JOIN admin a ON a.id = b.livreur_id AND a.role IN ('livreur', 'admin')
                 WHERE w.token_hash = :hash
                   AND w.expires_at > NOW()
                   AND w.bl_id = :bl_id
@@ -346,9 +348,11 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
 
         $sql = "
             SELECT w.*, c.numero_commande, c.livreur_id, c.tracking_active,
-                   c.delivery_latitude, c.delivery_longitude, c.adresse_livraison
+                   c.delivery_latitude, c.delivery_longitude, c.adresse_livraison,
+                   a.nom AS livreur_nom, a.prenom AS livreur_prenom
             FROM tracking_watch_tokens w
             INNER JOIN commandes c ON c.id = w.commande_id
+            LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
             WHERE w.token_hash = :hash
               AND w.expires_at > NOW()
         ";

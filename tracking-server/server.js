@@ -206,6 +206,9 @@ io.on('connection', (socket) => {
     if (socket.data.commandeId) {
       socket.join(`commande_${socket.data.commandeId}`);
     }
+    if (socket.data.blId) {
+      socket.join(`bl_${socket.data.blId}`);
+    }
 
     socket.emit('livreur:ready', {
       livreur_id: livreurId,
@@ -217,14 +220,16 @@ io.on('connection', (socket) => {
   if (role === 'watch') {
     const commandeId = socket.data.commandeId;
     const blId = socket.data.blId;
+    const meta = socket.data.watchMeta || {};
     if (commandeId) {
       socket.join(`commande_${commandeId}`);
     }
     if (blId) {
       socket.join(`bl_${blId}`);
     }
-
-    const meta = socket.data.watchMeta || {};
+    if (meta.livreur_id) {
+      socket.join(`livreur_${meta.livreur_id}`);
+    }
     socket.emit('watch:ready', {
       commande_id: commandeId,
       bl_id: blId,
@@ -246,13 +251,14 @@ io.on('connection', (socket) => {
       livreurNom = socket.data.livreurNom || '';
     } else if (socket.data.role === 'watch') {
       const meta = socket.data.watchMeta || {};
-      if (!meta.tracking_active || !meta.livreur_id) {
+      if (!meta.can_emit_position) {
         return;
       }
       livreurId = parseInt(meta.livreur_id, 10) || 0;
       if (livreurId < 1) {
         return;
       }
+      livreurNom = meta.livreur_nom || '';
     } else {
       return;
     }
@@ -280,6 +286,9 @@ io.on('connection', (socket) => {
       livreur_nom: socket.data.livreurNom || '',
     };
 
+    if (livreurId) {
+      io.to(`livreur_${livreurId}`).emit('position:update', payload);
+    }
     if (commandeId) {
       io.to(`commande_${commandeId}`).emit('position:update', payload);
     }

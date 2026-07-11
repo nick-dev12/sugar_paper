@@ -42,8 +42,9 @@ if ((int) ($livraison['tracking_active'] ?? 0) !== 1) {
     exit;
 }
 
-$tracking_cfg = tracking_load_config();
-$public_site_url = rtrim((string) tracking_config_get('public_site_url', ''), '/');
+require_once __DIR__ . '/../../includes/tracking_config.php';
+
+$socket_client_url = tracking_client_socket_url();
 $socket_path = tracking_config_get('socket_path', '/socket.io');
 $realtime_configured = tracking_realtime_available();
 
@@ -77,7 +78,7 @@ window.LIVREUR_BG_PAGE_CONFIG = {
     webApiUrl: '/api/tracking/livreur-web.php',
     watchTokenUrl: <?php echo json_encode($watch_token_url, JSON_UNESCAPED_SLASHES); ?>,
     statusUrl: <?php echo json_encode($status_url, JSON_UNESCAPED_SLASHES); ?>,
-    socketUrl: <?php echo json_encode($public_site_url !== '' ? $public_site_url : '', JSON_UNESCAPED_SLASHES); ?>,
+    socketUrl: <?php echo json_encode($socket_client_url, JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
     realtimeConfigured: <?php echo $realtime_configured ? 'true' : 'false'; ?>
 };

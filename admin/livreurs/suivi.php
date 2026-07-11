@@ -57,7 +57,7 @@ if ($livraison) {
 }
 
 $tracking_cfg = tracking_load_config();
-$public_site_url = rtrim((string) tracking_config_get('public_site_url', ''), '/');
+$socket_client_url = tracking_client_socket_url();
 $socket_path = tracking_config_get('socket_path', '/socket.io');
 $realtime_configured = tracking_realtime_available();
 
@@ -340,7 +340,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     commandeId: <?php echo $livraison_type === 'commande' ? (int) $commande_id : 0; ?>,
     blId: <?php echo $livraison_type === 'facture' ? (int) $bl_id : 0; ?>,
     livraisonType: <?php echo json_encode($livraison_type, JSON_UNESCAPED_UNICODE); ?>,
-    socketUrl: <?php echo json_encode($public_site_url !== '' ? $public_site_url : '', JSON_UNESCAPED_SLASHES); ?>,
+    socketUrl: <?php echo json_encode($socket_client_url, JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
     watchTokenUrl: <?php echo json_encode($watch_token_url, JSON_UNESCAPED_SLASHES); ?>,
     embeddedWatchToken: <?php echo json_encode($embedded_watch_token, JSON_UNESCAPED_UNICODE); ?>,

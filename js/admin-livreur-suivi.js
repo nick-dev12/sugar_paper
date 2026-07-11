@@ -187,6 +187,32 @@
     var bearingTargetDeg = 0;
     var lastRouteSegIdx = 0;
     var nativeDriverTracking = false;
+    var observerSocketConnecting = false;
+    var lastRemotePositionAt = 0;
+    var POSITION_POLL_FAST_MS = 1500;
+    var POSITION_POLL_NORMAL_MS = 4000;
+
+    function resolveSocketUrl() {
+        var configured = (cfg.socketUrl || '').replace(/\/+$/, '');
+        if (!configured) {
+            return window.location.origin;
+        }
+        try {
+            var cfgUrl = new URL(configured);
+            var current = window.location;
+            var isLocalPage = current.hostname === 'localhost' || current.hostname === '127.0.0.1';
+            var isLocalSocket = cfgUrl.hostname === 'localhost' || cfgUrl.hostname === '127.0.0.1';
+            if (isLocalPage && isLocalSocket) {
+                return cfgUrl.origin;
+            }
+            if (isLocalPage && !isLocalSocket) {
+                return 'http://127.0.0.1:3001';
+            }
+        } catch (e) {
+            return configured;
+        }
+        return configured;
+    }
 
     function isNativeDriverTrackingAvailable() {
         return typeof window.LivreurNativeTracking !== 'undefined' &&
@@ -269,6 +295,7 @@
         if (isObserverMode()) {
             cfg.trackingActive = true;
         }
+        lastRemotePositionAt = Date.now();
         var coords = {
             heading: pos.heading != null ? parseFloat(pos.heading) : null,
             speed: pos.speed != null ? parseFloat(pos.speed) : null
@@ -1326,13 +1353,13 @@
             var timer = setTimeout(function () {
                 if (settled) return;
                 settled = true;
-                lastSocketError = 'Délai de connexion dépassé (8 s)';
+                lastSocketError = 'Délai de connexion dépassé';
                 disconnectRealtime();
                 resolve(false);
-            }, timeoutMs || 15000);
+            }, timeoutMs || 8000);
 
             disconnectRealtime();
-            var socketUrl = cfg.socketUrl || window.location.origin;
+            var socketUrl = resolveSocketUrl();
             socketClient = io(socketUrl, {
                 path: cfg.socketPath || '/socket.io',
                 /* Webuzo/Nginx : polling seul (websocket upgrade échoue souvent) */
@@ -1353,6 +1380,7 @@
                 settled = true;
                 clearTimeout(timer);
                 lastSocketError = '';
+                realtimeConnected = true;
                 resolve(true);
             });
 
@@ -1368,14 +1396,16 @@
 
             socketClient.on('watch:ready', function (data) {
                 if (!data) return;
-                if (data.tracking_active === false || data.tracking_active === 0) {
-                    if (cfg.trackingActive) {
-                        handleTrackingEnded();
-                    }
-                    return;
-                }
-                if (data.tracking_active) {
+                if (data.tracking_active === true || data.tracking_active === 1) {
                     cfg.trackingActive = true;
+                    observerStopped = false;
+                } else if (isObserverMode()) {
+                    if (!cfg.trackingActive) {
+                        setStatus('En attente du démarrage livreur…', 'pending');
+                    }
+                } else if ((data.tracking_active === false || data.tracking_active === 0) && cfg.trackingActive) {
+                    handleTrackingEnded();
+                    return;
                 }
                 if (data.last_position) {
                     applyRemoteDriverPosition(data.last_position);
@@ -1383,12 +1413,47 @@
             });
 
             socketClient.on('disconnect', function () {
-                if (deliveryActive && realtimeConnected) {
-                    realtimeConnected = false;
+                var wasRealtime = realtimeConnected;
+                realtimeConnected = false;
+                if (isObserverMode()) {
+                    restartPositionPolling();
+                    if (wasRealtime && cfg.trackingActive && cfg.realtimeConfigured) {
+                        setStatus('Reconnexion au suivi en direct…', 'pending');
+                        setTimeout(function () {
+                            ensureObserverRealtimeConnection();
+                        }, 1200);
+                    }
+                } else if (deliveryActive && wasRealtime) {
                     setDeliveryStatusRealtime(false);
                 }
             });
         });
+    }
+
+    function ensureObserverRealtimeConnection() {
+        if (!isObserverMode() || !cfg.realtimeConfigured || realtimeConnected || observerSocketConnecting) {
+            return Promise.resolve(false);
+        }
+        if (typeof io === 'undefined') {
+            return Promise.resolve(false);
+        }
+        observerSocketConnecting = true;
+        return beginRealtimeConnection()
+            .then(function (connected) {
+                observerSocketConnecting = false;
+                if (connected) {
+                    setDeliveryStatusRealtime(true);
+                    restartPositionPolling();
+                    if (cfg.trackingActive) {
+                        setStatus('Suivi en temps réel actif', 'live');
+                    }
+                }
+                return connected;
+            })
+            .catch(function () {
+                observerSocketConnecting = false;
+                return false;
+            });
     }
 
     function waitForFirstPosition(timeoutMs) {
@@ -1463,7 +1528,10 @@
     }
 
     function emitPositionToSocket(lat, lng, coords) {
-        if (!socketClient || !socketClient.connected || !cfg.canManage) {
+        if (!socketClient || !socketClient.connected) {
+            return;
+        }
+        if (!deliveryActive && !gpsStreaming && !cfg.trackingActive) {
             return;
         }
         var payload = {
@@ -1543,7 +1611,7 @@
         return fetchWatchToken()
             .then(function (token) {
                 setStatus('Connexion au serveur temps réel…', 'pending');
-                return tryConnectRealtime(token, 15000);
+                return tryConnectRealtime(token, 8000);
             })
             .then(function (connected) {
                 setDeliveryStatusRealtime(connected);
@@ -1869,24 +1937,59 @@
                     }
                     return;
                 }
-                if (!cfg.trackingActive) {
-                    cfg.trackingActive = true;
+                var trackingJustStarted = !cfg.trackingActive;
+                cfg.trackingActive = true;
+                observerStopped = false;
+                if (trackingJustStarted && isObserverMode()) {
+                    ensureObserverRealtimeConnection();
                 }
                 if (data.last_position) {
                     applyRemoteDriverPosition(data.last_position);
-                } else if (cfg.trackingActive && isObserverMode()) {
+                } else if (isObserverMode()) {
                     setStatus('En attente de la position du livreur…', 'pending');
                 }
             })
             .catch(function () { /* silencieux */ });
     }
 
-    function startPositionPolling() {
+    function getPositionPollIntervalMs() {
+        if (!isObserverMode()) {
+            return POSITION_POLL_NORMAL_MS;
+        }
+        if (!realtimeConnected) {
+            return POSITION_POLL_FAST_MS;
+        }
+        if (!lastRemotePositionAt || (Date.now() - lastRemotePositionAt) > 8000) {
+            return POSITION_POLL_FAST_MS;
+        }
+        return POSITION_POLL_NORMAL_MS;
+    }
+
+    function restartPositionPolling() {
+        if (!isObserverMode()) {
+            return;
+        }
         if (positionPollTimer) {
             clearInterval(positionPollTimer);
+            positionPollTimer = null;
         }
-        positionPollTimer = setInterval(fetchLastPositionUpdate, 4000);
+        var interval = getPositionPollIntervalMs();
+        positionPollTimer = setInterval(function () {
+            fetchLastPositionUpdate().finally(function () {
+                if (!positionPollTimer) {
+                    return;
+                }
+                var next = getPositionPollIntervalMs();
+                if (next !== interval) {
+                    restartPositionPolling();
+                }
+            });
+        }, interval);
         fetchLastPositionUpdate();
+    }
+
+    function startPositionPolling() {
+        restartPositionPolling();
     }
 
     function startWatchObserverMode() {
@@ -1895,9 +1998,10 @@
         } else {
             setStatus('Connexion au suivi en direct…', 'pending');
         }
+        restartPositionPolling();
         beginRealtimeConnection()
             .then(function (connected) {
-                startPositionPolling();
+                restartPositionPolling();
                 if (connected) {
                     setDeliveryStatusRealtime(true);
                     if (cfg.trackingActive) {
@@ -1906,7 +2010,7 @@
                         setStatus('En attente du démarrage livreur…', 'pending');
                     }
                 } else if (cfg.trackingActive) {
-                    setStatus('Position actualisée toutes les 4 s', 'ok');
+                    setStatus('Actualisation toutes les ' + (POSITION_POLL_FAST_MS / 1000) + ' s', 'ok');
                 } else {
                     setStatus('En attente du démarrage livreur…', 'pending');
                 }
@@ -1916,7 +2020,7 @@
                 return connected;
             })
             .catch(function () {
-                startPositionPolling();
+                restartPositionPolling();
                 if (cfg.trackingActive) {
                     setStatus('Actualisation périodique de la position', 'ok');
                     if (driverMarker && !navigationMode) {
