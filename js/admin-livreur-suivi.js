@@ -548,7 +548,12 @@
             var socketUrl = cfg.socketUrl || window.location.origin;
             socketClient = io(socketUrl, {
                 path: cfg.socketPath || '/socket.io',
-                transports: ['websocket', 'polling'],
+                /* polling d'abord : compatible Nginx/Webuzo ; websocket en upgrade ensuite */
+                transports: ['polling', 'websocket'],
+                upgrade: true,
+                rememberUpgrade: true,
+                reconnection: true,
+                timeout: 10000,
                 auth: {
                     role: 'watch',
                     token: watchToken,
@@ -561,16 +566,13 @@
                 if (settled) return;
                 settled = true;
                 clearTimeout(timer);
+                lastSocketError = '';
                 resolve(true);
             });
 
             socketClient.on('connect_error', function (err) {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
+                /* Ne pas couper ici : Socket.io réessaie (polling si websocket échoue) */
                 lastSocketError = (err && err.message) ? err.message : 'Connexion refusée';
-                disconnectRealtime();
-                resolve(false);
             });
 
             socketClient.on('position:update', function (data) {
