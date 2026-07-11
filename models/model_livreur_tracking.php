@@ -318,32 +318,39 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
         return false;
     }
 
+    $hash = livreur_hash_token($token);
+
     try {
         if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
+            $row = livreur_merge_watch_token_with_facture($hash, (int) $bl_id);
+            if ($row) {
+                return $row;
+            }
+        }
+
+        if ($commande_id !== null && (int) $commande_id > 0) {
             $sql = "
-                SELECT w.*, b.numero_bl, b.livreur_id, b.tracking_active,
-                       b.delivery_latitude, b.delivery_longitude,
-                       COALESCE(b.adresse_livraison, b.adresse_client, c.adresse) AS adresse_livraison,
+                SELECT w.*, c.numero_commande, c.livreur_id, c.tracking_active,
+                       c.delivery_latitude, c.delivery_longitude, c.adresse_livraison,
                        a.nom AS livreur_nom, a.prenom AS livreur_prenom
                 FROM tracking_watch_tokens w
-                INNER JOIN bons_livraison b ON b.id = w.bl_id
-                INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
-                LEFT JOIN admin a ON a.id = b.livreur_id AND a.role IN ('livreur', 'admin')
+                INNER JOIN commandes c ON c.id = :commande_id
+                LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
                 WHERE w.token_hash = :hash
                   AND w.expires_at > NOW()
-                  AND w.bl_id = :bl_id
+                  AND (w.commande_id IS NULL OR w.commande_id = :commande_id)
                 LIMIT 1
             ";
             $stmt = $db->prepare($sql);
             $stmt->execute([
-                'hash' => livreur_hash_token($token),
-                'bl_id' => (int) $bl_id,
+                'hash' => $hash,
+                'commande_id' => (int) $commande_id,
             ]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {
-                $row['livraison_type'] = 'facture';
+                $row['livraison_type'] = 'commande';
+                return $row;
             }
-            return $row ?: false;
         }
 
         $sql = "
@@ -356,8 +363,8 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
             WHERE w.token_hash = :hash
               AND w.expires_at > NOW()
         ";
-        $params = ['hash' => livreur_hash_token($token)];
-        if ($commande_id !== null) {
+        $params = ['hash' => $hash];
+        if ($commande_id !== null && (int) $commande_id > 0) {
             $sql .= " AND w.commande_id = :commande_id";
             $params['commande_id'] = (int) $commande_id;
         }
@@ -370,6 +377,91 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
             $row['livraison_type'] = 'commande';
         }
         return $row ?: false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Colonne bl_id sur tracking_watch_tokens (migration livreurs).
+ */
+function livreur_watch_token_has_bl_column() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $db->query('SELECT bl_id FROM tracking_watch_tokens LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * Valide un token watch pour une facture (BL) sans JOIN fragile token↔client B2B.
+ *
+ * @return array<string, mixed>|false
+ */
+function livreur_merge_watch_token_with_facture($token_hash, $bl_id) {
+    global $db;
+
+    $bl_id = (int) $bl_id;
+    if ($bl_id < 1) {
+        return false;
+    }
+
+    $facture = livreur_get_facture_tracking($bl_id);
+    if (!$facture) {
+        return false;
+    }
+
+    try {
+        $has_bl_col = livreur_watch_token_has_bl_column();
+        if ($has_bl_col) {
+            $stmt = $db->prepare("
+                SELECT *
+                FROM tracking_watch_tokens
+                WHERE token_hash = :hash
+                  AND expires_at > NOW()
+                  AND (bl_id IS NULL OR bl_id = :bl_id)
+                ORDER BY id DESC
+                LIMIT 1
+            ");
+            $stmt->execute([
+                'hash' => $token_hash,
+                'bl_id' => $bl_id,
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT *
+                FROM tracking_watch_tokens
+                WHERE token_hash = :hash
+                  AND expires_at > NOW()
+                ORDER BY id DESC
+                LIMIT 1
+            ");
+            $stmt->execute(['hash' => $token_hash]);
+        }
+        $token_row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$token_row) {
+            return false;
+        }
+
+        return array_merge($token_row, [
+            'numero_bl' => $facture['numero_bl'] ?? '',
+            'livreur_id' => $facture['livreur_id'] ?? null,
+            'tracking_active' => $facture['tracking_active'] ?? 0,
+            'delivery_latitude' => $facture['delivery_latitude'] ?? null,
+            'delivery_longitude' => $facture['delivery_longitude'] ?? null,
+            'adresse_livraison' => $facture['adresse_livraison'] ?? '',
+            'livreur_nom' => $facture['livreur_nom'] ?? '',
+            'livreur_prenom' => $facture['livreur_prenom'] ?? '',
+            'livraison_type' => 'facture',
+            'bl_id' => $bl_id,
+        ]);
     } catch (PDOException $e) {
         return false;
     }

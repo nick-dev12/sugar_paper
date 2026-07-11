@@ -108,12 +108,17 @@ async function checkPhpConnection() {
     return;
   }
   try {
-    const { status } = await callPhp('/api/tracking/verify-livreur.php', { token: '__startup_check__' });
-    if (status === 200 || status === 401 || status === 403) {
+    const { status, data } = await callPhp('/api/tracking/ping.php', {});
+    if (status === 200 && data.ok) {
       console.log(`[tracking] PHP joignable (${PHP_BASE}, Host: ${PHP_HOST})`);
       return;
     }
-    console.warn(`[tracking] PHP réponse inattendue HTTP ${status} (${PHP_BASE})`);
+    const { status: fbStatus } = await callPhp('/api/tracking/verify-livreur.php', { token: '__startup_check__' });
+    if (fbStatus === 200 || fbStatus === 401 || fbStatus === 403) {
+      console.log(`[tracking] PHP joignable (${PHP_BASE}, Host: ${PHP_HOST})`);
+      return;
+    }
+    console.warn(`[tracking] PHP réponse inattendue HTTP ${status || fbStatus} (${PHP_BASE})`);
   } catch (err) {
     console.error(`[tracking] PHP injoignable (${PHP_BASE}, Host: ${PHP_HOST}): ${err.message}`);
   }
@@ -131,11 +136,18 @@ async function verifyWatchToken(token, commandeId, blId) {
   const payload = { token };
   if (blId) {
     payload.bl_id = blId;
-  } else {
+  } else if (commandeId) {
     payload.commande_id = commandeId;
   }
   const { status, data } = await callPhp('/api/tracking/verify-watch.php', payload);
   if (status !== 200 || !data.valid) {
+    console.warn(
+      '[tracking] verify-watch failed status=%s bl=%s commande=%s error=%s',
+      status,
+      blId || 0,
+      commandeId || 0,
+      (data && data.error) ? data.error : 'unknown'
+    );
     return null;
   }
   return data;

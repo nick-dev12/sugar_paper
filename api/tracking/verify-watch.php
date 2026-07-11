@@ -51,9 +51,22 @@ $is_facture = !empty($row['bl_id']) || (($row['livraison_type'] ?? '') === 'fact
 
 $livreur_id = !empty($row['livreur_id']) ? (int) $row['livreur_id'] : 0;
 $admin_id = !empty($row['admin_id']) ? (int) $row['admin_id'] : 0;
-$can_emit_position = $livreur_id > 0 && (
-    ($row['type'] ?? '') === 'admin' && $admin_id > 0 && $admin_id === $livreur_id
-);
+$row_bl_id = !empty($row['bl_id']) ? (int) $row['bl_id'] : 0;
+$ctx_bl_id = $bl_id > 0 ? $bl_id : $row_bl_id;
+$ctx_commande_id = $commande_id > 0 ? $commande_id : (int) ($row['commande_id'] ?? 0);
+
+$can_emit_position = false;
+if (($row['type'] ?? '') === 'admin' && $livreur_id > 0 && $admin_id > 0) {
+    if ($admin_id === $livreur_id) {
+        $can_emit_position = true;
+    } elseif (livreur_web_can_manage_livraison(
+        $admin_id,
+        $ctx_commande_id > 0 ? $ctx_commande_id : null,
+        $ctx_bl_id > 0 ? $ctx_bl_id : null
+    )) {
+        $can_emit_position = true;
+    }
+}
 
 tracking_json_response([
     'valid' => true,
