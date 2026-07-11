@@ -1,0 +1,201 @@
+/**
+ * Page admin/stock/index.php — grille catégories & en-tête
+ */
+
+/* =============================================================================
+   En-tête
+   ============================================================================= */
+
+body.page-stock-index .content-header .header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+}
+
+body.page-stock-index .btn-history {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  padding: clamp(9px, 2vw, 12px) clamp(14px, 2.5vw, 22px);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+  text-decoration: none;
+  transition: all 0.25s ease;
+  border: 2px solid #918a44;
+  background: linear-gradient(135deg, #f8f7f2 0%, #fff 100%);
+  color: #6b2f20;
+  box-shadow: 0 2px 8px rgba(145, 138, 68, 0.15);
+  white-space: nowrap;
+}
+
+body.page-stock-index .btn-history:hover {
+  background: linear-gradient(135deg, #918a44 0%, #7a7340 100%);
+  color: #fff;
+  border-color: #918a44;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(145, 138, 68, 0.3);
+}
+
+body.page-stock-index .btn-history i {
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+}
+
+@media (max-width: 768px) {
+  body.page-stock-index .content-header .header-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+    width: 100%;
+  }
+
+  body.page-stock-index .content-header .header-actions .btn-history,
+  body.page-stock-index .content-header .header-actions .btn-primary {
+    width: 100%;
+    justify-content: center;
+    font-size: clamp(0.75rem, 2.2vw, 0.85rem);
+    padding: clamp(9px, 2vw, 11px) clamp(12px, 2.5vw, 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  body.page-stock-index .content-header .header-actions {
+    grid-template-columns: 1fr;
+  }
+
+  body.page-stock-index .btn-history {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+/* =============================================================================
+   Grille catégories : 3 colonnes tablette, 2 colonnes mobile
+   ============================================================================= */
+
+body.page-stock-index .categories-section {
+  padding: clamp(14px, 2.5vw, 24px) clamp(12px, 2.5vw, 22px);
+}
+
+body.page-stock-index .categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(12px, 2.5vw, 22px);
+  margin-top: clamp(14px, 2.5vw, 20px);
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  body.page-stock-index .categories-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  body.page-stock-index .categories-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 12px);
+  }
+}
+
+@media (max-width: 360px) {
+  body.page-stock-index .categories-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================================
+   Cartes catégorie
+   ============================================================================= */
+
+body.page-stock-index .categorie-card {
+  max-width: 100%;
+  border-radius: clamp(10px, 2vw, 14px);
+}
+
+body.page-stock-index .categorie-card-image-wrap {
+  height: clamp(100px, 22vw, 150px);
+}
+
+body.page-stock-index .categorie-card .categorie-image-placeholder {
+  min-height: clamp(100px, 22vw, 150px);
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+}
+
+body.page-stock-index .categorie-card-body {
+  padding: clamp(12px, 2.5vw, 20px) clamp(14px, 2.5vw, 22px);
+}
+
+body.page-stock-index .categorie-nom {
+  font-size: clamp(0.88rem, 2.6vw, 1.05rem);
+  margin-bottom: clamp(6px, 1.5vw, 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.page-stock-index .categorie-description {
+  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
+  margin-bottom: clamp(10px, 2vw, 14px);
+  -webkit-line-clamp: 2;
+}
+
+body.page-stock-index .categorie-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(4px, 1vw, 8px);
+}
+
+body.page-stock-index .categorie-actions .btn-card {
+  flex: 1 1 calc(50% - 4px);
+  min-width: 0;
+  padding: clamp(6px, 1.5vw, 9px) clamp(6px, 1.5vw, 10px);
+  font-size: clamp(0.58rem, 2vw, 0.72rem);
+  border-radius: 6px;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+body.page-stock-index .categorie-actions .btn-view {
+  flex: 1 1 100%;
+}
+
+body.page-stock-index .categorie-actions .btn-card i {
+  font-size: clamp(0.58rem, 2vw, 0.7rem);
+}
+
+@media (max-width: 600px) {
+  body.page-stock-index .categorie-actions {
+    flex-direction: column;
+  }
+
+  body.page-stock-index .categorie-actions .btn-card {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 100%;
+  }
+
+  body.page-stock-index .categorie-description {
+    -webkit-line-clamp: 2;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 400px) {
+  body.page-stock-index .categorie-actions .btn-card {
+    font-size: 0.55rem;
+    padding: 5px 6px;
+  }
+}
+
+body.page-stock-index .empty-state {
+  padding: clamp(24px, 5vw, 40px) clamp(14px, 3vw, 20px);
+}
+
+body.page-stock-index .empty-state h3 {
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+}
+
+body.page-stock-index .empty-state p {
+  font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+}

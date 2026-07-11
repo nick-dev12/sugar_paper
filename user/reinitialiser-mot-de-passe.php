@@ -47,9 +47,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
     <title>Réinitialiser le mot de passe - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;

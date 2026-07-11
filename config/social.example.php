@@ -13,5 +13,5 @@ return [
     'instagram' => 'https://www.instagram.com/sugarpaper1/',
 
     // URL de la page Facebook
-    'facebook' => 'https://web.facebook.com/sugarpaper.sn/',
+    'facebook' => 'https://web.facebook.com/sugarpaper.com/',
 ];

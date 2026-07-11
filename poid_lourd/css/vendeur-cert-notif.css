@@ -1,0 +1,181 @@
+/**
+ * Notification + badge hero certification vendeur
+ */
+
+.vendeur-hero-cert {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    z-index: 2;
+}
+
+.dash-v2-hero,
+.stk-hero,
+.cmd-v2-hero,
+.ap-hero,
+.prm-hero {
+    position: relative;
+}
+
+.vcert-notif-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    background: rgba(13, 13, 13, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.vcert-notif-modal {
+    position: relative;
+    width: min(440px, 100%);
+    background: #fff;
+    border-radius: 22px;
+    padding: 28px 24px 22px;
+    box-shadow: 0 24px 60px rgba(53, 100, 166, 0.22);
+    text-align: center;
+    animation: vcertNotifIn 0.35s ease;
+}
+
+.vcert-notif-modal--ok {
+    border-top: 5px solid #3564a6;
+}
+
+.vcert-notif-modal--no {
+    border-top: 5px solid #FF6B35;
+}
+
+@keyframes vcertNotifIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.vcert-notif-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(53, 100, 166, 0.08);
+    color: var(--gris-fonce, #4a4a4a);
+    cursor: pointer;
+}
+
+.vcert-notif-modal__badge {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.vcert-notif-modal__title {
+    margin: 0 0 10px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--titres, #0d0d0d);
+    font-family: var(--font-titres, 'Poppins', sans-serif);
+}
+
+.vcert-notif-modal__text {
+    margin: 0 0 14px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.vcert-notif-modal__motif {
+    text-align: left;
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 0.86rem;
+}
+
+.vcert-notif-modal__motif p {
+    margin: 6px 0 0;
+    color: #9a3412;
+}
+
+.vcert-notif-modal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.vcert-notif-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border-radius: 12px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-decoration: none;
+    font-family: inherit;
+}
+
+.vcert-notif-btn--primary {
+    background: var(--couleur-dominante, #3564a6);
+    color: #fff;
+}
+
+.vcert-notif-btn--ghost {
+    background: #fff;
+    color: var(--gris-moyen, #737373);
+    border: 1px solid rgba(53, 100, 166, 0.18);
+}
+
+.cert-suivi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 16px;
+}
+
+.cert-suivi-grid p {
+    margin: 0;
+    font-size: 0.86rem;
+}
+
+.cert-suivi-full {
+    grid-column: 1 / -1;
+}
+
+.cert-suivi-refus {
+    margin-top: 0;
+}
+
+.cert-tier__follow {
+    margin-top: 10px;
+}
+
+.cert-tier__follow-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--couleur-dominante, #3564a6);
+    text-decoration: none;
+}
+
+.cert-tier__follow-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .vendeur-hero-cert {
+        position: static;
+        margin: 10px 0 0 auto;
+    }
+
+    .cert-suivi-grid {
+        grid-template-columns: 1fr;
+    }
+}

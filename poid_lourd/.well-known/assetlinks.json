@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.colobanes.app",
+      "sha256_cert_fingerprints": [
+        "67:CA:18:6E:B9:38:55:B6:20:82:9F:A9:FE:E8:8C:42:56:B6:AF:E2:2E:07:7D:86:C3:D3:C6:D2:32:CC:76:56",
+        "00:EF:32:7B:DD:74:37:D7:56:CE:26:4A:1A:2D:F9:F9:0C:AF:59:C8:23:44:A7:0A:23:7D:0B:12:71:0E:BC:17",
+        "26:24:21:B2:1A:31:7A:68:40:18:67:71:38:DD:97:12:DE:87:06:47:9E:9E:B8:1D:84:90:43:11:65:D8:D0:63"
+      ]
+    }
+  }
+]

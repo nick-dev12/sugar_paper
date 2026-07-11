@@ -4,7 +4,12 @@
  * Programmation procédurale uniquement
  */
 
-// Déterminer le chemin de base selon le dossier actuel
+require_once __DIR__ . '/../../includes/site_url.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
+require_once __DIR__ . '/../../models/model_admin.php';
+
+$admin_nav_base = rtrim(get_public_root_uri_path(), '/') . '/admin/';
+
 $current_dir = dirname($_SERVER['PHP_SELF']);
 $is_produits = strpos($current_dir, '/produits') !== false;
 $is_categories = strpos($current_dir, '/categories') !== false;
@@ -14,22 +19,24 @@ $is_parametres = strpos($current_dir, '/parametres') !== false;
 $is_commandes = strpos($current_dir, '/commandes') !== false;
 $is_commandes_perso = strpos($current_dir, '/commandes-personnalisees') !== false;
 $is_devis = strpos($current_dir, '/devis') !== false;
+$is_invoice = strpos($current_dir, '/invoice') !== false;
 $is_users = strpos($current_dir, '/users') !== false;
-$is_contacts = strpos($current_dir, '/contacts') !== false;
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
+$is_livreurs = strpos($current_dir, '/livreurs') !== false;
 $is_comptes = strpos($current_dir, '/comptes') !== false;
 
-$admin_role = $_SESSION['admin_role'] ?? 'admin';
+$admin_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
+$_SESSION['admin_role'] = $admin_role;
 $can_manage_users = ($admin_role === 'admin');
 $can_manage_comptes = ($admin_role === 'admin');
-
-if ($is_produits || $is_categories || $is_stock || $is_slider || $is_parametres || $is_commandes || $is_commandes_perso || $is_devis || $is_users || $is_contacts || $is_zones_livraison || $is_comptes) {
-    $base_path = '../';
-} else {
-    $base_path = '';
-}
+$is_contable_nav = false;
+$is_livreur_nav = ($admin_role === 'livreur');
+$is_utilisateur_nav = ($admin_role === 'utilisateur');
 
 $current_page = basename($_SERVER['PHP_SELF']);
+$nav_href = function ($path) use ($admin_nav_base) {
+    return $admin_nav_base . ltrim($path, '/');
+};
 ?>
 <!-- Bouton menu mobile -->
 <button class="mobile-menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">
@@ -68,81 +75,124 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <h2>Sugar Paper</h2>
         </div>
         <nav class="sidebar-menu">
-            <a href="<?php echo $base_path; ?>dashboard.php"
-                class="menu-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
-                <i class="fas fa-home"></i>
-                <span>Tableau de bord</span>
+            <?php if ($is_contable_nav): ?>
+            <a href="<?php echo $nav_href('comptes/index.php'); ?>"
+                class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
+                <i class="fas fa-user-shield"></i>
+                <span>Comptes</span>
             </a>
-            <a href="<?php echo $base_path; ?>produits/index.php"
+            <a href="<?php echo $nav_href('parametres.php'); ?>"
+                class="menu-item <?php echo ($current_page == 'parametres.php' || strpos($current_dir, '/parametres') !== false) ? 'active' : ''; ?>">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+            </a>
+            <a href="<?php echo $nav_href('profil.php'); ?>"
+                class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
+                <i class="fas fa-user"></i>
+                <span>Mon profil</span>
+            </a>
+            <?php elseif ($is_livreur_nav): ?>
+            <a href="<?php echo $nav_href('livreurs/index.php'); ?>"
+                class="menu-item <?php echo ($is_livreurs && $current_page === 'index.php') ? 'active' : ''; ?>">
+                <i class="fas fa-motorcycle"></i>
+                <span>Livreurs GPS</span>
+            </a>
+            <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
+                class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
+                <i class="fas fa-truck"></i>
+                <span>Zones de livraison</span>
+            </a>
+            <a href="<?php echo $nav_href('profil.php'); ?>"
+                class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
+                <i class="fas fa-user"></i>
+                <span>Mon profil</span>
+            </a>
+            <?php elseif ($is_utilisateur_nav): ?>
+            <a href="<?php echo $nav_href('stock/index.php'); ?>"
+                class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
+                <i class="fas fa-boxes-stacked"></i>
+                <span>Stock</span>
+            </a>
+            <a href="<?php echo $nav_href('produits/index.php'); ?>"
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
             </a>
-            <!-- <a href="<?php echo $base_path; ?>categories/index.php"
-                class="menu-item <?php echo ($is_categories && $current_page == 'index.php') ? 'active' : ''; ?>">
-                <i class="fas fa-tags"></i>
-                <span>Catégories</span>
-            </a> -->
-            <a href="<?php echo $base_path; ?>stock/index.php"
+            <a href="<?php echo $nav_href('profil.php'); ?>"
+                class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
+                <i class="fas fa-user"></i>
+                <span>Mon profil</span>
+            </a>
+            <?php else: ?>
+            <a href="<?php echo $nav_href('dashboard.php'); ?>"
+                class="menu-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
+                <i class="fas fa-home"></i>
+                <span>Tableau de bord</span>
+            </a>
+            <a href="<?php echo $nav_href('produits/index.php'); ?>"
+                class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
+                <i class="fas fa-box"></i>
+                <span>Produits</span>
+            </a>
+            <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
                 <i class="fas fa-boxes-stacked"></i>
                 <span>Stock</span>
             </a>
 
-            <a href="<?php echo $base_path; ?>commandes/index.php"
+            <a href="<?php echo $nav_href('commandes/index.php'); ?>"
                 class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Commandes</span>
             </a>
-            <a href="<?php echo $base_path; ?>commandes-personnalisees/index.php"
+            <a href="<?php echo $nav_href('commandes-personnalisees/index.php'); ?>"
                 class="menu-item <?php echo ($is_commandes_perso && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-palette"></i>
                 <span>Commandes personnalisées</span>
             </a>
-            <a href="<?php echo $base_path; ?>devis/index.php"
-                class="menu-item <?php echo ($is_devis && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
-                <i class="fas fa-file-invoice"></i>
-                <span>Devis</span>
-            </a>
-            <a href="<?php echo $base_path; ?>contacts/index.php"
-                class="menu-item <?php echo $is_contacts ? 'active' : ''; ?>">
-                <i class="fas fa-address-book"></i>
-                <span>Contacts</span>
+            <a href="<?php echo $nav_href('invoice/index.php'); ?>"
+                class="menu-item <?php echo ($is_invoice || ($is_devis && ($current_page == 'index.php' || $current_page == 'details.php'))) ? 'active' : ''; ?>">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoice</span>
             </a>
             <?php if ($can_manage_users): ?>
-                <a href="<?php echo $base_path; ?>users/index.php"
+                <a href="<?php echo $nav_href('users/index.php'); ?>"
                     class="menu-item <?php echo ($is_users && $current_page == 'index.php') ? 'active' : ''; ?>">
                     <i class="fas fa-users"></i>
                     <span>Utilisateurs</span>
                 </a>
             <?php endif; ?>
             <?php if ($can_manage_comptes): ?>
-                <a href="<?php echo $base_path; ?>comptes/index.php"
+                <a href="<?php echo $nav_href('comptes/index.php'); ?>"
                     class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
                     <i class="fas fa-user-shield"></i>
                     <span>Comptes</span>
                 </a>
             <?php endif; ?>
-            <a href="<?php echo $base_path; ?>zones-livraison/index.php"
+            <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
                 class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
                 <i class="fas fa-truck"></i>
                 <span>Zones de livraison</span>
             </a>
-            <a href="<?php echo $base_path; ?>parametres.php"
+            <?php if (admin_can_livreur_gps()): ?>
+            <a href="<?php echo $nav_href('livreurs/index.php'); ?>"
+                class="menu-item <?php echo ($is_livreurs) ? 'active' : ''; ?>">
+                <i class="fas fa-motorcycle"></i>
+                <span>Livreurs GPS</span>
+            </a>
+            <?php endif; ?>
+            <a href="<?php echo $nav_href('parametres.php'); ?>"
                 class="menu-item <?php echo ($current_page == 'parametres.php' || strpos($current_dir, '/parametres') !== false) ? 'active' : ''; ?>">
                 <i class="fas fa-cog"></i>
                 <span>Paramètres</span>
             </a>
-            <!-- <a href="<?php echo $base_path; ?>test-email.php" class="menu-item <?php echo $current_page == 'test-email.php' ? 'active' : ''; ?>">
-                <i class="fas fa-envelope"></i>
-                <span>Test email</span>
-            </a> -->
-            <a href="<?php echo $base_path; ?>profil.php"
+            <a href="<?php echo $nav_href('profil.php'); ?>"
                 class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
                 <i class="fas fa-user-shield"></i>
                 <span>Mon profil</span>
             </a>
-            <a href="<?php echo $base_path; ?>logout.php" class="menu-item">
+            <?php endif; ?>
+            <a href="<?php echo $nav_href('logout.php'); ?>" class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Déconnexion</span>
             </a>

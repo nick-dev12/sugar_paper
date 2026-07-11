@@ -1,0 +1,277 @@
+/**
+ * Super Admin — Comptes super administrateur + Mon compte
+ */
+
+.sa-comptes-page {
+  --sa-radius-xl: 24px;
+  --sa-radius: 16px;
+  --sa-shadow: 0 4px 28px rgba(53, 100, 166, 0.1);
+  --sa-border: rgba(53, 100, 166, 0.14);
+}
+
+.sa-comptes-page .sa-comptes-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 3rem;
+}
+
+.sa-comptes-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.sa-comptes-btn-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  border: none;
+  border-radius: 12px;
+  background: var(--couleur-dominante, #3564a6);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(53, 100, 166, 0.28);
+  transition: background 0.18s, transform 0.15s;
+}
+
+.sa-comptes-btn-add:hover {
+  background: var(--couleur-dominante-hover, #2d5690);
+}
+
+.sa-comptes-btn-add:active {
+  transform: scale(0.98);
+}
+
+.sa-comptes-form-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5rem 1.25rem 2rem;
+  background: rgba(13, 13, 13, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.sa-comptes-form-layer.is-open {
+  display: flex;
+}
+
+.sa-comptes-form-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100%, 440px);
+  padding: 1.5rem 1.35rem 1.35rem;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--sa-border);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.sa-comptes-form-panel__hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+}
+
+.sa-comptes-form-panel__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+}
+
+.sa-comptes-form-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(53, 100, 166, 0.08);
+  color: var(--couleur-dominante, #3564a6);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.sa-comptes-form-close:hover {
+  background: rgba(53, 100, 166, 0.14);
+}
+
+.sa-comptes-field {
+  margin-bottom: 0.9rem;
+}
+
+.sa-comptes-field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gris-fonce, #4a4a4a);
+}
+
+.sa-comptes-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.2);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.sa-comptes-field input:focus {
+  outline: none;
+  border-color: var(--couleur-dominante, #3564a6);
+  box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
+}
+
+.sa-comptes-form-actions {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}
+
+.sa-comptes-btn-submit {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--couleur-dominante, #3564a6);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sa-comptes-btn-cancel {
+  padding: 0.7rem 1rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.25);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--couleur-dominante, #3564a6);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sa-comptes-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
+  background: #fff;
+  box-shadow: var(--sa-shadow);
+}
+
+.sa-comptes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.sa-comptes-table th,
+.sa-comptes-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(53, 100, 166, 0.08);
+}
+
+.sa-comptes-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-moyen, #737373);
+  background: rgba(53, 100, 166, 0.04);
+}
+
+.sa-comptes-table tr:last-child td {
+  border-bottom: none;
+}
+
+.sa-comptes-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sa-comptes-badge--actif {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.sa-comptes-badge--inactif {
+  background: rgba(255, 107, 53, 0.12);
+  color: #c2410c;
+}
+
+.sa-comptes-badge--self {
+  margin-left: 0.35rem;
+  background: rgba(53, 100, 166, 0.12);
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.sa-comptes-toggle-form {
+  display: inline;
+}
+
+.sa-comptes-btn-toggle {
+  padding: 0.35rem 0.7rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.22);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.sa-comptes-btn-toggle:hover {
+  background: rgba(53, 100, 166, 0.06);
+}
+
+.sa-compte-page .sa-compte-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .sa-compte-page .sa-compte-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sa-compte-card {
+  padding: 1.35rem 1.25rem;
+  border: 1px solid var(--sa-border);
+  border-radius: var(--sa-radius);
+  background: #fff;
+  box-shadow: var(--sa-shadow);
+}
+
+.sa-compte-card__title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+}
+
+.sa-compte-card__title i {
+  margin-right: 0.4rem;
+  color: var(--couleur-dominante, #3564a6);
+}

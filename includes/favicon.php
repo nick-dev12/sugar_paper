@@ -7,3 +7,4 @@
 <link rel="icon" type="image/jpeg" href="/image/sugar_paper.jpg">
 <link rel="shortcut icon" type="image/jpeg" href="/image/sugar_paper.jpg">
 <link rel="apple-touch-icon" href="/image/sugar_paper.jpg">
+<?php include __DIR__ . '/google_fonts.php'; ?>

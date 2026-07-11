@@ -160,6 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
         $error_message = implode('<br>', $errors);
     }
 }
+
+$statut_label = ucfirst($user['statut']);
+$annee_inscription = date('Y', strtotime($user['date_creation']));
+$date_inscription = date('d/m/Y', strtotime($user['date_creation']));
+$statut_class = $user['statut'] === 'actif' ? 'actif' : 'inactif';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -173,246 +178,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .profil-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .profil-header {
-            background: var(--couleur-dominante);
-            color: #ffffff;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .profil-header .avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 48px;
-        }
-
-        .profil-header h2 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .profil-header p {
-            margin: 5px 0 0;
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .profil-form {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #6b2f20;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-group label .required {
-            color: #dc3545;
-            margin-left: 3px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(229, 72, 138, 0.2);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-            box-sizing: border-box;
-            background: rgba(255, 255, 255, 0.8);
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--couleur-dominante);
-            box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
-        }
-
-        .form-group .help-text {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .btn-submit {
-            background: var(--couleur-dominante);
-            color: var(--texte-clair);
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-submit:hover {
-            background: rgba(229, 72, 138, 0.9);
-            transform: translateY(-2px);
-            box-shadow: var(--ombre-promo);
-            color: var(--texte-clair);
-        }
-
-        .btn-cancel {
-            background: rgba(255, 255, 255, 0.95);
-            color: var(--titres);
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-
-        .btn-cancel:hover {
-            background: rgba(229, 72, 138, 0.1);
-        }
-
-        .message {
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .message.success {
-            background: rgba(32, 197, 199, 0.15);
-            color: var(--titres);
-            border: 1px solid rgba(32, 197, 199, 0.4);
-        }
-
-        .message.error {
-            background: rgba(229, 72, 138, 0.1);
-            color: var(--titres);
-            border: 1px solid rgba(229, 72, 138, 0.3);
-        }
-
-        .info-section {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-        }
-
-        .info-section h3 {
-            color: var(--titres);
-            font-size: 16px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(229, 72, 138, 0.2);
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-item label {
-            color: var(--texte-fonce);
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .info-item .value {
-            color: var(--titres);
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .form-section {
-            background: var(--glass-bg);
-            backdrop-filter: blur(15px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .form-section h3 {
-            color: var(--titres);
-            font-size: 18px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(229, 72, 138, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .security-section {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid rgba(247, 127, 0, 0.3);
-        }
-
-        .security-section h3 {
-            color: var(--accent-promo);
-        }
-    </style>
+    <link rel="stylesheet" href="/css/user-profil.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="user-page-profil">
     <?php include 'includes/user_nav.php'; ?>
+
+    <div class="continue-shopping-banner">
+        <div class="continue-shopping-content">
+            <div class="continue-shopping-icon">
+                <i class="fas fa-user-cog" aria-hidden="true"></i>
+            </div>
+            <div class="continue-shopping-text">
+                <h2>Gérer mon compte</h2>
+                <p>Retournez à votre tableau de bord ou consultez vos commandes en cours.</p>
+            </div>
+            <div class="continue-shopping-actions">
+                <a href="mon-compte.php" class="continue-shopping-btn">
+                    <i class="fas fa-home" aria-hidden="true"></i> Tableau de bord
+                </a>
+                <a href="mes-commandes.php" class="continue-shopping-btn continue-shopping-btn--secondary">
+                    <i class="fas fa-shopping-bag" aria-hidden="true"></i> Mes commandes
+                </a>
+            </div>
+        </div>
+    </div>
 
     <div class="content-header">
         <h1><i class="fas fa-user"></i> Mon Profil</h1>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card--statut">
+            <div class="stat-icon"><i class="fas fa-shield-alt" aria-hidden="true"></i></div>
+            <div class="stat-value stat-value--<?php echo $statut_class; ?>"><?php echo htmlspecialchars($statut_label); ?></div>
+            <div class="stat-label">Statut du compte</div>
+        </div>
+        <div class="stat-card stat-card--membre">
+            <div class="stat-icon"><i class="fas fa-calendar-alt" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo htmlspecialchars($annee_inscription); ?></div>
+            <div class="stat-label">Membre depuis</div>
+        </div>
     </div>
 
     <section class="content-section">
@@ -446,13 +252,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                 <h3><i class="fas fa-info-circle"></i> Informations du compte</h3>
                 <div class="info-item">
                     <label>Date d'inscription:</label>
-                    <span class="value"><?php echo date('d/m/Y', strtotime($user['date_creation'])); ?></span>
+                    <span class="value"><?php echo htmlspecialchars($date_inscription); ?></span>
                 </div>
                 <div class="info-item">
                     <label>Statut:</label>
-                    <span class="value"
-                        style="color: <?php echo $user['statut'] == 'actif' ? '#0f5132' : '#842029'; ?>">
-                        <?php echo ucfirst($user['statut']); ?>
+                    <span class="value value--<?php echo $statut_class; ?>">
+                        <?php echo htmlspecialchars($statut_label); ?>
                     </span>
                 </div>
             </div>
@@ -489,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                         <div class="help-text">Format: +225 XX XX XX XX XX ou 0X XX XX XX XX</div>
                     </div>
 
-                    <div style="margin-top: 25px; display: flex; align-items: center; gap: 10px;">
+                    <div class="form-actions">
                         <button type="submit" name="modifier_profil" class="btn-submit">
                             <i class="fas fa-save"></i> Enregistrer les modifications
                         </button>
@@ -526,7 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['modifier_mot_de_passe
                             placeholder="Confirmez votre nouveau mot de passe" required autocomplete="new-password">
                     </div>
 
-                    <div style="margin-top: 25px; display: flex; align-items: center; gap: 10px;">
+                    <div class="form-actions">
                         <button type="submit" name="modifier_mot_de_passe" class="btn-submit">
                             <i class="fas fa-key"></i> Changer le mot de passe
                         </button>

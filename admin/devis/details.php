@@ -15,6 +15,16 @@ if ($devis_id <= 0) {
     exit;
 }
 
+if (empty($_SESSION['admin_csrf'])) {
+    $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
+}
+
+require_once __DIR__ . '/../../includes/admin_permissions.php';
+if (!admin_can_devis()) {
+    header('Location: ../dashboard.php');
+    exit;
+}
+
 require_once __DIR__ . '/../../models/model_devis.php';
 require_once __DIR__ . '/../../models/model_factures_devis.php';
 
@@ -29,9 +39,11 @@ if (!$devis) {
 }
 
 $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
+$devis_peut_modifier = ($devis['statut'] ?? '') === 'brouillon' && !$facture;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
@@ -40,15 +52,18 @@ $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-devis-compta-pages.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-invoice-onglets.css<?php echo asset_version_query(); ?>">
 </head>
-<body>
+
+<body class="page-admin-doc-detail">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">
         <h1>
             <i class="fas fa-file-invoice"></i> Devis #<?php echo htmlspecialchars($devis['numero_devis']); ?>
         </h1>
-        <div class="header-actions">
+        <div class="header-actions header-actions--primary-row">
             <?php if ($facture): ?>
                 <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank">
                     <i class="fas fa-file-invoice"></i> Voir la facture
@@ -58,11 +73,30 @@ $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
                     <i class="fas fa-file-invoice"></i> Générer une facture
                 </a>
             <?php endif; ?>
-            <a href="index.php" class="btn-back">
+            <?php if ($devis_peut_modifier): ?>
+            <a href="../invoice/index.php?tab=devis&amp;modal=devis&amp;edit=<?php echo (int) $devis_id; ?>" class="btn-secondary">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            <form method="post" action="supprimer.php" class="header-actions__form" onsubmit="return confirm('Supprimer définitivement ce devis ?');">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
+                <input type="hidden" name="devis_id" value="<?php echo (int) $devis_id; ?>">
+                <button type="submit" class="btn-secondary">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </form>
+            <?php endif; ?>
+            <a href="../invoice/index.php?tab=devis" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
         </div>
     </div>
+
+    <?php if (!empty($_SESSION['devis_erreur'])): ?>
+        <div class="message error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span><?php echo htmlspecialchars($_SESSION['devis_erreur']); unset($_SESSION['devis_erreur']); ?></span>
+        </div>
+    <?php endif; ?>
 
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="message success">
@@ -108,7 +142,8 @@ $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
             <div class="detail-item">
                 <label>Statut</label>
                 <div class="value">
-                    <span class="commande-statut statut-<?php echo $devis['statut']; ?>"><?php echo ucfirst($devis['statut']); ?></span>
+                    <span
+                        class="commande-statut statut-<?php echo $devis['statut']; ?>"><?php echo ucfirst($devis['statut']); ?></span>
                 </div>
             </div>
         </div>
@@ -126,7 +161,8 @@ $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
                         <h4><?php echo htmlspecialchars($produit['produit_nom'] ?? $produit['nom_produit'] ?? ''); ?></h4>
                         <div class="produit-info-lignes">
                             <div class="info-ligne">Quantité: <?php echo $produit['quantite']; ?></div>
-                            <div class="info-ligne">Prix unitaire: <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
+                            <div class="info-ligne">Prix unitaire:
+                                <?php echo number_format($produit['prix_unitaire'], 0, ',', ' '); ?> FCFA</div>
                         </div>
                     </div>
                     <div class="produit-total">
@@ -141,25 +177,29 @@ $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
                 $frais = isset($devis['frais_livraison']) ? (float) $devis['frais_livraison'] : 0;
                 ?>
                 <?php if ($frais > 0): ?>
-                    <p style="margin-bottom: 8px;">Sous-total produits: <?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA</p>
-                    <p style="margin-bottom: 8px;">Frais de livraison: <?php echo number_format($frais, 0, ',', ' '); ?> FCFA</p>
+                    <p style="margin-bottom: 8px;">Sous-total produits:
+                        <?php echo number_format($sous_total, 0, ',', ' '); ?> FCFA</p>
+                    <p style="margin-bottom: 8px;">Frais de livraison: <?php echo number_format($frais, 0, ',', ' '); ?>
+                        FCFA</p>
                 <?php endif; ?>
-                <h3>Total: <span class="total-value"><?php echo number_format($devis['montant_total'], 0, ',', ' '); ?> FCFA</span></h3>
+                <h3>Total: <span class="total-value"><?php echo number_format($devis['montant_total'], 0, ',', ' '); ?>
+                        FCFA</span></h3>
             </div>
         </div>
     </section>
 
     <?php if (!empty($devis['notes'])): ?>
-    <section class="content-section">
-        <div class="section-title">
-            <h2><i class="fas fa-sticky-note"></i> Notes</h2>
-        </div>
-        <div class="detail-box">
-            <p><?php echo nl2br(htmlspecialchars($devis['notes'])); ?></p>
-        </div>
-    </section>
+        <section class="content-section">
+            <div class="section-title">
+                <h2><i class="fas fa-sticky-note"></i> Notes</h2>
+            </div>
+            <div class="detail-box">
+                <p><?php echo nl2br(htmlspecialchars($devis['notes'])); ?></p>
+            </div>
+        </section>
     <?php endif; ?>
 
     <?php include '../includes/footer.php'; ?>
 </body>
+
 </html>

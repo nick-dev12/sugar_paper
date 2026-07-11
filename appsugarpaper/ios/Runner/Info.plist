@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>fr</string>
+		<key>CFBundleDisplayName</key>
+		<string>Sugar Paper</string>
+		<key>CFBundleExecutable</key>
+		<string>$(EXECUTABLE_NAME)</string>
+		<key>CFBundleIdentifier</key>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>sugar_paper_app</string>
+		<key>CFBundlePackageType</key>
+		<string>APPL</string>
+		<key>CFBundleShortVersionString</key>
+		<string>$(FLUTTER_BUILD_NAME)</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleVersion</key>
+		<string>$(FLUTTER_BUILD_NUMBER)</string>
+		<!-- Google Sign-In (iOS) : à renseigner après activation Auth Google dans Firebase sugar-paper -->
+		<key>LSRequiresIPhoneOS</key>
+		<true/>
+		<key>UILaunchStoryboardName</key>
+		<string>LaunchScreen</string>
+		<key>UIMainStoryboardFile</key>
+		<string>Main</string>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+			<string>UIInterfaceOrientationPortraitUpsideDown</string>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+		</array>
+		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<true/>
+		<key>UIApplicationSupportsIndirectInputEvents</key>
+		<true/>
+		<!-- Chaînes d'objectif (Guideline Apple 5.1.1) — usage réel + exemple concret -->
+		<key>NSCameraUsageDescription</key>
+		<string>Sugar Paper utilise l'appareil photo lorsque vous appuyez sur « Prendre une photo » pour illustrer votre profil ou joindre une image à une commande personnalisée (par exemple : photographier un gâteau).</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Sugar Paper accède à vos photos uniquement si vous choisissez « Importer depuis la galerie » pour ajouter une image à votre profil ou à une commande (par exemple : sélectionner une photo existante).</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Sugar Paper peut enregistrer dans votre photothèque une image que vous téléchargez depuis la plateforme, uniquement lorsque vous utilisez explicitement la fonction d'enregistrement proposée à l'écran.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Sugar Paper utilise votre position uniquement lorsque vous appuyez sur « Localiser » ou « Mettre à jour ma position » pour confirmer votre adresse de livraison ou enregistrer votre adresse à l'inscription. La position n'est jamais suivie en arrière-plan.</string>
+		<!-- Production : HTTPS uniquement (développement local possible via exceptions ciblées si besoin) -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<false/>
+		</dict>
+		<key>UIStatusBarHidden</key>
+		<true/>
+		<key>FirebaseAppDelegateProxyEnabled</key>
+		<false/>
+		<!-- Notifications push (APNs / FCM) -->
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<false/>
+	</dict>
+</plist>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "409713248489",
+    "project_id": "sugar-paper",
+    "storage_bucket": "sugar-paper.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409713248489:android:ed55bf5bbfbd0778a04878",
+        "android_client_info": {
+          "package_name": "com.sugarpaper.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2icrm7NOHYZWg7_ypmc_ue9P6h0O0Kjs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

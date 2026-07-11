@@ -1,0 +1,64 @@
+/**
+ * Espace client (@user) — marge max 5px par rapport aux bords de l'écran (mobile).
+ * Tableau de bord, commandes, profil, annonces, boutiques abonnées, etc.
+ */
+
+@media (max-width: 767px) {
+  .user-container {
+    --user-mobile-edge: 5px;
+  }
+
+  .user-container main#userContent.user-content,
+  .user-container #userContent.user-content {
+    padding-left: max(var(--user-mobile-edge, 5px), env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(var(--user-mobile-edge, 5px), env(safe-area-inset-right, 0px)) !important;
+    padding-top: max(var(--user-mobile-edge, 5px), env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(
+      var(--user-bottom-nav-clearance, 5.9rem) +
+        env(safe-area-inset-bottom, 0px) +
+        var(--user-mobile-edge, 5px)
+    ) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-container .mc-v2-page,
+  .user-container .mc-dashboard,
+  .user-container .uc-v2-page,
+  .user-container .ca-v2-page,
+  .user-container .pl-v2-page,
+  .user-container .prf-page,
+  .user-container .an-v2-page,
+  .user-container .uba-page,
+  .user-container .produits-visites-page {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .user-container .mc-v2-page,
+  .user-container .mc-dashboard,
+  .user-container .uc-v2-page,
+  .user-container .ca-v2-page,
+  .user-container .pl-v2-page,
+  .user-container .prf-page,
+  .user-container .an-v2-page,
+  .user-container .uba-page,
+  .user-container .produits-visites-page {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .user-container .content-header,
+  .user-container .content-section.liste-categorie-page {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}

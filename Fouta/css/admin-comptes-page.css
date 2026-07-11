@@ -1,0 +1,1567 @@
+/**
+ * Page Comptes & employés — alignée sur variables.css (#3564a6 · #FF6B35)
+ */
+
+/* --- En-tête de page --- */
+.page-comptes .comptes-header-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+  padding: 24px 28px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--bleu-pale) 0%, rgba(255, 255, 255, 0.96) 55%, var(--orange-pale) 100%);
+  border: 1px solid var(--border-input);
+  box-shadow: var(--ombre-douce);
+}
+
+.page-comptes .comptes-header-bar h1 {
+  margin: 0 0 8px;
+  font-size: 1.65rem;
+  font-family: var(--font-titres);
+  color: var(--titres);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-comptes .comptes-header-bar .comptes-lead {
+  margin: 0;
+  max-width: 520px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--gris-fonce);
+}
+
+.page-comptes .comptes-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.page-comptes .btn-open-emp-modal,
+.page-comptes a.btn-inscription-admin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--couleur-dominante);
+  color: var(--texte-clair);
+  box-shadow: var(--ombre-promo);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  text-decoration: none;
+}
+
+.page-comptes .btn-open-emp-modal:hover,
+.page-comptes a.btn-inscription-admin-link:hover {
+  background: var(--couleur-dominante-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--ombre-gourmande);
+  color: var(--texte-clair);
+}
+
+.page-comptes .btn-link-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--couleur-dominante);
+  background: var(--fond-principal);
+  border: 2px solid var(--border-input);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.page-comptes .btn-link-admin:hover {
+  border-color: var(--couleur-dominante);
+  background: var(--bleu-pale);
+}
+
+/* --- Barre section fiches --- */
+.page-comptes .comptes-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-comptes .comptes-section-head .hub-section-title {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+}
+
+.page-comptes .btn-emp-fab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--accent-promo);
+  color: var(--texte-clair);
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-comptes .btn-emp-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.45);
+}
+
+.page-comptes .section-subtitle-comptes {
+  margin: -4px 0 20px;
+  max-width: 720px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--gris-fonce);
+}
+
+/* --- Modale plein écran — formulaire employé --- */
+.page-comptes.comptes-modal-open {
+  overflow: hidden;
+}
+
+.modal-emp-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.modal-emp-fullscreen.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-emp-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.modal-emp-scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 16px 40px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.modal-emp-inner {
+  width: 100%;
+  max-width: 720px;
+  background: var(--fond-principal);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(53, 100, 166, 0.22);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  margin-top: 0;
+  margin-bottom: auto;
+}
+
+.modal-emp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  background: linear-gradient(125deg, var(--bleu-fonce) 0%, var(--couleur-dominante) 45%, var(--bleu-clair) 100%);
+  color: var(--texte-clair);
+}
+
+.modal-emp-header h2 {
+  margin: 0 0 8px;
+  font-size: 1.35rem;
+  font-family: var(--font-titres);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-emp-header p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  opacity: 0.95;
+  max-width: 520px;
+}
+
+.modal-emp-header a {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.modal-emp-header a:hover {
+  opacity: 0.92;
+}
+
+.modal-emp-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.modal-emp-close:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.comptes-emp-form-modal {
+  padding: 24px 24px 28px;
+}
+
+.comptes-emp-form-modal .form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .comptes-emp-form-modal .form-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comptes-emp-form-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.comptes-emp-form-modal label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--couleur-dominante);
+  margin-bottom: 6px;
+}
+
+.comptes-emp-form-modal input[type="text"],
+.comptes-emp-form-modal input[type="email"],
+.comptes-emp-form-modal input[type="date"],
+.comptes-emp-form-modal select,
+.comptes-emp-form-modal textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-input);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.comptes-emp-form-modal input:focus,
+.comptes-emp-form-modal select:focus,
+.comptes-emp-form-modal textarea:focus {
+  outline: none;
+  border-color: var(--couleur-dominante);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.comptes-emp-form-modal .btn-submit-emp {
+  margin-top: 8px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 22px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+  background: linear-gradient(135deg, var(--accent-promo) 0%, var(--orange-fonce) 100%);
+  color: var(--texte-clair);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.35);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.comptes-emp-form-modal .btn-submit-emp:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(255, 107, 53, 0.45);
+}
+
+.comptes-emp-form-modal .modal-emp-footer-note {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+  color: var(--gris-moyen);
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .page-comptes .comptes-header-bar {
+    padding: 18px;
+  }
+}
+
+/* Titres de section (hors barre « Fiches employés ») */
+.page-comptes .hub-section-title {
+  font-size: 20px;
+  margin: 32px 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(53, 100, 166, 0.28);
+  color: var(--titres);
+}
+
+.page-comptes .comptes-section-head .hub-section-title {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.page-comptes .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.page-comptes .comptes-role-select {
+  min-width: 180px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.page-comptes .comptes-role-select:focus {
+  outline: none;
+  border-color: var(--couleur-dominante);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ========== Page index comptes — refonte (page-comptes-index) ========== */
+
+.page-comptes-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px 40px;
+  box-sizing: border-box;
+}
+
+.page-comptes-index .comptes-header-bar.page-comptes-hero {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 22px;
+  padding: 26px 28px;
+  background: linear-gradient(
+    135deg,
+    var(--fond-principal) 0%,
+    var(--bleu-pale) 42%,
+    rgba(255, 107, 53, 0.08) 100%
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.page-comptes-hero::after {
+  content: "";
+  position: absolute;
+  right: -24px;
+  top: -10px;
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(53, 100, 166, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.page-comptes-hero__text {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.page-comptes-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--couleur-dominante);
+  margin: 0 0 8px;
+}
+
+.page-comptes-index .comptes-header-bar h1 {
+  font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+  line-height: 1.25;
+  margin: 0 0 10px;
+}
+
+.page-comptes-index .comptes-lead {
+  margin: 0;
+  max-width: 36rem;
+}
+
+.page-comptes-hero__actions {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+}
+
+.page-comptes-cta {
+  min-height: 48px;
+  padding: 12px 22px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(53, 100, 166, 0.25);
+}
+
+.page-comptes .page-comptes-cta--secondary {
+  background: var(--fond-principal);
+  color: var(--couleur-dominante);
+  border: 2px solid var(--couleur-dominante);
+  box-shadow: 0 2px 12px rgba(53, 100, 166, 0.12);
+}
+
+.page-comptes .page-comptes-cta--secondary:hover {
+  background: var(--bleu-pale);
+  border-color: var(--bleu-fonce);
+  color: var(--bleu-fonce);
+}
+
+.page-comptes .page-comptes-cta--ghost {
+  background: transparent;
+  color: var(--gris-fonce);
+  border: 2px solid rgba(53, 100, 166, 0.22);
+  box-shadow: none;
+}
+
+.page-comptes .page-comptes-cta--ghost:hover {
+  border-color: var(--couleur-dominante);
+  color: var(--couleur-dominante);
+  background: var(--bleu-pale);
+}
+
+/* CTA orange — lien Employés (RH) */
+.page-comptes .page-comptes-cta--employes {
+  background: linear-gradient(135deg, var(--accent-promo), var(--orange-clair));
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 4px 18px rgba(255, 107, 53, 0.35);
+}
+
+.page-comptes .page-comptes-cta--employes:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 24px rgba(255, 107, 53, 0.42);
+}
+
+.page-comptes-flash {
+  border-radius: 12px;
+  box-shadow: var(--ombre-douce);
+  margin-bottom: 16px !important;
+  max-width: 100%;
+}
+
+/* KPIs avec icônes */
+.page-comptes-index .page-comptes-kpis {
+  margin-bottom: 24px;
+}
+
+.page-comptes-kpi {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 14px;
+  border-left: none !important;
+  padding: 18px 20px !important;
+  border-radius: 16px !important;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.page-comptes-kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ombre-gourmande) !important;
+  border-color: var(--border-input-focus) !important;
+}
+
+.page-comptes-kpi__ic {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--bleu-pale);
+  color: var(--couleur-dominante);
+  font-size: 1.15rem;
+}
+
+.page-comptes-kpi--actifs .page-comptes-kpi__ic {
+  background: rgba(30, 122, 74, 0.12);
+  color: #1e7a4a;
+}
+
+.page-comptes-kpi__body h3 {
+  margin: 0 0 4px;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.06em;
+}
+
+.page-comptes-kpi__body .stat-value {
+  font-size: 1.85rem !important;
+  line-height: 1.1;
+}
+
+/* Bloc principal liste */
+.page-comptes-main {
+  background: linear-gradient(180deg, var(--fond-principal) 0%, var(--fond-secondaire) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 22px 22px 30px;
+  box-shadow: var(--glass-shadow);
+  margin-top: 8px;
+}
+
+.page-comptes-main .page-comptes-section-title {
+  margin: 0 0 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: clamp(1.05rem, 1.8vw, 1.25rem);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-comptes-main .page-comptes-section-title i {
+  color: var(--couleur-dominante);
+  opacity: 0.95;
+}
+
+.page-comptes-main .section-subtitle-comptes {
+  margin: 0 0 22px !important;
+  max-width: 44rem;
+  line-height: 1.55;
+  font-size: 0.92rem;
+  color: var(--gris-fonce);
+}
+
+.page-comptes-main .section-subtitle-comptes a {
+  color: var(--couleur-dominante);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.page-comptes-main .section-subtitle-comptes a:hover {
+  border-bottom-color: var(--couleur-dominante);
+}
+
+.page-comptes-index .page-comptes-grid {
+  margin-top: 8px;
+}
+
+/* ========== Cartes comptes d’accès (liste) — design premium ========== */
+.page-comptes-index .comptes-acces-grid {
+  gap: 1.1rem;
+}
+
+.comptes-acces-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--fond-principal);
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  border-top: 3px solid var(--couleur-dominante);
+  box-shadow: var(--ombre-douce);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-width: 0;
+}
+
+.comptes-acces-card:hover {
+  border-color: rgba(53, 100, 166, 0.28);
+  box-shadow: var(--ombre-gourmande);
+}
+
+.comptes-acces-card--inactive {
+  opacity: 0.92;
+  border-top-color: var(--gris-moyen);
+}
+
+.comptes-acces-card--inactive .comptes-acces-card__head {
+  background: var(--gris-fonce);
+  filter: none;
+}
+
+.comptes-acces-card__head {
+  position: relative;
+  padding: 0.85rem 1rem 0.9rem;
+  background: var(--couleur-dominante);
+  color: var(--texte-clair);
+}
+
+.comptes-acces-card__head-badges {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+  margin-bottom: 0.65rem;
+}
+
+.comptes-acces-card__status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.comptes-acces-card__status--actif {
+  background: rgba(46, 196, 120, 0.35);
+  color: #e8fff4;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.comptes-acces-card__status--inactif {
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.comptes-acces-card__head .comptes-acces-card__role-pill {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  max-width: 100%;
+  word-break: break-word;
+  line-height: 1.25;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.comptes-acces-card__head .role-badge.role-admin {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.comptes-acces-card__head .role-badge.role-utilisateur,
+.comptes-acces-card__head .role-badge.role-gestion_stock {
+  background: rgba(255, 138, 90, 0.45);
+  color: #fff;
+}
+
+.comptes-acces-card__head .role-badge.role-commercial,
+.comptes-acces-card__head .role-badge.role-commercial_general {
+  background: rgba(255, 220, 150, 0.5);
+  color: #1a1208;
+}
+
+.comptes-acces-card__head .role-badge.role-informaticien,
+.comptes-acces-card__head .role-badge.role-developpeur {
+  background: rgba(53, 100, 166, 0.35);
+  color: #0d1f33;
+}
+
+.comptes-acces-card__head .role-badge.role-comptabilite {
+  background: rgba(200, 228, 255, 0.45);
+  color: #0d1f33;
+}
+
+.comptes-acces-card__head .role-badge.role-rh {
+  background: rgba(190, 240, 200, 0.45);
+  color: #0d260d;
+}
+
+.comptes-acces-card__head .role-badge.role-caissier {
+  background: rgba(255, 230, 200, 0.5);
+  color: #2a1a0a;
+}
+
+.comptes-acces-card__identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.comptes-acces-card__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-titres);
+  flex-shrink: 0;
+}
+
+.comptes-acces-card__id-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.comptes-acces-card__name {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-titres);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.comptes-acces-card__email {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  opacity: 0.92;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  word-break: break-word;
+}
+
+.comptes-acces-card__email i {
+  margin-top: 0.08rem;
+  opacity: 0.88;
+  flex-shrink: 0;
+  font-size: 0.7rem;
+}
+
+.comptes-acces-card__body {
+  padding: 0.85rem 0.95rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex: 1;
+  background: var(--fond-principal);
+}
+
+.comptes-acces-card__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.comptes-acces-card__meta-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 0.55rem 0.6rem;
+  background: var(--fond-secondaire);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  min-height: 3.35rem;
+}
+
+.comptes-acces-card__meta-ic {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bleu-pale);
+  color: var(--couleur-dominante);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(53, 100, 166, 0.1);
+}
+
+.comptes-acces-card__meta-txt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+}
+
+.comptes-acces-card__meta-label {
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texte-mute, var(--gris-moyen));
+}
+
+.comptes-acces-card__meta-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.12;
+}
+
+.comptes-acces-card__meta-value--empty {
+  font-weight: 600;
+  font-style: italic;
+  color: var(--gris-moyen);
+}
+
+.comptes-acces-card__meta-hint {
+  font-size: 0.65rem;
+  color: var(--gris-moyen);
+  font-weight: 600;
+}
+
+.comptes-acces-card__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+  padding: 0.45rem;
+  background: var(--fond-secondaire);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+}
+
+.comptes-acces-card__statut-form {
+  flex: 1 1 100px;
+  min-width: 0;
+  margin: 0;
+  display: flex;
+}
+
+.comptes-acces-card__statut-form .comptes-acces-card__btn {
+  width: 100%;
+}
+
+.comptes-acces-card__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.15rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.comptes-acces-card__btn--activity {
+  flex: 1 1 100px;
+  min-width: 0;
+  background: var(--fond-principal);
+  color: var(--bleu-fonce);
+  border: 1px solid rgba(53, 100, 166, 0.2);
+  box-shadow: none;
+}
+
+.comptes-acces-card__btn--activity:hover {
+  background: var(--bleu-pale);
+}
+
+.comptes-acces-card__btn--deactivate {
+  background: var(--accent-promo);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.28);
+}
+
+.comptes-acces-card__btn--deactivate:hover {
+  filter: brightness(1.05);
+}
+
+.comptes-acces-card__btn--activate {
+  background: #1f6f42;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(31, 111, 66, 0.25);
+}
+
+.comptes-acces-card__btn--activate:hover {
+  filter: brightness(1.06);
+}
+
+.comptes-acces-card__self-chip {
+  flex: 1 1 100px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.15rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  background: var(--bleu-pale);
+  border: 1px dashed rgba(53, 100, 166, 0.28);
+  color: var(--couleur-dominante);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: default;
+}
+
+.comptes-acces-card__role-block {
+  margin-top: 0.1rem;
+  padding: 0.65rem 0.75rem 0.75rem;
+  background: var(--fond-secondaire);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+}
+
+.comptes-acces-card__role-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--couleur-dominante);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.comptes-acces-card__role-form {
+  margin: 0;
+}
+
+.comptes-acces-card__role-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.comptes-acces-card__select {
+  flex: 1 1 8rem;
+  min-width: 0;
+  min-height: 2.2rem;
+  padding: 0.38rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-input);
+  font-size: 0.8rem;
+  font-family: inherit;
+  background: var(--fond-principal);
+  color: var(--titres);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.comptes-acces-card__select:focus {
+  outline: none;
+  border-color: var(--couleur-dominante);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.comptes-acces-card__btn--save {
+  flex: 0 1 auto;
+  min-width: 6.5rem;
+  background: var(--accent-promo);
+  color: var(--texte-clair);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.28);
+}
+
+.comptes-acces-card__btn--save:hover {
+  filter: brightness(1.05);
+}
+
+.comptes-acces-card__delete-form {
+  margin: 0.55rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--glass-border);
+}
+
+.comptes-acces-card__delete-form .comptes-acces-card__btn--delete {
+  width: 100%;
+}
+
+.comptes-acces-card__btn--delete {
+  background: var(--fond-principal);
+  color: #9b1c1c;
+  border: 1px solid rgba(155, 28, 28, 0.35);
+  box-shadow: none;
+}
+
+.comptes-acces-card__btn--delete:hover:not(:disabled) {
+  background: rgba(155, 28, 28, 0.08);
+  border-color: rgba(155, 28, 28, 0.5);
+}
+
+.comptes-acces-card__btn--delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--gris-moyen);
+  border-color: var(--glass-border);
+  background: var(--fond-secondaire);
+}
+
+.comptes-acces-card__self-hint {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--gris-fonce);
+  background: var(--bleu-pale);
+  border-radius: 10px;
+  border: 1px solid rgba(53, 100, 166, 0.12);
+}
+
+.comptes-acces-card__self-hint i {
+  color: var(--couleur-dominante);
+  margin-right: 0.35rem;
+}
+
+@media (max-width: 1024px) {
+  .page-comptes-wrap {
+    padding: 0 10px 28px;
+  }
+
+  .page-comptes-index .comptes-header-bar.page-comptes-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+
+  .page-comptes-hero::after {
+    width: 90px;
+    height: 90px;
+    right: -12px;
+  }
+
+  .page-comptes-hero__text {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+  }
+
+  .page-comptes-eyebrow {
+    font-size: 8px;
+    margin-bottom: 4px;
+  }
+
+  .page-comptes-index .comptes-header-bar h1 {
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+
+  .page-comptes-index .comptes-header-bar h1 i {
+    font-size: 0.85em;
+  }
+
+  .page-comptes-index .comptes-lead {
+    font-size: 10px;
+    line-height: 1.35;
+    max-width: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Actions hero : 2 par ligne */
+  .page-comptes-hero__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 8px;
+    width: 100%;
+    align-self: stretch;
+    flex-wrap: unset;
+  }
+
+  .page-comptes-hero__actions .page-comptes-cta,
+  .page-comptes-hero__actions .page-comptes-cta--secondary,
+  .page-comptes-hero__actions .page-comptes-cta--ghost,
+  .page-comptes-hero__actions .page-comptes-cta--employes,
+  .page-comptes-hero__actions .btn-open-emp-modal,
+  .page-comptes-hero__actions a.btn-inscription-admin-link {
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 10px !important;
+    font-size: 10px !important;
+    border-radius: 8px !important;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .page-comptes-index .page-comptes-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px 10px;
+    margin-bottom: 14px;
+  }
+
+  .page-comptes-kpi {
+    padding: 10px 12px !important;
+    gap: 8px;
+    border-radius: 12px !important;
+  }
+
+  .page-comptes-kpi__ic {
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+  }
+
+  .page-comptes-kpi__body h3 {
+    font-size: 0.58rem !important;
+    margin-bottom: 2px;
+  }
+
+  .page-comptes-kpi__body .stat-value {
+    font-size: 1.35rem !important;
+  }
+
+  .page-comptes-main {
+    padding: 12px 10px 18px;
+    border-radius: 16px;
+  }
+
+  .page-comptes-main .page-comptes-section-title {
+    font-size: 0.92rem;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+  }
+
+  .page-comptes-main .section-subtitle-comptes {
+    font-size: 0.72rem;
+    margin-bottom: 12px !important;
+    line-height: 1.4;
+  }
+
+  /* Grille comptes : 3 par ligne (tablette) */
+  .page-comptes-index .users-grid.page-comptes-grid.comptes-acces-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 10px;
+    margin-top: 6px;
+  }
+}
+
+/* Tablette : cartes comptes compactes */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .comptes-acces-card {
+    border-radius: 10px;
+  }
+
+  .comptes-acces-card__head {
+    padding: 0.55rem 0.65rem 0.6rem;
+  }
+
+  .comptes-acces-card__head-badges {
+    margin-bottom: 0.45rem;
+    gap: 0.25rem 0.35rem;
+  }
+
+  .comptes-acces-card__status {
+    font-size: 0.5rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .comptes-acces-card__head .comptes-acces-card__role-pill {
+    font-size: 0.52rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .comptes-acces-card__avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .comptes-acces-card__name {
+    font-size: 0.72rem;
+  }
+
+  .comptes-acces-card__email {
+    font-size: 0.58rem;
+  }
+
+  .comptes-acces-card__body {
+    padding: 0.55rem 0.6rem 0.65rem;
+    gap: 0.45rem;
+  }
+
+  .comptes-acces-card__meta {
+    gap: 0.35rem;
+  }
+
+  .comptes-acces-card__meta-tile {
+    padding: 0.32rem 0.38rem;
+    min-height: 0;
+    border-radius: 6px;
+    gap: 0.28rem;
+  }
+
+  .comptes-acces-card__meta-ic {
+    width: 1.15rem;
+    height: 1.15rem;
+    font-size: 0.52rem;
+    border-radius: 5px;
+  }
+
+  .comptes-acces-card__meta-label {
+    font-size: 0.4rem;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
+  .comptes-acces-card__meta-value {
+    font-size: 0.58rem;
+    line-height: 1.1;
+  }
+
+  .comptes-acces-card__meta-hint {
+    font-size: 0.48rem;
+  }
+
+  .comptes-acces-card__toolbar {
+    padding: 0.35rem;
+    gap: 0.3rem;
+  }
+
+  .comptes-acces-card__btn {
+    min-height: 1.75rem;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.58rem;
+    border-radius: 6px;
+  }
+
+  .comptes-acces-card__role-block {
+    padding: 0.45rem 0.5rem 0.5rem;
+  }
+
+  .comptes-acces-card__role-title {
+    font-size: 0.52rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .comptes-acces-card__select {
+    min-height: 1.85rem;
+    font-size: 0.68rem;
+    padding: 0.3rem 0.45rem;
+  }
+
+  .comptes-acces-card__btn--save {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .comptes-acces-card__self-hint {
+    font-size: 0.62rem;
+    padding: 0.45rem 0.5rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-comptes-index .comptes-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 14px;
+  }
+
+  .page-comptes-hero__actions {
+    width: 100%;
+  }
+
+  .page-comptes-main {
+    padding: 12px 10px 18px;
+    border-radius: 14px;
+  }
+}
+
+/* Mobile : 2 comptes par ligne */
+@media (max-width: 640px) {
+  .page-comptes-wrap {
+    padding: 0 8px 24px;
+  }
+
+  .page-comptes-index .comptes-header-bar.page-comptes-hero {
+    padding: 10px 12px;
+    gap: 6px;
+    border-radius: 12px;
+  }
+
+  .page-comptes-hero::after {
+    display: none;
+  }
+
+  .page-comptes-index .comptes-header-bar h1 {
+    font-size: 0.88rem;
+  }
+
+  .page-comptes-index .comptes-lead {
+    font-size: 9px;
+    -webkit-line-clamp: 2;
+  }
+
+  .page-comptes-hero__actions {
+    gap: 5px 6px;
+  }
+
+  .page-comptes-hero__actions .page-comptes-cta,
+  .page-comptes-hero__actions .btn-open-emp-modal,
+  .page-comptes-hero__actions a.btn-inscription-admin-link {
+    min-height: 32px;
+    padding: 6px 8px !important;
+    font-size: 9px !important;
+  }
+
+  .page-comptes-index .page-comptes-kpis {
+    gap: 6px 8px;
+  }
+
+  .page-comptes-kpi {
+    padding: 8px 10px !important;
+  }
+
+  .page-comptes-kpi__ic {
+    width: 28px;
+    height: 28px;
+    font-size: 0.78rem;
+  }
+
+  .page-comptes-kpi__body .stat-value {
+    font-size: 1.15rem !important;
+  }
+
+  .page-comptes-main {
+    padding: 10px 8px 16px;
+    border-radius: 12px;
+  }
+
+  .page-comptes-main .page-comptes-section-title {
+    font-size: 0.84rem;
+  }
+
+  .page-comptes-main .section-subtitle-comptes {
+    font-size: 0.66rem;
+    margin-bottom: 10px !important;
+  }
+
+  .page-comptes-index .users-grid.page-comptes-grid.comptes-acces-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .comptes-acces-card__head {
+    padding: 0.5rem 0.55rem 0.55rem;
+  }
+
+  .comptes-acces-card__avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .comptes-acces-card__name {
+    font-size: 0.66rem;
+  }
+
+  .comptes-acces-card__email {
+    font-size: 0.54rem;
+  }
+
+  .comptes-acces-card__body {
+    padding: 0.5rem 0.55rem 0.6rem;
+    gap: 0.4rem;
+  }
+
+  .comptes-acces-card__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .comptes-acces-card__meta-tile {
+    padding: 0.28rem 0.32rem;
+    gap: 0.22rem;
+    border-radius: 5px;
+  }
+
+  .comptes-acces-card__meta-ic {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.48rem;
+    border-radius: 4px;
+  }
+
+  .comptes-acces-card__meta-label {
+    font-size: 0.36rem;
+    letter-spacing: 0.03em;
+  }
+
+  .comptes-acces-card__meta-value {
+    font-size: 0.52rem;
+  }
+
+  .comptes-acces-card__meta-hint {
+    font-size: 0.44rem;
+    display: none;
+  }
+
+  .comptes-acces-card__btn {
+    min-height: 1.65rem;
+    font-size: 0.54rem;
+    padding: 0.28rem 0.35rem;
+  }
+
+  .comptes-acces-card__toolbar {
+    flex-direction: column;
+    gap: 0.28rem;
+  }
+
+  .comptes-acces-card__btn--activity,
+  .comptes-acces-card__self-chip,
+  .comptes-acces-card__statut-form {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .comptes-acces-card__role-row {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .comptes-acces-card__btn--save {
+    width: 100%;
+  }
+
+  .comptes-acces-card__select {
+    font-size: 0.64rem;
+    min-height: 1.75rem;
+  }
+
+  .comptes-acces-card__self-hint {
+    font-size: 0.58rem;
+  }
+
+  .page-comptes-index .empty-state.page-comptes-empty {
+    padding: 24px 14px 20px;
+  }
+
+  .page-comptes-empty__icon {
+    font-size: 2rem;
+  }
+
+  .page-comptes-empty p {
+    font-size: 12px;
+  }
+
+  .page-comptes-empty__btn {
+    min-height: 34px;
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-comptes-index .page-comptes-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .page-comptes-index .users-grid.page-comptes-grid.comptes-acces-grid {
+    gap: 6px;
+  }
+
+  .page-comptes-index .comptes-header-bar h1 {
+    font-size: 0.82rem;
+  }
+
+  .page-comptes-index .comptes-lead {
+    font-size: 8px;
+  }
+}
+
+.page-comptes-index .empty-state.page-comptes-empty {
+  text-align: center;
+  padding: 40px 20px 32px;
+  border-radius: 16px;
+  border: 1px dashed var(--border-input);
+  background: var(--bleu-pale);
+  margin-top: 8px;
+}
+
+.page-comptes-empty__icon {
+  font-size: 2.75rem;
+  color: var(--couleur-dominante);
+  opacity: 0.35;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.page-comptes-empty h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-titres);
+  color: var(--titres);
+}
+
+.page-comptes-empty p {
+  margin: 0 0 20px;
+  color: var(--gris-fonce);
+  max-width: 32ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.5;
+}
+
+.page-comptes-empty__btn {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 10px;
+}

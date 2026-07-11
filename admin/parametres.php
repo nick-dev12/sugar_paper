@@ -109,6 +109,29 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-edit"></i> Gérer les vidéos
                 </a>
             </div>
+
+            <?php
+            $param_role = $_SESSION['admin_role'] ?? 'admin';
+            if ($param_role === 'utilisateur') {
+                $param_role = 'gestion_stock';
+            }
+            $can_bulletin_paie_params = in_array($param_role, ['admin', 'rh', 'informaticien', 'developpeur'], true);
+            ?>
+            <?php if ($can_bulletin_paie_params): ?>
+            <div class="parametre-card">
+                <div class="parametre-icon">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <h3 class="parametre-title">Bulletins de paie (RH)</h3>
+                <p class="parametre-description">
+                    Configurez l'en-tête employeur, les rubriques affichées sur les bulletins, les taux de retenues,
+                    la prime de transport et les jours de présence de référence.
+                </p>
+                <a href="parametres/bulletin_paie.php" class="parametre-link">
+                    <i class="fas fa-sliders-h"></i> Paramètres bulletin de paie
+                </a>
+            </div>
+            <?php endif; ?>
         </div>
     </section>
 

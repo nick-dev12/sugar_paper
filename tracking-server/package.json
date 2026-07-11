@@ -1,0 +1,18 @@
+{
+  "name": "sugar-paper-tracking-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serveur Socket.io — suivi GPS livreurs Sugar Paper",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "socket.io": "^4.8.1"
+  }
+}

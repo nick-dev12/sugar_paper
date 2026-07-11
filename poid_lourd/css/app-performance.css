@@ -1,0 +1,158 @@
+/**
+ * Performances WebView / mobile tactile
+ * - App Flutter : html.is-native-app (pwa_meta.php + UserScript)
+ * - Mobile : @media (max-width: 768px) + tactile
+ *
+ * backdrop-filter : très coûteux en WebView (scroll ~12–20 fps).
+ */
+
+html.is-native-app {
+  scroll-behavior: auto;
+}
+
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ─── Désactiver le flou type « verre » ─── */
+html.is-native-app *,
+html.is-native-app *::before,
+html.is-native-app *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  *,
+  *::before,
+  *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* Fonds opaques à la place du glassmorphism */
+html.is-native-app .info,
+html.is-native-app nav:not(.nav-planete-gateau),
+html.is-native-app .nav-planete-gateau,
+html.is-native-app .nav-sidebar,
+html.is-native-app .nav-sidebar-header,
+html.is-native-app .nav-sidebar-overlay.show,
+html.is-native-app .shop-dock-primary,
+html.is-native-app .shop-bottom-dock .menu-item.menu-item--dock-mini {
+  background-color: #ffffff !important;
+  background-image: none !important;
+}
+
+html.is-native-app .info {
+  background-color: var(--couleur-dominante, #3564a6) !important;
+}
+
+html.is-native-app .nav-sidebar-overlay.show {
+  background: rgba(0, 0, 0, 0.55) !important;
+}
+
+html.is-native-app .nav-sidebar {
+  background: #fafafa !important;
+}
+
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  .info {
+    background-color: var(--couleur-dominante, #3564a6) !important;
+  }
+
+  .nav-sidebar,
+  .nav-sidebar-header,
+  .nav-planete-gateau,
+  .shop-dock-primary {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+
+  .nav-sidebar-overlay.show {
+    background: rgba(0, 0, 0, 0.55) !important;
+  }
+}
+
+/* Barres fixes : couche GPU unique */
+html.is-native-app .shop-bottom-dock,
+html.is-native-app nav.nav-planete-gateau {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/*
+ * Menu latéral : NE PAS forcer translateZ(0) ici, cela écraserait le
+ * translateX(-100%) (état fermé) / translateX(0) (état ouvert) défini dans
+ * nabare.css et laisserait le menu affiché en permanence dans la WebView.
+ * On utilise un simple indice de compositing.
+ */
+html.is-native-app .nav-sidebar {
+  will-change: transform;
+}
+
+/* AOS : pas d’animations au scroll en WebView */
+html.is-native-app [data-aos],
+html.is-native-app .aos-animate,
+html.is-native-app.aos-not-ready [data-aos] {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  filter: none !important;
+  pointer-events: auto !important;
+}
+
+/* Shimmer images : fond statique */
+html.is-native-app.sk-shimmer-pending .mp-card-img::before,
+html.is-native-app.sk-shimmer-pending .mp-card-img::after,
+html.is-native-app.sk-shimmer-pending [class*='sk-shimmer'],
+html.is-native-app .sk-shimmer-bg {
+  animation: none !important;
+  background: rgba(53, 100, 166, 0.1) !important;
+  background-image: none !important;
+}
+
+html.is-native-app .shop-dock-primary,
+html.is-native-app .shop-bottom-dock .menu-item.menu-item--dock-mini {
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08) !important;
+}
+
+html.is-native-app .auth-connexion-page::before,
+html.is-native-app .auth-connexion-page::after {
+  filter: none !important;
+}
+
+html.is-native-app .owl-carousel .animated,
+html.is-native-app .animate__animated {
+  animation: none !important;
+}
+
+html.is-native-app .mp-card,
+html.is-native-app .mp-card-img,
+html.is-native-app .product-card {
+  contain: layout style paint;
+}
+
+html.is-native-app,
+html.is-native-app body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: none;
+}
+
+html.is-native-app body {
+  touch-action: pan-y;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

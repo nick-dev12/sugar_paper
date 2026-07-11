@@ -4,6 +4,12 @@ sugar-paper-*.json
 *-firebase-adminsdk-*.json
 *firebase*credentials*.json
 
+# Clé privée Apple Sign In
+AuthKey_*.p8
+
+# Vérification domaine Apple (téléchargé depuis Apple Developer)
+.well-known/apple-developer-domain-association.txt
+
 # Configuration base de données (identifiants)
 conn/conn.php
 
@@ -13,8 +19,11 @@ config/email.php
 config/site.php
 config/firebase_config.php
 config/firebase_server.php
+config/tracking.php
 
-# Variables d'environnement
+# Serveur suivi GPS (Node.js)
+tracking-server/.env
+tracking-server/node_modules/
 .env
 .env.*
 !.env.example

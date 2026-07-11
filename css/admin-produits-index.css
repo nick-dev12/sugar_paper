@@ -1,0 +1,361 @@
+/**
+ * Pages catalogue produits — admin/produits/index.php, admin/dashboard.php,
+ * admin/categories/produits.php
+ */
+
+/* =============================================================================
+   Grille produits : 3 colonnes tablette, 2 colonnes mobile
+   ============================================================================= */
+
+body.page-produits-index .produits-grid,
+body.page-dashboard-admin .produits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: clamp(10px, 2vw, 18px);
+  justify-items: stretch;
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  body.page-produits-index .produits-grid,
+  body.page-dashboard-admin .produits-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  body.page-produits-index .produits-grid,
+  body.page-dashboard-admin .produits-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 12px);
+  }
+}
+
+body.page-produits-index .produit-card,
+body.page-dashboard-admin .produit-card {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+body.page-produits-index .produit-card-image,
+body.page-dashboard-admin .produit-card-image {
+  height: clamp(100px, 22vw, 200px);
+}
+
+body.page-produits-index .produit-card-body,
+body.page-dashboard-admin .produit-card-body {
+  padding: clamp(8px, 2vw, 12px) clamp(8px, 2vw, 14px) clamp(10px, 2vw, 14px);
+}
+
+body.page-produits-index .produit-card-nom,
+body.page-dashboard-admin .produit-card-nom {
+  font-size: clamp(0.72rem, 2.4vw, 0.9rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.page-produits-index .produit-card-categorie,
+body.page-dashboard-admin .produit-card-categorie {
+  font-size: clamp(0.62rem, 2vw, 0.75rem);
+  margin-bottom: 4px;
+}
+
+body.page-produits-index .produit-card-prix,
+body.page-dashboard-admin .produit-card-prix {
+  font-size: clamp(0.68rem, 2.2vw, 0.82rem);
+  margin-bottom: 4px;
+}
+
+body.page-produits-index .produit-card-prix .prix-promo,
+body.page-dashboard-admin .produit-card-prix .prix-promo {
+  display: block;
+  font-size: clamp(0.58rem, 1.8vw, 0.68rem);
+  margin-left: 0;
+  margin-top: 2px;
+}
+
+body.page-produits-index .produit-card-stock,
+body.page-dashboard-admin .produit-card-stock {
+  font-size: clamp(0.62rem, 2vw, 0.72rem);
+  margin-bottom: 6px;
+}
+
+body.page-produits-index .statut-badge,
+body.page-dashboard-admin .statut-badge {
+  top: 6px;
+  right: 6px;
+  padding: 3px 7px;
+  font-size: clamp(0.55rem, 1.8vw, 0.65rem);
+}
+
+body.page-produits-index .produit-card-actions,
+body.page-dashboard-admin .produit-card-actions {
+  display: flex;
+  gap: clamp(4px, 1vw, 6px);
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+body.page-produits-index .produit-card-actions .btn-card,
+body.page-dashboard-admin .produit-card-actions .btn-card {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: clamp(5px, 1.5vw, 7px) clamp(4px, 1.2vw, 6px);
+  font-size: clamp(0.58rem, 2vw, 0.68rem);
+  gap: 3px;
+  border-radius: 5px;
+  line-height: 1.2;
+}
+
+body.page-produits-index .produit-card-actions .btn-card i,
+body.page-dashboard-admin .produit-card-actions .btn-card i {
+  font-size: clamp(0.58rem, 2vw, 0.68rem);
+}
+
+@media (max-width: 400px) {
+  body.page-produits-index .produit-card-actions .btn-card,
+  body.page-dashboard-admin .produit-card-actions .btn-card {
+    flex-direction: column;
+    padding: 5px 3px;
+    font-size: 0.55rem;
+  }
+
+  body.page-produits-index .produit-card-actions .btn-card i,
+  body.page-dashboard-admin .produit-card-actions .btn-card i {
+    font-size: 0.65rem;
+  }
+}
+
+body.page-produits-index .produit-card-linkable,
+body.page-dashboard-admin .produit-card-linkable {
+  cursor: pointer;
+}
+
+body.page-produits-index .produit-card-linkable:hover .produit-card-nom,
+body.page-dashboard-admin .produit-card-linkable:hover .produit-card-nom {
+  color: #c26638;
+}
+
+/* =============================================================================
+   Barre de filtres
+   ============================================================================= */
+
+body.page-produits-index .admin-filters-bar--produits,
+body.page-dashboard-admin .admin-filters-bar--produits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: clamp(8px, 2vw, 12px);
+  margin-bottom: clamp(14px, 2.5vw, 20px);
+  padding: clamp(10px, 2vw, 14px);
+  background: var(--fond-principal, #fff);
+  border: 1px solid var(--glass-border, #ececec);
+  border-radius: 12px;
+}
+
+body.page-produits-index .admin-filters-fields-row,
+body.page-dashboard-admin .admin-filters-fields-row {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: flex-end;
+  gap: clamp(6px, 1.5vw, 10px);
+  min-width: 0;
+}
+
+@media (min-width: 769px) {
+  body.page-produits-index .admin-filters-fields-row,
+  body.page-dashboard-admin .admin-filters-fields-row {
+    flex: 1 1 auto;
+    max-width: calc(100% - 220px);
+  }
+}
+
+body.page-produits-index .admin-filter-field--search,
+body.page-dashboard-admin .admin-filter-field--search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+body.page-produits-index .admin-filter-field--categorie,
+body.page-dashboard-admin .admin-filter-field--categorie {
+  flex: 0 0 auto;
+  width: clamp(100px, 26vw, 160px);
+  max-width: 160px;
+  min-width: 90px;
+}
+
+body.page-produits-index .admin-filter-field label,
+body.page-dashboard-admin .admin-filter-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: clamp(0.68rem, 2vw, 0.78rem);
+  font-weight: 600;
+  color: #6b2f20;
+}
+
+body.page-produits-index .admin-filter-field input,
+body.page-produits-index .admin-filter-field select,
+body.page-dashboard-admin .admin-filter-field input,
+body.page-dashboard-admin .admin-filter-field select {
+  width: 100%;
+  padding: clamp(7px, 1.8vw, 10px) clamp(8px, 2vw, 12px);
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+  font-size: clamp(0.75rem, 2.2vw, 0.88rem);
+}
+
+body.page-produits-index .admin-filter-field--categorie select,
+body.page-dashboard-admin .admin-filter-field--categorie select {
+  padding-right: clamp(4px, 1vw, 8px);
+  font-size: clamp(0.68rem, 2vw, 0.8rem);
+}
+
+body.page-produits-index .admin-filter-actions,
+body.page-dashboard-admin .admin-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+body.page-produits-index .admin-filter-actions .btn-primary,
+body.page-produits-index .admin-filter-actions .btn-filter-reset,
+body.page-dashboard-admin .admin-filter-actions .btn-primary,
+body.page-dashboard-admin .admin-filter-actions .btn-filter-reset {
+  padding: clamp(7px, 1.8vw, 10px) clamp(10px, 2.2vw, 14px);
+  font-size: clamp(0.72rem, 2vw, 0.85rem);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+body.page-produits-index .btn-filter-reset,
+body.page-dashboard-admin .btn-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d9d9d9;
+  color: #6b2f20;
+  background: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  body.page-produits-index .admin-filters-bar--produits,
+  body.page-dashboard-admin .admin-filters-bar--produits {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  body.page-produits-index .admin-filters-fields-row,
+  body.page-dashboard-admin .admin-filters-fields-row {
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  body.page-produits-index .admin-filter-field--search,
+  body.page-dashboard-admin .admin-filter-field--search {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  body.page-produits-index .admin-filter-field--categorie,
+  body.page-dashboard-admin .admin-filter-field--categorie {
+    flex: 0 0 auto;
+    width: clamp(88px, 30%, 130px);
+    max-width: 130px;
+    min-width: 82px;
+  }
+
+  body.page-produits-index .admin-filter-actions,
+  body.page-dashboard-admin .admin-filter-actions {
+    flex: 1 1 100%;
+    justify-content: stretch;
+  }
+
+  body.page-produits-index .admin-filter-actions .btn-primary,
+  body.page-produits-index .admin-filter-actions .btn-filter-reset,
+  body.page-dashboard-admin .admin-filter-actions .btn-primary,
+  body.page-dashboard-admin .admin-filter-actions .btn-filter-reset {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
+  body.page-produits-index .admin-filter-field--categorie,
+  body.page-dashboard-admin .admin-filter-field--categorie {
+    width: 78px;
+    max-width: 78px;
+    min-width: 72px;
+  }
+
+  body.page-produits-index .admin-filter-field--categorie select,
+  body.page-dashboard-admin .admin-filter-field--categorie select {
+    font-size: 0.62rem;
+    padding: 6px 4px;
+  }
+}
+
+/* =============================================================================
+   Dashboard — stats & alertes
+   ============================================================================= */
+
+body.page-dashboard-admin .contents-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+body.page-dashboard-admin .stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: clamp(10px, 2vw, 18px);
+  margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  body.page-dashboard-admin .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  body.page-dashboard-admin .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body.page-dashboard-admin .stat-card {
+    padding: 10px 12px;
+  }
+
+  body.page-dashboard-admin .stat-card h3 {
+    font-size: clamp(0.62rem, 2vw, 0.72rem);
+  }
+
+  body.page-dashboard-admin .stat-card .stat-value {
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+  }
+}
+
+body.page-dashboard-admin .alert-box {
+  margin-bottom: clamp(12px, 2.5vw, 16px);
+}
+
+body.page-dashboard-admin .content-header .header-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 480px) {
+  body.page-dashboard-admin .content-header .header-actions {
+    grid-template-columns: 1fr;
+  }
+}

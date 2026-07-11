@@ -69,7 +69,7 @@ body {
   margin-right: 50px;
 }
 
-nav {
+nav:not(.bottom-nav) {
   min-height: 70px;
   display: flex;
   align-items: center;
@@ -271,7 +271,7 @@ nav .containernav .users img {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.4);
-  z-index: 9998;
+  z-index: 10015;
   pointer-events: none;
   transition: opacity 0.3s ease;
 }
@@ -288,7 +288,7 @@ nav .containernav .users img {
   max-width: 85vw;
   height: 100vh;
   background: #f9e2e7;
-  z-index: 9999;
+  z-index: 10030;
   transform: translateX(-100%);
   transition: transform 0.35s ease;
   display: flex;
@@ -552,6 +552,12 @@ nav .containernav .users img {
   border-color: rgba(255, 255, 255, 0.6);
 }
 
+@media (max-width: 992px) {
+  .section1 {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .section1 {
     padding: 10px 12px;
@@ -582,7 +588,7 @@ nav .containernav .users img {
     width: 280px;
   }
 
-  nav {
+  nav:not(.bottom-nav) {
     padding: 0 10px;
     flex-direction: column;
     align-items: center;
@@ -590,14 +596,14 @@ nav .containernav .users img {
     height: auto;
   }
 
-  nav .logo img {
+  nav:not(.bottom-nav) .logo img {
     display: block;
     height: 60px;
     width: 140px;
     object-fit: cover;
   }
 
-  nav .logo {
+  nav:not(.bottom-nav) .logo {
     display: flex;
     align-items: center;
     justify-content: center;

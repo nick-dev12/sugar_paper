@@ -1,0 +1,222 @@
+/**
+ * Carrousel hero marketplace / vitrine boutique (même rendu que index.php)
+ */
+
+.mp-hero {
+    --mp-hero-max-h: 300px;
+    background: var(--blanc-neige, #f5f5f5);
+    border-bottom: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
+    padding: 0;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.mp-hero .mp-slider-wrap.mp-hero-slider-wrap {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    line-height: 0;
+}
+
+.mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel,
+.mp-hero .mp-hero-slider-wrap .slider-area,
+.mp-hero .mp-hero-slider-wrap .owl-stage-outer,
+.mp-hero .mp-hero-slider-wrap .owl-stage,
+.mp-hero .mp-hero-slider-wrap .owl-item,
+.mp-hero .mp-hero-slider-wrap .slider-item {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+}
+
+.mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel {
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    max-height: none;
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+/* Owl masque .owl-carousel tant que .owl-loaded n'est pas posé — afficher la 1re affiche en attendant */
+.mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel:not(.owl-loaded) {
+    display: block !important;
+}
+
+.mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel:not(.owl-loaded) .slider-item:not(:first-child) {
+    display: none;
+}
+
+.mp-hero .mp-hero-slider-wrap .slider-item {
+    box-sizing: border-box;
+    display: block;
+    background: transparent;
+    line-height: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+
+.mp-hero .mp-hero-slider-wrap .slider-item img {
+    box-sizing: border-box;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    max-height: var(--mp-hero-max-h) !important;
+    min-height: 0 !important;
+    display: block;
+    vertical-align: top;
+    transform: none !important;
+}
+
+@media (min-width: 993px) {
+    .mp-hero {
+        width: 100%;
+    }
+
+    .mp-hero .mp-slider-wrap.mp-hero-slider-wrap {
+        width: 100%;
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel,
+    .mp-hero .mp-hero-slider-wrap .slider-area,
+    .mp-hero .mp-hero-slider-wrap .owl-stage-outer,
+    .mp-hero .mp-hero-slider-wrap .owl-stage,
+    .mp-hero .mp-hero-slider-wrap .owl-item,
+    .mp-hero .mp-hero-slider-wrap .slider-item {
+        width: 100%;
+        height: var(--mp-hero-max-h) !important;
+        max-height: var(--mp-hero-max-h) !important;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-item img {
+        width: 100% !important;
+        height: var(--mp-hero-max-h) !important;
+        max-height: var(--mp-hero-max-h) !important;
+        object-fit: cover;
+        object-position: center;
+    }
+}
+
+@media (max-width: 992px) {
+    .mp-hero {
+        padding: 0;
+        margin-bottom: 0;
+        border-bottom: none;
+    }
+
+    .mp-hero .mp-slider-wrap.mp-hero-slider-wrap {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel,
+    .mp-hero .mp-hero-slider-wrap .slider-area,
+    .mp-hero .mp-hero-slider-wrap .owl-stage-outer,
+    .mp-hero .mp-hero-slider-wrap .owl-stage,
+    .mp-hero .mp-hero-slider-wrap .owl-item,
+    .mp-hero .mp-hero-slider-wrap .slider-item {
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-area.owl-carousel,
+    .mp-hero .mp-hero-slider-wrap .slider-item,
+    .mp-hero .mp-hero-slider-wrap .slider-item img {
+        border-radius: 0;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-item img {
+        width: 100% !important;
+        height: auto !important;
+        max-height: var(--mp-hero-max-h) !important;
+        transform: none !important;
+    }
+}
+
+@media (max-width: 1200px),
+(max-width: 992px),
+(max-width: 768px),
+(max-width: 600px),
+(max-width: 500px) {
+    .mp-hero .mp-hero-slider-wrap .slider-area,
+    .mp-hero .mp-hero-slider-wrap .slider-area .slider-item {
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    .mp-hero .mp-hero-slider-wrap .slider-area .slider-item img {
+        height: auto !important;
+        max-height: var(--mp-hero-max-h) !important;
+        transform: none !important;
+    }
+}
+
+.mp-hero .mp-hero-slider-wrap .owl-dots,
+.mp-hero .mp-hero-slider-wrap .owl-nav {
+    display: none !important;
+    margin: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.mp-hero-slider-wrap {
+    margin-bottom: 0;
+}
+
+/* ——— Surcharge style.css sur la vitrine boutique (même rendu que index.php) ——— */
+body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area,
+body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item {
+    min-height: 0 !important;
+}
+
+body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item {
+    display: block !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item img {
+    object-fit: cover !important;
+    object-position: center !important;
+    min-height: 0 !important;
+}
+
+@media (max-width: 1200px),
+(max-width: 992px),
+(max-width: 768px),
+(max-width: 600px),
+(max-width: 500px) {
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area {
+        height: auto !important;
+        max-height: none !important;
+    }
+
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item,
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item img {
+        height: auto !important;
+        max-height: var(--mp-hero-max-h) !important;
+        transform: none !important;
+    }
+}
+
+@media (min-width: 993px) {
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area,
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item,
+    body.boutique-vitrine .mp-hero .mp-hero-slider-wrap .slider-area .slider-item img {
+        height: var(--mp-hero-max-h) !important;
+        max-height: var(--mp-hero-max-h) !important;
+    }
+}

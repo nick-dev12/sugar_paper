@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "XA8994VJC6.com.sugarpaper.app",
+        "paths": ["*"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,279 @@
+/**
+ * Localisation boutique vendeur — paramètres admin
+ */
+.abl-block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.abl-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(53, 100, 166, 0.08);
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.abl-card__head {
+    padding: 16px 20px 13px;
+    border-bottom: 1px solid rgba(53, 100, 166, 0.07);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.abl-card__head-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.abl-card__head-icon--map { background: rgba(234, 179, 8, 0.1); color: #a16207; }
+.abl-card__head-icon--green { background: rgba(34, 197, 94, 0.1); color: #15803d; }
+.abl-card__head-icon--geo { background: rgba(53, 100, 166, 0.1); color: var(--couleur-dominante, #3564a6); }
+
+.abl-card__head-text h3 {
+    font-size: 0.93rem;
+    font-weight: 800;
+    color: var(--titres, #0d0d0d);
+    margin: 0;
+}
+
+.abl-card__head-text p {
+    font-size: 0.72rem;
+    color: var(--gris-moyen, #737373);
+    margin: 2px 0 0;
+}
+
+.abl-card__body {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.abl-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.abl-form-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.abl-select,
+.abl-textarea,
+.abl-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid rgba(53, 100, 166, 0.18);
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.abl-textarea { min-height: 88px; resize: vertical; }
+
+.abl-select:focus,
+.abl-textarea:focus,
+.abl-input:focus {
+    outline: none;
+    border-color: var(--couleur-dominante, #3564a6);
+    box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
+}
+
+.abl-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    transition: filter 0.15s, transform 0.12s;
+}
+
+.abl-save:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.abl-save--gold { background: #a16207; }
+.abl-save--green { background: #16a34a; }
+.abl-save--blue { background: var(--couleur-dominante, #3564a6); }
+.abl-save--danger { background: rgba(255, 107, 53, 0.15); color: var(--orange-fonce, #e85a2a); }
+
+.abl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.abl-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.abl-chip {
+    background: rgba(53, 100, 166, 0.12);
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+.abl-hint {
+    font-size: 0.82rem;
+    color: var(--gris-moyen, #737373);
+    margin: 0;
+    line-height: 1.45;
+}
+
+.abl-status {
+    display: none;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--blanc-neige, #f5f5f5);
+}
+
+.abl-position-saved {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(53, 100, 166, 0.06);
+    border: 1px solid rgba(53, 100, 166, 0.12);
+}
+
+.abl-position-saved__label {
+    margin: 0 0 8px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--couleur-dominante, #3564a6);
+}
+
+.abl-position-saved__text {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--titres, #0d0d0d);
+    line-height: 1.45;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.abl-position-saved__text i {
+    color: var(--couleur-dominante, #3564a6);
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.abl-position-saved__meta {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--gris-moyen, #737373);
+}
+
+.abl-position-saved__map-link {
+    color: var(--couleur-dominante, #3564a6);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.abl-position-saved__map-link:hover { text-decoration: underline; }
+
+.abl-position-saved__coords {
+    margin: 10px 0 0;
+    font-size: 0.75rem;
+    color: var(--gris-moyen, #737373);
+}
+
+.abl-gmaps-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 14px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: var(--couleur-dominante, #3564a6);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 4px 18px rgba(53, 100, 166, 0.28);
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.abl-gmaps-btn:hover {
+    background: var(--couleur-dominante-hover, #2d5690);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px rgba(53, 100, 166, 0.35);
+}
+
+.abl-gmaps-btn i {
+    font-size: 1.15rem;
+}
+
+.abl-custom-panel {
+    margin-top: 4px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px dashed rgba(53, 100, 166, 0.25);
+    background: var(--blanc-neige, #fafafa);
+}
+
+.abl-custom-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.abl-custom-form__intro {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--gris-fonce, #4a4a4a);
+    line-height: 1.45;
+}
+
+.abl-custom-form__coords {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.abl-custom-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+@media (max-width: 520px) {
+    .abl-custom-form__coords { grid-template-columns: 1fr; }
+}

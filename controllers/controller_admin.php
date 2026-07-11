@@ -79,11 +79,9 @@ function process_admin_inscription() {
         $errors[] = 'Les mots de passe ne correspondent pas.';
     }
     
-    // Rôle : admin (accès complet) ou utilisateur (tout sauf gestion des comptes clients)
+    // Rôle du nouveau compte
     $role = isset($_POST['role']) ? trim($_POST['role']) : 'utilisateur';
-    if (!in_array($role, ['admin', 'utilisateur'])) {
-        $role = 'utilisateur';
-    }
+    $role = normalize_admin_role($role);
 
     // Si un admin est connecté, il doit avoir le rôle admin pour ajouter des comptes
     $admin_connecte = isset($_SESSION['admin_id']) && isset($_SESSION['admin_role']);

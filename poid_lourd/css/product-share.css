@@ -1,0 +1,107 @@
+/**
+ * Bouton partage produit — cartes catalogue (mp-card, mp-new-card, etc.)
+ * Positionné en haut à droite du conteneur carte (pas sur l'image).
+ */
+.mp-card,
+.mp-top-card,
+.mp-new-card {
+    position: relative;
+}
+
+.mp-card > .pshare,
+.mp-top-card > .pshare,
+.mp-new-card > .pshare {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 15;
+}
+
+.pshare__toggle {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--couleur-dominante, #3564a6);
+    box-shadow: 0 2px 10px rgba(13, 13, 13, 0.14);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+
+.pshare__toggle:hover,
+.pshare__toggle:focus-visible {
+    background: var(--couleur-dominante, #3564a6);
+    color: #fff;
+    outline: none;
+}
+
+.pshare__toggle[aria-expanded="true"] {
+    background: var(--couleur-dominante, #3564a6);
+    color: #fff;
+}
+
+/* Badges sur l'image */
+.mp-new-card-img,
+.mp-top-card-img-wrap,
+.mp-card-img,
+.carousel .image-wrapper {
+    position: relative;
+}
+
+.mp-new-card > .mp-new-badge {
+    display: none;
+}
+
+.mp-new-card-img .mp-new-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: auto;
+    z-index: 2;
+    background: var(--accent-promo, #ff6b35);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    .mp-card > .pshare,
+    .mp-top-card > .pshare,
+    .mp-new-card > .pshare {
+        top: 6px;
+        right: 6px;
+    }
+    .pshare__toggle {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+/* Fiche produit — bouton sur l'image principale */
+.produit-gallery-main > .pshare {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 15;
+}
+
+@media (max-width: 640px) {
+    .produit-gallery-main > .pshare {
+        top: 10px;
+        right: 10px;
+    }
+}

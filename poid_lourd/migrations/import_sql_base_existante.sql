@@ -1,0 +1,73 @@
+-- =============================================================================
+-- IMPORT D'UN DUMP SQL SUR UNE BASE QUI A DÉJÀ LES MÊMES TABLES
+-- =============================================================================
+--
+-- Erreur #1050 « La table 'admin' existe déjà »
+--   Cause : CREATE TABLE sans DROP TABLE avant.
+--
+-- Erreur #6125 « Missing unique key for constraint fk_bl_admin »
+--   Cause : export production où admin.id n'a pas PRIMARY KEY dans le CREATE.
+--   Corrigé par preparer_import_sql.php (PK dans CREATE + FK en fin).
+--
+-- Erreur #1068 « Plusieurs clefs primaires définies »
+--   Cause : PRIMARY KEY déjà dans CREATE + ALTER TABLE ADD PRIMARY KEY (`id`).
+--   Corrigé par preparer_import_sql.php (supprime le ADD PRIMARY KEY en double).
+--
+-- ---------------------------------------------------------------------------
+-- MÉTHODE 1 (recommandée) — Préparer le fichier avant import
+-- ---------------------------------------------------------------------------
+-- Navigateur (WAMP) : ouvrir
+--   http://localhost/poid_lourd/migrations/preparer_import_sql.php
+--   Envoyer le .sql, télécharger le fichier *_import_pret.sql
+--
+-- Ligne de commande (PowerShell, à la racine du projet) :
+--
+--   php migrations/preparer_import_sql.php "C:\chemin\export_colobane.sql"
+--
+-- Optionnel : renommer la base cible dans le fichier (ariaqqrw_colobane → tresor_afri) :
+--
+--   php migrations/preparer_import_sql.php export.sql export_pret.sql tresor_afri
+--
+-- Puis phpMyAdmin : base tresor_afri > Importer > export_pret.sql
+--
+-- ---------------------------------------------------------------------------
+-- MÉTHODE 2 — À l'export depuis phpMyAdmin (éviter le problème à la source)
+-- ---------------------------------------------------------------------------
+-- Lors de l'export, cocher :
+--   « Ajouter DROP TABLE / VIEW / PROCEDURE… »
+-- Le fichier contiendra alors DROP TABLE IF EXISTS avant chaque CREATE.
+--
+-- ---------------------------------------------------------------------------
+-- MÉTHODE 3 — Données seulement (sans recréer les tables)
+-- ---------------------------------------------------------------------------
+-- Si la structure locale est déjà à jour et vous voulez seulement les données :
+--   1. Ouvrir le .sql dans un éditeur
+--   2. Supprimer toutes les sections CREATE TABLE / ALTER TABLE / INDEX
+--   3. Garder uniquement les INSERT INTO ...
+--   4. Avant import : migrations/vider_base_donnees.sql ou CALL truncate_all_tables();
+--      (après installation de truncate_table_safe_procedure.sql)
+--
+-- ---------------------------------------------------------------------------
+-- MÉTHODE 4 — Remplacer entièrement la base (local WAMP)
+-- ---------------------------------------------------------------------------
+-- Si vous voulez une copie exacte et pouvez tout effacer :
+--   1. phpMyAdmin > base tresor_afri > Opérations > Supprimer la base
+--   2. Recréer une base vide « tresor_afri »
+--   3. Importer le dump (CREATE TABLE fonctionnera car la base est vide)
+--
+-- ---------------------------------------------------------------------------
+-- En-tête à coller AVANT votre import manuel (si vous ne pouvez pas utiliser le script PHP)
+-- ---------------------------------------------------------------------------
+
+SET @OLD_FOREIGN_KEY_CHECKS = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Puis modifiez votre fichier : avant chaque
+--   CREATE TABLE `nom_table`
+-- ajoutez :
+--   DROP TABLE IF EXISTS `nom_table`;
+-- et remplacez par :
+--   CREATE TABLE IF NOT EXISTS `nom_table`
+
+-- Après tout le dump :
+SET FOREIGN_KEY_CHECKS = @OLD_FOREIGN_KEY_CHECKS;

@@ -1,0 +1,69 @@
+/**
+ * Page Commandes annulées — thème sobre (historique), palette variables.css
+ * S’appuie sur user-mes-commandes.css pour la structure .mc-*
+ */
+
+body.user-page-commandes-annulees {
+  --mc-radius: 18px;
+  --mc-radius-sm: 14px;
+}
+
+body.user-page-commandes-annulees .user-content {
+  background: var(--blanc-neige);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  min-height: 100%;
+}
+
+/* Hero — accent terre / orange doux (historique annulé) */
+body.user-page-commandes-annulees .mc-orders-hero::before {
+  background: var(--accent-promo);
+  opacity: 0.55;
+}
+
+body.user-page-commandes-annulees .mc-orders-hero h1 .mc-hero-icon {
+  background: var(--orange-pale);
+  color: var(--orange-fonce);
+  border-color: rgba(255, 107, 53, 0.28);
+  box-shadow: 0 4px 14px rgba(255, 107, 53, 0.12);
+}
+
+body.user-page-commandes-annulees .mc-stat-pill {
+  background: rgba(13, 13, 13, 0.04);
+  border: 1px solid rgba(53, 100, 166, 0.12);
+}
+
+body.user-page-commandes-annulees .mc-stat-pill i {
+  color: var(--gris-fonce);
+}
+
+/* Bannière navigation — icône assortie */
+body.user-page-commandes-annulees .mc-continue-icon {
+  background: var(--bleu-pale);
+  color: var(--couleur-dominante);
+  border-color: rgba(53, 100, 166, 0.2);
+}
+
+body.user-page-commandes-annulees .mc-commande-card.mc-commande-card--cancelled {
+  border-left: 4px solid rgba(115, 115, 115, 0.45);
+}
+
+body.user-page-commandes-annulees .mc-commande-card.mc-commande-card--cancelled .mc-commande-card__top {
+  background: rgba(13, 13, 13, 0.035);
+}
+
+/* Badge Annulée — cohérent avec la page */
+body.user-page-commandes-annulees .mc-badge.statut-annulee {
+  background: rgba(13, 13, 13, 0.07);
+  color: var(--gris-fonce);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* État vide — ton neutre */
+body.user-page-commandes-annulees .mc-empty.mc-empty--neutral {
+  background: rgba(53, 100, 166, 0.06);
+  border-color: rgba(53, 100, 166, 0.2);
+}
+
+body.user-page-commandes-annulees .mc-empty.mc-empty--neutral .mc-empty-icon {
+  color: var(--couleur-dominante);
+}

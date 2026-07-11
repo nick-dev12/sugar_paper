@@ -16,14 +16,90 @@ function ensure_image_reference_column() {
     }
     try {
         $stmt = $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'image_reference'");
-        if ($stmt && $stmt->rowCount() > 0) {
+        if (!$stmt || $stmt->rowCount() === 0) {
+            $db->exec("ALTER TABLE commandes_personnalisees ADD COLUMN image_reference TEXT NULL DEFAULT NULL AFTER description");
             return true;
         }
-        $db->exec("ALTER TABLE commandes_personnalisees ADD COLUMN image_reference VARCHAR(255) NULL DEFAULT NULL AFTER description");
+        $col = $stmt->fetch(PDO::FETCH_ASSOC);
+        $type = strtolower($col['Type'] ?? '');
+        if (strpos($type, 'text') === false) {
+            $db->exec("ALTER TABLE commandes_personnalisees MODIFY COLUMN image_reference TEXT NULL DEFAULT NULL");
+        }
         return true;
     } catch (PDOException $e) {
         return false;
     }
+}
+
+/**
+ * Normalise le tableau $_FILES pour un input multiple
+ * @param array|null $files
+ * @return array
+ */
+function normalize_commande_personnalisee_files_array($files) {
+    if (!is_array($files) || empty($files['name'])) {
+        return [];
+    }
+    if (!is_array($files['name'])) {
+        return [$files];
+    }
+    $normalized = [];
+    $count = count($files['name']);
+    for ($i = 0; $i < $count; $i++) {
+        $normalized[] = [
+            'name' => $files['name'][$i] ?? '',
+            'type' => $files['type'][$i] ?? '',
+            'tmp_name' => $files['tmp_name'][$i] ?? '',
+            'error' => $files['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+            'size' => $files['size'][$i] ?? 0
+        ];
+    }
+    return $normalized;
+}
+
+/**
+ * Upload plusieurs images de référence
+ * @param array|null $files_input
+ * @param int $max_files
+ * @return array
+ */
+function upload_commande_personnalisee_images($files_input, $max_files = 6) {
+    $files = normalize_commande_personnalisee_files_array($files_input);
+    $paths = [];
+    $max_bytes = 5 * 1024 * 1024;
+
+    foreach ($files as $file) {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if (count($paths) >= $max_files) {
+            return [
+                'success' => false,
+                'message' => 'Vous pouvez joindre au maximum ' . $max_files . ' images.',
+                'paths' => []
+            ];
+        }
+        if (($file['size'] ?? 0) > $max_bytes) {
+            return [
+                'success' => false,
+                'message' => 'Chaque image doit faire moins de 5 Mo.',
+                'paths' => []
+            ];
+        }
+        $validation = validate_commande_personnalisee_image($file);
+        if (!$validation['success']) {
+            return ['success' => false, 'message' => $validation['message'], 'paths' => []];
+        }
+        $upload_result = upload_commande_personnalisee_image($file);
+        if (!$upload_result['success']) {
+            return ['success' => false, 'message' => $upload_result['message'], 'paths' => []];
+        }
+        if (!empty($upload_result['path'])) {
+            $paths[] = $upload_result['path'];
+        }
+    }
+
+    return ['success' => true, 'message' => '', 'paths' => $paths];
 }
 
 /**
@@ -144,7 +220,7 @@ function process_commande_personnalisee() {
     $user_id = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
     $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
-    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
+    $email = '';
     $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
     $type_produit = isset($_POST['type_produit']) ? trim($_POST['type_produit']) : '';
@@ -152,7 +228,8 @@ function process_commande_personnalisee() {
     $date_souhaitee = isset($_POST['date_souhaitee']) ? trim($_POST['date_souhaitee']) : '';
     $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : null;
     $image_reference = null;
-    $image_file = $_FILES['image_reference'] ?? null;
+    $images_files = $_FILES['images_reference'] ?? null;
+    $legacy_image_file = $_FILES['image_reference'] ?? null;
 
     if (empty($nom)) {
         $errors[] = 'Le nom est obligatoire.';
@@ -164,12 +241,6 @@ function process_commande_personnalisee() {
         $errors[] = 'Le prénom est obligatoire.';
     } elseif (strlen($prenom) < 2) {
         $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
-    }
-
-    if (empty($email)) {
-        $errors[] = 'L\'email est obligatoire.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'L\'email n\'est pas valide.';
     }
 
     if (empty($telephone)) {
@@ -188,16 +259,29 @@ function process_commande_personnalisee() {
         $errors[] = 'La date souhaitée n\'est pas valide.';
     }
 
-    if (is_array($image_file) && (($image_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
-        $image_validation = validate_commande_personnalisee_image($image_file);
+    $files_to_validate = normalize_commande_personnalisee_files_array($images_files);
+    if (empty($files_to_validate) && is_array($legacy_image_file) && (($legacy_image_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+        $files_to_validate = [$legacy_image_file];
+    }
+    foreach ($files_to_validate as $file_item) {
+        if (($file_item['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        $image_validation = validate_commande_personnalisee_image($file_item);
         if (!$image_validation['success']) {
             $errors[] = $image_validation['message'];
+            break;
         }
     }
 
     if (empty($errors)) {
-        if (is_array($image_file) && (($image_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
-            $upload_result = upload_commande_personnalisee_image($image_file);
+        $upload_batch = upload_commande_personnalisee_images($images_files);
+        if (!$upload_batch['success'] && !empty($upload_batch['message'])) {
+            $errors[] = $upload_batch['message'];
+        } elseif (!empty($upload_batch['paths'])) {
+            $image_reference = encode_commande_personnalisee_images($upload_batch['paths']);
+        } elseif (is_array($legacy_image_file) && (($legacy_image_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+            $upload_result = upload_commande_personnalisee_image($legacy_image_file);
             if (!$upload_result['success']) {
                 $errors[] = $upload_result['message'];
             } else {

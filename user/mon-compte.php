@@ -34,6 +34,9 @@ $nb_commandes = count_commandes_by_user($_SESSION['user_id']);
 $nb_panier = count_panier_items_by_user($_SESSION['user_id']);
 $nb_favoris = count_favoris_by_user($_SESSION['user_id']);
 $nb_visites = count_visites_by_user($_SESSION['user_id']);
+
+$enable_firebase_notifications = true;
+$firebase_notify_type = 'user';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -46,11 +49,11 @@ $nb_visites = count_visites_by_user($_SESSION['user_id']);
     <title>Mon Compte - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-mon-compte.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="user-page-mon-compte">
     <?php include 'includes/user_nav.php'; ?>
 
     <!-- Section orientation : continuer les achats -->
@@ -74,7 +77,7 @@ $nb_visites = count_visites_by_user($_SESSION['user_id']);
             <i class="fas fa-home"></i> Bienvenue, <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?>
         </h1>
         <div class="content-header-actions">
-            <button type="button" id="btn-enable-notifications" class="btn-voir-produits btn-enable-notifications">
+            <button type="button" id="btn-enable-notifications" class="btn-voir-produits btn-enable-notifications" data-notify-type="user">
                 <i class="fas fa-bell-slash"></i> Activer les notifications
             </button>
             <a href="/index.php" class="btn-voir-produits">
@@ -83,30 +86,42 @@ $nb_visites = count_visites_by_user($_SESSION['user_id']);
         </div>
     </div>
 
+    <div id="notify-help-panel" class="notify-help-panel" hidden aria-live="polite">
+        <h4><i class="fas fa-circle-info"></i> Autoriser les notifications manuellement</h4>
+        <ol>
+            <li>Cliquez sur le <strong>cadenas</strong> (à gauche de l'adresse)</li>
+            <li><strong>Notifications</strong> → choisissez <strong>Autoriser</strong></li>
+            <li>Cliquez sur le bouton ci-dessous</li>
+        </ol>
+        <button type="button" id="btn-notify-continue" class="btn-voir-produits notify-help-panel__btn">
+            <i class="fas fa-check"></i> J'ai autorisé — continuer
+        </button>
+    </div>
+
     <!-- Statistiques -->
     <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card stat-card--commandes">
             <div class="stat-icon">
                 <i class="fas fa-shopping-bag"></i>
             </div>
             <div class="stat-value"><?php echo $nb_commandes; ?></div>
             <div class="stat-label">Commandes</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-card--panier">
             <div class="stat-icon">
                 <i class="fas fa-shopping-cart"></i>
             </div>
             <div class="stat-value"><?php echo $nb_panier; ?></div>
             <div class="stat-label">Articles au panier</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-card--favoris">
             <div class="stat-icon">
                 <i class="fas fa-heart"></i>
             </div>
             <div class="stat-value"><?php echo $nb_favoris; ?></div>
             <div class="stat-label">Favoris</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card stat-card--visites">
             <div class="stat-icon">
                 <i class="fas fa-eye"></i>
             </div>
@@ -185,27 +200,3 @@ $nb_visites = count_visites_by_user($_SESSION['user_id']);
     </section>
 
     <?php include 'includes/user_footer.php'; ?>
-
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js"></script>
-    <?php require_once __DIR__ . '/../includes/firebase_init.php'; ?>
-    <script>
-        if (window.FIREBASE_CONFIG) {
-            firebase.initializeApp(window.FIREBASE_CONFIG);
-        }
-    </script>
-    <script src="/js/firebase-notifications.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('btn-enable-notifications');
-            if (btn) {
-                btn.addEventListener('click', function() {
-                    if (typeof FirebaseNotifications !== 'undefined') {
-                        FirebaseNotifications.enable('user', this);
-                    } else {
-                        alert('Erreur: Les scripts de notification ne sont pas chargés.');
-                    }
-                });
-            }
-        });
-    </script>

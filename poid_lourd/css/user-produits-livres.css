@@ -1,0 +1,72 @@
+/**
+ * Page Produits livrés — thème succès / livré (palette variables.css)
+ * S’appuie sur user-mes-commandes.css pour la structure .mc-*
+ */
+
+body.user-page-produits-livres {
+  --mc-radius: 18px;
+  --mc-radius-sm: 14px;
+}
+
+body.user-page-produits-livres .user-content {
+  background: var(--blanc-neige);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  min-height: 100%;
+}
+
+/* Hero — accent « reçu » (bleu / succès) */
+body.user-page-produits-livres .mc-orders-hero::before {
+  background: var(--bleu-clair);
+  opacity: 0.75;
+}
+
+body.user-page-produits-livres .mc-orders-hero__intro h1 .mc-hero-icon {
+  background: var(--success-bg);
+  color: var(--bleu-clair);
+  border-color: rgba(53, 100, 166, 0.28);
+  box-shadow: 0 4px 16px rgba(53, 100, 166, 0.14);
+}
+
+body.user-page-produits-livres .mc-stat-pill {
+  background: var(--bleu-pale);
+  border-color: rgba(53, 100, 166, 0.2);
+}
+
+body.user-page-produits-livres .mc-stat-pill i {
+  color: var(--couleur-dominante);
+}
+
+body.user-page-produits-livres .mc-continue-icon {
+  background: var(--success-bg);
+  color: var(--bleu-clair);
+  border-color: rgba(53, 100, 166, 0.22);
+}
+
+/* Cartes commandes classiques — livré */
+body.user-page-produits-livres .mc-commande-card.mc-commande-card--delivered {
+  border-left: 4px solid var(--bleu-clair);
+}
+
+body.user-page-produits-livres .mc-commande-card.mc-commande-card--delivered .mc-commande-card__top {
+  background: rgba(74, 122, 184, 0.08);
+}
+
+/* Badges */
+body.user-page-produits-livres .mc-badge.statut-livree {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--success-bg);
+  color: var(--bleu-fonce);
+  border: 1px solid rgba(53, 100, 166, 0.28);
+}
+
+/* État vide principal */
+body.user-page-produits-livres .mc-empty.mc-empty--delivered {
+  background: var(--bleu-pale);
+  border-color: rgba(53, 100, 166, 0.25);
+}
+
+body.user-page-produits-livres .mc-empty.mc-empty--delivered .mc-empty-icon {
+  color: var(--bleu-clair);
+}

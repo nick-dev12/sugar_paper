@@ -1,0 +1,22 @@
+# Robots.txt — COLObanes / Colobane marketplace Sénégal
+# https://www.robotstxt.org/
+# En production, .htaccess redirige vers robots.php (URL sitemap dynamique).
+
+User-agent: *
+Allow: /
+
+# Pages à ne pas indexer
+Disallow: /user/
+Disallow: /admin/
+Disallow: /super_admin/
+Disallow: /panier.php
+Disallow: /commande.php
+Disallow: /add-to-panier.php
+Disallow: /stock-info.php
+Disallow: /sign-up.php
+Disallow: /boutique/panier.php
+Disallow: /config/
+Disallow: /vendor/
+
+# Sitemap
+Sitemap: https://colobanes.com/sitemap.xml

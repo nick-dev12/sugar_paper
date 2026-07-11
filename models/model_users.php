@@ -14,6 +14,11 @@ require_once __DIR__ . '/../conn/conn.php';
  */
 function user_email_exists($email) {
     global $db;
+
+    $email = trim((string) $email);
+    if ($email === '') {
+        return false;
+    }
     
     try {
         $stmt = $db->prepare("SELECT COUNT(*) FROM users WHERE email = :email");
@@ -33,6 +38,11 @@ function user_email_exists($email) {
  */
 function get_user_by_email($email) {
     global $db;
+
+    $email = trim((string) $email);
+    if ($email === '') {
+        return false;
+    }
     
     try {
         $stmt = $db->prepare("SELECT * FROM users WHERE email = :email");
@@ -65,6 +75,135 @@ function get_user_by_id($id) {
 }
 
 /**
+ * Indique si une colonne existe dans la table users.
+ */
+function users_has_column($column) {
+    static $cache = [];
+    global $db;
+
+    $column = trim((string) $column);
+    if ($column === '') {
+        return false;
+    }
+    if (array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+    if (!isset($db) || !($db instanceof PDO)) {
+        $cache[$column] = false;
+        return false;
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM users LIKE " . $db->quote($column));
+        $cache[$column] = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        return $cache[$column];
+    } catch (PDOException $e) {
+        $cache[$column] = false;
+        return false;
+    }
+}
+
+/**
+ * Récupère un utilisateur lié à un UID Firebase.
+ */
+function get_user_by_firebase_uid($firebase_uid) {
+    global $db;
+
+    $firebase_uid = trim((string) $firebase_uid);
+    if ($firebase_uid === '' || !users_has_column('firebase_uid')) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM users WHERE firebase_uid = :uid LIMIT 1");
+        $stmt->execute(['uid' => $firebase_uid]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $user ? $user : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Lie un compte client existant à Firebase/Google.
+ */
+function update_user_google_identity($user_id, $firebase_uid, $auth_provider = 'google') {
+    global $db;
+
+    if (!users_has_column('firebase_uid')) {
+        return true;
+    }
+
+    $auth_provider = trim((string) $auth_provider);
+    if ($auth_provider === '') {
+        $auth_provider = 'google';
+    }
+
+    $sets = ['firebase_uid = :firebase_uid'];
+    $params = [
+        'id' => (int) $user_id,
+        'firebase_uid' => trim((string) $firebase_uid),
+    ];
+    if (users_has_column('auth_provider')) {
+        $sets[] = 'auth_provider = :auth_provider';
+        $params['auth_provider'] = $auth_provider;
+    }
+
+    try {
+        $stmt = $db->prepare('UPDATE users SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        return $stmt->execute($params);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Normalise un numéro saisi : uniquement les chiffres.
+ */
+function users_normalize_phone_digits($telephone) {
+    return preg_replace('/\D/', '', (string) $telephone);
+}
+
+/**
+ * Récupère un utilisateur par téléphone (chiffres uniquement).
+ */
+function get_user_by_telephone($telephone) {
+    global $db;
+
+    $digits = users_normalize_phone_digits($telephone);
+    if ($digits === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM users
+            WHERE telephone IS NOT NULL AND TRIM(telephone) != ''
+              AND REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telephone,''), ' ', ''), '-', ''), '+', ''), '.', '') = :d
+            LIMIT 1
+        ");
+        $stmt->execute(['d' => $digits]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ? $user : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Crée un compte client depuis Google, puis le lie à Firebase.
+ */
+function create_google_user($nom, $prenom, $email, $telephone, $firebase_uid, $auth_provider = 'google') {
+    $password_hash = password_hash(bin2hex(random_bytes(24)), PASSWORD_BCRYPT);
+    $user_id = create_user($nom, $prenom, $email, $telephone, $password_hash);
+    if ($user_id) {
+        update_user_google_identity($user_id, $firebase_uid, $auth_provider);
+    }
+    return $user_id;
+}
+
+/**
  * Crée un nouvel utilisateur
  * @param string $nom Le nom de l'utilisateur
  * @param string $prenom Le prénom de l'utilisateur
@@ -75,6 +214,16 @@ function get_user_by_id($id) {
  */
 function create_user($nom, $prenom, $email, $telephone, $password_hash) {
     global $db;
+
+    $email_bind = null;
+    if ($email !== null && trim((string) $email) !== '') {
+        $email_bind = trim((string) $email);
+    }
+
+    $tel_digits = users_normalize_phone_digits($telephone);
+    if ($tel_digits === '') {
+        return false;
+    }
     
     try {
         $stmt = $db->prepare("
@@ -85,8 +234,8 @@ function create_user($nom, $prenom, $email, $telephone, $password_hash) {
         $result = $stmt->execute([
             'nom' => $nom,
             'prenom' => $prenom,
-            'email' => $email,
-            'telephone' => $telephone,
+            'email' => $email_bind,
+            'telephone' => $tel_digits,
             'password' => $password_hash
         ]);
         

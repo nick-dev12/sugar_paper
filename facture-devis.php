@@ -32,6 +32,7 @@ $commande = [
     'adresse_livraison' => $devis['adresse_livraison'] ?? '',
     'notes' => $devis['notes'] ?? '—',
     'frais_livraison' => $devis['frais_livraison'] ?? 0,
+    'remise_globale_pct' => (float) ($devis['remise_globale_pct'] ?? 0),
     'numero_commande' => $devis['numero_devis'] ?? ''
 ];
 
@@ -49,7 +50,7 @@ $entreprise_ninea = '009116684';
 $entreprise_adresse = 'Hlm Hann Maristes';
 $entreprise_tel1 = '774161212';
 $entreprise_tel2 = '773292123';
-$entreprise_site = 'https://www.sugar-paper.sn';
+$entreprise_site = 'https://www.sugar-paper.com';
 $entreprise_email = 'sugarpaper26@gmail.com';
 
 $is_public = true;

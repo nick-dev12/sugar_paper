@@ -80,6 +80,12 @@ $commandes = get_commandes_by_user($_SESSION['user_id']);
 $commandes_annulees = array_filter($commandes, function ($commande) {
     return $commande['statut'] === 'annulee';
 });
+
+$nb_commandes_annulees = count($commandes_annulees);
+$montant_total_annule = 0;
+foreach ($commandes_annulees as $commande_annulee) {
+    $montant_total_annule += (float) $commande_annulee['montant_total'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -93,13 +99,47 @@ $commandes_annulees = array_filter($commandes, function ($commande) {
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-commandes-annulees.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="user-page-commandes-annulees">
     <?php include 'includes/user_nav.php'; ?>
+
+    <div class="continue-shopping-banner">
+        <div class="continue-shopping-content">
+            <div class="continue-shopping-icon">
+                <i class="fas fa-shopping-basket" aria-hidden="true"></i>
+            </div>
+            <div class="continue-shopping-text">
+                <h2>Repasser commande</h2>
+                <p>Consultez vos commandes en cours ou découvrez nos produits pour une nouvelle commande.</p>
+            </div>
+            <div class="continue-shopping-actions">
+                <a href="mes-commandes.php" class="continue-shopping-btn">
+                    <i class="fas fa-shopping-bag" aria-hidden="true"></i> Mes commandes actives
+                </a>
+                <a href="/produits.php" class="continue-shopping-btn continue-shopping-btn--secondary">
+                    <i class="fas fa-store" aria-hidden="true"></i> Voir les produits
+                </a>
+            </div>
+        </div>
+    </div>
 
     <div class="content-header">
         <h1><i class="fas fa-times-circle"></i> Commandes Annulées</h1>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card--annulees">
+            <div class="stat-icon"><i class="fas fa-ban" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo $nb_commandes_annulees; ?></div>
+            <div class="stat-label">Commandes annulées</div>
+        </div>
+        <div class="stat-card stat-card--montant">
+            <div class="stat-icon"><i class="fas fa-coins" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo number_format($montant_total_annule, 0, ',', ' '); ?></div>
+            <div class="stat-label">Montant total (FCFA)</div>
+        </div>
     </div>
 
     <section class="content-section">
@@ -116,7 +156,7 @@ $commandes_annulees = array_filter($commandes, function ($commande) {
         <?php endif; ?>
 
         <div class="section-title">
-            <h2><i class="fas fa-list"></i> Mes Commandes Annulées (<?php echo count($commandes_annulees); ?>)</h2>
+            <h2><i class="fas fa-list"></i> Mes Commandes Annulées (<?php echo $nb_commandes_annulees; ?>)</h2>
         </div>
 
         <?php if (empty($commandes_annulees)): ?>
@@ -148,16 +188,13 @@ $commandes_annulees = array_filter($commandes, function ($commande) {
                             </div>
                             <div class="detail-item">
                                 <label>Adresse</label>
-                                <div class="value"
-                                    style="font-size: 11px; max-width: 150px; text-align: right; word-break: break-word;">
+                                <div class="value value--address">
                                     <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
                                 </div>
                             </div>
                             <div class="detail-item">
                                 <label>Téléphone</label>
-                                <div class="value" style="font-size: 12px;">
-                                    <?php echo htmlspecialchars($commande['telephone_livraison']); ?>
-                                </div>
+                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
                             </div>
                         </div>
 

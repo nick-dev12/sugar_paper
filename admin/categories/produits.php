@@ -42,9 +42,10 @@ $produits = get_produits_by_categorie($categorie_id);
     <title>Produits de <?php echo htmlspecialchars($categorie['nom']); ?> - Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../../css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-produits-index.css<?php echo asset_version_query(); ?>">
 </head>
-<body>
+<body class="page-produits-index">
     <?php include '../includes/nav.php'; ?>
     
     <div class="content-header">
@@ -71,17 +72,18 @@ $produits = get_produits_by_categorie($categorie_id);
         </div>
 
         <?php if (empty($produits)): ?>
-            <div style="text-align: center; padding: 40px; color: #666;">
-                <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
+            <div class="empty-state">
+                <i class="fas fa-box-open"></i>
                 <p>Aucun produit dans cette catégorie pour le moment.</p>
-                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary" style="margin-top: 20px; display: inline-block;">
+                <a href="../produits/ajouter.php?categorie_id=<?php echo (int) $categorie_id; ?>" class="btn-primary">
                     <i class="fas fa-plus"></i> Ajouter un produit à cette catégorie
                 </a>
             </div>
         <?php else: ?>
             <div class="produits-grid">
                 <?php foreach ($produits as $produit): ?>
-                    <div class="produit-card">
+                    <div class="produit-card produit-card-linkable"
+                        data-href="../produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                         <?php
                         $statut_class = 'statut-actif';
                         if ($produit['statut'] == 'inactif') {
@@ -103,7 +105,7 @@ $produits = get_produits_by_categorie($categorie_id);
                                 <?php echo number_format($produit['prix'], 0, ',', ' '); ?> 
                                 <span class="prix-unite">FCFA</span>
                                 <?php if ($produit['prix_promotion']): ?>
-                                    <span style="color: #c26638; font-size: 12px; margin-left: 5px;">
+                                    <span class="prix-promo">
                                         (Promo: <?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?> FCFA)
                                     </span>
                                 <?php endif; ?>
@@ -115,9 +117,6 @@ $produits = get_produits_by_categorie($categorie_id);
                                 <?php endif; ?>
                             </p>
                             <div class="produit-card-actions">
-                                <a href="../produits/ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
-                                    <i class="fas fa-boxes-stacked"></i> Stock
-                                </a>
                                 <a href="../produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>
@@ -135,4 +134,18 @@ $produits = get_produits_by_categorie($categorie_id);
     </section>
 
     <?php include '../includes/footer.php'; ?>
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.produit-card-linkable').forEach(function(card) {
+                card.addEventListener('click', function(event) {
+                    if (event.target.closest('a, button, input, select, textarea, form')) {
+                        return;
+                    }
+                    var href = card.getAttribute('data-href');
+                    if (href) {
+                        window.location.href = href;
+                    }
+                });
+            });
+        });
+    </script>

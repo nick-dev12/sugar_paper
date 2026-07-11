@@ -5,7 +5,8 @@
  */
 
 require_once __DIR__ . '/../includes/session_user.php';
-session_start();
+session_start_persistent();
+require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 // Redirection après connexion (page demandée ou index)
 $redirect_after = isset($_POST['redirect']) ? trim($_POST['redirect']) : (isset($_GET['redirect']) ? trim($_GET['redirect']) : '');
@@ -21,7 +22,7 @@ if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
 }
 
 // Si l'utilisateur est déjà connecté, rediriger
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
+if (!empty($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     header('Location: ' . $redirect_url);
     exit;
 }
@@ -63,6 +64,8 @@ if (isset($_SESSION['inscription_success'])) {
     $inscription_success = $_SESSION['inscription_success'];
     unset($_SESSION['inscription_success']);
 }
+
+$active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode'] === 'email') ? 'email' : 'phone';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -74,10 +77,10 @@ if (isset($_SESSION['inscription_success'])) {
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <title>Connexion - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/auth-social.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/auth-pages.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -404,7 +407,7 @@ if (isset($_SESSION['inscription_success'])) {
     </style>
 </head>
 
-<body>
+<body class="auth-page auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?>">
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
@@ -433,23 +436,87 @@ if (isset($_SESSION['inscription_success'])) {
                 </div>
             <?php endif; ?>
 
-            <form method="POST" action="" id="loginForm">
+            <?php
+            $google_auth_type = 'auto';
+            $google_auth_redirect = $redirect_url;
+            $google_auth_position = 'top';
+            $google_auth_label = 'Connexion avec Google';
+            include __DIR__ . '/../includes/google_auth_button.php';
+            ?>
+
+            <div class="login-mode-tabs" role="tablist" aria-label="Mode de connexion">
+                <button type="button" role="tab" id="tab-phone" aria-controls="panel-phone"
+                    aria-selected="<?php echo $active_login_mode === 'phone' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'phone' ? '0' : '-1'; ?>">
+                    <i class="fas fa-phone" aria-hidden="true"></i>
+                    <span class="tab-label-long">Téléphone</span>
+                </button>
+                <button type="button" role="tab" id="tab-email" aria-controls="panel-email"
+                    aria-selected="<?php echo $active_login_mode === 'email' ? 'true' : 'false'; ?>"
+                    tabindex="<?php echo $active_login_mode === 'email' ? '0' : '-1'; ?>">
+                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                    <span class="tab-label-long">Email</span>
+                </button>
+            </div>
+
+            <div id="panel-phone" class="login-panel" role="tabpanel" aria-labelledby="tab-phone"
+                <?php echo $active_login_mode !== 'phone' ? 'hidden' : ''; ?>>
+            <form method="POST" action="" id="loginFormPhone">
+                <input type="hidden" name="login_mode" value="phone">
+                <?php if (!empty($redirect_after)): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
+                <?php endif; ?>
+                <div class="form-group">
+                    <label for="telephone"><i class="fas fa-phone"></i> Téléphone *</label>
+                    <div class="input-wrapper input-wrapper--intl-tel">
+                        <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67" autocomplete="tel"
+                            value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pin"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <div class="input-wrapper password-wrapper">
+                        <input type="password" id="pin" name="pin" placeholder="Votre mot de passe ou code PIN"
+                            autocomplete="current-password"
+                            value="<?php echo isset($_POST['pin']) ? htmlspecialchars($_POST['pin']) : ''; ?>">
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin', this)" aria-label="Afficher le mot de passe">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="accepte_conditions_phone" name="accepte_conditions_phone" value="1" required
+                        <?php echo (isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1') ? 'checked' : ''; ?>>
+                    <label for="accepte_conditions_phone">
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a> *
+                    </label>
+                </div>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+            </form>
+            </div>
+
+            <div id="panel-email" class="login-panel" role="tabpanel" aria-labelledby="tab-email"
+                <?php echo $active_login_mode !== 'email' ? 'hidden' : ''; ?>>
+            <form method="POST" action="" id="loginFormEmail">
+                <input type="hidden" name="login_mode" value="email">
                 <?php if (!empty($redirect_after)): ?>
                 <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirect_after); ?>">
                 <?php endif; ?>
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email *</label>
                     <div class="input-wrapper">
-                        <input type="email" id="email" name="email" placeholder="votre@email.com" required
+                        <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email"
                             value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                         <i class="fas fa-envelope"></i>
                     </div>
                 </div>
-
                 <div class="form-group">
                     <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
+                        <input type="password" id="password" name="password" placeholder="Votre mot de passe"
+                            autocomplete="current-password">
                         <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -458,19 +525,17 @@ if (isset($_SESSION['inscription_success'])) {
                         <a href="mot-de-passe-oublie.php">Mot de passe oublié ?</a>
                     </div>
                 </div>
-
                 <div class="checkbox-group">
                     <input type="checkbox" id="accepte_conditions" name="accepte_conditions" value="1" required>
                     <label for="accepte_conditions">
-                        J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a>
-                        *
+                        J'accepte les <a href="/conditions-utilisation.php" target="_blank">conditions d'utilisation</a> *
                     </label>
                 </div>
-
                 <button type="submit" class="btn-submit">
                     <i class="fas fa-sign-in-alt"></i> Se connecter
                 </button>
             </form>
+            </div>
 
             <div class="footer-text">
                 <p>Vous n'avez pas de compte ? <a href="inscription.php">Créer un compte</a></p>
@@ -482,7 +547,6 @@ if (isset($_SESSION['inscription_success'])) {
         function togglePassword(inputId, button) {
             const input = document.getElementById(inputId);
             const icon = button.querySelector('i');
-
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -493,7 +557,41 @@ if (isset($_SESSION['inscription_success'])) {
                 icon.classList.add('fa-eye');
             }
         }
+
+        (function () {
+            var tabEmail = document.getElementById('tab-email');
+            var tabPhone = document.getElementById('tab-phone');
+            var panelEmail = document.getElementById('panel-email');
+            var panelPhone = document.getElementById('panel-phone');
+            if (!tabEmail || !tabPhone || !panelEmail || !panelPhone) return;
+
+            function showMode(mode) {
+                var isPhone = mode === 'phone';
+                var root = document.querySelector('.auth-page');
+                if (root) {
+                    root.classList.remove('auth-page--email', 'auth-page--phone');
+                    root.classList.add(isPhone ? 'auth-page--phone' : 'auth-page--email');
+                }
+                panelPhone.hidden = !isPhone;
+                panelEmail.hidden = isPhone;
+                tabPhone.setAttribute('aria-selected', isPhone ? 'true' : 'false');
+                tabEmail.setAttribute('aria-selected', isPhone ? 'false' : 'true');
+                tabPhone.tabIndex = isPhone ? 0 : -1;
+                tabEmail.tabIndex = isPhone ? -1 : 0;
+            }
+
+            tabPhone.addEventListener('click', function () { showMode('phone'); });
+            tabEmail.addEventListener('click', function () { showMode('email'); });
+        })();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof window.initAuthIntlTel === 'function') {
+                window.initAuthIntlTel('telephone');
+            }
+        });
     </script>
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 

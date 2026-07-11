@@ -1,0 +1,133 @@
+# Configuration PHP pour l'upload de fichiers volumineux
+# Ces valeurs surchargent les valeurs du php.ini si nécessaire
+# ---------------------------------------------------------------
+# Deep Links : autoriser l'accès au dossier .well-known
+# Requis pour Android App Links (assetlinks.json)
+# et iOS Universal Links (apple-app-site-association)
+# ---------------------------------------------------------------
+<IfModule mod_headers.c>
+    <FilesMatch "^apple-app-site-association$|^assetlinks\.json$">
+        Header set Content-Type "application/json"
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+    <FilesMatch "^apple-developer-domain-association(\.txt)?$">
+        Header set Content-Type "text/plain"
+        Header set Access-Control-Allow-Origin "*"
+    </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------
+# Compression (Brotli puis gzip) — réduit fortement le poids transféré
+# ---------------------------------------------------------------
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml application/javascript application/x-javascript application/json application/xml image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml application/javascript application/x-javascript application/json application/xml image/svg+xml application/x-font-ttf font/opentype font/ttf
+</IfModule>
+
+# ---------------------------------------------------------------
+# Cache navigateur — les assets statiques (versionnés via ?v=) sont
+# mis en cache longtemps ; les pages PHP ne sont jamais mises en cache.
+# ---------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|webp|gif|svg|ico|css|js|woff2|woff|ttf)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# Réécriture pour SEO : robots.txt et sitemap.xml
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+
+# Apex unique : plus de www.colobanes.com (App Links, SEO, app mobile)
+RewriteCond %{HTTP_HOST} ^www\.colobanes\.com$ [NC]
+RewriteRule ^ https://colobanes.com%{REQUEST_URI} [R=301,L]
+
+# Ancienne connexion admin → connexion unifiée
+RewriteRule ^admin/login\.php$ /choix-connexion.php [R=301,L,QSA]
+
+# Ne pas réécrire les fichiers .well-known (deep links Android/iOS)
+RewriteRule ^\.well-known/ - [L]
+
+# Callback Apple Sign-In (Android)
+RewriteRule ^auth/apple-callback$ auth/apple-callback.php [L]
+
+RewriteRule ^robots\.txt$ robots.php [L]
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+RewriteRule ^favicon\.ico$ icons/favicon-48.png [L]
+
+# Marketplace : URL courte https://domaine/{slug}/… (vitrine vendeur ; même contenu que /boutique/{slug}/)
+# Ne pas traiter le 1er segment comme slug boutique s’il est réservé (pages racine, assets, etc.)
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|politique-suppression-compte|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|boutiques|boutiques-proches|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/(produits|panier|nouveautes|promo|contact)\.php$ boutique/$2.php?boutique=$1 [L,QSA]
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|politique-suppression-compte|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|boutiques|boutiques-proches|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/categorie\.php$ boutique/categorie.php?boutique=$1 [L,QSA]
+
+# Compatibilité : /boutique/{slug}/…
+RewriteRule ^boutique/([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
+RewriteRule ^boutique/([a-z0-9-]+)/(index\.php)?$ boutique/index.php?boutique=$1 [L,QSA]
+RewriteRule ^boutique/([a-z0-9-]+)/(produits|panier|categorie|nouveautes|promo|contact)\.php$ boutique/$2.php?boutique=$1 [L,QSA]
+
+# /{slug} seul → accueil boutique (uniquement si aucun fichier .php du même nom n’existe à la racine)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php !-f
+RewriteCond %{REQUEST_URI} ^/([a-z0-9-]+)/?$
+RewriteCond %1 !^(index|produits|produit|categorie|panier|commande|choix-connexion|choix-inscription|contact|promo|nouveautes|conditions-utilisation|politique-confidentialite|politique-suppression-compte|sign-up|add-to-panier|commande-personnalisee|stock-info|facture|facture-cp|facture-devis|robots|sitemap|boutiques|boutiques-proches|debug-cp|check-php-config|generate-sitemap|generate-pwa-icons|run-migrate-fcm|run-migration-image-cp|fix-ssl-certificates|autoload|footer|nav-bar|admin|user|boutique|api|css|js|image|upload|config|conn|vendor|page|models|controllers|includes|fonts|mot-de-passe|pwa|connexion|inscription|deconnexion|mon-compte|suivi-commande)$
+RewriteRule ^([a-z0-9-]+)/?$ boutique/index.php?boutique=$1 [L,QSA]
+</IfModule>
+
+# Réglages PHP uniquement quand PHP tourne en mod_php (Apache).
+# En PHP-FPM / CGI (cas de Webuzo), ces directives provoqueraient une erreur 500 :
+# elles sont donc déplacées dans .user.ini (voir ce fichier à la racine).
+<IfModule mod_php.c>
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file none
+    php_value upload_max_filesize 1000M
+    php_value post_max_size 1000M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 512M
+</IfModule>
+<IfModule mod_php7.c>
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file none
+    php_value upload_max_filesize 1000M
+    php_value post_max_size 1000M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 512M
+</IfModule>
+<IfModule mod_php8.c>
+    php_value session.gc_maxlifetime 315360000
+    php_value session.cookie_lifetime 315360000
+    php_value auto_prepend_file none
+    php_value upload_max_filesize 1000M
+    php_value post_max_size 1000M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 512M
+</IfModule>

@@ -1,0 +1,42 @@
+/**
+ * Jotform Agent (CDN) — au-dessus des barres fixes (sidebar/dock utilisateur ~1000).
+ * Sur espace client, --user-bottom-nav-clearance évite que l’avatar colle sous le dock bas.
+ */
+
+[id^='JotformAgent-'] {
+    z-index: 10060 !important;
+}
+
+@media (max-width: 1024px) {
+    [id^='JotformAgent-'] .embedded-agent-container.align-right {
+        bottom: calc(
+                env(safe-area-inset-bottom, 0px)
+                    + max(
+                        var(--user-bottom-nav-clearance, 0px),
+                        max(
+                            var(--shop-bottom-nav-clearance, 0px),
+                            var(--shop-mobile-dock-clearance, 0px)
+                        )
+                    )
+            )
+            !important;
+    }
+}
+
+/* Tablette : dock plus haut (icônes 48px) — marge supplémentaire pour l’avatar */
+@media (min-width: 600px) and (max-width: 1024px) {
+    [id^='JotformAgent-'] .embedded-agent-container.align-right {
+        bottom: calc(
+                env(safe-area-inset-bottom, 0px)
+                    + max(
+                        var(--user-bottom-nav-clearance, 0px),
+                        max(
+                            var(--shop-bottom-nav-clearance, 0px),
+                            var(--shop-mobile-dock-clearance, 0px)
+                        )
+                    )
+                    + 14px
+            )
+            !important;
+    }
+}

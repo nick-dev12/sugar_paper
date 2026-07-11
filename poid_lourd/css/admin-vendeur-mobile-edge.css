@@ -1,0 +1,93 @@
+/**
+ * Espace vendeur (dock mobile) — marge max 5px par rapport aux bords de l'écran.
+ * Dashboard, stock, commandes, profil, paramètres, abonnés, certification, annonces…
+ */
+
+@media (max-width: 767px) {
+  .admin-container.admin-shell--vendeur-dock {
+    --admin-vendeur-edge: 5px;
+  }
+
+  body:has(.admin-sidebar.admin-sidebar--vendeur) main#adminContent.admin-content,
+  body:has(.admin-sidebar.admin-sidebar--vendeur) #adminContent.admin-content,
+  .admin-container.admin-shell--vendeur-dock main#adminContent.admin-content,
+  .admin-container.admin-shell--vendeur-dock #adminContent.admin-content {
+    padding-left: max(var(--admin-vendeur-edge, 5px), env(safe-area-inset-left, 0px)) !important;
+    padding-right: max(var(--admin-vendeur-edge, 5px), env(safe-area-inset-right, 0px)) !important;
+    padding-top: max(var(--admin-vendeur-edge, 5px), env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(
+      var(--admin-vendeur-bottom-nav-clearance, 5.9rem) +
+        env(safe-area-inset-bottom, 0px) +
+        var(--admin-vendeur-edge, 5px)
+    ) !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .contents-container {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .dash-v2-page,
+  .admin-container.admin-shell--vendeur-dock .stk-page,
+  .admin-container.admin-shell--vendeur-dock .cmd-v2-page,
+  .admin-container.admin-shell--vendeur-dock .cmd-detail-page,
+  .admin-container.admin-shell--vendeur-dock .ap-page,
+  .admin-container.admin-shell--vendeur-dock .prm-page,
+  .admin-container.admin-shell--vendeur-dock .pbv-page,
+  .admin-container.admin-shell--vendeur-dock .cert-page,
+  .admin-container.admin-shell--vendeur-dock .pa-page,
+  .admin-container.admin-shell--vendeur-dock .admin-abonnes-shell {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .dash-v2-page,
+  .admin-container.admin-shell--vendeur-dock .stk-page,
+  .admin-container.admin-shell--vendeur-dock .cmd-v2-page,
+  .admin-container.admin-shell--vendeur-dock .cert-page,
+  .admin-container.admin-shell--vendeur-dock .prm-page,
+  .admin-container.admin-shell--vendeur-dock .pbv-page,
+  .admin-container.admin-shell--vendeur-dock .ap-page,
+  .admin-container.admin-shell--vendeur-dock .pa-page,
+  .admin-container.admin-shell--vendeur-dock .admin-abonnes-shell {
+    padding-top: 0 !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .dash-v2-page,
+  .admin-container.admin-shell--vendeur-dock .stk-page,
+  .admin-container.admin-shell--vendeur-dock .cmd-v2-page,
+  .admin-container.admin-shell--vendeur-dock .cert-page,
+  .admin-container.admin-shell--vendeur-dock .prm-page,
+  .admin-container.admin-shell--vendeur-dock .pbv-page,
+  .admin-container.admin-shell--vendeur-dock .ap-page,
+  .admin-container.admin-shell--vendeur-dock .admin-abonnes-shell,
+  .admin-container.admin-shell--vendeur-dock .ap-page,
+  .admin-container.admin-shell--vendeur-dock .cmd-detail-page {
+    padding-bottom: 0 !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .cmd-detail-page {
+    padding-top: 0 !important;
+  }
+
+  .admin-container.admin-shell--vendeur-dock .content-header,
+  .admin-container.admin-shell--vendeur-dock .produits-section {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}

@@ -192,19 +192,26 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <div class="value">Zone #<?php echo (int) $cp['zone_livraison_id']; ?></div>
             </div>
             <?php endif; ?>
-            <?php if (!empty($cp['image_reference'])): ?>
+            <?php
+            $cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
+            ?>
+            <?php if (!empty($cp_images)): ?>
             <div class="cp-detail-item">
-                <label>Image de référence</label>
-                <button type="button" class="cp-image-trigger" id="cpImageTrigger">
-                    <img src="/upload/<?php echo htmlspecialchars($cp['image_reference'] ?? ''); ?>"
-                        alt="Image de référence de la commande personnalisée"
-                        onerror="this.src='/image/produit1.jpg'">
-                    <span class="cp-image-trigger-caption">
-                        <strong>Voir l'image jointe</strong>
-                        <small>Cliquez pour l'afficher en grand format</small>
-                    </span>
-                    <span class="cp-image-zoom-icon"><i class="fas fa-up-right-and-down-left-from-center"></i></span>
-                </button>
+                <label>Images de référence (<?php echo count($cp_images); ?>)</label>
+                <div class="cp-images-grid">
+                    <?php foreach ($cp_images as $img_index => $img_path): ?>
+                    <button type="button" class="cp-image-trigger" data-image-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
+                        <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                            alt="Image de référence <?php echo (int) $img_index + 1; ?>"
+                            onerror="this.src='/image/produit1.jpg'">
+                        <span class="cp-image-trigger-caption">
+                            <strong>Image <?php echo (int) $img_index + 1; ?></strong>
+                            <small>Cliquez pour agrandir</small>
+                        </span>
+                        <span class="cp-image-zoom-icon"><i class="fas fa-up-right-and-down-left-from-center"></i></span>
+                    </button>
+                    <?php endforeach; ?>
+                </div>
             </div>
             <?php endif; ?>
             <div class="cp-detail-item">
@@ -289,7 +296,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
         <?php endif; ?>
     </section>
 
-    <?php if (!empty($cp['image_reference'])): ?>
+    <?php if (!empty($cp_images)): ?>
     <div class="cp-image-modal" id="cpImageModal" aria-hidden="true">
         <div class="cp-image-modal-backdrop" data-close-image-modal="1"></div>
         <div class="cp-image-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cpImageModalTitle">
@@ -301,7 +308,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <p>Demande personnalisée #<?php echo (int) $cp['id']; ?></p>
             </div>
             <div class="cp-image-modal-body">
-                <img src="/upload/<?php echo htmlspecialchars($cp['image_reference'] ?? ''); ?>"
+                <img id="cpImageModalPreview" src="/upload/<?php echo htmlspecialchars($cp_images[0]); ?>"
                     alt="Image de référence de la demande personnalisée"
                     onerror="this.src='/image/produit1.jpg'">
             </div>
@@ -310,15 +317,17 @@ $cp = get_commande_personnalisee_by_id($cp_id);
     <script>
         (function () {
             var modal = document.getElementById('cpImageModal');
-            var trigger = document.getElementById('cpImageTrigger');
+            var triggers = document.querySelectorAll('.cp-image-trigger[data-image-src]');
             var closeButton = document.getElementById('cpImageModalClose');
             var closeBackdrop = modal ? modal.querySelector('[data-close-image-modal="1"]') : null;
+            var previewImage = document.getElementById('cpImageModalPreview');
 
-            if (!modal || !trigger) {
+            if (!modal || !triggers.length || !previewImage) {
                 return;
             }
 
-            function openImageModal() {
+            function openImageModal(src) {
+                previewImage.src = src;
                 modal.classList.add('show');
                 modal.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
@@ -330,7 +339,11 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 document.body.style.overflow = '';
             }
 
-            trigger.addEventListener('click', openImageModal);
+            triggers.forEach(function (trigger) {
+                trigger.addEventListener('click', function () {
+                    openImageModal(trigger.getAttribute('data-image-src'));
+                });
+            });
 
             if (closeButton) {
                 closeButton.addEventListener('click', closeImageModal);

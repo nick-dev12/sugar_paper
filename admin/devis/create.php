@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.php');
+    header('Location: ../invoice/index.php?tab=devis');
     exit;
 }
 
@@ -24,6 +24,7 @@ $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
 $notes = trim($_POST['notes'] ?? '');
 $zone_livraison_id = isset($_POST['zone_livraison_id']) && $_POST['zone_livraison_id'] !== '' && $_POST['zone_livraison_id'] !== 'custom' ? (int) $_POST['zone_livraison_id'] : null;
 $frais_livraison = (float) ($_POST['frais_livraison'] ?? 0);
+$remise_globale_pct = min(100, max(0, (float) str_replace(',', '.', $_POST['remise_globale_pct'] ?? '0')));
 $user_id = isset($_POST['user_id']) && $_POST['user_id'] !== '' ? (int) $_POST['user_id'] : null;
 
 $items = [];
@@ -46,7 +47,6 @@ if (!empty($_POST['lignes']) && is_array($_POST['lignes'])) {
 
 $erreur = null;
 if (empty($client_nom)) $erreur = 'Le nom du client est requis.';
-elseif (empty($client_prenom)) $erreur = 'Le prénom du client est requis.';
 elseif (empty($client_telephone)) $erreur = 'Le téléphone du client est requis.';
 elseif (empty($adresse_livraison)) $erreur = "L'adresse de livraison est requise.";
 elseif (empty($items)) $erreur = 'Ajoutez au moins un produit au devis.';
@@ -54,11 +54,11 @@ elseif (empty($items)) $erreur = 'Ajoutez au moins un produit au devis.';
 if ($erreur) {
     $_SESSION['devis_erreur'] = $erreur;
     $_SESSION['devis_post'] = $_POST;
-    header('Location: index.php?modal=devis');
+    header('Location: ../invoice/index.php?tab=devis&modal=devis');
     exit;
 }
 
-$result = create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email ?: null, $notes ?: null, $zone_livraison_id, $frais_livraison, $user_id);
+$result = create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email ?: null, $notes ?: null, $zone_livraison_id, $frais_livraison, $user_id, $remise_globale_pct);
 
 if ($result && $result['success']) {
     $_SESSION['success_message'] = 'Devis #' . $result['numero_devis'] . ' créé avec succès.';
@@ -68,4 +68,4 @@ if ($result && $result['success']) {
 
 $_SESSION['devis_erreur'] = 'Erreur lors de l\'enregistrement du devis.';
 $_SESSION['devis_post'] = $_POST;
-header('Location: index.php?modal=devis');
+header('Location: ../invoice/index.php?tab=devis&modal=devis');

@@ -428,7 +428,24 @@
 @media (max-width: 768px) {
   .page-comptes .users-grid,
   .page-users .users-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: clamp(14px, 2.5vw, 18px);
+  }
+
+  .page-comptes .users-stats,
+  .page-users .users-stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: clamp(12px, 2vw, 16px);
+  }
+
+  .page-comptes .stat-box,
+  .page-users .stat-box {
+    padding: clamp(14px, 2.5vw, 20px);
+  }
+
+  .page-comptes .stat-box .stat-value,
+  .page-users .stat-box .stat-value {
+    font-size: clamp(1.4rem, 5vw, 2rem);
   }
 
   .page-comptes .user-card .user-details,
@@ -444,5 +461,28 @@
   .page-comptes .user-card .user-action-form,
   .page-users .user-card .user-action-form {
     min-width: 100%;
+  }
+
+  .page-users .user-card .card-header-wrap > .user-statut {
+    position: static;
+    margin-bottom: 8px;
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-comptes .users-grid,
+  .page-users .users-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-comptes .user-card .card-header-wrap,
+  .page-users .user-card .card-header-wrap {
+    padding: clamp(16px, 3vw, 20px) clamp(14px, 3vw, 18px);
+  }
+
+  .page-comptes .user-card .user-name,
+  .page-users .user-card .user-name {
+    font-size: clamp(0.95rem, 2.8vw, 1.1rem);
   }
 }

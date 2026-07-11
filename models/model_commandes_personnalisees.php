@@ -43,6 +43,45 @@ function _cp_has_image_reference_column() {
 }
 
 /**
+ * Décode les images de référence (legacy string ou JSON)
+ * @param string|null $image_reference
+ * @return array
+ */
+function parse_commande_personnalisee_images($image_reference) {
+    if (!is_string($image_reference) || trim($image_reference) === '') {
+        return [];
+    }
+    $value = trim($image_reference);
+    if ($value[0] === '[') {
+        $decoded = json_decode($value, true);
+        if (is_array($decoded)) {
+            return array_values(array_filter($decoded, function ($path) {
+                return is_string($path) && trim($path) !== '';
+            }));
+        }
+    }
+    return [$value];
+}
+
+/**
+ * Encode les chemins d'images pour stockage BDD
+ * @param array $paths
+ * @return string|null
+ */
+function encode_commande_personnalisee_images($paths) {
+    $paths = array_values(array_filter($paths, function ($path) {
+        return is_string($path) && trim($path) !== '';
+    }));
+    if (empty($paths)) {
+        return null;
+    }
+    if (count($paths) === 1) {
+        return $paths[0];
+    }
+    return json_encode($paths, JSON_UNESCAPED_SLASHES);
+}
+
+/**
  * Crée une commande personnalisée
  * @param array $data Les données de la commande
  * @return int|false L'ID créé ou False

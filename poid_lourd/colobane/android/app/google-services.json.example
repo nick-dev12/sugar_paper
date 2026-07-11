@@ -1,0 +1,30 @@
+{
+  "_comment": "Copiez ce fichier en google-services.json après création de l'app Android dans Firebase.",
+  "project_info": {
+    "project_number": "983006440407",
+    "project_id": "gestion-scolaire-6945a",
+    "storage_bucket": "gestion-scolaire-6945a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REMPLACEZ_PAR_VOTRE_APP_ID_ANDROID",
+        "android_client_info": {
+          "package_name": "com.colobanes.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9sEoKn89rBaYvNAULOKtXZIIFYTyL4f4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

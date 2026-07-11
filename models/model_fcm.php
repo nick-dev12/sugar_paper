@@ -113,6 +113,21 @@ function delete_fcm_tokens_by_admin($admin_id) {
  * @param int $user_id ID de l'utilisateur
  * @return bool True en cas de succès
  */
+function delete_fcm_token_by_value($token) {
+    global $db;
+
+    if ($token === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('DELETE FROM fcm_tokens WHERE token = :token');
+        return $stmt->execute(['token' => $token]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 function delete_fcm_tokens_by_user($user_id) {
     global $db;
     

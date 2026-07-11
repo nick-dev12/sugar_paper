@@ -1,0 +1,85 @@
+/**
+ * Badges certification vendeur — images officielles (Standard / VIP / Premium)
+ */
+
+.cert-badge-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    vertical-align: middle;
+    line-height: 0;
+}
+
+.cert-badge-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 14px rgba(0, 0, 0, 0.16));
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.cert-badge-wrap--xs,
+.cert-badge-img--xs {
+    width: 44px;
+}
+
+.cert-badge-wrap--sm,
+.cert-badge-img--sm {
+    width: 52px;
+}
+
+.cert-badge-wrap--md,
+.cert-badge-img--md {
+    width: 72px;
+}
+
+.cert-badge-wrap--lg,
+.cert-badge-img--lg {
+    width: 88px;
+}
+
+.cert-badge-wrap--tier,
+.cert-badge-img--tier {
+    width: 64px;
+    margin: 0 auto 8px;
+}
+
+.cert-badge-wrap--rail,
+.cert-badge-img--rail {
+    width: 48px;
+}
+
+.cert-tier__ribbon-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 72px;
+    margin-bottom: 4px;
+}
+
+.produit-boutique-rail__cert {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.vendeur-hero-cert .cert-badge-wrap--sm {
+    width: 56px;
+}
+
+@media (max-width: 480px) {
+    .produit-boutique-rail__left {
+        flex-wrap: wrap;
+    }
+
+    .produit-boutique-rail__cert {
+        margin-left: 0;
+    }
+
+    .cert-badge-wrap--tier,
+    .cert-badge-img--tier {
+        width: 56px;
+    }
+}

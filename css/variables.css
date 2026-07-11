@@ -34,7 +34,16 @@
   --ombre-promo: 0 4px 15px rgba(229, 72, 138, 0.25);
   --ombre-gourmande: 0 8px 30px rgba(229, 72, 138, 0.15);
   
-  /* Typographie */
-  --font-titres: 'Playfair Display', serif;
-  --font-corps: 'Quicksand', 'Nunito', sans-serif;
+  /* Typographie — Poppins sur tout le site */
+  --font-titres: 'Poppins', sans-serif;
+  --font-corps: 'Poppins', sans-serif;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-corps);
 }

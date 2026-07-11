@@ -17,7 +17,7 @@
   gap: 10px;
 }
 
-/* Carte de produit - 320px par défaut */
+/* Carte de produit — largeur fluide (grille dans catalogue-responsive.css) */
 .produit_vedete .articles .carousel,
 .produit_vedetes .articles .carousel,
 .carousel11 .carousel {
@@ -25,49 +25,28 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 16px;
   overflow: hidden;
-  width: 300px !important;
-  min-width: 160px !important;
-  max-width: 300px !important;
-  flex: 0 0 300px !important;
+  width: 100%;
+  min-width: 0;
+  max-width: 300px;
+  flex: 1 1 280px;
   transition: all 0.3s ease;
   box-shadow: 0 8px 32px rgba(229, 72, 138, 0.12);
   position: relative;
   display: flex;
   flex-direction: column;
-  margin: 0 4px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
-/* À partir de 650px : cartes passent à 190px */
-@media (max-width: 649px) {
+/* Desktop : cartes flexibles dans le conteneur */
+@media (min-width: 1025px) {
   .carousel1-flex-mode .carousel,
   .produit_vedete .articles .carousel,
   .produit_vedetes .articles .carousel,
   .carousel11 .carousel {
-    width: 190px !important;
-    max-width: 190px !important;
-    flex: 0 0 190px !important;
-  }
-}
-
-/* À partir de 500px : cartes passent à 170px (définitif) */
-@media (max-width: 499px) {
-  .carousel1-flex-mode .carousel,
-  .produit_vedete .articles .carousel,
-  .produit_vedetes .articles .carousel,
-  .carousel11 .carousel {
-    width: 160px !important;
-    max-width: 160px !important;
-  }
-}
-
-/* À partir de 350px : 1 seule carte par ligne (pleine largeur) */
-@media (max-width: 349px) {
-  .carousel1-flex-mode .carousel,
-  .produit_vedete .articles .carousel,
-  .produit_vedetes .articles .carousel,
-  .carousel11 .carousel {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 300px;
+    max-width: 300px;
+    flex: 0 0 300px;
   }
 }
 
@@ -324,15 +303,8 @@
   .produit_vedete .articles,
   .produit_vedetes .articles,
   .carousel11 {
-    gap: 2px;
-  }
-}
-@media (max-width: 349px) {
-  .produits-container,
-  .produit_vedete .articles,
-  .produit_vedetes .articles,
-  .carousel11 {
-    gap: 5px;
+    gap: 8px;
+    padding: 0;
   }
 }
 
@@ -447,9 +419,9 @@
   .produit_vedete .articles,
   .produit_vedetes .articles,
   .carousel11 {
-    gap: 5px;
-    padding: 4px;
-    justify-content: center;
+    gap: 6px;
+    padding: 0;
+    justify-content: stretch;
   }
 }
 
@@ -495,7 +467,7 @@
 @media (max-width: 768px) {
   .produit_vedete,
   .produit_vedetes {
-    padding: 0 0px;
+    padding: 0;
   }
 
   .produit_vedete .box1,
@@ -528,6 +500,6 @@
   .produit_vedete .articles,
   .produit_vedetes .articles,
   .carousel11 {
-    padding: 12px 0px !important;
+    padding: 0 !important;
   }
 }

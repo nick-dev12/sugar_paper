@@ -160,93 +160,48 @@ $statuts_labels = get_statuts_commande_personnalisee();
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="user-page-mes-commandes">
     <?php include 'includes/user_nav.php'; ?>
+
+    <div class="continue-shopping-banner">
+        <div class="continue-shopping-content">
+            <div class="continue-shopping-icon">
+                <i class="fas fa-shopping-basket" aria-hidden="true"></i>
+            </div>
+            <div class="continue-shopping-text">
+                <h2>Continuer vos achats</h2>
+                <p>Retournez à l'accueil ou parcourez nos produits pour continuer vos courses.</p>
+            </div>
+            <div class="continue-shopping-actions">
+                <a href="/index.php" class="continue-shopping-btn">
+                    <i class="fas fa-home" aria-hidden="true"></i> Retour à l'accueil
+                </a>
+                <a href="/produits.php" class="continue-shopping-btn continue-shopping-btn--secondary">
+                    <i class="fas fa-store" aria-hidden="true"></i> Voir les produits
+                </a>
+            </div>
+        </div>
+    </div>
 
     <div class="content-header">
         <h1><i class="fas fa-shopping-bag"></i> Mes Commandes</h1>
     </div>
 
-    <div class="continue-shopping-banner">
-        <div class="continue-shopping-content">
-            <i class="fas fa-shopping-cart"></i>
-            <div>
-                <strong>Continuer vos achats</strong>
-                <p>Retournez à l'accueil ou parcourez nos produits pour continuer vos courses.</p>
-            </div>
-            <a href="/index.php" class="btn-continue-shopping">
-                <i class="fas fa-home"></i> Retour à l'accueil
-            </a>
-            <a href="/produits.php" class="btn-continue-shopping btn-continue-products">
-                <i class="fas fa-shopping-cart"></i> Voir les produits
-            </a>
+    <div class="stats-grid">
+        <div class="stat-card stat-card--actives">
+            <div class="stat-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo count($commandes_actives); ?></div>
+            <div class="stat-label">Commandes actives</div>
+        </div>
+        <div class="stat-card stat-card--perso">
+            <div class="stat-icon"><i class="fas fa-palette" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo count($commandes_perso_actives); ?></div>
+            <div class="stat-label">Demandes personnalisées</div>
         </div>
     </div>
-    <style>
-        .continue-shopping-banner {
-            background: linear-gradient(135deg, rgba(229, 72, 138, 0.1) 0%, rgba(145, 138, 68, 0.15) 100%);
-            border: 1px solid rgba(229, 72, 138, 0.2);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin: 0 20px 24px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .continue-shopping-content {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .continue-shopping-content > i {
-            font-size: 36px;
-            color: var(--couleur-dominante);
-        }
-        .continue-shopping-content > div {
-            flex: 1;
-            min-width: 200px;
-        }
-        .continue-shopping-content strong {
-            display: block;
-            font-size: 16px;
-            color: var(--titres);
-            margin-bottom: 4px;
-        }
-        .continue-shopping-content p {
-            margin: 0;
-            font-size: 14px;
-            color: var(--texte-fonce);
-            opacity: 0.9;
-        }
-        .btn-continue-shopping {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background: var(--couleur-dominante);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s;
-            white-space: nowrap;
-        }
-        .btn-continue-shopping:hover {
-            background: rgba(229, 72, 138, 0.9);
-            transform: translateY(-2px);
-            color: #fff;
-        }
-        .btn-continue-products {
-            background: rgba(145, 138, 68, 0.9);
-        }
-        .btn-continue-products:hover {
-            background: rgba(145, 138, 68, 1);
-        }
-    </style>
 
     <section class="content-section">
         <?php if ($success_message): ?>
@@ -369,7 +324,7 @@ $statuts_labels = get_statuts_commande_personnalisee();
         <?php endif; ?>
 
         <!-- Section Commandes personnalisées -->
-        <div class="section-title" style="margin-top: 40px;">
+        <div class="section-title section-title--spaced">
             <h2><i class="fas fa-palette"></i> Mes commandes personnalisées (<?php echo count($commandes_perso_actives); ?>)</h2>
             <a href="/commande-personnalisee.php" class="btn-view-categories">
                 <i class="fas fa-plus"></i> Nouvelle demande

@@ -1,0 +1,108 @@
+/**
+ * Annonces plateforme — affichage client / vendeur
+ */
+
+.pa-page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 3rem;
+}
+
+.pa-header {
+  margin-bottom: 1.25rem;
+}
+
+.pa-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--couleur-dominante, #3564a6);
+  margin: 0 0 0.35rem;
+}
+
+.pa-header__title {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+}
+
+.pa-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pa-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(53, 100, 166, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(53, 100, 166, 0.08);
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.pa-card--unread {
+  border-color: rgba(53, 100, 166, 0.35);
+  box-shadow: 0 6px 22px rgba(53, 100, 166, 0.12);
+}
+
+.pa-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.pa-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--titres, #0d0d0d);
+}
+
+.pa-card__date {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--gris-moyen, #737373);
+}
+
+.pa-card__body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--gris-fonce, #4a4a4a);
+  white-space: pre-wrap;
+}
+
+.pa-card__badge-new {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--orange-fonce, #E85A2A);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pa-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  border: 1px dashed rgba(53, 100, 166, 0.2);
+  border-radius: 14px;
+  color: var(--gris-moyen, #737373);
+}
+
+.pa-empty i {
+  font-size: 2rem;
+  color: var(--couleur-dominante, #3564a6);
+  opacity: 0.45;
+  margin-bottom: 0.65rem;
+}

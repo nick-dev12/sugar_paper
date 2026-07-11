@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">COLObanes</string>
+    <!-- Justifications permissions — Google Play Console + dialogue in-app (native_permission_service.dart) -->
+    <string name="permission_location_rationale_title">Autoriser la localisation</string>
+    <string name="permission_location_rationale_message">COLObanes utilise votre position uniquement lorsque vous appuyez sur « Localiser » ou « Mettre à jour ma position » pour confirmer une adresse de livraison, enregistrer votre adresse à l\'inscription, afficher les boutiques à proximité ou localiser votre boutique vendeur. Exemple : positionner votre point de livraison à Dakar sur la carte. Pas de suivi en arrière-plan.</string>
+    <string name="permission_camera_rationale_title">Autoriser l\'appareil photo</string>
+    <string name="permission_camera_rationale_message">COLObanes utilise l\'appareil photo lorsque vous appuyez sur « Prendre une photo » pour votre profil, une fiche produit vendeur ou une pièce jointe. Exemple : photographier un article mis en vente.</string>
+</resources>

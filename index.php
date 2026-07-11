@@ -32,13 +32,7 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
@@ -48,6 +42,7 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <style>
     .commande-perso-showcase {
         margin-top: 20px;
@@ -240,39 +235,56 @@ $seo_canonical = $base . '/';
         width: 100%;
     }
 
-    .carousel-produits-outer .carousel1.carousel1-flex-mode {
-        display: flex !important;
-        flex-wrap: wrap;
-        justify-content: space-around;
-        align-items: flex-start;
-        gap: 15px;
-        padding: 15px;
-    }
-
-    .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel {
-        width: 320px;
-        min-width: 170px;
-        max-width: 320px;
-        flex: 0 0 320px;
-    }
-
     .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel:nth-child(n+7) {
         display: none !important;
     }
 
     @media (max-width: 650px) {
-        .carousel-produits-outer .carousel1.carousel1-flex-mode {
-            gap: 12px;
-            padding: 12px;
-        }
-
         .commande-perso-showcase {
-            padding: 16px;
+            margin-top: 12px;
+            padding: 12px 14px;
         }
 
         .commande-perso-showcase-inner {
             flex-direction: column;
             align-items: stretch;
+            gap: 12px;
+        }
+
+        .commande-perso-content {
+            min-width: 0;
+        }
+
+        .commande-perso-badge {
+            font-size: 10px;
+            padding: 4px 10px;
+            margin-bottom: 6px;
+        }
+
+        .commande-perso-title {
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .commande-perso-text {
+            font-size: 11px;
+            line-height: 1.45;
+            margin-bottom: 10px;
+        }
+
+        .commande-perso-features {
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .commande-perso-features li {
+            padding: 4px 8px;
+            font-size: 10px;
+            gap: 4px;
+        }
+
+        .commande-perso-features i {
+            font-size: 10px;
         }
 
         .commande-perso-visual {
@@ -282,19 +294,27 @@ $seo_canonical = $base . '/';
         .commande-perso-actions {
             flex-direction: column;
             align-items: stretch;
+            gap: 6px;
         }
 
         .btn-commande-perso {
             justify-content: center;
+            padding: 8px 12px;
+            font-size: 11px;
+            gap: 6px;
+            border-radius: 7px;
+        }
+
+        .btn-commande-perso i {
+            font-size: 11px;
+        }
+
+        .commande-perso-note {
+            font-size: 10px;
+            text-align: center;
         }
     }
 
-    @media (max-width: 400px) {
-        .carousel-produits-outer .carousel1.carousel1-flex-mode {
-            gap: 10px;
-            padding: 10px;
-        }
-    }
     </style>
 
 </head>

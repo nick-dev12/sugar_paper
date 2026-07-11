@@ -1,0 +1,165 @@
+/* Boutons connexion sociale (Google) — Sugar Paper */
+.social-auth {
+    margin-bottom: 20px;
+}
+
+.social-auth--top {
+    margin-bottom: 24px;
+}
+
+.social-auth--top .social-auth__divider {
+    margin-top: 20px;
+}
+
+.social-auth__divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--texte-fonce, #333);
+    font-size: 13px;
+    opacity: 0.75;
+}
+
+.social-auth__divider::before,
+.social-auth__divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(229, 72, 138, 0.25);
+}
+
+.social-auth__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.social-auth-btn__label {
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+}
+
+.google-auth-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 2px solid rgba(229, 72, 138, 0.2);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--titres, #000);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.google-auth-btn:hover {
+    border-color: var(--couleur-dominante, #E5488A);
+    box-shadow: 0 4px 12px rgba(229, 72, 138, 0.15);
+}
+
+.google-auth-btn:disabled,
+.social-auth--disabled .google-auth-btn,
+.apple-auth-btn:disabled,
+.social-auth--disabled .apple-auth-btn {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.google-auth-btn__icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #ddd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #4285f4;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.apple-auth-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 2px solid rgba(0, 0, 0, 0.85);
+    border-radius: 8px;
+    background: #000;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.apple-auth-btn:hover {
+    background: #1a1a1a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.apple-auth-btn__icon {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.social-auth-message {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--texte-fonce, #333);
+    text-align: center;
+}
+
+.social-auth-message.is-error {
+    color: #b42318;
+}
+
+@media (max-width: 600px) {
+    .google-auth-btn,
+    .apple-auth-btn {
+        padding: 9px 10px;
+        gap: 8px;
+        font-size: 0.82rem;
+        min-height: 44px;
+    }
+
+    .google-auth-btn__icon,
+    .apple-auth-btn__icon {
+        width: 22px;
+        height: 22px;
+        font-size: 13px;
+    }
+
+    .social-auth-btn__label {
+        font-size: 0.82rem;
+    }
+
+    .social-auth--top {
+        margin-bottom: 16px;
+    }
+}
+
+@media (max-width: 380px) {
+    .google-auth-btn,
+    .apple-auth-btn {
+        padding: 8px 8px;
+        font-size: 0.78rem;
+    }
+
+    .social-auth-btn__label {
+        font-size: 0.78rem;
+    }
+}

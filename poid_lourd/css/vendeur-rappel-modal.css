@@ -1,0 +1,615 @@
+/**
+ * Popup rappels vendeur — dashboard (responsive, fluide)
+ */
+
+.vrappel-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 11950;
+    background: rgba(13, 13, 13, 0.62);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px, 3vw, 28px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.vrappel-modal {
+    --vr-pad: clamp(14px, 3.2vw, 24px);
+    --vr-radius: clamp(16px, 3vw, 24px);
+    --vr-title: clamp(1.05rem, 2.8vw, 1.35rem);
+    --vr-text: clamp(0.8rem, 2.2vw, 0.92rem);
+    --vr-label: clamp(0.68rem, 1.8vw, 0.76rem);
+    --vr-btn: clamp(0.78rem, 2vw, 0.88rem);
+    --vr-field: clamp(0.8rem, 2.1vw, 0.9rem);
+
+    position: relative;
+    width: min(480px, 100%);
+    max-height: min(90vh, 680px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border-radius: var(--vr-radius);
+    box-shadow:
+        0 28px 70px rgba(53, 100, 166, 0.28),
+        0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+    animation: vrappelIn 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    font-family: var(--font-corps, 'Poppins', sans-serif);
+    text-align: left;
+}
+
+.vrappel-modal.is-fullscreen {
+    width: min(920px, 100%);
+    max-height: min(94vh, 860px);
+}
+
+@keyframes vrappelIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- En-tête ---- */
+.vrappel-modal__header {
+    position: relative;
+    flex-shrink: 0;
+    padding: var(--vr-pad) var(--vr-pad) clamp(12px, 2.5vw, 18px);
+    background: linear-gradient(145deg, #3564a6 0%, #4a7ab8 52%, #2d5690 100%);
+    color: #fff;
+    overflow: hidden;
+}
+
+.vrappel-modal__header-glow {
+    position: absolute;
+    inset: -40% -20% auto auto;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 107, 53, 0.45) 0%, transparent 68%);
+    pointer-events: none;
+}
+
+.vrappel-modal__header-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(6px, 1.5vw, 10px);
+}
+
+.vrappel-modal__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: clamp(0.65rem, 1.7vw, 0.72rem);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.92;
+}
+
+.vrappel-modal__icon {
+    width: clamp(44px, 11vw, 56px);
+    height: clamp(44px, 11vw, 56px);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(1.1rem, 3vw, 1.35rem);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.vrappel-modal__title {
+    margin: 0;
+    font-size: var(--vr-title);
+    font-weight: 800;
+    line-height: 1.25;
+    font-family: var(--font-titres, 'Poppins', sans-serif);
+    letter-spacing: -0.02em;
+    max-width: 100%;
+    word-break: break-word;
+}
+
+.vrappel-modal__type-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: clamp(0.68rem, 1.8vw, 0.74rem);
+    font-weight: 700;
+}
+
+/* ---- Corps scrollable ---- */
+.vrappel-modal__content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: clamp(12px, 2.8vw, 18px) var(--vr-pad) clamp(8px, 2vw, 12px);
+    -webkit-overflow-scrolling: touch;
+}
+
+.vrappel-modal__text {
+    margin: 0 0 clamp(10px, 2.5vw, 14px);
+    font-size: var(--vr-text);
+    line-height: 1.58;
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.vrappel-modal__body {
+    margin-bottom: 4px;
+}
+
+.vrappel-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: clamp(10px, 2.4vw, 12px) clamp(11px, 2.6vw, 14px);
+    border-radius: 12px;
+    background: rgba(53, 100, 166, 0.08);
+    border: 1px solid rgba(53, 100, 166, 0.14);
+    font-size: var(--vr-text);
+    line-height: 1.5;
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.vrappel-callout i {
+    color: var(--couleur-dominante, #3564a6);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.vrappel-callout--soft {
+    background: rgba(255, 107, 53, 0.08);
+    border-color: rgba(255, 107, 53, 0.16);
+}
+
+.vrappel-callout--soft i {
+    color: var(--orange, #ff6b35);
+}
+
+/* ---- Champs ---- */
+.vrappel-field {
+    margin-bottom: clamp(10px, 2.4vw, 12px);
+}
+
+.vrappel-field label {
+    display: block;
+    font-size: var(--vr-label);
+    font-weight: 700;
+    color: var(--gris-moyen, #737373);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.vrappel-field select,
+.vrappel-field input[type="text"] {
+    width: 100%;
+    padding: clamp(9px, 2.2vw, 11px) clamp(10px, 2.4vw, 12px);
+    border: 1.5px solid rgba(53, 100, 166, 0.18);
+    border-radius: 11px;
+    font-size: var(--vr-field);
+    font-family: inherit;
+    background: var(--blanc-neige, #f8f9fb);
+    color: var(--titres, #0d0d0d);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%233564a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 34px;
+}
+
+.vrappel-field select:focus {
+    outline: none;
+    border-color: var(--couleur-dominante, #3564a6);
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
+}
+
+.vrappel-geo-status {
+    display: none;
+    margin-top: 8px;
+    padding: clamp(8px, 2vw, 10px) clamp(10px, 2.4vw, 12px);
+    border-radius: 10px;
+    background: rgba(53, 100, 166, 0.08);
+    font-size: clamp(0.78rem, 2vw, 0.84rem);
+    color: var(--gris-fonce, #4a4a4a);
+    line-height: 1.45;
+}
+
+.vrappel-logo-preview {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 2.6vw, 14px);
+    padding: clamp(10px, 2.4vw, 12px);
+    border-radius: 12px;
+    background: var(--blanc-neige, #f8f9fb);
+    border: 1px solid rgba(53, 100, 166, 0.1);
+}
+
+.vrappel-logo-frame {
+    width: clamp(60px, 16vw, 72px);
+    height: clamp(60px, 16vw, 72px);
+    border-radius: 14px;
+    border: 2px dashed rgba(53, 100, 166, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.vrappel-logo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.vrappel-logo-placeholder {
+    font-size: clamp(1.1rem, 3vw, 1.35rem);
+    color: var(--gris-clair, #a3a3a3);
+}
+
+.vrappel-file-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: clamp(8px, 2vw, 10px) clamp(11px, 2.6vw, 14px);
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(53, 100, 166, 0.1), rgba(53, 100, 166, 0.06));
+    color: var(--couleur-dominante, #3564a6);
+    font-size: clamp(0.78rem, 2vw, 0.84rem);
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(53, 100, 166, 0.16);
+    transition: background 0.2s, transform 0.15s;
+}
+
+.vrappel-file-label:hover {
+    background: rgba(53, 100, 166, 0.12);
+    transform: translateY(-1px);
+}
+
+.vrappel-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* ---- Couleurs plein écran ---- */
+.vrappel-colors-view {
+    display: none;
+    flex-direction: column;
+    gap: clamp(10px, 2.4vw, 14px);
+    flex: 1;
+    min-height: 0;
+}
+
+.vrappel-modal.is-fullscreen .vrappel-colors-intro {
+    display: none;
+}
+
+.vrappel-modal.is-fullscreen .vrappel-colors-view {
+    display: flex;
+}
+
+.vrappel-colors-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.vrappel-colors-head h3 {
+    margin: 0;
+    font-size: clamp(0.92rem, 2.4vw, 1rem);
+    font-weight: 800;
+}
+
+.vrappel-colors-back {
+    border: none;
+    background: rgba(53, 100, 166, 0.1);
+    color: var(--couleur-dominante, #3564a6);
+    border-radius: 10px;
+    padding: clamp(7px, 1.8vw, 8px) clamp(10px, 2.4vw, 12px);
+    font-size: clamp(0.74rem, 1.9vw, 0.8rem);
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.vrappel-colors-pickers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(8px, 2vw, 12px);
+}
+
+.vrappel-color-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2vw, 10px);
+    padding: clamp(10px, 2.4vw, 12px);
+    border: 1px solid rgba(53, 100, 166, 0.12);
+    border-radius: 12px;
+    background: var(--blanc-neige, #f8f9fb);
+}
+
+.vrappel-color-swatch {
+    width: clamp(38px, 10vw, 44px);
+    height: clamp(38px, 10vw, 44px);
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+}
+
+.vrappel-color-swatch input[type="color"] {
+    width: 120%;
+    height: 120%;
+    margin: -10%;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.vrappel-color-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.vrappel-color-meta strong {
+    font-size: clamp(0.76rem, 2vw, 0.82rem);
+}
+
+.vrappel-color-meta span {
+    font-size: clamp(0.68rem, 1.8vw, 0.74rem);
+    color: var(--gris-moyen, #737373);
+    font-family: monospace;
+}
+
+.vrappel-mock-shop {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(53, 100, 166, 0.12);
+    background: #fff;
+}
+
+.vrappel-mock-shop__stripe {
+    height: 5px;
+    background: var(--vr-mock-c1, #3564a6);
+}
+
+.vrappel-mock-shop__nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: clamp(8px, 2vw, 10px) clamp(10px, 2.4vw, 12px);
+    background: var(--vr-mock-c1, #3564a6);
+    color: #fff;
+}
+
+.vrappel-mock-shop__logo {
+    width: clamp(30px, 8vw, 36px);
+    height: clamp(30px, 8vw, 36px);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(0.58rem, 1.5vw, 0.65rem);
+    font-weight: 800;
+    overflow: hidden;
+}
+
+.vrappel-mock-shop__logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.vrappel-mock-shop__search {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 8px;
+    padding: clamp(5px, 1.4vw, 6px) clamp(8px, 2vw, 10px);
+    font-size: clamp(0.66rem, 1.7vw, 0.72rem);
+    color: var(--gris-moyen, #737373);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vrappel-mock-shop__body {
+    padding: clamp(10px, 2.4vw, 12px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(6px, 1.6vw, 8px);
+}
+
+.vrappel-mock-card {
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: clamp(6px, 1.6vw, 8px);
+}
+
+.vrappel-mock-card__img {
+    height: clamp(40px, 10vw, 48px);
+    border-radius: 6px;
+    background: var(--blanc-neige, #f5f5f5);
+    margin-bottom: 6px;
+}
+
+.vrappel-mock-card__badge {
+    display: inline-block;
+    font-size: clamp(0.55rem, 1.4vw, 0.6rem);
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--vr-mock-c2, #ff6b35);
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.vrappel-mock-card__price {
+    font-size: clamp(0.66rem, 1.7vw, 0.72rem);
+    font-weight: 800;
+    color: var(--vr-mock-c2, #ff6b35);
+}
+
+/* ---- Pied de page actions ---- */
+.vrappel-modal__footer {
+    flex-shrink: 0;
+    padding: clamp(10px, 2.4vw, 14px) var(--vr-pad) var(--vr-pad);
+    background: linear-gradient(180deg, rgba(248, 249, 251, 0) 0%, rgba(248, 249, 251, 0.95) 18%, #f8f9fb 100%);
+    border-top: 1px solid rgba(53, 100, 166, 0.1);
+}
+
+.vrappel-modal__actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: clamp(8px, 2vw, 10px);
+    align-items: stretch;
+}
+
+.vrappel-modal.is-fullscreen .vrappel-modal__actions--main {
+    display: none;
+}
+
+.vrappel-modal__actions--colors {
+    display: none;
+}
+
+.vrappel-modal.is-fullscreen .vrappel-modal__actions--colors {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.vrappel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(5px, 1.4vw, 7px);
+    padding: clamp(10px, 2.4vw, 12px) clamp(12px, 2.8vw, 16px);
+    border-radius: 12px;
+    font-size: var(--vr-btn);
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    white-space: nowrap;
+    min-height: clamp(40px, 10vw, 46px);
+}
+
+.vrappel-btn:active {
+    transform: scale(0.98);
+}
+
+.vrappel-btn--primary {
+    background: linear-gradient(135deg, #3564a6 0%, #2d5690 100%);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(53, 100, 166, 0.28);
+    min-width: 0;
+}
+
+.vrappel-btn--primary:hover {
+    background: linear-gradient(135deg, #2d5690 0%, #244872 100%);
+    box-shadow: 0 8px 22px rgba(53, 100, 166, 0.34);
+}
+
+.vrappel-btn--accent {
+    background: linear-gradient(135deg, #ff8f65 0%, #ff6b35 100%);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(255, 107, 53, 0.28);
+    width: 100%;
+}
+
+.vrappel-btn--accent:hover {
+    background: linear-gradient(135deg, #ff6b35 0%, #e85a2a 100%);
+}
+
+.vrappel-btn--ghost {
+    background: #fff;
+    color: var(--gris-moyen, #737373);
+    border: 1.5px solid rgba(53, 100, 166, 0.16);
+    padding-inline: clamp(10px, 2.6vw, 14px);
+}
+
+.vrappel-btn--ghost:hover {
+    background: rgba(53, 100, 166, 0.05);
+    color: var(--gris-fonce, #4a4a4a);
+}
+
+.vrappel-btn--ghost i {
+    font-size: 0.9em;
+    opacity: 0.85;
+}
+
+.vrappel-inline-form,
+.vrappel-snooze-form {
+    margin: 0;
+}
+
+.vrappel-snooze-form {
+    display: flex;
+}
+
+.vrappel-snooze-form .vrappel-btn {
+    width: 100%;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 420px) {
+    .vrappel-modal__actions {
+        grid-template-columns: 1fr;
+    }
+
+    .vrappel-btn--primary {
+        order: 1;
+    }
+
+    .vrappel-snooze-form {
+        order: 2;
+    }
+
+    .vrappel-colors-pickers {
+        grid-template-columns: 1fr;
+    }
+
+    .vrappel-btn {
+        white-space: normal;
+        text-align: center;
+        line-height: 1.25;
+    }
+}
+
+@media (min-width: 421px) and (max-width: 560px) {
+    .vrappel-modal__actions {
+        grid-template-columns: 1fr minmax(96px, auto);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vrappel-modal {
+        animation: none;
+    }
+
+    .vrappel-btn {
+        transition: none;
+    }
+}

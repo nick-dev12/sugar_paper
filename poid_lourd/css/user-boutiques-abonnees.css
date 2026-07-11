@@ -1,0 +1,287 @@
+/**
+ * Page client — boutiques abonnées
+ * Palette : variables.css via user-dashboard.css
+ */
+
+.uba-page {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  box-sizing: border-box;
+}
+
+.uba-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.uba-header__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--texte-mute);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.uba-header__eyebrow i {
+  color: var(--couleur-dominante);
+}
+
+.uba-header__title {
+  margin: 0;
+  font-family: var(--font-titres);
+  font-size: clamp(1.45rem, 2.6vw, 1.95rem);
+  font-weight: 700;
+  color: var(--titres);
+}
+
+.uba-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.72rem 1.15rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-decoration: none;
+  border: 2px solid transparent;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  cursor: pointer;
+  font-family: var(--font-corps);
+}
+
+.uba-btn--ghost {
+  background: var(--fond-principal);
+  color: var(--couleur-dominante);
+  border-color: var(--border-input);
+}
+
+.uba-btn--ghost:hover {
+  background: var(--bleu-pale);
+  transform: translateY(-1px);
+}
+
+.uba-btn--primary {
+  background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce) 100%);
+  color: var(--texte-clair);
+  box-shadow: var(--ombre-promo);
+}
+
+.uba-btn--primary:hover {
+  transform: translateY(-2px);
+}
+
+.uba-btn--outline {
+  background: transparent;
+  color: var(--accent-promo);
+  border-color: rgba(255, 107, 53, 0.45);
+}
+
+.uba-btn--outline:hover {
+  background: var(--orange-pale);
+}
+
+.uba-hero {
+  padding: 1.35rem 1.45rem;
+  margin-bottom: 1.35rem;
+  background: var(--fond-secondaire);
+  border: 1px solid var(--border-input);
+  border-radius: 18px;
+  box-shadow: var(--ombre-douce);
+  border-left: 5px solid var(--couleur-dominante);
+  position: relative;
+  overflow: hidden;
+}
+
+.uba-hero::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  right: -10%;
+  width: 40%;
+  height: 130%;
+  background: radial-gradient(ellipse, var(--bleu-pale) 0%, transparent 72%);
+  pointer-events: none;
+}
+
+.uba-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.uba-hero__count {
+  font-family: var(--font-titres);
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.1;
+}
+
+.uba-hero__label {
+  margin: 0 0 0.25rem;
+  font-size: 0.82rem;
+  color: var(--texte-mute);
+}
+
+.uba-hero__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bleu-pale);
+  color: var(--couleur-dominante);
+  font-size: 1.25rem;
+}
+
+.uba-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 1.15rem;
+}
+
+.uba-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--fond-principal);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--glass-shadow);
+  overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.uba-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ombre-gourmande);
+}
+
+.uba-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.15rem 1.15rem 0.85rem;
+}
+
+.uba-card__logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bleu-pale) 0%, rgba(255, 107, 53, 0.1) 100%);
+  color: var(--couleur-dominante);
+  font-size: 1.35rem;
+  overflow: hidden;
+  border: 1px solid var(--border-input);
+}
+
+.uba-card__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uba-card__meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.uba-card__name {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.uba-card__date {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--texte-mute);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.uba-card__body {
+  padding: 0 1.15rem 1.15rem;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.uba-card__body .uba-btn {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.uba-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: var(--fond-secondaire);
+  border: 1px dashed var(--border-input);
+  border-radius: 18px;
+}
+
+.uba-empty__icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bleu-pale);
+  color: var(--couleur-dominante);
+  font-size: 1.75rem;
+}
+
+.uba-empty h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--titres);
+}
+
+.uba-empty p {
+  margin: 0 auto 1.25rem;
+  max-width: 28rem;
+  color: var(--texte-mute);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .uba-page {
+    padding: 0.85rem 1rem 2.5rem;
+  }
+
+  .uba-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .uba-btn--ghost {
+    width: 100%;
+    justify-content: center;
+  }
+}

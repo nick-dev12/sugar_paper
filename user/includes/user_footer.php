@@ -13,13 +13,19 @@
             }
         }
         window.addEventListener('resize', function() {
-            if (window.innerWidth > 600) {
+            if (window.innerWidth > 992) {
                 closeUserSidebar();
             }
         });
     })();
 </script>
+<?php
+$bottom_nav_context = 'user';
+$bottom_nav_active = 'compte';
+include __DIR__ . '/../../includes/bottom_nav.php';
+?>
 <?php include __DIR__ . '/../../includes/social_floating.php'; ?>
+<?php include __DIR__ . '/../../includes/firebase_notifications_scripts.php'; ?>
 </body>
 </html>
 

@@ -1,0 +1,1004 @@
+/**
+ * Modal + dashboard — négociations de prix
+ */
+
+/* ---- Modals ---- */
+.prix-neg-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 24px);
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.24s ease, visibility 0.24s ease;
+}
+
+.prix-neg-modal[hidden] {
+  display: none !important;
+}
+
+.prix-neg-modal.is-open {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.prix-neg-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.52);
+  backdrop-filter: blur(6px);
+}
+
+.prix-neg-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: min(420px, 100%);
+  max-height: min(92vh, 720px);
+  overflow-y: auto;
+  background: linear-gradient(165deg, #ffffff 0%, #f7faff 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(53, 100, 166, 0.14);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  padding: 0 0 20px;
+  box-sizing: border-box;
+  transform: translateY(14px) scale(0.98);
+  transition: transform 0.24s ease;
+}
+
+.prix-neg-modal.is-open .prix-neg-modal__panel {
+  transform: translateY(0) scale(1);
+}
+
+.prix-neg-modal__panel--propose,
+.prix-neg-modal__panel--login {
+  padding-bottom: clamp(18px, 3vw, 26px);
+}
+
+.prix-neg-modal__hero {
+  border-radius: 22px 22px 0 0;
+  overflow: hidden;
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.08));
+  aspect-ratio: 16 / 10;
+  max-height: 220px;
+}
+
+.prix-neg-modal__hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.prix-neg-modal__product-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px 14px;
+}
+
+.prix-neg-modal__thumb {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.08));
+  border: 1px solid rgba(53, 100, 166, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prix-neg-modal__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.prix-neg-modal__product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.prix-neg-modal__product-info .prix-neg-modal__product,
+.prix-neg-modal__product-info .prix-neg-modal__ref {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.prix-neg-modal__hero--login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  aspect-ratio: auto;
+}
+
+.prix-neg-modal__hero-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(53, 100, 166, 0.12);
+  color: var(--couleur-dominante);
+  font-size: 2rem;
+}
+
+.prix-neg-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 0;
+  margin-bottom: 8px;
+}
+
+.prix-neg-modal__title {
+  margin: 0;
+  font-family: var(--font-titres);
+  font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.25;
+}
+
+.prix-neg-modal__close {
+  appearance: none;
+  border: none;
+  background: var(--bleu-pale, rgba(53, 100, 166, 0.12));
+  color: var(--couleur-dominante);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.prix-neg-modal__product {
+  font-size: clamp(0.88rem, 2vw, 1rem);
+  font-weight: 600;
+  color: var(--titres);
+  margin: 0 20px 6px;
+  line-height: 1.35;
+}
+
+.prix-neg-modal__ref,
+.prix-neg-modal__question,
+.prix-neg-modal__lead {
+  font-size: clamp(0.82rem, 1.8vw, 0.95rem);
+  color: var(--gris-moyen);
+  margin: 0 20px 14px;
+  line-height: 1.45;
+}
+
+.prix-neg-modal__lead {
+  color: var(--texte-fonce);
+}
+
+.prix-neg-modal__ref strong {
+  color: var(--couleur-dominante);
+  font-weight: 700;
+}
+
+.prix-neg-modal__input {
+  width: calc(100% - 40px);
+  margin-left: 20px;
+  margin-right: 20px;
+  box-sizing: border-box;
+  padding: clamp(12px, 2vw, 16px) clamp(14px, 2vw, 18px);
+  border: 1.5px solid var(--border-input);
+  border-radius: 14px;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-family: var(--font-corps);
+  margin-bottom: 18px;
+  background: #fff;
+}
+
+.prix-neg-modal__input:focus {
+  outline: none;
+  border-color: var(--border-input-focus);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.prix-neg-modal__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: 0 20px;
+}
+
+.prix-neg-modal__actions--stack {
+  flex-direction: column;
+}
+
+.prix-neg-modal__actions--stack .prix-neg-modal__btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.prix-neg-modal__btn {
+  appearance: none;
+  border: none;
+  border-radius: 14px;
+  padding: clamp(11px, 2vw, 14px) clamp(16px, 3vw, 22px);
+  font-size: clamp(0.82rem, 1.8vw, 0.95rem);
+  font-weight: 600;
+  font-family: var(--font-corps);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.prix-neg-modal__btn--cancel {
+  background: var(--blanc-neige, #f5f5f5);
+  color: var(--titres);
+  border: 1px solid rgba(53, 100, 166, 0.15);
+}
+
+.prix-neg-modal__btn--submit {
+  background: linear-gradient(135deg, var(--couleur-dominante) 0%, var(--bleu-fonce, #2d5690) 100%);
+  color: var(--texte-clair);
+  box-shadow: 0 8px 20px rgba(53, 100, 166, 0.28);
+}
+
+@media (min-width: 768px) {
+  .prix-neg-modal__panel {
+    max-width: min(480px, 100%);
+  }
+
+  .prix-neg-modal__hero {
+    max-height: 260px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .prix-neg-modal__panel {
+    max-width: 520px;
+  }
+
+  .prix-neg-modal__hero {
+    max-height: 280px;
+  }
+}
+
+/* ---- Bouton fiche produit ---- */
+.quantite-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: clamp(8px, 2vw, 12px);
+  width: 100%;
+  min-width: 0;
+}
+
+.quantite-input-wrapper {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.btn-negocier-prix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  min-height: 48px;
+  height: 48px;
+  padding: 0 clamp(10px, 2vw, 16px);
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #fff;
+  font-size: clamp(14px, 2.2vw, 18px);
+  font-weight: 600;
+  font-family: var(--font-corps);
+  text-decoration: none;
+  cursor: pointer;
+  flex: 1 1 0;
+  max-width: 300px;
+  min-width: 0;
+  box-sizing: border-box;
+  box-shadow: 0 6px 18px rgba(21, 128, 61, 0.28);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn-negocier-prix:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 8px 22px rgba(21, 128, 61, 0.34);
+}
+
+.btn-negocier-prix:active {
+  transform: scale(0.98);
+}
+
+.btn-negocier-prix i {
+  font-size: clamp(14px, 2.2vw, 18px);
+  flex-shrink: 0;
+}
+
+.btn-negocier-prix span {
+  font-size: clamp(14px, 2.2vw, 18px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 380px) {
+  .quantite-controls {
+    gap: 6px;
+  }
+
+  .btn-negocier-prix {
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .btn-negocier-prix i,
+  .btn-negocier-prix span {
+    font-size: 14px;
+  }
+}
+
+/* ---- Dashboard vendeur : cartes produit ---- */
+.prix-neg-produit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.prix-neg-produit-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(53, 100, 166, 0.18);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(53, 100, 166, 0.08);
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+}
+
+.prix-neg-produit-card:hover {
+  border-color: rgba(53, 100, 166, 0.32);
+  box-shadow: 0 6px 18px rgba(53, 100, 166, 0.12);
+  transform: translateY(-1px);
+}
+
+.prix-neg-produit-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring, rgba(53, 100, 166, 0.2));
+}
+
+.prix-neg-produit-card:last-child {
+  border-bottom: 1.5px solid rgba(53, 100, 166, 0.18);
+}
+
+.prix-neg-produit-card__media {
+  grid-row: 1 / span 2;
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bleu-pale);
+  flex-shrink: 0;
+}
+
+.prix-neg-reject-overlay .prix-neg-reject-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.prix-neg-produit-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+  display: block;
+}
+
+.prix-neg-produit-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--couleur-dominante);
+  font-size: 1.4rem;
+}
+
+.prix-neg-produit-card__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.prix-neg-produit-card__title {
+  margin: 0;
+  font-size: clamp(0.88rem, 2vw, 0.95rem);
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.3;
+}
+
+.prix-neg-produit-card__meta {
+  margin: 4px 0 0;
+  font-size: clamp(11px, 1.6vw, 0.82rem);
+  color: var(--gris-moyen);
+}
+
+.prix-neg-btn--view-offers {
+  grid-column: 1 / -1;
+  width: 100%;
+  justify-content: center;
+  background: var(--couleur-dominante);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: clamp(11px, 2.8vw, 0.82rem);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.prix-neg-btn--view-offers span {
+  display: inline;
+}
+
+/* ---- Carte client ---- */
+.prix-neg-card__list--client {
+  gap: 12px;
+  padding: 8px 12px 12px;
+}
+
+.prix-neg-client-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(53, 100, 166, 0.1);
+  box-shadow: 0 4px 16px rgba(53, 100, 166, 0.08);
+}
+
+.prix-neg-client-card__media {
+  width: 80px;
+  height: 80px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bleu-pale);
+}
+
+.prix-neg-client-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.prix-neg-client-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--couleur-dominante);
+  font-size: 1.5rem;
+}
+
+.prix-neg-client-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.prix-neg-client-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.prix-neg-client-card__title {
+  margin: 0;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 700;
+  color: var(--titres);
+  line-height: 1.3;
+}
+
+.prix-neg-client-card__shop {
+  margin: 4px 0 0;
+  font-size: clamp(11px, 1.6vw, 0.78rem);
+  color: var(--gris-moyen);
+}
+
+.prix-neg-client-card__prices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+
+.prix-neg-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prix-neg-price-block__label {
+  font-size: clamp(11px, 1.5vw, 0.72rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gris-moyen);
+}
+
+.prix-neg-price-block__value {
+  font-size: clamp(11px, 1.8vw, 0.88rem);
+  font-weight: 700;
+  color: var(--titres);
+}
+
+.prix-neg-price-block__value--strike {
+  text-decoration: line-through;
+  color: var(--gris-moyen);
+  font-weight: 500;
+}
+
+.prix-neg-price-block__value--accent {
+  color: #15803d;
+  font-size: clamp(11px, 2vw, 0.95rem);
+}
+
+.prix-neg-price-block--mine .prix-neg-price-block__value {
+  color: #15803d;
+  font-weight: 700;
+  font-size: clamp(11px, 2vw, 0.95rem);
+}
+
+.prix-neg-client-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.prix-neg-client-card__form-inline {
+  display: inline;
+}
+
+@media (max-width: 560px) {
+  .prix-neg-client-card {
+    flex-direction: column;
+  }
+
+  .prix-neg-client-card__media {
+    width: 100%;
+    height: 140px;
+  }
+}
+
+/* ---- Lignes offres (modal vendeur) ---- */
+.prix-neg-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.prix-neg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(53, 100, 166, 0.08);
+}
+
+.prix-neg-row--vendor {
+  margin: 10px 12px;
+  padding: 16px;
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 4px 14px rgba(53, 100, 166, 0.06);
+}
+
+.prix-neg-row--vendor:last-child {
+  margin-bottom: 14px;
+}
+
+.prix-neg-row__prices--grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.prix-neg-row-price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.prix-neg-row-price__label {
+  font-size: clamp(11px, 1.5vw, 0.72rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gris-moyen);
+}
+
+.prix-neg-row-price__value {
+  font-size: clamp(11px, 1.8vw, 0.9rem);
+  font-weight: 700;
+  color: var(--titres);
+}
+
+.prix-neg-row-price__value--strike {
+  text-decoration: line-through;
+  color: var(--gris-moyen);
+  font-weight: 500;
+}
+
+.prix-neg-row-price__value--client {
+  color: #15803d;
+}
+
+.prix-neg-row__form-inline {
+  display: inline;
+}
+
+.prix-neg-row:last-child {
+  border-bottom: none;
+}
+
+.prix-neg-row__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.prix-neg-row__title {
+  font-size: clamp(11px, 1.8vw, 0.88rem);
+  font-weight: 700;
+  color: var(--titres);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.prix-neg-row__meta {
+  font-size: clamp(11px, 1.6vw, 0.78rem);
+  color: var(--gris-moyen);
+  margin: 4px 0 0;
+}
+
+.prix-neg-row__prices {
+  font-size: clamp(11px, 1.8vw, 0.82rem);
+  color: var(--texte-fonce);
+  margin: 0;
+}
+
+.prix-neg-row__prices strong {
+  color: var(--couleur-dominante);
+}
+
+.prix-neg-statut {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: clamp(11px, 1.4vw, 0.68rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.prix-neg-statut--attente {
+  background: rgba(53, 100, 166, 0.12);
+  color: var(--couleur-dominante);
+}
+
+.prix-neg-statut--acceptee {
+  background: rgba(21, 128, 61, 0.12);
+  color: #15803d;
+}
+
+.prix-neg-statut--contre {
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--orange);
+}
+
+.prix-neg-statut--refusee {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.prix-neg-statut--commandee {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--gris-fonce);
+}
+
+.prix-neg-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.prix-neg-btn {
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: clamp(11px, 1.6vw, 0.78rem);
+  font-weight: 600;
+  font-family: var(--font-corps);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prix-neg-btn--accept {
+  background: #15803d;
+  color: #fff;
+}
+
+.prix-neg-btn--reject {
+  background: #dc2626;
+  color: #fff;
+}
+
+.prix-neg-btn--order {
+  background: #15803d;
+  color: #fff;
+}
+
+.prix-neg-btn--ghost {
+  background: var(--blanc-neige);
+  color: var(--couleur-dominante);
+  border: 1px solid rgba(53, 100, 166, 0.2);
+}
+
+.prix-neg-card__footer {
+  padding: 12px 16px 14px;
+  border-top: 1px solid rgba(53, 100, 166, 0.08);
+}
+
+.prix-neg-card__more {
+  width: 100%;
+  justify-content: center;
+}
+
+.prix-neg-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--gris-moyen);
+  font-size: clamp(11px, 2vw, 0.88rem);
+}
+
+.prix-neg-empty i {
+  display: block;
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+/* ---- Plein écran ---- */
+.prix-neg-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  background: var(--fond-page, #fff);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.prix-neg-fullscreen[hidden] {
+  display: none !important;
+}
+
+.prix-neg-fullscreen.is-open {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.prix-neg-fullscreen__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(53, 100, 166, 0.1);
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+}
+
+.prix-neg-fullscreen__head-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.prix-neg-fullscreen__head-img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.prix-neg-fullscreen__head h2 {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.prix-neg-fullscreen__sub {
+  margin: 4px 0 0;
+  font-size: clamp(11px, 1.6vw, 0.82rem);
+  color: var(--gris-moyen);
+}
+
+.prix-neg-fullscreen__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
+  -webkit-overflow-scrolling: touch;
+}
+
+#prixNegClientFullscreen .prix-neg-card__list--client {
+  padding: 12px clamp(10px, 3vw, 20px) 20px;
+  gap: 14px;
+}
+
+.prix-neg-reject-panel {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 400px);
+  margin: 0 auto;
+  padding: 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(53, 100, 166, 0.12);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.prix-neg-reject-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10070;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 24px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0.22s ease;
+}
+
+.prix-neg-reject-overlay[hidden] {
+  display: none !important;
+}
+
+.prix-neg-reject-overlay.is-open {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.prix-neg-reject-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 13, 13, 0.52);
+  backdrop-filter: blur(6px);
+}
+
+.prix-neg-reject-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.prix-neg-reject-panel__head h3 {
+  margin: 0;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  font-weight: 700;
+  color: var(--titres);
+}
+
+.prix-neg-reject-panel__hint {
+  margin: 0 0 14px;
+  font-size: clamp(11px, 1.8vw, 0.85rem);
+  color: var(--gris-moyen);
+  line-height: 1.45;
+}
+
+.prix-neg-reject-panel label {
+  display: block;
+  font-size: clamp(11px, 1.6vw, 0.8rem);
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--titres);
+}
+
+.prix-neg-reject-panel input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-input);
+  margin-bottom: 14px;
+  font-size: clamp(11px, 1.8vw, 0.95rem);
+}
+
+.prix-neg-reject-panel__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.prix-neg-reject-panel[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 520px) {
+  .prix-neg-produit-card {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .prix-neg-btn--view-offers {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+}

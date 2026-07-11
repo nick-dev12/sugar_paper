@@ -4,10 +4,12 @@
  * Programmation procédurale uniquement
  */
 
-session_start();
+require_once __DIR__ . '/../includes/session_user.php';
+session_start_persistent();
+require_once __DIR__ . '/../includes/google_auth_coop.php';
 
 // Si l'utilisateur est déjà connecté, rediriger vers le tableau de bord
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_email'])) {
+if (!empty($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     header('Location: mon-compte.php');
     exit;
 }
@@ -33,10 +35,10 @@ if (isset($result['success']) && $result['success']) {
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <title>Inscription - Sugar Paper</title>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/auth-social.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/auth-pages.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -312,7 +314,7 @@ if (isset($result['success']) && $result['success']) {
     </style>
 </head>
 
-<body>
+<body class="auth-page">
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
@@ -335,6 +337,14 @@ if (isset($result['success']) && $result['success']) {
                 </div>
             <?php endif; ?>
 
+            <?php
+            $google_auth_type = 'client';
+            $google_auth_redirect = '/index.php';
+            $google_auth_position = 'top';
+            $google_auth_label = 'Inscription avec Google';
+            include __DIR__ . '/../includes/google_auth_button.php';
+            ?>
+
             <form method="POST" action="" id="inscriptionForm">
                 <div class="form-group">
                     <label for="nom"><i class="fas fa-user"></i> Nom *</label>
@@ -343,15 +353,9 @@ if (isset($result['success']) && $result['success']) {
                 </div>
 
                 <div class="form-group">
-                    <label for="prenom"><i class="fas fa-user"></i> Prénom *</label>
-                    <input type="text" id="prenom" name="prenom" placeholder="Votre prénom" required
-                        value="<?php echo isset($_POST['prenom']) ? htmlspecialchars($_POST['prenom']) : ''; ?>">
-                </div>
-
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email *</label>
+                    <label for="email"><i class="fas fa-envelope"></i> Email <span class="label-optional">(facultatif)</span></label>
                     <div class="input-wrapper">
-                        <input type="email" id="email" name="email" placeholder="votre@email.com" required
+                        <input type="email" id="email" name="email" placeholder="votre@email.com"
                             value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>">
                         <i class="fas fa-envelope"></i>
                     </div>
@@ -359,30 +363,29 @@ if (isset($result['success']) && $result['success']) {
 
                 <div class="form-group">
                     <label for="telephone"><i class="fas fa-phone"></i> Téléphone *</label>
-                    <div class="input-wrapper">
-                        <input type="tel" id="telephone" name="telephone" placeholder="+241 01 23 45 67" required
+                    <div class="input-wrapper input-wrapper--intl-tel">
+                        <input type="tel" id="telephone" name="telephone" placeholder="77 123 45 67" required
                             value="<?php echo isset($_POST['telephone']) ? htmlspecialchars($_POST['telephone']) : ''; ?>">
-                        <i class="fas fa-phone"></i>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <label for="pin"><i class="fas fa-key"></i> Code PIN (6 chiffres) *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="password" name="password" placeholder="Votre mot de passe" required>
-                        <button type="button" class="password-toggle" onclick="togglePassword('password', this)">
+                        <input type="password" id="pin" name="pin" class="pin-input" inputmode="numeric"
+                            pattern="[0-9]*" maxlength="6" placeholder="••••••" required autocomplete="new-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin', this)" aria-label="Afficher le code PIN">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="password_confirm"><i class="fas fa-lock"></i> Confirmer le mot de passe *</label>
+                    <label for="pin_confirm"><i class="fas fa-key"></i> Confirmer le code PIN *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="password_confirm" name="password_confirm"
-                            placeholder="Confirmez votre mot de passe" required>
-                        <button type="button" class="password-toggle"
-                            onclick="togglePassword('password_confirm', this)">
+                        <input type="password" id="pin_confirm" name="pin_confirm" class="pin-input" inputmode="numeric"
+                            pattern="[0-9]*" maxlength="6" placeholder="••••••" required autocomplete="new-password">
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin_confirm', this)" aria-label="Afficher le code PIN">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
@@ -403,7 +406,6 @@ if (isset($result['success']) && $result['success']) {
         function togglePassword(inputId, button) {
             const input = document.getElementById(inputId);
             const icon = button.querySelector('i');
-
             if (input.type === 'password') {
                 input.type = 'text';
                 icon.classList.remove('fa-eye');
@@ -414,7 +416,20 @@ if (isset($result['success']) && $result['success']) {
                 icon.classList.add('fa-eye');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.pin-input').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+                });
+            });
+            if (typeof window.initAuthIntlTel === 'function') {
+                window.initAuthIntlTel('telephone');
+            }
+        });
     </script>
+    <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
+    <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 

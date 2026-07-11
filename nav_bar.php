@@ -25,11 +25,8 @@ if (isset($_SESSION['user_id'])) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Almarai&family=Rozha+One&display=swap" rel="stylesheet">
+<?php include __DIR__ . '/includes/google_fonts.php'; ?>
 <style>
     /* Nav style Planète Gâteau - fond dégradé, barre recherche, Mon compte, panier */
     .nav-planete-gateau {
@@ -340,6 +337,13 @@ if (isset($_SESSION['user_id'])) {
         }
     }
 
+    @media (max-width: 992px) {
+        .nav-top-row .nav-panier-link,
+        .nav-top-row .nav-compte-btn {
+            display: none;
+        }
+    }
+
     @media (max-width: 768px) {
         .nav-planete-gateau {
             flex-wrap: wrap;
@@ -647,3 +651,4 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
         });
     });
 </script>
+<?php include __DIR__ . '/includes/bottom_nav.php'; ?>

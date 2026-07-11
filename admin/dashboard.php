@@ -17,6 +17,9 @@ require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 
+$enable_firebase_notifications = true;
+$firebase_notify_type = 'admin';
+
 $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 $categories = get_all_categories();
@@ -63,70 +66,10 @@ if (!empty($produits)) {
     <?php include __DIR__ . '/../includes/pwa_meta.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .admin-filters-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: end;
-            margin-bottom: 20px;
-            padding: 16px;
-            background: #fff;
-            border: 1px solid #ececec;
-            border-radius: 12px;
-        }
-
-        .admin-filter-field {
-            flex: 1 1 220px;
-        }
-
-        .admin-filter-field label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #6b2f20;
-        }
-
-        .admin-filter-field input,
-        .admin-filter-field select {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1px solid #d9d9d9;
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        .admin-filter-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-filter-reset {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 11px 16px;
-            border-radius: 10px;
-            border: 1px solid #d9d9d9;
-            color: #6b2f20;
-            background: #fff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .produit-card-linkable {
-            cursor: pointer;
-        }
-
-        .produit-card-linkable:hover .produit-card-nom {
-            color: #c26638;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/admin-produits-index.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="page-dashboard-admin">
     <?php include 'includes/nav.php'; ?>
 
     <!-- Barre de navigation verticale -->
@@ -141,6 +84,7 @@ if (!empty($produits)) {
                     <i class="fas fa-download"></i> Installer l'application
                 </button>
                 <button type="button" id="btn-enable-notifications" class="btn-primary btn-secondary-style"
+                    data-notify-type="admin"
                     title="Recevoir des notifications push pour les nouvelles commandes">
                     <i class="fas fa-bell"></i> Activer les notifications
                 </button>
@@ -237,23 +181,25 @@ if (!empty($produits)) {
                 <h2><i class="fas fa-box"></i> Mes Produits (<?php echo count($produits); ?>)</h2>
             </div>
 
-            <form method="GET" action="" class="admin-filters-bar">
-                <div class="admin-filter-field">
-                    <label for="recherche">Recherche</label>
-                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
-                        value="<?php echo htmlspecialchars($recherche); ?>">
-                </div>
-                <div class="admin-filter-field">
-                    <label for="categorie_id">Catégorie</label>
-                    <select id="categorie_id" name="categorie_id">
-                        <option value="0">Toutes les catégories</option>
-                        <?php foreach ($categories as $categorie): ?>
-                            <option value="<?php echo (int) $categorie['id']; ?>"
-                                <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($categorie['nom']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+            <form method="GET" action="" class="admin-filters-bar admin-filters-bar--produits">
+                <div class="admin-filters-fields-row">
+                    <div class="admin-filter-field admin-filter-field--search">
+                        <label for="recherche">Recherche</label>
+                        <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
+                            value="<?php echo htmlspecialchars($recherche); ?>">
+                    </div>
+                    <div class="admin-filter-field admin-filter-field--categorie">
+                        <label for="categorie_id">Catégorie</label>
+                        <select id="categorie_id" name="categorie_id">
+                            <option value="0">Toutes</option>
+                            <?php foreach ($categories as $categorie): ?>
+                                <option value="<?php echo (int) $categorie['id']; ?>"
+                                    <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($categorie['nom']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
                 <div class="admin-filter-actions">
                     <button type="submit" class="btn-primary">
@@ -287,7 +233,7 @@ if (!empty($produits)) {
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <div class="produit-card produit-card-linkable"
-                            data-href="produits/modifier.php?id=<?php echo (int) $produit['id']; ?>">
+                            data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                             <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
                             <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
@@ -328,15 +274,6 @@ if (!empty($produits)) {
         </section>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging-compat.js"></script>
-    <?php require_once __DIR__ . '/../includes/firebase_init.php'; ?>
-    <script>
-        if (window.FIREBASE_CONFIG) {
-            firebase.initializeApp(window.FIREBASE_CONFIG);
-        }
-    </script>
-    <script src="/js/firebase-notifications.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.produit-card-linkable').forEach(function(card) {
@@ -350,19 +287,6 @@ if (!empty($produits)) {
                     }
                 });
             });
-
-            var btn = document.getElementById('btn-enable-notifications');
-            if (btn) {
-                btn.addEventListener('click', function () {
-                    if (typeof FirebaseNotifications !== 'undefined') {
-                        FirebaseNotifications.enable('admin', this);
-                    } else {
-                        alert(
-                            'Erreur: Les scripts de notification ne sont pas chargés. Vérifiez la console (F12).'
-                        );
-                    }
-                });
-            }
 
             var installBtn = document.getElementById('btn-install-pwa');
             var deferredPrompt;

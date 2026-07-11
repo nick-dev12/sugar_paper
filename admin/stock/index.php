@@ -32,38 +32,10 @@ $categories = get_all_categories();
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .btn-history {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 22px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.25s ease;
-            border: 2px solid #918a44;
-            background: linear-gradient(135deg, #f8f7f2 0%, #fff 100%);
-            color: #6b2f20;
-            box-shadow: 0 2px 8px rgba(145, 138, 68, 0.15);
-        }
-
-        .btn-history:hover {
-            background: linear-gradient(135deg, #918a44 0%, #7a7340 100%);
-            color: #fff;
-            border-color: #918a44;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(145, 138, 68, 0.3);
-        }
-
-        .btn-history i {
-            font-size: 16px;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/admin-stock-index.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="page-stock-index">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">

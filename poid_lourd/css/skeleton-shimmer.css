@@ -1,0 +1,267 @@
+/**
+ * Skeleton shimmer — COLObanes.
+ * Le CSS déclenche l'effet sur TOUS les conteneurs connus dès l'affichage
+ * (via html.sk-shimmer-pending posé avant le rendu). Le JS retire l'effet
+ * élément par élément lorsque l'image est chargée.
+ */
+
+/* ——— Animation ——— */
+
+@keyframes sk-shimmer-wave {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes sk-fade-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ——— Variables ——— */
+
+:root {
+  --sk-base:        rgba(53, 100, 166, 0.10);
+  --sk-mid:         rgba(53, 100, 166, 0.16);
+  --sk-highlight:   rgba(255, 255, 255, 0.74);
+  --sk-orange-glow: rgba(255, 107, 53, 0.13);
+  --sk-grad: linear-gradient(
+    105deg,
+    var(--sk-base)        0%,
+    var(--sk-mid)        22%,
+    var(--sk-highlight)  42%,
+    var(--sk-orange-glow)52%,
+    var(--sk-highlight)  62%,
+    var(--sk-mid)        78%,
+    var(--sk-base)      100%
+  );
+}
+
+/* ——— Utilitaire (lignes texte) ——— */
+
+.sk-shimmer-bg {
+  background: var(--sk-grad);
+  background-size: 220% 100%;
+  animation: sk-shimmer-wave 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-shimmer-bg { animation: none; background: var(--sk-base); }
+}
+
+/* ——— Conteneurs d'images : styles de base (toujours actifs) ——— */
+
+.image-wrapper,
+.mp-card-img,
+.mp-new-card-img,
+.mp-strip-card-img,
+.mp-trend-img-link,
+.mp-sp-tile,
+.mp-sp-visual,
+.slider-item,
+.boutique-top-cat-card__media,
+.mp-pop-cat-icon,
+.produit-gallery-main,
+.panier-item-img,
+.produit-card-img,
+.produit-cmd-img,
+.stock-cat-card__media {
+  position: relative;
+  overflow: hidden;
+}
+
+/* ——— SHIMMER : appliqué en même temps à TOUS les conteneurs ——— */
+/*     via ::before piloté par CSS dès sk-shimmer-pending        */
+
+html.sk-shimmer-pending .image-wrapper::before,
+html.sk-shimmer-pending .mp-card-img::before,
+html.sk-shimmer-pending .mp-new-card-img::before,
+html.sk-shimmer-pending .mp-strip-card-img::before,
+html.sk-shimmer-pending .mp-trend-img-link::before,
+html.sk-shimmer-pending .mp-sp-tile::before,
+html.sk-shimmer-pending .mp-sp-visual::before,
+html.sk-shimmer-pending .slider-item::before,
+html.sk-shimmer-pending .boutique-top-cat-card__media::before,
+html.sk-shimmer-pending .mp-pop-cat-icon::before,
+html.sk-shimmer-pending .produit-gallery-main::before,
+html.sk-shimmer-pending .panier-item-img::before,
+html.sk-shimmer-pending .produit-card-img::before,
+html.sk-shimmer-pending .produit-cmd-img::before,
+html.sk-shimmer-pending .stock-cat-card__media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: var(--sk-grad);
+  background-size: 220% 100%;
+  animation: sk-shimmer-wave 1.4s ease-in-out infinite;
+  opacity: 1;
+  transition: opacity 0.38s ease;
+}
+
+/* Fond de remplacement pendant le chargement */
+html.sk-shimmer-pending .image-wrapper,
+html.sk-shimmer-pending .mp-card-img,
+html.sk-shimmer-pending .mp-new-card-img,
+html.sk-shimmer-pending .mp-strip-card-img,
+html.sk-shimmer-pending .mp-trend-img-link,
+html.sk-shimmer-pending .mp-sp-tile,
+html.sk-shimmer-pending .mp-sp-visual,
+html.sk-shimmer-pending .slider-item,
+html.sk-shimmer-pending .boutique-top-cat-card__media,
+html.sk-shimmer-pending .mp-pop-cat-icon,
+html.sk-shimmer-pending .produit-gallery-main,
+html.sk-shimmer-pending .panier-item-img,
+html.sk-shimmer-pending .produit-card-img,
+html.sk-shimmer-pending .produit-cmd-img,
+html.sk-shimmer-pending .stock-cat-card__media {
+  background: var(--sk-base);
+  min-height: 48px;
+}
+
+/* Images masquées tant que le conteneur n'a pas sk-loaded */
+html.sk-shimmer-pending .image-wrapper:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-card-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-new-card-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-strip-card-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-trend-img-link:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-sp-tile:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-sp-visual:not(.sk-loaded) img,
+html.sk-shimmer-pending .slider-item:not(.sk-loaded) img,
+html.sk-shimmer-pending .boutique-top-cat-card__media:not(.sk-loaded) img,
+html.sk-shimmer-pending .mp-pop-cat-icon:not(.sk-loaded) img,
+html.sk-shimmer-pending .produit-gallery-main:not(.sk-loaded) img,
+html.sk-shimmer-pending .panier-item-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .produit-card-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .produit-cmd-img:not(.sk-loaded) img,
+html.sk-shimmer-pending .stock-cat-card__media:not(.sk-loaded) img {
+  opacity: 0;
+}
+
+/* ——— RÉVÉLATION par conteneur (JS ajoute .sk-loaded) ——— */
+
+html.sk-shimmer-pending .image-wrapper.sk-loaded::before,
+html.sk-shimmer-pending .mp-card-img.sk-loaded::before,
+html.sk-shimmer-pending .mp-new-card-img.sk-loaded::before,
+html.sk-shimmer-pending .mp-strip-card-img.sk-loaded::before,
+html.sk-shimmer-pending .mp-trend-img-link.sk-loaded::before,
+html.sk-shimmer-pending .mp-sp-tile.sk-loaded::before,
+html.sk-shimmer-pending .mp-sp-visual.sk-loaded::before,
+html.sk-shimmer-pending .slider-item.sk-loaded::before,
+html.sk-shimmer-pending .boutique-top-cat-card__media.sk-loaded::before,
+html.sk-shimmer-pending .mp-pop-cat-icon.sk-loaded::before,
+html.sk-shimmer-pending .produit-gallery-main.sk-loaded::before,
+html.sk-shimmer-pending .panier-item-img.sk-loaded::before,
+html.sk-shimmer-pending .produit-card-img.sk-loaded::before,
+html.sk-shimmer-pending .produit-cmd-img.sk-loaded::before,
+html.sk-shimmer-pending .stock-cat-card__media.sk-loaded::before {
+  opacity: 0;
+  animation: none;
+}
+
+.image-wrapper.sk-loaded img,
+.mp-card-img.sk-loaded img,
+.mp-new-card-img.sk-loaded img,
+.mp-strip-card-img.sk-loaded img,
+.mp-trend-img-link.sk-loaded img,
+.mp-sp-tile.sk-loaded img,
+.mp-sp-visual.sk-loaded img,
+.slider-item.sk-loaded img,
+.boutique-top-cat-card__media.sk-loaded img,
+.mp-pop-cat-icon.sk-loaded img,
+.produit-gallery-main.sk-loaded img,
+.panier-item-img.sk-loaded img,
+.produit-card-img.sk-loaded img,
+.produit-cmd-img.sk-loaded img,
+.stock-cat-card__media.sk-loaded img {
+  opacity: 1;
+  transition: opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ——— Cartes : le texte reste visible (shimmer uniquement sur l'image) ——— */
+
+html.sk-shimmer-pending .mp-card:not(.sk-loaded) .mp-card-body,
+html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-title,
+html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-promo,
+html.sk-shimmer-pending .mp-new-card:not(.sk-loaded) .mp-new-price,
+html.sk-shimmer-pending .mp-strip-card:not(.sk-loaded) .mp-strip-body,
+html.sk-shimmer-pending .carousel:not(.sk-loaded) .produit-content,
+html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-label,
+html.sk-shimmer-pending .mp-trend-card:not(.sk-loaded) .mp-trend-sub,
+html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__name,
+html.sk-shimmer-pending .boutique-top-cat-card:not(.sk-loaded) .boutique-top-cat-card__btn {
+  visibility: visible;
+}
+
+/* Lignes squelette affichées seulement quand shimmer actif */
+html.sk-shimmer-pending .sk-card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 14px;
+}
+
+/* Cachées dès que la carte est chargée */
+html.sk-shimmer-pending .mp-card.sk-loaded .sk-card-lines,
+html.sk-shimmer-pending .mp-new-card.sk-loaded .sk-card-lines,
+html.sk-shimmer-pending .mp-strip-card.sk-loaded .sk-card-lines,
+html.sk-shimmer-pending .carousel.sk-loaded .sk-card-lines,
+html.sk-shimmer-pending .mp-trend-card.sk-loaded .sk-card-lines,
+html.sk-shimmer-pending .boutique-top-cat-card.sk-loaded .sk-card-lines {
+  display: none;
+}
+
+/* Révélation du texte avec animation */
+.mp-card.sk-loaded .mp-card-body,
+.mp-new-card.sk-loaded .mp-new-title,
+.mp-new-card.sk-loaded .mp-new-promo,
+.mp-new-card.sk-loaded .mp-new-price,
+.mp-strip-card.sk-loaded .mp-strip-body,
+.carousel.sk-loaded .produit-content,
+.mp-trend-card.sk-loaded .mp-trend-label,
+.mp-trend-card.sk-loaded .mp-trend-sub,
+.boutique-top-cat-card.sk-loaded .boutique-top-cat-card__name,
+.boutique-top-cat-card.sk-loaded .boutique-top-cat-card__btn {
+  visibility: visible;
+  animation: sk-fade-in 0.38s ease both;
+}
+
+/* ——— Lignes squelette ——— */
+
+.sk-card-lines { display: none; }
+
+.sk-line {
+  display: block;
+  height: 12px;
+  border-radius: 999px;
+}
+.sk-line--lg { width: 78%; height: 16px; }
+.sk-line--md { width: 56%; }
+.sk-line--sm { width: 38%; height: 10px; }
+
+/* ——— Accessibilité ——— */
+
+  @media (prefers-reduced-motion: reduce) {
+  html.sk-shimmer-pending .image-wrapper::before,
+  html.sk-shimmer-pending .mp-card-img::before,
+  html.sk-shimmer-pending .mp-new-card-img::before,
+  html.sk-shimmer-pending .mp-strip-card-img::before,
+  html.sk-shimmer-pending .mp-trend-img-link::before,
+  html.sk-shimmer-pending .mp-sp-tile::before,
+  html.sk-shimmer-pending .mp-sp-visual::before,
+  html.sk-shimmer-pending .slider-item::before,
+  html.sk-shimmer-pending .boutique-top-cat-card__media::before,
+  html.sk-shimmer-pending .mp-pop-cat-icon::before,
+  html.sk-shimmer-pending .produit-gallery-main::before,
+  html.sk-shimmer-pending .panier-item-img::before,
+  html.sk-shimmer-pending .produit-card-img::before,
+  html.sk-shimmer-pending .produit-cmd-img::before,
+  html.sk-shimmer-pending .stock-cat-card__media::before {
+    animation: none;
+    background: var(--sk-base);
+  }
+  .mp-card.sk-loaded .mp-card-body,
+  .carousel.sk-loaded .produit-content {
+    animation: none;
+  }
+}

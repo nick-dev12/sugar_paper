@@ -33,10 +33,6 @@ $commandes = array_filter($toutes_commandes, function($commande) {
 // Statistiques
 $total_commandes = count_commandes_by_statut();
 $en_attente = count_commandes_by_statut('en_attente');
-$confirmees = count_commandes_by_statut('confirmee');
-$livrees = count_commandes_by_statut('livree') + count_commandes_by_statut('paye');
-$prise_en_charge = count_commandes_by_statut('prise_en_charge');
-$livraison_en_cours = count_commandes_by_statut('livraison_en_cours');
 
 // Comptabilité : montant total des commandes à traiter
 $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
@@ -52,9 +48,10 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="page-commandes-index">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">
@@ -76,7 +73,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <?php endif; ?>
 
     <!-- Statistiques -->
-    <div class="commandes-stats">
+    <div class="commandes-stats commandes-stats--compact">
         <div class="stat-box">
             <h3>Total Commandes</h3>
             <div class="stat-value"><?php echo $total_commandes; ?></div>
@@ -84,18 +81,6 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         <div class="stat-box">
             <h3>En Attente</h3>
             <div class="stat-value"><?php echo $en_attente; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Prise en charge</h3>
-            <div class="stat-value"><?php echo $prise_en_charge; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Livraison en cours</h3>
-            <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
-        </div>
-        <div class="stat-box">
-            <h3>Livrées</h3>
-            <div class="stat-value"><?php echo $livrees; ?></div>
         </div>
     </div>
 
@@ -111,7 +96,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             <div class="section-title">
                 <h2><i class="fas fa-list"></i> Commandes à Traiter (<?php echo count($commandes); ?>)</h2>
             </div>
-            <div class="form-actions" style="flex-wrap: wrap;">
+            <div class="form-actions commandes-section-actions">
                 <button type="button" class="btn-primary" id="btn-commande-manuelle"
                     aria-label="Ajouter une commande manuellement">
                     <i class="fas fa-plus-circle"></i> Ajouter une commande
@@ -132,48 +117,45 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             <p>Toutes les commandes ont été traitées et livrées.</p>
         </div>
         <?php else: ?>
-        <div class="commandes-grid">
-            <?php foreach ($commandes as $commande): ?>
-            <div class="commande-item">
-                <div class="commande-header">
-                    <div class="commande-info">
-                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                        <p>
-                            <strong>Client:</strong>
-                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                            <span
-                                class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
-                        </p>
-                        <p class="commande-date">Date:
-                            <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                    </div>
-                    <span class="commande-statut statut-<?php echo $commande['statut']; ?>">
-                        <?php echo ucfirst(str_replace('_', ' ', $commande['statut'])); ?>
-                    </span>
-                </div>
-                <div class="commande-details">
-                    <div class="detail-item">
-                        <label>Montant total</label>
-                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Adresse</label>
-                        <div class="value small">
-                            <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
-                        </div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Téléphone</label>
-                        <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
-                    </div>
-                </div>
-
-                <a href="details.php?id=<?php echo $commande['id']; ?>" class="btn-view">
-                    <i class="fas fa-eye"></i> Voir les détails
-                </a>
-            </div>
-            <?php endforeach; ?>
+        <div class="commandes-table-wrap">
+            <table class="data-table commandes-data-table">
+                <colgroup>
+                    <col class="commandes-col-client">
+                    <col class="commandes-col-montant">
+                    <col class="commandes-col-actions">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th class="commandes-col-montant">Montant</th>
+                        <th class="commandes-col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($commandes as $commande): ?>
+                    <?php
+                    $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? '')) ?: '—';
+                    $telephone_aff = trim($commande['telephone_livraison'] ?? '') ?: '—';
+                    $date_aff = date('d/m/Y H:i', strtotime($commande['date_commande']));
+                    ?>
+                    <tr>
+                        <td data-label="Client">
+                            <span class="commandes-cell-nom"><?php echo htmlspecialchars($client_nom); ?></span>
+                            <span class="commandes-cell-tel"><?php echo htmlspecialchars($telephone_aff); ?></span>
+                        </td>
+                        <td data-label="Montant" class="commandes-col-montant">
+                            <span class="commandes-cell-prix"><?php echo number_format((float) $commande['montant_total'], 0, ',', ' '); ?> FCFA</span>
+                            <span class="commandes-cell-date"><?php echo htmlspecialchars($date_aff); ?></span>
+                        </td>
+                        <td data-label="Actions" class="commandes-col-actions">
+                            <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
+                                <i class="fas fa-eye" aria-hidden="true"></i> Voir
+                            </a>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
         <?php endif; ?>
     </section>

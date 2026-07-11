@@ -1,0 +1,243 @@
+/**
+ * Page activité employé / compte admin — palette variables.css (#3564a6 · #FF6B35)
+ */
+
+.page-comptes .ea-hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 28px 32px;
+  margin-bottom: 28px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    var(--bleu-fonce) 0%,
+    var(--couleur-dominante) 42%,
+    var(--bleu-clair) 100%
+  );
+  color: var(--texte-clair);
+  box-shadow: var(--ombre-gourmande);
+  position: relative;
+  overflow: hidden;
+}
+
+.page-comptes .ea-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 90% 15%,
+    rgba(255, 107, 53, 0.35) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+.page-comptes .ea-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.page-comptes .ea-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 3px solid rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  font-family: var(--font-titres);
+}
+
+.page-comptes .ea-hero h2 {
+  margin: 0 0 8px;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.page-comptes .ea-hero-meta {
+  font-size: 0.95rem;
+  opacity: 0.96;
+  line-height: 1.5;
+}
+
+.page-comptes .ea-hero-meta a {
+  color: var(--texte-clair);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.page-comptes .ea-hero-meta a:hover {
+  opacity: 0.9;
+}
+
+.page-comptes .ea-hero-muted {
+  opacity: 0.92;
+}
+
+.page-comptes .ea-hero .role-badge {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: none !important;
+}
+
+.page-comptes .ea-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.page-comptes .ea-kpi {
+  background: var(--fond-principal);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  box-shadow: var(--glass-shadow);
+  border-top: 3px solid var(--couleur-dominante);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.page-comptes .ea-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--ombre-douce);
+}
+
+.page-comptes .ea-kpi .kpi-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-moyen);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-comptes .ea-kpi .kpi-label i {
+  color: var(--accent-promo);
+  opacity: 0.95;
+}
+
+.page-comptes .ea-kpi .kpi-val {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--titres);
+  font-family: var(--font-titres);
+}
+
+.page-comptes .ea-kpi .ea-kpi-sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gris-moyen);
+}
+
+.page-comptes .ea-section-title {
+  font-size: 1.15rem;
+  margin: 0 0 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border-input);
+  color: var(--titres);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-comptes .ea-section-title i {
+  color: var(--couleur-dominante);
+}
+
+.page-comptes .ea-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.page-comptes .ea-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--fond-principal);
+  border: 1px solid var(--glass-border);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.page-comptes .ea-action:hover {
+  border-color: var(--border-input-focus);
+  box-shadow: var(--ombre-douce);
+  transform: translateY(-2px);
+}
+
+.page-comptes .ea-action-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(
+    145deg,
+    var(--bleu-pale) 0%,
+    var(--orange-pale) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--couleur-dominante);
+  font-size: 1.1rem;
+}
+
+.page-comptes .ea-action strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+  color: var(--titres);
+}
+
+.page-comptes .ea-action small {
+  font-size: 12px;
+  color: var(--gris-moyen);
+  line-height: 1.4;
+}
+
+.page-comptes .ea-action .chev {
+  margin-left: auto;
+  align-self: center;
+  color: var(--accent-promo);
+  opacity: 0.9;
+}
+
+.page-comptes .ea-note {
+  font-size: 13px;
+  color: var(--texte-fonce);
+  line-height: 1.65;
+  max-width: 900px;
+  padding: 18px 20px;
+  background: var(--bleu-pale);
+  border-radius: 14px;
+  border: 1px solid var(--border-input);
+}
+
+.page-comptes .ea-note code {
+  font-size: 12px;
+  background: var(--noir-pale);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .page-comptes .ea-hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .page-comptes .ea-avatar {
+    margin: 0 auto;
+  }
+}

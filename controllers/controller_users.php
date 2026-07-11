@@ -28,6 +28,11 @@ function process_unified_login() {
         return ['success' => false, 'message' => '', 'type' => null, 'admin' => null, 'user' => null];
     }
 
+    $login_mode = isset($_POST['login_mode']) ? trim((string) $_POST['login_mode']) : 'phone';
+    if ($login_mode === 'phone') {
+        return process_unified_phone_login();
+    }
+
     $email = isset($_POST['email']) ? trim($_POST['email']) : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
     $accepte_conditions = isset($_POST['accepte_conditions']) && $_POST['accepte_conditions'] == '1';
@@ -45,14 +50,12 @@ function process_unified_login() {
         return ['success' => false, 'message' => implode('<br>', $errors), 'type' => null, 'admin' => null, 'user' => null];
     }
 
-    // 1. Vérifier d'abord la table admin
     $admin = get_admin_by_email($email);
     if ($admin && $admin['statut'] === 'actif' && password_verify($password, $admin['password'])) {
         update_admin_last_login($admin['id']);
         return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'admin', 'admin' => $admin, 'user' => null];
     }
 
-    // 2. Sinon vérifier la table users
     $user = get_user_by_email($email);
     if ($user) {
         if ($user['statut'] !== 'actif') {
@@ -60,19 +63,51 @@ function process_unified_login() {
         } elseif (!$accepte_conditions) {
             $errors[] = 'Vous devez accepter les conditions d\'utilisation pour vous connecter.';
         } elseif (password_verify($password, $user['password'])) {
-            if ($accepte_conditions) {
-                update_user_accepte_conditions($user['id'], true);
-            }
+            update_user_accepte_conditions($user['id'], true);
             return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user];
         } else {
-            $errors[] = 'Email ou mot de passe incorrect.';
+            $errors[] = 'Email ou code incorrect.';
         }
     } else {
-        $errors[] = 'Email ou mot de passe incorrect.';
+        $errors[] = 'Email ou code incorrect.';
     }
 
     $message = !empty($errors) ? implode('<br>', $errors) : 'Une erreur est survenue.';
     return ['success' => false, 'message' => $message, 'type' => null, 'admin' => null, 'user' => null];
+}
+
+/**
+ * Connexion par téléphone + mot de passe (ou code PIN à 6 chiffres).
+ */
+function process_unified_phone_login() {
+    $tel = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
+    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $accepte_conditions = isset($_POST['accepte_conditions_phone']) && $_POST['accepte_conditions_phone'] === '1';
+
+    $digits = users_normalize_phone_digits($tel);
+    if ($digits === '') {
+        return ['success' => false, 'message' => 'Le numéro de téléphone est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+    if ($pin === '') {
+        return ['success' => false, 'message' => 'Le mot de passe est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+
+    $user = get_user_by_telephone($tel);
+    if (!$user) {
+        return ['success' => false, 'message' => 'Téléphone ou mot de passe incorrect.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+    if (($user['statut'] ?? '') !== 'actif') {
+        return ['success' => false, 'message' => 'Téléphone ou mot de passe incorrect.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+    if (!$accepte_conditions) {
+        return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation pour vous connecter.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+    if (!password_verify($pin, $user['password'])) {
+        return ['success' => false, 'message' => 'Téléphone ou mot de passe incorrect.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+
+    update_user_accepte_conditions($user['id'], true);
+    return ['success' => true, 'message' => 'Connexion réussie !', 'type' => 'user', 'admin' => null, 'user' => $user];
 }
 
 /**
@@ -91,63 +126,49 @@ function process_user_inscription() {
     
     // Récupération et validation des données
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
-    $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
-    $email = isset($_POST['email']) ? trim($_POST['email']) : '';
-    $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
-    $password = isset($_POST['password']) ? $_POST['password'] : '';
-    $password_confirm = isset($_POST['password_confirm']) ? $_POST['password_confirm'] : '';
-    
-    // Validation du nom
+    $email_raw = isset($_POST['email']) ? trim((string) $_POST['email']) : '';
+    $email = $email_raw;
+    $telephone_raw = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
+    $telephone_digits = users_normalize_phone_digits($telephone_raw);
+    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $pin_confirm = isset($_POST['pin_confirm']) ? (string) $_POST['pin_confirm'] : '';
+    $prenom = '';
+
     if (empty($nom)) {
         $errors[] = 'Le nom est obligatoire.';
     } elseif (strlen($nom) < 2) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
     }
-    
-    // Validation du prénom
-    if (empty($prenom)) {
-        $errors[] = 'Le prénom est obligatoire.';
-    } elseif (strlen($prenom) < 2) {
-        $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
+
+    if ($email !== '') {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'L\'email n\'est pas valide.';
+        } elseif (user_email_exists($email)) {
+            $errors[] = 'Cet email est déjà utilisé.';
+        }
     }
-    
-    // Validation de l'email
-    if (empty($email)) {
-        $errors[] = 'L\'email est obligatoire.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'L\'email n\'est pas valide.';
-    } elseif (user_email_exists($email)) {
-        $errors[] = 'Cet email est déjà utilisé.';
-    }
-    
-    // Validation du téléphone
-    if (empty($telephone)) {
+
+    if ($telephone_raw === '' || $telephone_digits === '') {
         $errors[] = 'Le téléphone est obligatoire.';
-    } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
-        $errors[] = 'Le format du téléphone n\'est pas valide.';
+    } elseif (strlen($telephone_digits) < 8) {
+        $errors[] = 'Le numéro de téléphone semble incomplet.';
+    } elseif (get_user_by_telephone($telephone_digits)) {
+        $errors[] = 'Ce numéro de téléphone est déjà enregistré.';
     }
-    
-    // Validation du mot de passe
-    if (empty($password)) {
-        $errors[] = 'Le mot de passe est obligatoire.';
-    } elseif (strlen($password) < 6) {
-        $errors[] = 'Le mot de passe doit contenir au moins 6 caractères.';
+
+    if ($pin === '' || $pin_confirm === '') {
+        $errors[] = 'Le code PIN et sa confirmation sont obligatoires.';
+    } elseif (!preg_match('/^\d{6}$/', $pin)) {
+        $errors[] = 'Le code PIN doit comporter exactement 6 chiffres.';
+    } elseif ($pin !== $pin_confirm) {
+        $errors[] = 'Les deux saisies du code PIN ne correspondent pas.';
     }
-    
-    // Validation de la confirmation du mot de passe
-    if (empty($password_confirm)) {
-        $errors[] = 'La confirmation du mot de passe est obligatoire.';
-    } elseif ($password !== $password_confirm) {
-        $errors[] = 'Les mots de passe ne correspondent pas.';
-    }
-    
-    // Si aucune erreur, procéder à l'inscription
+
     if (empty($errors)) {
-        // Hashage du mot de passe
-        $password_hash = password_hash($password, PASSWORD_BCRYPT);
-        
-        // Création de l'utilisateur
-        $user_id = create_user($nom, $prenom, $email, $telephone, $password_hash);
+        $password_hash = password_hash($pin, PASSWORD_BCRYPT);
+        $email_db = $email !== '' ? $email : null;
+
+        $user_id = create_user($nom, $prenom, $email_db, $telephone_digits, $password_hash);
         
         if ($user_id) {
             $success = true;

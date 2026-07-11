@@ -6,14 +6,17 @@
 
 session_start();
 
-// Si l'admin est déjà connecté, rediriger vers le dashboard
+require_once __DIR__ . '/../models/model_admin.php';
+
+// Si l'admin est déjà connecté, rediriger vers l'espace par défaut du rôle
 if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {
-    header('Location: dashboard.php');
+    require_once __DIR__ . '/../includes/admin_route_access.php';
+    $target = admin_role_default_redirect_path($_SESSION['admin_role'] ?? 'admin');
+    header('Location: ' . $target);
     exit;
 }
 
 // Vérifier si un admin existe, sinon rediriger vers l'inscription
-require_once __DIR__ . '/../models/model_admin.php';
 if (!admin_exists()) {
     header('Location: inscription-admin.php');
     exit;
@@ -30,9 +33,11 @@ if (isset($result['success']) && $result['success'] && $result['admin']) {
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
     $_SESSION['admin_email'] = $result['admin']['email'];
     $_SESSION['admin_statut'] = $result['admin']['statut'];
-    $_SESSION['admin_role'] = $result['admin']['role'] ?? 'admin';
+    $_SESSION['admin_role'] = normalize_admin_role($result['admin']['role'] ?? 'admin');
 
-    header('Location: dashboard.php');
+    require_once __DIR__ . '/../includes/admin_route_access.php';
+    $target = admin_role_default_redirect_path($_SESSION['admin_role']);
+    header('Location: ' . $target);
     exit;
 }
 
@@ -54,9 +59,6 @@ if (isset($_SESSION['inscription_success'])) {
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;

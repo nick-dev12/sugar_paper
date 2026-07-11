@@ -26,6 +26,9 @@ $commandes_livrees = array_filter($commandes, function($commande) {
 // Commandes personnalisées terminées
 $commandes_perso_terminees = get_commandes_personnalisees_by_user($_SESSION['user_id'], 'terminee');
 $statuts_labels = get_statuts_commande_personnalisee();
+
+$nb_commandes_livrees = count($commandes_livrees);
+$nb_commandes_perso_terminees = count($commandes_perso_terminees);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -38,20 +41,52 @@ $statuts_labels = get_statuts_commande_personnalisee();
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-produits-livres.css<?php echo asset_version_query(); ?>">
 </head>
-<body>
+<body class="user-page-produits-livres">
     <?php include 'includes/user_nav.php'; ?>
-    
+
+    <div class="continue-shopping-banner">
+        <div class="continue-shopping-content">
+            <div class="continue-shopping-icon">
+                <i class="fas fa-shopping-basket" aria-hidden="true"></i>
+            </div>
+            <div class="continue-shopping-text">
+                <h2>Commander à nouveau</h2>
+                <p>Retrouvez vos produits reçus ou passez une nouvelle commande dans notre catalogue.</p>
+            </div>
+            <div class="continue-shopping-actions">
+                <a href="/produits.php" class="continue-shopping-btn">
+                    <i class="fas fa-store" aria-hidden="true"></i> Voir les produits
+                </a>
+                <a href="mes-commandes.php" class="continue-shopping-btn continue-shopping-btn--secondary">
+                    <i class="fas fa-shopping-bag" aria-hidden="true"></i> Mes commandes actives
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="content-header">
         <h1><i class="fas fa-check-circle"></i> Commandes Livrées</h1>
-        <p class="content-header-desc">
-            Toutes les commandes que vous avez reçues
-        </p>
+        <p class="content-header-desc">Toutes les commandes que vous avez reçues</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card--livrees">
+            <div class="stat-icon"><i class="fas fa-box" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo $nb_commandes_livrees; ?></div>
+            <div class="stat-label">Commandes reçues</div>
+        </div>
+        <div class="stat-card stat-card--perso">
+            <div class="stat-icon"><i class="fas fa-palette" aria-hidden="true"></i></div>
+            <div class="stat-value"><?php echo $nb_commandes_perso_terminees; ?></div>
+            <div class="stat-label">Demandes personnalisées reçues</div>
+        </div>
     </div>
 
     <section class="content-section">
         <div class="section-title">
-            <h2><i class="fas fa-box"></i> Mes Commandes Reçues (<?php echo count($commandes_livrees); ?>)</h2>
+            <h2><i class="fas fa-box"></i> Mes Commandes Reçues (<?php echo $nb_commandes_livrees; ?>)</h2>
         </div>
 
         <?php if (empty($commandes_livrees)): ?>
@@ -66,7 +101,7 @@ $statuts_labels = get_statuts_commande_personnalisee();
         <?php else: ?>
             <div class="commandes-grid">
                 <?php foreach ($commandes_livrees as $commande): ?>
-                    <div class="commande-item">
+                    <div class="commande-item commande-item-livree">
                         <div class="commande-header">
                             <div class="commande-info">
                                 <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
@@ -83,18 +118,18 @@ $statuts_labels = get_statuts_commande_personnalisee();
                             </div>
                             <div class="detail-item">
                                 <label>Adresse</label>
-                                <div class="value" style="font-size: 11px; max-width: 150px; text-align: right; word-break: break-word;">
+                                <div class="value value--address">
                                     <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
                                 </div>
                             </div>
                             <div class="detail-item">
                                 <label>Téléphone</label>
-                                <div class="value" style="font-size: 12px;"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
+                                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison']); ?></div>
                             </div>
                             <?php if ($commande['date_livraison']): ?>
                                 <div class="detail-item">
                                     <label>Date livraison</label>
-                                    <div class="value" style="font-size: 12px;"><?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?></div>
+                                    <div class="value"><?php echo date('d/m/Y', strtotime($commande['date_livraison'])); ?></div>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -111,8 +146,8 @@ $statuts_labels = get_statuts_commande_personnalisee();
         <?php endif; ?>
 
         <!-- Section Commandes personnalisées terminées -->
-        <div class="section-title" style="margin-top: 40px;">
-            <h2><i class="fas fa-palette"></i> Commandes personnalisées reçues (<?php echo count($commandes_perso_terminees); ?>)</h2>
+        <div class="section-title section-title--spaced">
+            <h2><i class="fas fa-palette"></i> Commandes personnalisées reçues (<?php echo $nb_commandes_perso_terminees; ?>)</h2>
         </div>
 
         <?php if (empty($commandes_perso_terminees)): ?>
@@ -139,7 +174,7 @@ $statuts_labels = get_statuts_commande_personnalisee();
                         <div class="commande-details">
                             <div class="detail-item">
                                 <label>Description</label>
-                                <div class="value" style="font-size: 13px; line-height: 1.4;">
+                                <div class="value value--description">
                                     <?php echo nl2br(htmlspecialchars(substr($cp['description'], 0, 120))); ?><?php echo strlen($cp['description']) > 120 ? '...' : ''; ?>
                                 </div>
                             </div>

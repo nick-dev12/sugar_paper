@@ -8,6 +8,50 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Rôles autorisés pour les comptes admin
+ */
+function admin_roles_valides() {
+    return ['admin', 'utilisateur', 'livreur'];
+}
+
+/**
+ * Libellé affichage d'un rôle
+ */
+function admin_role_label($role) {
+    $labels = [
+        'admin' => 'Administrateur',
+        'utilisateur' => 'Utilisateur',
+        'livreur' => 'Livreur',
+        // Anciens rôles (affichage après migration)
+        'gestion_stock' => 'Utilisateur',
+        'commercial' => 'Utilisateur',
+        'commercial_general' => 'Utilisateur',
+        'informaticien' => 'Utilisateur',
+        'developpeur' => 'Utilisateur',
+        'comptabilite' => 'Utilisateur',
+        'contable' => 'Utilisateur',
+        'rh' => 'Utilisateur',
+        'caissier' => 'Utilisateur',
+    ];
+    $r = normalize_admin_role($role);
+    return isset($labels[$r]) ? $labels[$r] : $r;
+}
+
+/**
+ * Normalise un rôle (legacy gestion_stock → utilisateur)
+ */
+function normalize_admin_role($role) {
+    $r = (string) $role;
+    if ($r === 'gestion_stock') {
+        return 'utilisateur';
+    }
+    if (in_array($r, ['commercial', 'commercial_general', 'informaticien', 'developpeur', 'comptabilite', 'contable', 'rh', 'caissier'], true)) {
+        return 'utilisateur';
+    }
+    return in_array($r, admin_roles_valides(), true) ? $r : 'utilisateur';
+}
+
+/**
  * Vérifie si un administrateur existe déjà avec cet email
  * @param string $email L'email à vérifier
  * @return bool True si l'email existe, False sinon
@@ -52,14 +96,14 @@ function admin_exists()
  * @param string $prenom Le prénom de l'administrateur
  * @param string $email L'email de l'administrateur
  * @param string $password_hash Le mot de passe hashé
- * @param string $role Rôle : 'admin' ou 'utilisateur' (défaut: 'utilisateur')
+ * @param string $role Voir admin_roles_valides() (défaut: utilisateur)
  * @return bool|int L'ID de l'admin créé en cas de succès, False en cas d'échec
  */
 function create_admin($nom, $prenom, $email, $password_hash, $role = 'utilisateur')
 {
     global $db;
 
-    $role = in_array($role, ['admin', 'utilisateur']) ? $role : 'utilisateur';
+    $role = normalize_admin_role($role);
 
     try {
         $stmt = $db->prepare("
@@ -80,6 +124,92 @@ function create_admin($nom, $prenom, $email, $password_hash, $role = 'utilisateu
         }
 
         return false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Indique si une colonne existe dans la table admin.
+ */
+function admin_has_column($column)
+{
+    static $cache = [];
+    global $db;
+
+    $column = trim((string) $column);
+    if ($column === '') {
+        return false;
+    }
+    if (array_key_exists($column, $cache)) {
+        return $cache[$column];
+    }
+    if (!isset($db) || !($db instanceof PDO)) {
+        $cache[$column] = false;
+        return false;
+    }
+
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM admin LIKE " . $db->quote($column));
+        $cache[$column] = (bool) $stmt->fetch(PDO::FETCH_ASSOC);
+        return $cache[$column];
+    } catch (PDOException $e) {
+        $cache[$column] = false;
+        return false;
+    }
+}
+
+/**
+ * Récupère un admin lié à un UID Firebase.
+ */
+function get_admin_by_firebase_uid($firebase_uid)
+{
+    global $db;
+
+    $firebase_uid = trim((string) $firebase_uid);
+    if ($firebase_uid === '' || !admin_has_column('firebase_uid')) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("SELECT * FROM admin WHERE firebase_uid = :uid LIMIT 1");
+        $stmt->execute(['uid' => $firebase_uid]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $admin ? $admin : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Lie un compte admin existant à Firebase/Google.
+ */
+function update_admin_google_identity($admin_id, $firebase_uid, $auth_provider = 'google')
+{
+    global $db;
+
+    if (!admin_has_column('firebase_uid')) {
+        return true;
+    }
+
+    $auth_provider = trim((string) $auth_provider);
+    if ($auth_provider === '') {
+        $auth_provider = 'google';
+    }
+
+    $sets = ['firebase_uid = :firebase_uid'];
+    $params = [
+        'id' => (int) $admin_id,
+        'firebase_uid' => trim((string) $firebase_uid),
+    ];
+    if (admin_has_column('auth_provider')) {
+        $sets[] = 'auth_provider = :auth_provider';
+        $params['auth_provider'] = $auth_provider;
+    }
+
+    try {
+        $stmt = $db->prepare('UPDATE admin SET ' . implode(', ', $sets) . ' WHERE id = :id');
+        return $stmt->execute($params);
     } catch (PDOException $e) {
         return false;
     }
@@ -277,6 +407,28 @@ function get_all_admin_emails()
 }
 
 /**
+ * Destinataires des alertes stock : administrateurs + gestion des stocks + commerciaux (comptes actifs).
+ *
+ * @return list<string>
+ */
+function get_admin_emails_alerte_stock()
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare(
+            "SELECT DISTINCT email FROM admin WHERE statut = 'actif' AND email IS NOT NULL
+             AND TRIM(email) != '' AND COALESCE(role, 'admin') IN ('admin','gestion_stock','commercial','commercial_general','informaticien','developpeur')"
+        );
+        $stmt->execute();
+        $cols = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        return $cols ? array_values(array_filter(array_map('trim', $cols))) : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Récupère tous les comptes administrateurs
  * @return array Liste des admins
  */
@@ -300,16 +452,61 @@ function get_all_admins()
 }
 
 /**
+ * Comptes admin filtrés par rôle.
+ */
+function get_admins_by_role($role) {
+    global $db;
+    $role = normalize_admin_role($role);
+    try {
+        $stmt = $db->prepare("
+            SELECT id, nom, prenom, email, date_creation, derniere_connexion, statut, role
+            FROM admin
+            WHERE role = :role
+            ORDER BY nom ASC, prenom ASC
+        ");
+        $stmt->execute(['role' => $role]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Comptes admin éligibles pour la saisie d’absences : actifs, rôle différent de « admin ».
+ * (Les comptes au rôle administrateur technique ne sont pas listés comme « absents ».)
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function get_admins_eligibles_absences()
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT id, nom, prenom, email, statut, COALESCE(role, 'admin') AS role
+            FROM admin
+            WHERE statut = 'actif'
+              AND (role IS NULL OR role != 'admin')
+            ORDER BY nom ASC, prenom ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Met à jour le rôle d'un administrateur
  * @param int $id ID de l'admin
- * @param string $role 'admin' ou 'utilisateur'
+ * @param string $role Voir admin_roles_valides()
  * @return bool
  */
 function update_admin_role($id, $role)
 {
     global $db;
 
-    if (!in_array($role, ['admin', 'utilisateur'])) {
+    if (!in_array($role, admin_roles_valides(), true)) {
         return false;
     }
 
@@ -340,6 +537,75 @@ function update_admin_statut($id, $statut)
         return $stmt->execute(['id' => $id, 'statut' => $statut]);
     } catch (PDOException $e) {
         return false;
+    }
+}
+
+/**
+ * Nombre de ventes caisse où ce compte est le vendeur (admin_id) — blocage si > 0 (FK RESTRICT).
+ */
+function admin_count_caisse_ventes_as_vendeur($admin_id)
+{
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id <= 0) {
+        return 0;
+    }
+    try {
+        $st = $db->query("SHOW TABLES LIKE 'caisse_ventes'");
+        if (!$st || $st->rowCount() === 0) {
+            return 0;
+        }
+        $stmt = $db->prepare('SELECT COUNT(*) FROM caisse_ventes WHERE admin_id = :id');
+        $stmt->execute(['id' => $admin_id]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Supprime définitivement un compte admin (sécurité : compte inactif uniquement, pas le dernier, pas si ventes caisse vendeur).
+ *
+ * @return array{ok:bool, error?:string}
+ */
+function delete_admin_account($admin_id)
+{
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id <= 0) {
+        return ['ok' => false, 'error' => 'Identifiant invalide.'];
+    }
+
+    try {
+        $stmt = $db->query('SELECT COUNT(*) FROM admin');
+        $total = (int) $stmt->fetchColumn();
+        if ($total <= 1) {
+            return ['ok' => false, 'error' => 'Impossible de supprimer le dernier compte d’accès.'];
+        }
+
+        $chk = $db->prepare('SELECT id, statut FROM admin WHERE id = :id LIMIT 1');
+        $chk->execute(['id' => $admin_id]);
+        $row = $chk->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return ['ok' => false, 'error' => 'Compte introuvable.'];
+        }
+        if (($row['statut'] ?? '') !== 'inactif') {
+            return ['ok' => false, 'error' => 'Désactivez d’abord ce compte, puis seulement vous pourrez le supprimer définitivement.'];
+        }
+
+        if (admin_count_caisse_ventes_as_vendeur($admin_id) > 0) {
+            return ['ok' => false, 'error' => 'Impossible de supprimer ce compte : il est auteur de tickets / ventes caisse.'];
+        }
+
+        $del = $db->prepare('DELETE FROM admin WHERE id = :id');
+        $del->execute(['id' => $admin_id]);
+        if ($del->rowCount() !== 1) {
+            return ['ok' => false, 'error' => 'Suppression impossible.'];
+        }
+        return ['ok' => true];
+    } catch (PDOException $e) {
+        error_log('[delete_admin_account] ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Suppression impossible (données liées ou erreur technique).'];
     }
 }
 

@@ -1,0 +1,113 @@
+# =============================================================================
+# Fichiers sensibles — NE JAMAIS committer (clés API, BDD, Firebase, signatures)
+# =============================================================================
+
+# --- Firebase / Google (clés API, OAuth, FCM) ---
+config/firebase_config.php
+config/firebase_server.php
+firebase-messaging-sw.js
+colobane/lib/firebase_options.dart
+colobane/lib/config/firebase_auth_config.dart
+
+# Exemples versionnés (sans secrets)
+!config/firebase_config.example.php
+!config/firebase_server.example.php
+!colobane/lib/config/firebase_auth_config.example.dart
+!colobane/lib/firebase_options.example.dart
+
+# Service Worker FCM : regénérer après déploiement
+#   php scripts/sync_firebase_sw.php
+
+# Google Services (Android / iOS) — clés API embarquées
+google-services.json
+**/google-services.json
+!**/google-services.json.example
+GoogleService-Info.plist
+**/GoogleService-Info.plist
+
+# Clés privées Firebase (compte de service — secret serveur)
+sugar-paper-*.json
+gestion-scolaire-*.json
+colobanes-*.json
+colobanes-firebase-adminsdk-*.json
+*-firebase-adminsdk-*.json
+*firebase*credentials*.json
+*service*account*.json
+*serviceAccount*.json
+
+# --- Apple Sign In (clés privées) ---
+AuthKey_*.p8
+*.p8
+
+# --- Base de données (identifiants) ---
+conn/conn.php
+conn.php
+
+# --- Configuration site / e-mail (peut contenir mots de passe SMTP, clés) ---
+config/emailjs.php
+config/email.php
+config/site.php
+config/assets.php
+
+# Modération images (clés Sightengine / Google Vision)
+config/image_moderation.php
+config/login_rate_secret.php
+
+# Exemples config (sans secrets)
+!config/*.example.php
+!config/email.example.php
+!config/site.example.php
+
+# --- Variables d'environnement ---
+.env
+.env.*
+!.env.example
+
+# --- Android Flutter (keystore / signatures release) ---
+colobane/android/key.properties
+colobane/android/**/*.jks
+colobane/android/**/*.keystore
+colobane/android/app/*.jks
+colobane/android/app/*.keystore
+
+# =============================================================================
+# Fichiers générés / uploads / logs
+# =============================================================================
+
+upload/
+uploads/
+
+*.log
+logs/
+# Journal d'audit super admin (code PHP, pas des fichiers de log serveur)
+!super_admin/logs/
+!super_admin/logs/**
+cache/
+tmp/
+temp/
+storage/email_queue/pending/*.json
+storage/email_queue/failed/*.json
+storage/email_queue/worker.lock
+error_log
+**/error_log
+
+# =============================================================================
+# IDE, OS, archives locales
+# =============================================================================
+
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+colobane.zip
+
+# Build Flutter / Android (artefacts locaux)
+colobane/build/
+colobane/.dart_tool/
+colobane/android/.gradle/

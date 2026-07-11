@@ -67,70 +67,10 @@ if (!empty($produits)) {
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .admin-filters-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: end;
-            margin-bottom: 20px;
-            padding: 16px;
-            background: #fff;
-            border: 1px solid #ececec;
-            border-radius: 12px;
-        }
-
-        .admin-filter-field {
-            flex: 1 1 220px;
-        }
-
-        .admin-filter-field label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #6b2f20;
-        }
-
-        .admin-filter-field input,
-        .admin-filter-field select {
-            width: 100%;
-            padding: 11px 14px;
-            border: 1px solid #d9d9d9;
-            border-radius: 10px;
-            background: #fff;
-        }
-
-        .admin-filter-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-filter-reset {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 11px 16px;
-            border-radius: 10px;
-            border: 1px solid #d9d9d9;
-            color: #6b2f20;
-            background: #fff;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .produit-card-linkable {
-            cursor: pointer;
-        }
-
-        .produit-card-linkable:hover .produit-card-nom {
-            color: #c26638;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/admin-produits-index.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="page-produits-index">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">
@@ -153,23 +93,25 @@ if (!empty($produits)) {
             <h2><i class="fas fa-box"></i> Tous les Produits (<?php echo count($produits); ?>)</h2>
         </div>
 
-        <form method="GET" action="" class="admin-filters-bar">
-            <div class="admin-filter-field">
-                <label for="recherche">Recherche</label>
-                <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
-                    value="<?php echo htmlspecialchars($recherche); ?>">
-            </div>
-            <div class="admin-filter-field">
-                <label for="categorie_id">Catégorie</label>
-                <select id="categorie_id" name="categorie_id">
-                    <option value="0">Toutes les catégories</option>
-                    <?php foreach ($categories as $categorie): ?>
-                        <option value="<?php echo (int) $categorie['id']; ?>"
-                            <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($categorie['nom']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+        <form method="GET" action="" class="admin-filters-bar admin-filters-bar--produits">
+            <div class="admin-filters-fields-row">
+                <div class="admin-filter-field admin-filter-field--search">
+                    <label for="recherche">Recherche</label>
+                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
+                        value="<?php echo htmlspecialchars($recherche); ?>">
+                </div>
+                <div class="admin-filter-field admin-filter-field--categorie">
+                    <label for="categorie_id">Catégorie</label>
+                    <select id="categorie_id" name="categorie_id">
+                        <option value="0">Toutes</option>
+                        <?php foreach ($categories as $categorie): ?>
+                            <option value="<?php echo (int) $categorie['id']; ?>"
+                                <?php echo $categorie_id === (int) $categorie['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($categorie['nom']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
             </div>
             <div class="admin-filter-actions">
                 <button type="submit" class="btn-primary">
@@ -193,7 +135,7 @@ if (!empty($produits)) {
             <div class="produits-grid">
                 <?php foreach ($produits as $produit): ?>
                     <div class="produit-card produit-card-linkable"
-                        data-href="modifier.php?id=<?php echo (int) $produit['id']; ?>">
+                        data-href="ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                         <?php
                         $statut_class = 'statut-actif';
                         if ($produit['statut'] == 'inactif') {
@@ -226,9 +168,6 @@ if (!empty($produits)) {
 
                             </p>
                             <div class="produit-card-actions">
-                                <a href="ajuster-stock.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-stock" title="Ajuster le stock">
-                                    <i class="fas fa-boxes-stacked"></i> Stock
-                                </a>
                                 <a href="modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
                                     <i class="fas fa-edit"></i> Modifier
                                 </a>

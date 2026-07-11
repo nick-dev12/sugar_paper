@@ -5,6 +5,22 @@
  */
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/fiscal_tva.php';
+
+function devis_remise_globale_column_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $db->query('SELECT remise_globale_pct FROM devis LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
 
 /**
  * Génère un numéro de devis unique (format DEV + 5 chiffres)
@@ -35,13 +51,16 @@ function generate_numero_devis() {
  * @param int|null $user_id
  * @return array|false ['success'=>true, 'devis_id'=>int, 'numero_devis'=>string] ou false
  */
-function create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $user_id = null) {
+function create_devis($items, $client_nom, $client_prenom, $client_telephone, $adresse_livraison, $client_email = null, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $user_id = null, $remise_globale_pct = 0) {
     global $db;
 
-    if (empty($items) || empty(trim($client_nom)) || empty(trim($client_prenom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
+    if (empty($items) || empty(trim($client_nom)) || empty(trim($client_telephone)) || empty(trim($adresse_livraison))) {
         return false;
     }
 
+    $client_prenom = trim($client_prenom);
+
+    $remise_globale_pct = min(100, max(0, (float) $remise_globale_pct));
     $montant_total = 0;
     foreach ($items as $it) {
         $qte = (int) ($it['quantite'] ?? 1);
@@ -50,6 +69,7 @@ function create_devis($items, $client_nom, $client_prenom, $client_telephone, $a
     }
     $frais_livraison = (float) ($frais_livraison ?? 0);
     $montant_total += $frais_livraison;
+    $montant_total = fiscal_apply_remise_globale($montant_total, $remise_globale_pct);
 
     $numero = generate_numero_devis();
     try {
@@ -73,7 +93,7 @@ function create_devis($items, $client_nom, $client_prenom, $client_telephone, $a
         $stmt->execute([
             'numero_devis' => $numero,
             'client_nom' => trim($client_nom),
-            'client_prenom' => trim($client_prenom),
+            'client_prenom' => $client_prenom,
             'client_telephone' => trim($client_telephone),
             'client_email' => $client_email && trim($client_email) !== '' ? trim($client_email) : null,
             'adresse_livraison' => trim($adresse_livraison),
@@ -85,6 +105,13 @@ function create_devis($items, $client_nom, $client_prenom, $client_telephone, $a
         ]);
         $devis_id = (int) $db->lastInsertId();
         if ($devis_id <= 0) return false;
+
+        if (devis_remise_globale_column_ok() && $remise_globale_pct > 0) {
+            $db->prepare('UPDATE devis SET remise_globale_pct = :r WHERE id = :id')->execute([
+                'r' => $remise_globale_pct,
+                'id' => $devis_id,
+            ]);
+        }
 
         $stmt_prod = $db->prepare("
             INSERT INTO devis_produits (devis_id, produit_id, nom_produit, quantite, prix_unitaire, prix_total)
@@ -134,6 +161,58 @@ function get_all_devis($statut = null) {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Nombre total de devis.
+ */
+function count_all_devis($statut = null) {
+    global $db;
+    try {
+        $sql = 'SELECT COUNT(*) FROM devis WHERE 1=1';
+        $params = [];
+        if ($statut) {
+            $sql .= ' AND statut = :statut';
+            $params['statut'] = $statut;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
+ * Liste paginée des devis.
+ *
+ * @return list<array<string, mixed>>
+ */
+function get_all_devis_paginated($page = 1, $per_page = 40, $statut = null) {
+    global $db;
+    $page = max(1, (int) $page);
+    $per_page = max(1, min(100, (int) $per_page));
+    $offset = ($page - 1) * $per_page;
+    try {
+        $sql = 'SELECT d.* FROM devis d WHERE 1=1';
+        $params = [];
+        if ($statut) {
+            $sql .= ' AND d.statut = :statut';
+            $params['statut'] = $statut;
+        }
+        $sql .= ' ORDER BY d.date_creation DESC, d.id DESC LIMIT :lim OFFSET :off';
+        $stmt = $db->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->bindValue(':lim', $per_page, PDO::PARAM_INT);
+        $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        error_log('[get_all_devis_paginated] ' . $e->getMessage());
         return [];
     }
 }
@@ -194,6 +273,11 @@ function update_devis($devis_id, $items, $infos) {
     $devis_id = (int) $devis_id;
     if ($devis_id <= 0) return false;
 
+    $devis = get_devis_by_id($devis_id);
+    if (!$devis || ($devis['statut'] ?? '') !== 'brouillon') {
+        return false;
+    }
+
     try {
         $db->beginTransaction();
 
@@ -205,6 +289,8 @@ function update_devis($devis_id, $items, $infos) {
         }
         $frais = (float) ($infos['frais_livraison'] ?? 0);
         $montant_total += $frais;
+        $remise_globale_pct = min(100, max(0, (float) ($infos['remise_globale_pct'] ?? 0)));
+        $montant_total = fiscal_apply_remise_globale($montant_total, $remise_globale_pct);
 
         $stmt = $db->prepare("
             UPDATE devis SET
@@ -250,11 +336,49 @@ function update_devis($devis_id, $items, $infos) {
             ]);
         }
 
+        if (devis_remise_globale_column_ok()) {
+            $remise_stocke = min(100, max(0, (float) ($infos['remise_globale_pct'] ?? 0)));
+            $db->prepare('UPDATE devis SET remise_globale_pct = :r WHERE id = :id')->execute([
+                'r' => $remise_stocke,
+                'id' => $devis_id,
+            ]);
+        }
+
         $db->commit();
         return true;
     } catch (PDOException $e) {
         $db->rollBack();
         error_log('[update_devis] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Supprime un devis (uniquement si statut brouillon et sans facture associée).
+ */
+function delete_devis($devis_id) {
+    global $db;
+    $devis_id = (int) $devis_id;
+    if ($devis_id <= 0) {
+        return false;
+    }
+    $d = get_devis_by_id($devis_id);
+    if (!$d || ($d['statut'] ?? '') !== 'brouillon') {
+        return false;
+    }
+    require_once __DIR__ . '/model_factures_devis.php';
+    if (function_exists('get_facture_devis_by_devis') && get_facture_devis_by_devis($devis_id)) {
+        return false;
+    }
+    try {
+        $db->beginTransaction();
+        $db->prepare('DELETE FROM devis_produits WHERE devis_id = :id')->execute(['id' => $devis_id]);
+        $db->prepare('DELETE FROM devis WHERE id = :id')->execute(['id' => $devis_id]);
+        $db->commit();
+        return true;
+    } catch (PDOException $e) {
+        $db->rollBack();
+        error_log('[delete_devis] ' . $e->getMessage());
         return false;
     }
 }

@@ -40,7 +40,7 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #444; background: #f5f5f5; padding: 20px; }
+        body { font-family: 'Poppins', sans-serif; color: #444; background: #f5f5f5; padding: 20px; }
         .facture-container { max-width: 918px; margin: 0 auto; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .facture-banner-top { height: 60px; background: linear-gradient(135deg, rgba(229,72,138,0.25), rgba(244,211,94,0.2)); }
         .facture-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 30px 45px 25px; border-bottom: 1px solid #eee; }

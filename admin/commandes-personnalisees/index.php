@@ -1,7 +1,6 @@
 <?php
 /**
  * Liste des commandes personnalisées (Admin)
- * Design élégant, ergonomique et responsive
  */
 
 session_start();
@@ -18,12 +17,13 @@ $commandes = get_all_commandes_personnalisees($statut_filter ?: null);
 
 $total = count_commandes_personnalisees_by_statut();
 $en_attente = count_commandes_personnalisees_by_statut('en_attente');
-$confirmee = count_commandes_personnalisees_by_statut('confirmee');
-$en_preparation = count_commandes_personnalisees_by_statut('en_preparation');
-$devis_envoye = count_commandes_personnalisees_by_statut('devis_envoye');
-$terminee = count_commandes_personnalisees_by_statut('terminee');
-$refusee = count_commandes_personnalisees_by_statut('refusee');
-$annulee = count_commandes_personnalisees_by_statut('annulee');
+
+$montant_total_devis = 0;
+foreach ($commandes as $cp_row) {
+    if (!empty($cp_row['prix']) && (float) $cp_row['prix'] > 0) {
+        $montant_total_devis += (float) $cp_row['prix'];
+    }
+}
 
 $statuts_labels = get_statuts_commande_personnalisee();
 ?>
@@ -37,95 +37,98 @@ $statuts_labels = get_statuts_commande_personnalisee();
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/admin-commandes-personnalisees.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-commandes-personnalisees-index.css<?php echo asset_version_query(); ?>">
 </head>
-<body>
+<body class="page-commandes-personnalisees-index">
     <?php include '../includes/nav.php'; ?>
 
-    <div class="cp-page-header">
+    <div class="content-header">
         <h1><i class="fas fa-palette"></i> Commandes personnalisées</h1>
     </div>
 
-    <div class="cp-stats-grid">
-        <div class="cp-stat-card">
-            <h3>Total</h3>
+    <div class="commandes-stats commandes-stats--compact">
+        <div class="stat-box">
+            <h3>Total Demandes</h3>
             <div class="stat-value"><?php echo $total; ?></div>
         </div>
-        <div class="cp-stat-card stat-en-attente">
-            <h3>En attente</h3>
+        <div class="stat-box">
+            <h3>En Attente</h3>
             <div class="stat-value"><?php echo $en_attente; ?></div>
-        </div>
-        <div class="cp-stat-card">
-            <h3>Confirmées</h3>
-            <div class="stat-value"><?php echo $confirmee; ?></div>
-        </div>
-        <div class="cp-stat-card">
-            <h3>En préparation</h3>
-            <div class="stat-value"><?php echo $en_preparation; ?></div>
-        </div>
-        <div class="cp-stat-card">
-            <h3>Devis envoyé</h3>
-            <div class="stat-value"><?php echo $devis_envoye; ?></div>
-        </div>
-        <div class="cp-stat-card stat-terminee">
-            <h3>Terminées</h3>
-            <div class="stat-value"><?php echo $terminee; ?></div>
-        </div>
-        <div class="cp-stat-card stat-refusee">
-            <h3>Refusées</h3>
-            <div class="stat-value"><?php echo $refusee; ?></div>
-        </div>
-        <div class="cp-stat-card stat-annulee">
-            <h3>Annulées</h3>
-            <div class="stat-value"><?php echo $annulee; ?></div>
         </div>
     </div>
 
-    <section class="cp-section">
-        <div class="cp-section-header">
-            <h2 class="cp-section-title"><i class="fas fa-list"></i> Demandes (<?php echo count($commandes); ?>)</h2>
-            <form method="GET" class="cp-filter-form">
-                <select name="statut" onchange="this.form.submit()">
+    <div class="comptabilite-box">
+        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des devis affichés</div>
+        <div class="comptabilite-value"><?php echo number_format($montant_total_devis, 0, ',', ' '); ?> FCFA</div>
+    </div>
+
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-title">
+                <h2><i class="fas fa-list"></i> Demandes (<?php echo count($commandes); ?>)</h2>
+            </div>
+            <form method="GET" class="cp-index-filter-form">
+                <select name="statut" onchange="this.form.submit()" aria-label="Filtrer par statut">
                     <option value="">Tous les statuts</option>
                     <?php foreach ($statuts_labels as $val => $label): ?>
-                    <option value="<?php echo $val; ?>" <?php echo $statut_filter === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo $statut_filter === $val ? 'selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
                     <?php endforeach; ?>
                 </select>
             </form>
         </div>
 
         <?php if (empty($commandes)): ?>
-            <div class="cp-empty-state">
-                <i class="fas fa-palette"></i>
-                <h3>Aucune commande personnalisée</h3>
-                <p>Les demandes des clients apparaîtront ici.</p>
-            </div>
+        <div class="empty-state">
+            <i class="fas fa-palette"></i>
+            <h3>Aucune commande personnalisée</h3>
+            <p>Les demandes des clients apparaîtront ici.</p>
+        </div>
         <?php else: ?>
-            <div class="cp-commandes-grid">
-                <?php foreach ($commandes as $cp): ?>
-                    <div class="cp-card">
-                        <div class="cp-card-header">
-                            <span class="cp-card-id">Demande #<?php echo $cp['id']; ?></span>
-                            <span class="cp-card-date"><?php echo date('d/m/Y H:i', strtotime($cp['date_creation'])); ?></span>
-                        </div>
-                        <div class="cp-card-body">
-                            <p class="cp-card-client"><?php echo htmlspecialchars($cp['prenom'] . ' ' . $cp['nom']); ?></p>
-                            <p class="cp-card-contact"><?php echo htmlspecialchars($cp['email']); ?> · <?php echo htmlspecialchars($cp['telephone']); ?></p>
-                            <p class="cp-card-desc"><?php echo htmlspecialchars($cp['description']); ?></p>
-                        </div>
-                        <div class="cp-card-header" style="margin-bottom: 0;">
-                            <span class="commande-statut statut-<?php echo $cp['statut']; ?>" style="margin: 0;">
-                                <?php echo $statuts_labels[$cp['statut']] ?? $cp['statut']; ?>
-                            </span>
-                        </div>
-                        <div class="cp-card-actions">
-                            <a href="details.php?id=<?php echo $cp['id']; ?>" class="cp-btn-view">
-                                <i class="fas fa-eye"></i> Voir / Traiter
+        <div class="commandes-table-wrap">
+            <table class="data-table commandes-data-table">
+                <colgroup>
+                    <col class="commandes-col-client">
+                    <col class="commandes-col-montant">
+                    <col class="commandes-col-actions">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th class="commandes-col-montant">Montant</th>
+                        <th class="commandes-col-actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($commandes as $cp): ?>
+                    <?php
+                    $client_nom = trim(($cp['prenom'] ?? '') . ' ' . ($cp['nom'] ?? '')) ?: '—';
+                    $telephone_aff = trim($cp['telephone'] ?? '') ?: '—';
+                    $date_aff = date('d/m/Y H:i', strtotime($cp['date_creation']));
+                    $prix_val = isset($cp['prix']) && $cp['prix'] !== null && $cp['prix'] !== '' ? (float) $cp['prix'] : null;
+                    ?>
+                    <tr>
+                        <td data-label="Client">
+                            <span class="commandes-cell-nom"><?php echo htmlspecialchars($client_nom); ?></span>
+                            <span class="commandes-cell-tel"><?php echo htmlspecialchars($telephone_aff); ?></span>
+                        </td>
+                        <td data-label="Montant" class="commandes-col-montant">
+                            <?php if ($prix_val !== null && $prix_val > 0): ?>
+                            <span class="commandes-cell-prix"><?php echo number_format($prix_val, 0, ',', ' '); ?> FCFA</span>
+                            <?php else: ?>
+                            <span class="commandes-cell-prix commandes-cell-prix--pending">À définir</span>
+                            <?php endif; ?>
+                            <span class="commandes-cell-date"><?php echo htmlspecialchars($date_aff); ?></span>
+                        </td>
+                        <td data-label="Actions" class="commandes-col-actions">
+                            <a href="details.php?id=<?php echo (int) $cp['id']; ?>" class="btn-view">
+                                <i class="fas fa-eye" aria-hidden="true"></i> Voir
                             </a>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <?php endif; ?>
     </section>
 

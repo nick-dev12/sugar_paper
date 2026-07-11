@@ -8,9 +8,30 @@
  * $whatsapp_url (string, optionnel): URL WhatsApp pour le bouton
  * $facture_back_url (string, optionnel): URL du lien "Retour" (ex: details.php?id=5)
  * $facture_back_label (string, optionnel): Libellé du lien Retour (défaut: "Retour à la commande")
+ * $commande['remise_globale_pct'] (float, optionnel): pourcentage de réduction globale
  */
 $adresse_livraison = $adresse_livraison ?? '';
 require_once __DIR__ . '/site_url.php';
+require_once __DIR__ . '/fiscal_tva.php';
+$facture_est_payee = isset($facture_est_payee) ? (bool) $facture_est_payee : (!empty($facture['payee']));
+$facture_afficher_marquer_payee = !empty($facture_afficher_marquer_payee);
+$facture_csrf_token = isset($facture_csrf_token) ? (string) $facture_csrf_token : '';
+$facture_marquer_payee_confirm = isset($facture_marquer_payee_confirm) && (string) $facture_marquer_payee_confirm !== ''
+    ? (string) $facture_marquer_payee_confirm
+    : 'Confirmer le paiement de cette facture ?';
+$facture_page_flash_success = isset($facture_page_flash_success) ? (string) $facture_page_flash_success : '';
+$facture_page_flash_error = isset($facture_page_flash_error) ? (string) $facture_page_flash_error : '';
+$facture_document_type_label = isset($facture_document_type_label) && (string) $facture_document_type_label !== ''
+    ? (string) $facture_document_type_label
+    : 'FACTURE';
+if (!isset($facture_numero_affichage) || (string) $facture_numero_affichage === '') {
+    $facture_numero_affichage = (string) ($facture['numero_facture'] ?? '');
+} else {
+    $facture_numero_affichage = (string) $facture_numero_affichage;
+}
+$facture_recap_label_total = isset($facture_recap_label_total) && (string) $facture_recap_label_total !== ''
+    ? (string) $facture_recap_label_total
+    : 'TOTAL';
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - Sugar Paper';
 $facture_og_desc = 'Facture Sugar Paper - ' . ($entreprise_nom ?? 'Sugar Paper') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
 $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
@@ -37,17 +58,45 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Poppins', sans-serif;
             color: #444;
             background: #f5f5f5;
-            padding: 20px;
+            margin: 0;
+            padding: 8px 4px;
+        }
+
+        .facture-viewport {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+
+        .facture-scale-wrap {
+            width: 210mm;
+            max-width: 210mm;
+            transform-origin: top center;
+            flex-shrink: 0;
         }
 
         .facture-container {
-            max-width: 918px;
+            width: 210mm;
+            min-height: 297mm;
+            max-width: 210mm;
             margin: 0 auto;
             background: #fff;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .facture-sheet-body {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .facture-banner-top {
@@ -213,6 +262,7 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
             justify-content: space-between;
             padding: 25px 45px 30px;
             gap: 40px;
+            margin-top: auto;
         }
 
         .facture-payment h3 {
@@ -238,6 +288,82 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
             font-size: 14px;
         }
 
+        .facture-summary .facture-remise-row {
+            color: #c26638;
+            font-weight: 600;
+        }
+
+        .facture-payee-mention {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1b5e20;
+            margin-top: 6px;
+            letter-spacing: 0.02em;
+        }
+
+        .facture-payee-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(27, 94, 32, 0.12);
+            color: #1b5e20;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+        }
+
+        .facture-flash-bar {
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 0 10px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            box-sizing: border-box;
+        }
+
+        .facture-flash-bar--success {
+            background: #e8f5e9;
+            border: 1px solid #1b5e20;
+            color: #1b5e20;
+        }
+
+        .facture-flash-bar--error {
+            background: #ffebee;
+            border: 1px solid #c62828;
+            color: #6a1b1b;
+        }
+
+        .facture-actions form.facture-form-marquer-paye {
+            display: inline-flex;
+            margin: 0;
+        }
+
+        .facture-actions .btn-marquer-paye {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #1b5e20;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .facture-actions .btn-marquer-paye:hover {
+            background: #145214;
+        }
+
+        .facture-summary .facture-solde-paye-row {
+            background: rgba(27, 94, 32, 0.12);
+            color: #1b5e20;
+        }
+
         .facture-summary .total {
             font-weight: 700;
             font-size: 16px;
@@ -257,6 +383,7 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
 
         .facture-banner-bottom {
             height: 40px;
+            flex-shrink: 0;
             background: linear-gradient(135deg, rgba(229, 72, 138, 0.3) 0%, rgba(244, 211, 94, 0.2) 50%, rgba(229, 72, 138, 0.25) 100%);
             background-image: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(229, 72, 138, 0.2) 10px, rgba(229, 72, 138, 0.2) 20px);
         }
@@ -266,8 +393,11 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
             flex-wrap: wrap;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 20px;
-            padding: 12px 0;
+            width: 100%;
+            max-width: 210mm;
+            margin: 0 0 12px;
+            padding: 8px 0;
+            box-sizing: border-box;
         }
 
         .facture-actions.facture-actions-top {
@@ -328,10 +458,26 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                 display: none !important;
             }
 
+            .facture-viewport {
+                overflow: visible !important;
+                height: auto !important;
+            }
+
+            .facture-scale-wrap {
+                transform: none !important;
+                width: auto !important;
+            }
+
             .facture-container {
+                width: 100% !important;
                 max-width: 100% !important;
+                min-height: auto !important;
                 box-shadow: none !important;
                 margin: 0 !important;
+            }
+
+            .facture-sheet-body {
+                min-height: auto !important;
             }
 
             .facture-banner-top,
@@ -381,142 +527,27 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
 
             @page {
                 size: A4;
-                margin: 15mm;
+                margin: 0;
             }
         }
 
-        @media (max-width: 992px) {
-            .facture-header {
-                padding: 24px 24px;
-            }
-
-            .facture-billing {
-                padding: 20px 24px;
-            }
-
-            .facture-footer-section {
-                padding: 24px;
-            }
-        }
-
-        @media (max-width: 768px) {
+        @media screen and (min-width: 993px) {
             body {
-                padding: 12px;
-            }
-
-            .facture-container {
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            }
-
-            .facture-banner-top {
-                height: 40px;
-            }
-
-            .facture-header {
-
-                gap: 6px;
-                padding: 20px 8px;
-            }
-
-            .facture-entreprise {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .facture-logo {
-                width: 70px;
-                height: 70px;
-            }
-
-            .facture-entreprise-info h1 {
-                font-size: 22px;
-            }
-
-            .facture-entreprise-info p {
-                font-size: 11px;
-            }
-
-            .facture-meta {
-                text-align: left;
-            }
-
-            .facture-billing {
-                padding: 16px;
-            }
-
-            .facture-billing .client-name {
-                font-size: 16px;
-            }
-
-            .facture-table-wrapper {
-                margin: 0 -16px;
-            }
-
-            .facture-table {
-                font-size: 13px;
-                min-width: 400px;
-            }
-
-            .facture-table th,
-            .facture-table td {
-                padding: 10px 12px;
-            }
-
-            .facture-footer-section {
-                flex-direction: column;
-                padding: 20px 16px;
-                gap: 20px;
-            }
-
-            .facture-summary {
-                min-width: auto;
-            }
-
-            .facture-banner-bottom {
-                height: 30px;
-            }
-
-            .facture-actions {
-                padding: 8px 0;
-                gap: 8px;
-            }
-
-            .facture-actions a {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 8px;
-            }
-
-            .facture-header {
-                padding: 16px 8px;
-            }
-
-            .facture-billing {
-                padding: 12px;
-            }
-
-            .facture-footer-section {
-                padding: 16px 8px;
-            }
-
-            .facture-actions {
-                flex-direction: column;
-            }
-
-            .facture-actions a {
-                width: 100%;
-                justify-content: center;
+                padding: 20px 12px;
             }
         }
     </style>
 </head>
 
 <body>
+    <div class="facture-viewport" id="facture-viewport">
+    <div class="facture-scale-wrap" id="facture-scale-wrap">
+    <?php if ($facture_page_flash_success !== ''): ?>
+        <div class="facture-flash-bar facture-flash-bar--success" role="status"><?php echo htmlspecialchars($facture_page_flash_success); ?></div>
+    <?php endif; ?>
+    <?php if ($facture_page_flash_error !== ''): ?>
+        <div class="facture-flash-bar facture-flash-bar--error" role="alert"><?php echo htmlspecialchars($facture_page_flash_error); ?></div>
+    <?php endif; ?>
     <?php if (empty($is_public)): ?>
         <?php
         $back_url = $facture_back_url ?? ('details.php?id=' . (int) ($facture['commande_id'] ?? $facture['devis_id'] ?? 0));
@@ -525,6 +556,15 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
         <div class="facture-actions facture-actions-top">
             <a href="<?php echo htmlspecialchars($back_url); ?>"><i class="fas fa-arrow-left"></i> <?php echo htmlspecialchars($back_label); ?></a>
             <a href="javascript:window.print();"><i class="fas fa-print"></i> Imprimer</a>
+            <?php if ($facture_afficher_marquer_payee): ?>
+                <form method="post" action="" class="facture-form-marquer-paye"
+                    onsubmit="return confirm(<?php echo json_encode($facture_marquer_payee_confirm, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($facture_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="marquer_facture_payee" value="1" class="btn-marquer-paye">
+                        <i class="fas fa-check-circle" aria-hidden="true"></i> Marquer comme payée
+                    </button>
+                </form>
+            <?php endif; ?>
             <?php if (!empty($whatsapp_url)): ?>
                 <a href="<?php echo htmlspecialchars($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer"
                     class="btn-whatsapp">
@@ -539,6 +579,7 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
     <?php endif; ?>
 
     <div class="facture-container">
+        <div class="facture-sheet-body">
         <div class="facture-banner-top"></div>
 
         <div class="facture-header">
@@ -569,12 +610,17 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                 </div>
             </div>
             <div class="facture-meta">
-                <div class="label">FACTURE</div>
-                <div class="value"><?php echo htmlspecialchars($facture['numero_facture']); ?></div>
+                <div class="label"><?php echo htmlspecialchars($facture_document_type_label ?? 'FACTURE'); ?></div>
+                <div class="value"><?php echo htmlspecialchars($facture_numero_affichage ?? $facture['numero_facture']); ?></div>
                 <div class="label" style="margin-top:12px;">DATE</div>
                 <div class="value"><?php echo htmlspecialchars($date_facture_aff); ?></div>
-                <div class="label" style="margin-top:12px;">SOLDE DÛ</div>
+                <div class="label" style="margin-top:12px;"><?php echo $facture_est_payee ? 'MONTANT' : 'SOLDE DÛ'; ?></div>
+                <?php if ($facture_est_payee): ?>
+                <div class="facture-payee-mention">Payée</div>
+                <span class="facture-payee-badge">PAYÉE</span>
+                <?php else: ?>
                 <div class="solde">XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</div>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -624,33 +670,114 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                 <?php
                 $sous_total_produits = 0;
                 foreach ($produits as $p) {
-                    $sous_total_produits += (float) ($p['prix_total'] ?? 0);
+                    $ligne_total = (float) ($p['prix_total'] ?? 0);
+                    if ($ligne_total <= 0) {
+                        $pu = (float) ($p['prix_unitaire'] ?? 0);
+                        $qte = (int) ($p['quantite'] ?? 0);
+                        $ligne_total = $pu * $qte;
+                    }
+                    $sous_total_produits += $ligne_total;
                 }
                 $frais_livraison = (float) ($commande['frais_livraison'] ?? 0);
+                $remise_globale_pct = (float) ($commande['remise_globale_pct'] ?? $facture_remise_globale_pct ?? 0);
+                $brut_avant_remise = $sous_total_produits + $frais_livraison;
+                $remise_montant = $remise_globale_pct > 0 ? fiscal_montant_remise($brut_avant_remise, $remise_globale_pct) : 0;
+                $afficher_detail = ($frais_livraison > 0 || $remise_globale_pct > 0);
+                $tva_incluse_aff = !empty($facture_tva_incluse);
+                $montant_ht_aff = isset($facture_fiscal_ht) ? (float) $facture_fiscal_ht : null;
+                $montant_tva_aff = isset($facture_fiscal_tva) ? (float) $facture_fiscal_tva : null;
+                $taux_tva_aff = isset($facture_fiscal_taux) ? (float) $facture_fiscal_taux : null;
+                $label_total = $facture_recap_label_total ?? ($tva_incluse_aff ? 'TOTAL TTC' : 'TOTAL');
                 ?>
-                <?php if ($frais_livraison > 0): ?>
+                <?php if ($afficher_detail): ?>
                 <div class="row">
                     <span>SOUS-TOTAL PRODUITS</span>
                     <span><?php echo number_format($sous_total_produits, 2, ',', ' '); ?> CFA</span>
                 </div>
+                <?php if ($frais_livraison > 0): ?>
                 <div class="row">
                     <span>FRAIS DE LIVRAISON</span>
                     <span><?php echo number_format($frais_livraison, 2, ',', ' '); ?> CFA</span>
                 </div>
                 <?php endif; ?>
+                <?php if ($remise_globale_pct > 0): ?>
+                <div class="row facture-remise-row">
+                    <span>RÉDUCTION (<?php echo number_format($remise_globale_pct, 2, ',', ' '); ?> %)</span>
+                    <span>-<?php echo number_format($remise_montant, 2, ',', ' '); ?> CFA</span>
+                </div>
+                <?php endif; ?>
+                <?php endif; ?>
+                <?php if ($tva_incluse_aff && $montant_ht_aff !== null && $montant_tva_aff !== null): ?>
                 <div class="row">
-                    <span>TOTAL</span>
+                    <span>TOTAL HT</span>
+                    <span><?php echo number_format($montant_ht_aff, 2, ',', ' '); ?> CFA</span>
+                </div>
+                <div class="row">
+                    <span>TVA<?php echo $taux_tva_aff ? ' (' . rtrim(rtrim(number_format($taux_tva_aff, 2, ',', ' '), '0'), ',') . ' %)' : ''; ?></span>
+                    <span><?php echo number_format($montant_tva_aff, 2, ',', ' '); ?> CFA</span>
+                </div>
+                <?php endif; ?>
+                <div class="row total">
+                    <span><?php echo htmlspecialchars($label_total); ?></span>
                     <span><?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
                 </div>
+                <?php if ($facture_est_payee): ?>
+                <div class="row solde-row facture-solde-paye-row">
+                    <span>Payée</span>
+                    <span>XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
+                </div>
+                <?php else: ?>
                 <div class="row solde-row">
                     <span>SOLDE DÛ</span>
                     <span>XOF <?php echo number_format($facture['montant_total'], 2, ',', ' '); ?> CFA</span>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
 
+        </div>
         <div class="facture-banner-bottom"></div>
     </div>
+    </div>
+    </div>
+    <script>
+    (function() {
+        var viewport = document.getElementById('facture-viewport');
+        var wrap = document.getElementById('facture-scale-wrap');
+        if (!viewport || !wrap) return;
+
+        var MARGIN_X = 8;
+
+        function fitFactureScale() {
+            if (window.matchMedia('print').matches) {
+                wrap.style.transform = 'none';
+                viewport.style.height = 'auto';
+                return;
+            }
+            wrap.style.transform = 'none';
+            viewport.style.height = 'auto';
+            var naturalW = wrap.offsetWidth;
+            var naturalH = wrap.offsetHeight;
+            if (naturalW <= 0 || naturalH <= 0) return;
+            var available = window.innerWidth - MARGIN_X;
+            var scale = Math.min(1, available / naturalW);
+            wrap.style.transform = scale < 1 ? 'scale(' + scale + ')' : 'none';
+            viewport.style.height = Math.ceil(naturalH * scale) + 'px';
+        }
+
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(fitFactureScale);
+        }
+        window.addEventListener('load', fitFactureScale);
+        window.addEventListener('resize', fitFactureScale);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(fitFactureScale, 100);
+        });
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(fitFactureScale).observe(wrap);
+        }
+    })();
+    </script>
 </body>
 
 </html>

@@ -46,6 +46,7 @@ $commande = [
     'adresse_livraison' => $devis['adresse_livraison'] ?? '',
     'notes' => $devis['notes'] ?? '—',
     'frais_livraison' => $devis['frais_livraison'] ?? 0,
+    'remise_globale_pct' => (float) ($devis['remise_globale_pct'] ?? 0),
     'numero_commande' => $devis['numero_devis'] ?? ''
 ];
 

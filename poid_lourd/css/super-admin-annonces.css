@@ -1,0 +1,79 @@
+/**
+ * Super Admin — Annonces plateforme
+ */
+
+.sa-annonces-page .sa-annonces-audience {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sa-annonces-audience--client {
+  background: rgba(53, 100, 166, 0.12);
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.sa-annonces-audience--vendeur {
+  background: rgba(255, 107, 53, 0.12);
+  color: var(--orange-fonce, #E85A2A);
+}
+
+.sa-annonces-msg-preview {
+  max-width: 280px;
+  color: var(--gris-fonce, #4a4a4a);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sa-annonces-btn-resend {
+  padding: 0.35rem 0.7rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.22);
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--couleur-dominante, #3564a6);
+}
+
+.sa-annonces-btn-resend:hover {
+  background: rgba(53, 100, 166, 0.06);
+}
+
+.sa-annonces-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.2);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  resize: vertical;
+}
+
+.sa-annonces-field textarea:focus {
+  outline: none;
+  border-color: var(--couleur-dominante, #3564a6);
+  box-shadow: 0 0 0 3px rgba(53, 100, 166, 0.12);
+}
+
+.sa-annonces-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid rgba(53, 100, 166, 0.2);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  background: #fff;
+}

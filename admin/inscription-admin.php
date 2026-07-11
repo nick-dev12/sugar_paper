@@ -44,9 +44,6 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -446,12 +443,20 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
                 <div class="form-group form-group-role">
                     <label for="role"><i class="fas fa-user-tag"></i> Rôle *</label>
                     <select id="role" name="role" required class="select-role">
-                        <option value="admin" <?php echo (isset($_POST['role']) && $_POST['role'] === 'admin') ? 'selected' : ''; ?>>Administrateur (accès complet)</option>
-                        <option value="utilisateur" <?php echo (!isset($_POST['role']) || $_POST['role'] === 'utilisateur') ? 'selected' : ''; ?>>Utilisateur (tout sauf gestion des comptes clients)</option>
+                        <?php
+                        $role_post = isset($_POST['role']) ? (string) $_POST['role'] : 'utilisateur';
+                        $role_post = normalize_admin_role($role_post);
+                        foreach (admin_roles_valides() as $role_opt):
+                        ?>
+                        <option value="<?php echo htmlspecialchars($role_opt); ?>" <?php echo $role_post === $role_opt ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars(admin_role_label($role_opt)); ?>
+                        </option>
+                        <?php endforeach; ?>
                     </select>
                     <p class="role-help">
-                        <strong>Administrateur :</strong> accès à tout (comptes, utilisateurs clients, produits, commandes...).<br>
-                        <strong>Utilisateur :</strong> accès à tout sauf la gestion des comptes utilisateurs clients.
+                        <strong>Administrateur</strong> : accès complet.
+                        <strong>Utilisateur</strong> : gestion produits et stocks.
+                        <strong>Livreur</strong> : suivi des livraisons via l’application mobile.
                     </p>
                 </div>
                 <?php endif; ?>

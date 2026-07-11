@@ -1,0 +1,551 @@
+/**
+ * Responsive admin — pages hub (dashboard, produits, stock, commandes, etc.)
+ * Chargé via @import dans admin-dashboard.css
+ */
+
+/* =============================================================================
+   Variables & utilitaires
+   ============================================================================= */
+
+:root {
+  --admin-bp-tablet: 768px;
+  --admin-bp-mobile: 600px;
+  --admin-bp-xs: 480px;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* =============================================================================
+   Contenu principal — padding fluide
+   ============================================================================= */
+
+#adminContent {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+@media (max-width: 992px) {
+  #adminContent {
+    padding-left: clamp(8px, 2vw, 16px) !important;
+    padding-right: clamp(8px, 2vw, 16px) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #adminContent {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-top: 62px !important;
+  }
+}
+
+/* =============================================================================
+   En-têtes & sections
+   ============================================================================= */
+
+.content-header {
+  padding: clamp(14px, 2.5vw, 25px) clamp(14px, 3vw, 30px);
+  margin-bottom: clamp(16px, 3vw, 30px);
+  gap: clamp(10px, 2vw, 16px);
+}
+
+.content-header h1 {
+  font-size: clamp(1.1rem, 3.2vw, 1.75rem);
+  line-height: 1.25;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.content-header h1 i {
+  font-size: 0.9em;
+}
+
+.produits-section,
+.content-section {
+  padding: clamp(14px, 2.5vw, 24px) clamp(12px, 2.5vw, 22px);
+  border-radius: clamp(10px, 2vw, 14px);
+}
+
+.section-title h2 {
+  font-size: clamp(1rem, 2.8vw, 1.5rem);
+}
+
+.section-subtitle {
+  font-size: clamp(0.78rem, 2.2vw, 0.92rem);
+}
+
+/* =============================================================================
+   Barre de filtres (dashboard, produits, contacts)
+   ============================================================================= */
+
+.admin-filters-bar {
+  display: flex;
+  gap: clamp(8px, 2vw, 12px);
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: clamp(14px, 2.5vw, 20px);
+  padding: clamp(12px, 2.5vw, 16px);
+  background: var(--fond-principal, #fff);
+  border: 1px solid var(--glass-border, #ececec);
+  border-radius: 12px;
+}
+
+.admin-filter-field {
+  flex: 1 1 min(100%, 200px);
+  min-width: 0;
+}
+
+.admin-filter-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: clamp(0.72rem, 2vw, 0.82rem);
+  font-weight: 600;
+  color: var(--titres);
+}
+
+.admin-filter-field input,
+.admin-filter-field select {
+  width: 100%;
+  padding: clamp(9px, 2vw, 11px) clamp(10px, 2vw, 14px);
+  border: 1px solid var(--border-input, #d9d9d9);
+  border-radius: 10px;
+  font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+}
+
+.admin-filter-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1 1 100%;
+}
+
+@media (min-width: 601px) {
+  .admin-filter-actions {
+    flex: 0 1 auto;
+  }
+}
+
+.btn-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(9px, 2vw, 11px) clamp(12px, 2.5vw, 16px);
+  border-radius: 10px;
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .admin-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-filter-field {
+    flex: 1 1 100%;
+  }
+
+  .admin-filter-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .admin-filter-actions .btn-primary,
+  .admin-filter-actions .btn-filter-reset {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =============================================================================
+   Stats & KPI
+   ============================================================================= */
+
+.stat-card,
+.stat-box {
+  padding: clamp(12px, 2.5vw, 20px);
+  border-radius: clamp(10px, 2vw, 14px);
+}
+
+.stat-card h3,
+.stat-box h3 {
+  font-size: clamp(0.68rem, 2vw, 0.88rem);
+}
+
+.stat-card .stat-value,
+.stat-box .stat-value {
+  font-size: clamp(1.4rem, 5vw, 2rem);
+}
+
+.commandes-stats {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+}
+
+/* =============================================================================
+   Grilles commandes
+   ============================================================================= */
+
+.commandes-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(12px, 2.5vw, 20px);
+}
+
+.commande-item {
+  padding: clamp(14px, 2.5vw, 20px);
+}
+
+.comptabilite-box {
+  padding: clamp(12px, 2.5vw, 18px) clamp(14px, 3vw, 24px);
+  gap: clamp(8px, 2vw, 12px);
+}
+
+.comptabilite-label {
+  font-size: clamp(0.82rem, 2.2vw, 1rem);
+}
+
+.comptabilite-value {
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+}
+
+@media (max-width: 600px) {
+  .comptabilite-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* =============================================================================
+   Cartes produits & catégories (stock)
+   ============================================================================= */
+
+.produit-card-nom {
+  font-size: clamp(0.82rem, 2.4vw, 0.94rem);
+}
+
+.produit-card-image {
+  height: clamp(160px, 35vw, 250px);
+}
+
+.categorie-card-image-wrap {
+  height: clamp(120px, 28vw, 160px);
+}
+
+.categorie-card-body {
+  padding: clamp(14px, 2.5vw, 22px) clamp(16px, 3vw, 24px);
+}
+
+.categorie-nom {
+  font-size: clamp(1rem, 2.8vw, 1.2rem);
+}
+
+.categories-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(14px, 2.5vw, 24px);
+}
+
+/* =============================================================================
+   Contacts
+   ============================================================================= */
+
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: clamp(12px, 2.5vw, 16px);
+}
+
+.contact-card {
+  padding: clamp(12px, 2.5vw, 16px);
+  border-radius: 12px;
+}
+
+.contact-card-nom {
+  font-size: clamp(0.88rem, 2.4vw, 1rem);
+}
+
+.contact-card-tel {
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+}
+
+.contact-card-actions {
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .contacts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-fullscreen {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .modal-fullscreen-content {
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .modal-fullscreen-header,
+  .modal-fullscreen-body {
+    padding: clamp(14px, 3vw, 20px);
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions .btn-primary,
+  .modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =============================================================================
+   Zones de livraison (table)
+   ============================================================================= */
+
+.zones-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+}
+
+.zones-table th,
+.zones-table td {
+  padding: clamp(8px, 2vw, 14px) clamp(10px, 2.2vw, 16px);
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border, #e8e8e8);
+  vertical-align: middle;
+}
+
+.zones-table th {
+  background: var(--fond-principal, #fff);
+  color: var(--titres);
+  font-weight: 600;
+  font-size: clamp(0.72rem, 2vw, 0.82rem);
+  white-space: nowrap;
+}
+
+.zones-table tr:hover td {
+  background: rgba(145, 138, 68, 0.04);
+}
+
+.zone-prix {
+  font-weight: 600;
+  color: #918a44;
+  white-space: nowrap;
+}
+
+.zone-lieu {
+  font-weight: 500;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statut-badge {
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: clamp(0.65rem, 2vw, 0.75rem);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statut-actif {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.statut-inactif {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.zones-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.zones-actions a {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: clamp(0.68rem, 2vw, 0.82rem);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn-edit {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.btn-delete {
+  background: #ffebee;
+  color: #c62828;
+}
+
+@media (max-width: 600px) {
+  .zones-actions {
+    flex-direction: column;
+  }
+
+  .zones-actions a {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* =============================================================================
+   Paramètres
+   ============================================================================= */
+
+.parametres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(12px, 2.5vw, 18px);
+}
+
+.parametre-card {
+  padding: clamp(14px, 2.5vw, 20px);
+  border-radius: 14px;
+}
+
+.parametre-title {
+  font-size: clamp(0.95rem, 2.6vw, 1.1rem);
+}
+
+.parametre-description {
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+  line-height: 1.45;
+}
+
+.parametre-link {
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+}
+
+@media (max-width: 600px) {
+  .parametres-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================================
+   Tables génériques
+   ============================================================================= */
+
+.data-table {
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+}
+
+.data-table th,
+.data-table td {
+  padding: clamp(8px, 2vw, 13px) clamp(8px, 2.2vw, 16px);
+}
+
+/* =============================================================================
+   Boutons header — empilage mobile
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .content-header .header-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .content-header .header-actions .btn-primary,
+  .content-header .header-actions .btn-secondary-style {
+    width: 100%;
+    justify-content: center;
+    font-size: clamp(0.75rem, 2.2vw, 0.88rem);
+    padding: clamp(9px, 2vw, 11px) clamp(12px, 2.5vw, 18px);
+  }
+}
+
+@media (max-width: 480px) {
+  .content-header .header-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================================================================
+   Section header commandes (filtres + actions)
+   ============================================================================= */
+
+.section-header {
+  gap: clamp(10px, 2vw, 16px);
+}
+
+.section-header .form-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .section-header .form-actions {
+    flex-direction: column;
+  }
+
+  .section-header .form-actions .btn-primary,
+  .section-header .form-actions .btn-secondary,
+  .section-header .form-actions a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =============================================================================
+   Alertes & empty states
+   ============================================================================= */
+
+.alert-box {
+  padding: clamp(10px, 2.5vw, 15px);
+  font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+}
+
+.empty-state {
+  padding: clamp(24px, 5vw, 40px) clamp(14px, 3vw, 20px);
+}
+
+.empty-state h3 {
+  font-size: clamp(1rem, 2.8vw, 1.25rem);
+}
+
+.empty-state p {
+  font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+}
+
+/* Stock — bouton historique */
+.btn-history {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  padding: clamp(9px, 2vw, 12px) clamp(14px, 2.5vw, 22px);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: clamp(0.78rem, 2.2vw, 0.88rem);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .btn-history {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+}

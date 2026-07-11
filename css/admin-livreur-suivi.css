@@ -1,0 +1,1763 @@
+.livreur-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 960px) {
+    .livreur-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.livreur-card {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 2px 12px rgba(145, 138, 68, 0.06);
+}
+
+.livreur-card--wide {
+    min-width: 0;
+}
+
+.livreur-card h2 {
+    margin: 0 0 0.65rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #6b2f20;
+}
+
+.livreur-form label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 0.92rem;
+    color: #333;
+}
+
+.livreur-form input,
+.livreur-assign-form select {
+    width: 100%;
+    margin-top: 0.35rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid rgba(145, 138, 68, 0.35);
+    border-radius: 8px;
+}
+
+.livreur-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.livreur-table-wrap {
+    overflow-x: auto;
+}
+
+.livreur-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+.livreur-table th,
+.livreur-table td {
+    padding: 0.5rem 0.4rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+}
+
+.livreur-table th {
+    text-align: left;
+    color: #6b2f20;
+}
+
+.livreur-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.livreur-badge--actif { background: rgba(145, 138, 68, 0.15); color: #6b2f20; }
+.livreur-badge--inactif { background: rgba(0, 0, 0, 0.08); color: #666; }
+.livreur-badge--live { background: rgba(194, 102, 56, 0.15); color: #c26638; }
+.livreur-badge--off { background: rgba(0, 0, 0, 0.06); color: #777; }
+
+.livreur-inline-form {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.livreur-assign-form select {
+    min-width: 140px;
+}
+
+.livreur-empty {
+    color: #666;
+    margin: 0;
+}
+
+.btn-sm {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.76rem;
+    border-radius: 7px;
+    line-height: 1.25;
+}
+
+.btn-link {
+    margin-left: 0.35rem;
+    color: #918a44;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.livreur-suivi-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.livreur-suivi-select-form label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.livreur-suivi-select-form select {
+    min-width: 280px;
+    padding: 0.55rem 0.7rem;
+    border-radius: 8px;
+    border: 1px solid rgba(145, 138, 68, 0.35);
+}
+
+.livreur-suivi-meta {
+    font-size: 0.92rem;
+    color: #333;
+    line-height: 1.45;
+}
+
+.livreur-suivi-status {
+    margin-top: 0.35rem;
+    font-weight: 600;
+}
+
+.livreur-suivi-status--pending { color: #918a44; }
+.livreur-suivi-status--live { color: #c26638; }
+.livreur-suivi-status--off { color: #777; }
+.livreur-suivi-status--error { color: #a33; }
+
+.livreur-tracking-map {
+    width: 100%;
+    height: min(70vh, 620px);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    z-index: 1;
+}
+
+.livreur-suivi-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.88rem;
+    color: #555;
+}
+
+.legend-item--livreur i { color: #c26638; }
+.legend-item--client i { color: #918a44; }
+
+.livreur-panel-toolbar {
+    margin-bottom: 0.75rem;
+}
+
+.livreur-search-summary {
+    font-size: 0.88rem;
+    color: #666;
+    margin: 0.35rem 0 0.85rem;
+}
+
+.livreur-cmd-client,
+.livreur-cmd-tel {
+    display: inline-block;
+    font-size: 0.88rem;
+    color: #444;
+    margin-top: 0.2rem;
+}
+
+.livreur-cmd-tel {
+    color: #6b2f20;
+    font-weight: 500;
+}
+
+.livreur-no-results {
+    margin-top: 1rem;
+    padding: 1rem;
+    text-align: center;
+    background: rgba(145, 138, 68, 0.08);
+    border-radius: 8px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.livreur-marker-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 16px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.livreur-marker-icon--driver { background: #c26638; }
+.livreur-marker-icon--client { background: #918a44; }
+
+.livreur-section-hint {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 1rem;
+    line-height: 1.45;
+}
+
+.livreur-section-hint a {
+    color: #918a44;
+    font-weight: 600;
+}
+
+.livreur-card--commandes-jour {
+    margin-top: 0;
+}
+
+.page-livreur-delivery-section {
+    padding-top: 0.85rem;
+}
+
+.livreur-delivery-tabs-wrap {
+    margin-bottom: 0.85rem;
+}
+
+.page-livreurs-index .livreur-delivery-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+    padding: 5px;
+    margin-bottom: 0;
+    background: #ffffff;
+    border: 1px solid rgba(107, 47, 32, 0.14);
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(107, 47, 32, 0.06);
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 46px;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: #6b2f20;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab:hover:not(:disabled):not(.is-active) {
+    background: rgba(145, 138, 68, 0.08);
+    border-color: rgba(145, 138, 68, 0.22);
+    color: #6b2f20;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab.is-active {
+    background: linear-gradient(135deg, #918a44 0%, #a89d52 100%);
+    border-color: #918a44;
+    color: #ffffff;
+    box-shadow: 0 3px 12px rgba(145, 138, 68, 0.38);
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .admin-tab__ic {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 8px;
+    background: rgba(107, 47, 32, 0.08);
+    color: #c26638;
+    font-size: 0.88rem;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab.is-active .admin-tab__ic {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .admin-tab__txt {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.84rem;
+}
+
+.page-livreurs-index .livreur-delivery-tabs .livreur-tab-count {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.page-livreurs-index .livreur-tab-panel[hidden] {
+    display: none !important;
+}
+
+.page-livreurs-index .livreur-facture-date {
+    color: #6b2f20;
+}
+
+.page-livreurs-index .livreur-table--factures .invoice-row-statut {
+    display: inline-block;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+}
+
+.livreur-btn-text--short {
+    display: none;
+}
+
+.livreur-btn-link {
+    font-size: 0.78rem;
+}
+
+/* ========== Page index livreurs — layout compact & responsive ========== */
+.page-livreurs-index .admin-content {
+    padding: 0.75rem 0.85rem calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
+.page-livreurs-index .content-header--livreurs {
+    margin-bottom: 0.65rem;
+    padding: 0;
+    gap: 0;
+}
+
+.page-livreurs-index .content-header--livreurs h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+    color: #6b2f20;
+}
+
+.page-livreurs-index .content-header--livreurs h1 i {
+    font-size: 0.95rem;
+    color: #918a44;
+    margin-right: 0.35rem;
+}
+
+.page-livreurs-index .message {
+    font-size: 0.82rem;
+    padding: 0.55rem 0.7rem;
+    margin-bottom: 0.55rem;
+    border-radius: 8px;
+}
+
+.page-livreurs-index .livreur-section-hint {
+    font-size: 0.8rem;
+    margin-bottom: 0.55rem;
+}
+
+.page-livreurs-index .livreur-panel-toolbar {
+    margin-bottom: 0.45rem;
+}
+
+.page-livreurs-index .invoice-panel-toolbar {
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.page-livreurs-index .invoice-panel-toolbar-main {
+    gap: 6px;
+}
+
+.page-livreurs-index .invoice-panel-search-input {
+    min-height: 38px;
+    padding: 8px 10px 8px 32px;
+    font-size: 0.84rem;
+    border-radius: 9px;
+}
+
+.page-livreurs-index .invoice-panel-search-ic {
+    left: 10px;
+    font-size: 0.82rem;
+    color: #918a44;
+}
+
+.page-livreurs-index .invoice-period-toggle {
+    min-height: 38px;
+    padding: 0 10px;
+    font-size: 0.8rem;
+    border-radius: 9px;
+}
+
+.page-livreurs-index .invoice-period-toggle__label {
+    display: inline;
+}
+
+.page-livreurs-index .invoice-period-panel {
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.page-livreurs-index .invoice-period-preset {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+}
+
+.page-livreurs-index .invoice-period-preset.is-active {
+    border-color: #918a44;
+    background: rgba(145, 138, 68, 0.12);
+    color: #6b2f20;
+}
+
+.page-livreurs-index .invoice-period-summary {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    background: rgba(145, 138, 68, 0.06);
+    border-color: rgba(145, 138, 68, 0.15);
+}
+
+.page-livreurs-index .invoice-period-summary::before {
+    color: #918a44;
+}
+
+.page-livreurs-index .livreur-search-summary {
+    font-size: 0.78rem;
+    margin: 0.2rem 0 0.5rem;
+}
+
+.page-livreurs-index .livreur-cmd-montant {
+    font-size: 0.75rem;
+}
+
+.page-livreurs-index .livreur-cmd-client,
+.page-livreurs-index .livreur-cmd-tel {
+    font-size: 0.8rem;
+}
+
+.page-livreurs-index .livreur-table td small {
+    font-size: 0.74rem;
+    color: #666;
+    line-height: 1.35;
+}
+
+.page-livreurs-index .livreur-empty {
+    font-size: 0.84rem;
+}
+
+.page-livreurs-index .livreur-no-results {
+    padding: 0.75rem;
+    font-size: 0.82rem;
+}
+
+.page-livreurs-index .livreur-actions .livreur-inline-form {
+    width: 100%;
+}
+
+.page-livreurs-index .livreur-btn-prendre,
+.page-livreurs-index .livreur-btn-suivi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+}
+
+.page-livreurs-index .admin-filters-bar.invoice-period-fields {
+    padding: 8px;
+    gap: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.page-livreurs-index .admin-filters-bar.invoice-period-fields .admin-filter-field {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.page-livreurs-index .admin-filters-bar.invoice-period-fields .admin-filter-actions {
+    flex: 0 0 auto;
+}
+
+.page-livreurs-index .admin-filter-field label {
+    font-size: 0.75rem;
+}
+
+.page-livreurs-index .admin-filter-field input[type="date"] {
+    font-size: 0.82rem;
+    padding: 0.4rem 0.5rem;
+    min-height: 36px;
+}
+
+.page-livreurs-index .admin-filter-actions .btn-primary {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    min-height: 36px;
+}
+
+/* Tablette */
+@media (max-width: 992px) {
+    .page-livreurs-index .admin-content {
+        padding: 0.65rem 0.7rem 0.85rem;
+    }
+
+    .page-livreurs-index .content-header--livreurs h1 {
+        font-size: 1rem;
+    }
+
+    .page-livreurs-index .livreur-card {
+        padding: 0.75rem 0.8rem;
+        border-radius: 9px;
+    }
+
+    .page-livreurs-index .livreur-card h2 {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .page-livreurs-index .admin-content {
+        padding: 0.55rem 0.6rem 0.75rem;
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .page-livreurs-index .content-header--livreurs h1 {
+        font-size: 0.95rem;
+    }
+
+    .page-livreurs-index .livreur-delivery-tabs {
+        gap: 6px;
+        padding: 4px;
+    }
+
+    .page-livreurs-index .livreur-delivery-tabs .livreur-delivery-tab {
+        min-height: 42px;
+        padding: 0.45rem 0.55rem;
+        gap: 0.35rem;
+    }
+
+    .page-livreurs-index .livreur-delivery-tabs .admin-tab__ic {
+        width: 1.65rem;
+        height: 1.65rem;
+        font-size: 0.8rem;
+    }
+
+    .page-livreurs-index .livreur-delivery-tabs .admin-tab__txt {
+        font-size: 0.78rem;
+    }
+
+    .page-livreurs-index .invoice-period-toggle__label {
+        display: none;
+    }
+
+    .page-livreurs-index .invoice-period-toggle {
+        min-width: 38px;
+        padding: 0 10px;
+    }
+
+    .page-livreurs-index .invoice-panel-search-input {
+        min-height: 36px;
+        font-size: 16px; /* évite zoom iOS */
+    }
+
+    .page-livreurs-index .livreur-btn-text--full {
+        display: none;
+    }
+
+    .page-livreurs-index .livreur-btn-text--short {
+        display: inline;
+    }
+
+    .page-livreurs-index .livreur-btn-prendre,
+    .page-livreurs-index .livreur-btn-suivi {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Cartes commandes — petit mobile */
+@media (max-width: 620px) {
+    .page-livreurs-index .livreur-table-wrap {
+        overflow-x: visible;
+    }
+
+    .page-livreurs-index .livreur-table--jour thead {
+        display: none;
+    }
+
+    .page-livreurs-index .livreur-table--jour,
+    .page-livreurs-index .livreur-table--jour tbody,
+    .page-livreurs-index .livreur-table--jour tr,
+    .page-livreurs-index .livreur-table--jour td {
+        display: block;
+        width: 100%;
+        min-width: 0 !important;
+    }
+
+    .page-livreurs-index .livreur-table--jour tr.livreur-cmd-row {
+        margin-bottom: 0.55rem;
+        padding: 0.65rem 0.7rem;
+        border: 1px solid rgba(145, 138, 68, 0.18);
+        border-radius: 9px;
+        background: #fff;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .page-livreurs-index .livreur-table--jour tr.livreur-cmd-row[hidden] {
+        display: none !important;
+    }
+
+    .page-livreurs-index .livreur-table--jour td {
+        border-bottom: none;
+        padding: 0.3rem 0;
+    }
+
+    .page-livreurs-index .livreur-table--jour td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #918a44;
+        margin-bottom: 3px;
+    }
+
+    .page-livreurs-index .livreur-table--jour td[data-label="Client"]::before {
+        display: none;
+    }
+
+    .page-livreurs-index .livreur-table--jour td[data-label="Client"] {
+        padding-top: 0;
+        padding-bottom: 0.45rem;
+        border-bottom: 1px dashed rgba(145, 138, 68, 0.2);
+        margin-bottom: 0.35rem;
+    }
+
+    .page-livreurs-index .livreur-table--jour td.livreur-actions {
+        padding-top: 0.45rem;
+        margin-top: 0.15rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .page-livreurs-index .livreur-table--jour td.livreur-actions::before {
+        margin-bottom: 6px;
+    }
+
+    .page-livreurs-index .livreur-inline-form {
+        display: flex;
+        width: 100%;
+    }
+
+    .page-livreurs-index .invoice-period-presets {
+        gap: 5px;
+    }
+
+    .page-livreurs-index .invoice-period-preset {
+        flex: 1 1 calc(50% - 5px);
+        text-align: center;
+        padding: 6px 8px;
+    }
+
+    .page-livreurs-index .admin-filters-bar.invoice-period-fields {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: flex-end;
+        gap: 6px;
+    }
+
+    .page-livreurs-index .admin-filters-bar.invoice-period-fields .admin-filter-field {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .page-livreurs-index .admin-filter-actions {
+        flex: 0 0 auto;
+        width: auto;
+    }
+
+    .page-livreurs-index .admin-filter-actions .btn-primary {
+        width: auto;
+        white-space: nowrap;
+        padding: 0.4rem 0.55rem;
+    }
+    .page-livreurs-index .livreur-btn-prendre {
+        white-space: normal;
+    }
+}
+
+@media (max-width: 380px) {
+    .page-livreurs-index .livreur-card {
+        padding: 0.6rem 0.65rem;
+    }
+
+    .page-livreurs-index .content-header--livreurs h1 {
+        font-size: 0.9rem;
+    }
+}
+
+.livreur-cmd-montant {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-size: 0.82rem;
+    color: #6b2f20;
+    font-weight: 600;
+}
+
+.livreur-cmd-mine {
+    color: #c26638;
+    font-weight: 600;
+}
+
+.livreur-cmd-taken {
+    color: #777;
+}
+
+.livreur-btn-prendre {
+    white-space: nowrap;
+}
+
+.livreur-badge--statut {
+    background: rgba(145, 138, 68, 0.15);
+    color: #6b2f20;
+}
+
+.bottom-nav--livreur .bottom-nav-item {
+    flex: 1;
+}
+
+@media (min-width: 993px) {
+    .page-livreurs-index .admin-content {
+        padding-bottom: 1.25rem;
+    }
+}
+
+/* ========== Panneau démarrage livraison (GPS + carte) — centré ========== */
+.livreur-demarrage-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    pointer-events: none;
+}
+
+.livreur-demarrage-panel:not([hidden]) {
+    display: flex;
+    pointer-events: auto;
+}
+
+.livreur-demarrage-panel[hidden] {
+    display: none !important;
+    pointer-events: none !important;
+}
+
+.livreur-demarrage-panel__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+}
+
+.livreur-demarrage-panel__card {
+    position: relative;
+    z-index: 1;
+    width: min(380px, calc(100vw - 24px));
+    max-height: min(88vh, 640px);
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid rgba(145, 138, 68, 0.25);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.livreur-demarrage-panel__head {
+    position: relative;
+    padding: 0.75rem 2.2rem 0.55rem 0.85rem;
+    border-bottom: 1px solid rgba(145, 138, 68, 0.15);
+    background: linear-gradient(180deg, rgba(145, 138, 68, 0.08), #fff);
+}
+
+.livreur-demarrage-panel__head h3 {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #6b2f20;
+}
+
+.livreur-demarrage-panel__cmd {
+    margin: 0.2rem 0 0;
+    font-size: 0.78rem;
+    color: #666;
+}
+
+.livreur-demarrage-panel__close {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+    cursor: pointer;
+}
+
+.livreur-demarrage-form {
+    padding: 0.65rem 0.85rem 0.85rem;
+    overflow-y: auto;
+}
+
+.livreur-demarrage-field {
+    margin-bottom: 0.55rem;
+}
+
+.livreur-demarrage-field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #918a44;
+    margin-bottom: 0.25rem;
+}
+
+.livreur-demarrage-field input[readonly],
+.livreur-demarrage-field textarea {
+    width: 100%;
+    font-size: 0.82rem;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid rgba(145, 138, 68, 0.3);
+    border-radius: 8px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 0;
+}
+
+.livreur-demarrage-field input[readonly] {
+    background: rgba(145, 138, 68, 0.06);
+    color: #333;
+}
+
+.livreur-demarrage-status {
+    font-size: 0.78rem;
+    line-height: 1.35;
+    padding: 0.45rem 0.55rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background: rgba(145, 138, 68, 0.06);
+    color: #444;
+}
+
+.livreur-demarrage-status[data-state="ok"] {
+    background: rgba(145, 138, 68, 0.12);
+    color: #6b2f20;
+}
+
+.livreur-demarrage-status[data-state="error"] {
+    background: rgba(194, 102, 56, 0.12);
+    color: #6b2f20;
+}
+
+.livreur-demarrage-map {
+    width: 100%;
+    height: 170px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    z-index: 1;
+}
+
+.livreur-demarrage-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 0.45rem 0 0.65rem;
+    font-size: 0.72rem;
+    color: #666;
+}
+
+.livreur-demarrage-legend i {
+    color: #c26638;
+    margin-right: 0.2rem;
+}
+
+.livreur-demarrage-legend span:nth-child(2) i {
+    color: #918a44;
+}
+
+.livreur-demarrage-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.livreur-demarrage-actions .btn-primary,
+.livreur-demarrage-actions .btn-secondary {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.7rem;
+    min-height: 36px;
+}
+
+.livreur-demarrage-submit {
+    flex: 1 1 auto;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.livreur-map-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 14px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.livreur-map-pin--driver {
+    background: #c26638;
+}
+
+.livreur-map-pin--client {
+    background: #918a44;
+}
+
+body.livreur-demarrage-open {
+    overflow: hidden;
+}
+
+@media (max-width: 992px) {
+    .livreur-demarrage-panel__card {
+        width: min(340px, calc(100vw - 20px));
+        max-height: min(86vh, 580px);
+    }
+
+    .livreur-demarrage-panel__head h3 {
+        font-size: 0.86rem;
+    }
+
+    .livreur-demarrage-map {
+        height: 150px;
+    }
+
+    .livreur-demarrage-form {
+        padding: 0.55rem 0.7rem 0.7rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .livreur-demarrage-panel {
+        padding: 10px;
+        align-items: center;
+    }
+
+    .livreur-demarrage-panel__card {
+        width: min(320px, calc(100vw - 16px));
+        max-height: min(84vh, 520px);
+        border-radius: 11px;
+    }
+
+    .livreur-demarrage-panel__head {
+        padding: 0.55rem 2rem 0.45rem 0.7rem;
+    }
+
+    .livreur-demarrage-panel__head h3 {
+        font-size: 0.82rem;
+    }
+
+    .livreur-demarrage-panel__cmd {
+        font-size: 0.72rem;
+    }
+
+    .livreur-demarrage-field label {
+        font-size: 0.68rem;
+    }
+
+    .livreur-demarrage-field input[readonly],
+    .livreur-demarrage-field textarea {
+        font-size: 0.78rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    .livreur-demarrage-status {
+        font-size: 0.72rem;
+        padding: 0.35rem 0.45rem;
+    }
+
+    .livreur-demarrage-map {
+        height: 130px;
+    }
+
+    .livreur-demarrage-legend {
+        font-size: 0.68rem;
+        gap: 0.45rem;
+    }
+
+    .livreur-demarrage-actions .btn-primary,
+    .livreur-demarrage-actions .btn-secondary {
+        font-size: 0.74rem;
+        padding: 0.38rem 0.55rem;
+        min-height: 32px;
+        width: 100%;
+    }
+}
+
+/* ========== Page suivi GPS — design app livreur (carte plein écran) ========== */
+.page-livreur-suivi .mobile-menu-toggle,
+.page-livreur-suivi .sidebar-overlay,
+.page-livreur-suivi .admin-sidebar {
+    display: none !important;
+}
+
+.page-livreur-suivi .admin-container {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.page-livreur-suivi .admin-content {
+    position: relative;
+    max-width: none;
+    margin: 0;
+    padding: 0 !important;
+    background: #e8e8e8;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.livreur-suivi-fallback {
+    padding: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+}
+
+.livreur-suivi-app {
+    --livreur-topbar-h: 44px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    max-width: 100%;
+    overflow: hidden;
+    background: #f0f0f0;
+    padding-top: calc(var(--livreur-topbar-h) + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+}
+
+/* Barre rouge fixée tout en haut */
+.livreur-suivi-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    display: grid;
+    grid-template-columns: 36px 1fr 36px;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--livreur-topbar-h);
+    height: var(--livreur-topbar-h);
+    padding: 0 8px;
+    padding-top: env(safe-area-inset-top, 0px);
+    box-sizing: border-box;
+    background: #c26638;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.livreur-suivi-topbar__back,
+.livreur-suivi-topbar__action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    color: #c26638;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    font-size: 0.78rem;
+}
+
+.livreur-suivi-topbar__action--placeholder {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.livreur-suivi-topbar__title {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-align: center;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Carte plein écran */
+.livreur-suivi-map-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.livreur-tracking-map--fullscreen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 0;
+    z-index: 1;
+}
+
+.livreur-suivi-map-stage .leaflet-control-attribution {
+    font-size: 9px;
+    background: rgba(255, 255, 255, 0.75);
+}
+
+/* Contrôles carte flottants (droite) */
+.livreur-suivi-map-controls {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 450;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.livreur-suivi-map-controls__group {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.livreur-suivi-map-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: #fff;
+    color: #333;
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
+.livreur-suivi-map-btn.is-loading {
+    opacity: 0.65;
+    pointer-events: none;
+}
+
+.livreur-suivi-map-btn.is-loading i {
+    animation: livreur-spin 0.8s linear infinite;
+}
+
+@keyframes livreur-spin {
+    to { transform: rotate(360deg); }
+}
+
+.livreur-suivi-map-controls__group .livreur-suivi-map-btn:first-child {
+    border-bottom: 1px solid #eee;
+}
+
+.livreur-suivi-map-controls > .livreur-suivi-map-btn {
+    border-radius: 50%;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.livreur-suivi-map-btn:active {
+    background: #f5f5f5;
+}
+
+/* Bottom sheet */
+.livreur-suivi-sheet {
+    flex: 0 0 auto;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+    padding: 12px 14px 10px;
+    z-index: 400;
+    position: relative;
+}
+
+.livreur-suivi-sheet__head {
+    margin-bottom: 8px;
+}
+
+.livreur-suivi-sheet__status h2,
+.livreur-suivi-sheet__status-title {
+    margin: 0 0 2px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.15;
+}
+
+.livreur-suivi-status {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #777;
+    line-height: 1.3;
+}
+
+.livreur-suivi-sheet__client {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.livreur-suivi-sheet__contact {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0 0 5px;
+}
+
+.livreur-suivi-sheet__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #6b2f20;
+}
+
+.livreur-suivi-sheet__name i {
+    color: #918a44;
+    font-size: 0.75rem;
+}
+
+.livreur-suivi-sheet__tel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #c26638;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.livreur-suivi-sheet__tel:hover {
+    text-decoration: underline;
+}
+
+.livreur-suivi-sheet__adresse {
+    margin: 0;
+    font-size: 0.74rem;
+    color: #666;
+    line-height: 1.35;
+}
+
+.livreur-suivi-sheet__eta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 10px;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+    background: rgba(145, 138, 68, 0.1);
+    border: 1px solid rgba(145, 138, 68, 0.22);
+}
+
+.livreur-suivi-sheet__eta[hidden] {
+    display: none !important;
+}
+
+.livreur-suivi-sheet__eta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    background: #918a44;
+    color: #fff;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.livreur-suivi-sheet__eta-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.livreur-suivi-sheet__eta-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b2f20;
+}
+
+.livreur-suivi-sheet__eta-range {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.25;
+}
+
+.livreur-suivi-sheet__status-title--live { color: #2e7d32; }
+.livreur-suivi-sheet__status-title--off { color: #666; }
+.livreur-suivi-sheet__status-title--error { color: #c26638; }
+.livreur-suivi-sheet__status-title--pending { color: #111; }
+
+.livreur-suivi-status--live { color: #2e7d32; }
+.livreur-suivi-status--off { color: #888; }
+.livreur-suivi-status--error { color: #c26638; }
+
+/* Bouton CTA jaune */
+.livreur-suivi-sheet__cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 14px;
+    background: #f5d000;
+    color: #111;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(245, 208, 0, 0.45);
+    cursor: pointer;
+}
+
+.livreur-suivi-sheet__cta-main {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.livreur-suivi-sheet__cta-sub {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #333;
+    margin-top: 1px;
+}
+
+.livreur-suivi-sheet__cta--disabled {
+    background: #e0e0e0;
+    color: #888;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.livreur-suivi-sheet__cta:not(.livreur-suivi-sheet__cta--disabled):active {
+    transform: scale(0.98);
+}
+
+.livreur-suivi-sheet__actions button[hidden] {
+    display: none !important;
+}
+
+.livreur-suivi-sheet__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.livreur-suivi-sheet__cta--start {
+    background: #f5d000;
+    color: #111;
+    box-shadow: 0 2px 8px rgba(245, 208, 0, 0.45);
+}
+
+.livreur-suivi-sheet__cta--stop {
+    background: #6b2f20;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(107, 47, 32, 0.35);
+}
+
+.livreur-suivi-sheet__cta--stop .livreur-suivi-sheet__cta-sub {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.livreur-suivi-sheet__status-title--route {
+    color: #918a44;
+}
+
+.livreur-marker-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+}
+
+@media (min-width: 993px) {
+    .page-livreur-suivi .admin-content {
+        max-width: 480px;
+        margin: 0 auto;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+    }
+
+    .page-livreur-suivi .livreur-suivi-topbar {
+        max-width: 480px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+    }
+}
+
+@media (max-width: 992px) {
+    .livreur-suivi-app {
+        --livreur-topbar-h: 42px;
+    }
+
+    .livreur-suivi-topbar__title {
+        font-size: 0.8rem;
+    }
+
+    .livreur-suivi-sheet__status h2,
+    .livreur-suivi-sheet__status-title {
+        font-size: 0.92rem;
+    }
+
+    .livreur-suivi-status {
+        font-size: 0.68rem;
+    }
+
+    .livreur-suivi-sheet__eta {
+        gap: 0.5rem;
+        margin-bottom: 8px;
+        padding: 0.45rem 0.55rem;
+        border-radius: 8px;
+    }
+
+    .livreur-suivi-sheet__eta-icon {
+        width: 1.65rem;
+        height: 1.65rem;
+        font-size: 0.75rem;
+        border-radius: 6px;
+    }
+
+    .livreur-suivi-sheet__eta-label {
+        font-size: 0.62rem;
+    }
+
+    .livreur-suivi-sheet__eta-range {
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .livreur-suivi-app {
+        --livreur-topbar-h: 40px;
+    }
+
+    .livreur-suivi-topbar {
+        grid-template-columns: 32px 1fr 32px;
+        padding: 0 6px;
+        gap: 4px;
+    }
+
+    .livreur-suivi-topbar__back,
+    .livreur-suivi-topbar__action {
+        width: 28px;
+        height: 28px;
+        font-size: 0.72rem;
+    }
+
+    .livreur-suivi-topbar__title {
+        font-size: 0.76rem;
+    }
+
+    .livreur-suivi-sheet {
+        padding: 10px 12px 8px;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .livreur-suivi-sheet__status h2,
+    .livreur-suivi-sheet__status-title {
+        font-size: 0.86rem;
+    }
+
+    .livreur-suivi-status {
+        font-size: 0.65rem;
+    }
+
+    .livreur-suivi-sheet__name {
+        font-size: 0.76rem;
+    }
+
+    .livreur-suivi-sheet__tel {
+        font-size: 0.74rem;
+    }
+
+    .livreur-suivi-sheet__adresse {
+        font-size: 0.68rem;
+    }
+
+    .livreur-suivi-sheet__eta {
+        gap: 0.4rem;
+        margin-bottom: 7px;
+        padding: 0.35rem 0.45rem;
+        border-radius: 7px;
+    }
+
+    .livreur-suivi-sheet__eta-icon {
+        width: 1.45rem;
+        height: 1.45rem;
+        font-size: 0.68rem;
+    }
+
+    .livreur-suivi-sheet__eta-label {
+        font-size: 0.58rem;
+        letter-spacing: 0.02em;
+    }
+
+    .livreur-suivi-sheet__eta-range {
+        font-size: 0.76rem;
+    }
+
+    .livreur-suivi-map-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 0.75rem;
+    }
+
+    .livreur-suivi-map-controls {
+        right: 8px;
+        gap: 5px;
+    }
+
+    .livreur-suivi-sheet__cta {
+        min-height: 40px;
+        border-radius: 10px;
+    }
+
+    .livreur-suivi-sheet__cta-main {
+        font-size: 0.78rem;
+    }
+
+    .livreur-suivi-sheet__cta-sub {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .livreur-suivi-app {
+        --livreur-topbar-h: 38px;
+    }
+
+    .livreur-suivi-sheet__status h2,
+    .livreur-suivi-sheet__status-title {
+        font-size: 0.8rem;
+    }
+
+    .livreur-suivi-sheet__contact {
+        gap: 4px 8px;
+    }
+
+    .livreur-suivi-sheet__eta {
+        padding: 0.3rem 0.4rem;
+    }
+
+    .livreur-suivi-sheet__eta-range {
+        font-size: 0.72rem;
+    }
+}
+
+.livreur-empty--suivi {
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+/* Mini popup erreurs démarrage suivi */
+.livreur-suivi-alert {
+    position: fixed;
+    inset: 0;
+    z-index: 12050;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0.75rem;
+    pointer-events: none;
+}
+
+.livreur-suivi-alert:not([hidden]) {
+    pointer-events: auto;
+}
+
+.livreur-suivi-alert[hidden] {
+    display: none !important;
+}
+
+.livreur-suivi-alert__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+}
+
+.livreur-suivi-alert__panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    margin-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    padding: 1rem 1rem 0.85rem;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid rgba(107, 47, 32, 0.18);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+    animation: livreurSuiviAlertIn 0.22s ease-out;
+}
+
+@keyframes livreurSuiviAlertIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.livreur-suivi-alert__close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+    cursor: pointer;
+}
+
+.livreur-suivi-alert__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    margin-bottom: 0.55rem;
+    border-radius: 999px;
+    background: rgba(194, 102, 56, 0.14);
+    color: #c26638;
+    font-size: 1.05rem;
+}
+
+.livreur-suivi-alert__title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #6b2f20;
+}
+
+.livreur-suivi-alert__message {
+    margin: 0 0 0.55rem;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: #333;
+}
+
+.livreur-suivi-alert__details {
+    margin: 0 0 0.75rem 1.1rem;
+    padding: 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #555;
+}
+
+.livreur-suivi-alert__details li + li {
+    margin-top: 0.25rem;
+}
+
+.livreur-suivi-alert__ok {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    background: #918a44;
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.livreur-suivi-alert__ok:hover {
+    background: #7a7440;
+}
+
+@media (min-width: 640px) {
+    .livreur-suivi-alert {
+        align-items: center;
+        padding: 1rem;
+    }
+
+    .livreur-suivi-alert__panel {
+        margin-bottom: 0;
+    }
+}
