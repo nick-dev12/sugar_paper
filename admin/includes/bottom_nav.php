@@ -359,6 +359,10 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
                 document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
 
+                if (typeof window.setAdminSidebarOpen === 'function') {
+                    window.setAdminSidebarOpen(sidebar.classList.contains('show'));
+                }
+
             }
 
             setMenuOpen(sidebar && sidebar.classList.contains('show'));
@@ -372,6 +376,9 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
             overlay.addEventListener('click', function () {
 
                 setMenuOpen(false);
+                if (typeof window.setAdminSidebarOpen === 'function') {
+                    window.setAdminSidebarOpen(false);
+                }
 
             });
 

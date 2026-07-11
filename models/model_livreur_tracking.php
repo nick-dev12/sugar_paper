@@ -1182,6 +1182,7 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
     if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
         return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
     }
+    livreur_stop_other_active_web_trackings($admin_id, $commande_id, $bl_id);
     try {
         if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
             $row = livreur_get_facture_tracking((int) $bl_id);
@@ -1212,6 +1213,61 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
         return ['ok' => true];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de l\'activation du suivi.'];
+    }
+}
+
+/**
+ * Désactive le suivi GPS des autres livraisons du même livreur (changement de course).
+ */
+function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id = null, $except_bl_id = null) {
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1) {
+        return false;
+    }
+    try {
+        if ($except_commande_id !== null && (int) $except_commande_id > 0) {
+            $stmt = $db->prepare('
+                UPDATE commandes
+                SET tracking_active = 0
+                WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+            ');
+            $stmt->execute([
+                'livreur_id' => $admin_id,
+                'except_id' => (int) $except_commande_id,
+            ]);
+        } else {
+            $stmt = $db->prepare('
+                UPDATE commandes
+                SET tracking_active = 0
+                WHERE livreur_id = :livreur_id AND tracking_active = 1
+            ');
+            $stmt->execute(['livreur_id' => $admin_id]);
+        }
+
+        if (livreur_bl_livraison_columns_ok()) {
+            if ($except_bl_id !== null && (int) $except_bl_id > 0) {
+                $stmtBl = $db->prepare('
+                    UPDATE bons_livraison
+                    SET tracking_active = 0
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+                ');
+                $stmtBl->execute([
+                    'livreur_id' => $admin_id,
+                    'except_id' => (int) $except_bl_id,
+                ]);
+            } else {
+                $stmtBl = $db->prepare('
+                    UPDATE bons_livraison
+                    SET tracking_active = 0
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1
+                ');
+                $stmtBl->execute(['livreur_id' => $admin_id]);
+            }
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
     }
 }
 
@@ -1404,11 +1460,29 @@ function livreur_parse_coord($value) {
 }
 
 /**
+ * Livraison assignée au livreur et encore en cours (prise en charge ou GPS actif).
+ *
+ * @param 'commande'|'facture' $type
+ * @param array<string, mixed> $row
+ */
+function livreur_mes_livraison_en_cours($type, array $row) {
+    if ((int) ($row['tracking_active'] ?? 0) === 1) {
+        return true;
+    }
+    if ($type === 'commande') {
+        $statut = strtolower(trim((string) ($row['statut'] ?? '')));
+        return !in_array($statut, ['livree', 'paye', 'annulee'], true);
+    }
+    $statut_bl = strtolower(trim((string) ($row['statut_bl'] ?? $row['statut'] ?? '')));
+    return !in_array($statut_bl, ['livree', 'livré', 'livre', 'annulee', 'annulée', 'annule'], true);
+}
+
+/**
  * Livraisons (commandes + factures) assignées à un admin livreur.
  *
  * @return list<array<string, mixed>>
  */
-function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
+function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true, $started_only = false) {
     $admin_id = (int) $admin_id;
     if ($admin_id < 1) {
         return [];
@@ -1426,6 +1500,15 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
         $nom = trim((string) ($cmd['user_nom'] ?? $cmd['client_nom'] ?? ''));
         $client_nom = trim($prenom . ' ' . $nom);
         $tel = trim((string) ($cmd['user_telephone'] ?? $cmd['client_telephone'] ?? $cmd['telephone_livraison'] ?? ''));
+        $tracking_active = (int) ($cmd['tracking_active'] ?? 0);
+        $geo_ready = $lat !== null && $lng !== null;
+        if ($started_only && !livreur_mes_livraison_en_cours('commande', $cmd)) {
+            continue;
+        }
+        $suivi_qs = 'commande_id=' . (int) $cmd['id'];
+        if ($tracking_active || $geo_ready) {
+            $suivi_qs .= '&autostart=1';
+        }
         $items[] = [
             'type' => 'commande',
             'id' => (int) $cmd['id'],
@@ -1433,11 +1516,11 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
             'client_nom' => $client_nom,
             'client_tel' => $tel,
             'adresse' => (string) ($cmd['adresse_livraison'] ?? ''),
-            'tracking_active' => (int) ($cmd['tracking_active'] ?? 0),
+            'tracking_active' => $tracking_active,
             'statut' => (string) ($cmd['statut'] ?? ''),
             'statut_label' => livreur_statut_label($cmd['statut'] ?? ''),
-            'geo_ready' => $lat !== null && $lng !== null,
-            'suivi_url' => 'suivi.php?commande_id=' . (int) $cmd['id'],
+            'geo_ready' => $geo_ready,
+            'suivi_url' => 'suivi.php?' . $suivi_qs,
             'terminee' => false,
         ];
     }
@@ -1454,6 +1537,15 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
             $lat = livreur_parse_coord($facture['delivery_latitude'] ?? null);
             $lng = livreur_parse_coord($facture['delivery_longitude'] ?? null);
             $adresse = trim((string) ($facture['adresse_livraison'] ?? $facture['adresse_client'] ?? $facture['client_adresse'] ?? ''));
+            $tracking_active = (int) ($facture['tracking_active'] ?? 0);
+            $geo_ready = $lat !== null && $lng !== null;
+            if ($started_only && !livreur_mes_livraison_en_cours('facture', $facture)) {
+                continue;
+            }
+            $suivi_qs = 'bl_id=' . (int) $facture['id'];
+            if ($tracking_active || $geo_ready) {
+                $suivi_qs .= '&autostart=1';
+            }
             $items[] = [
                 'type' => 'facture',
                 'id' => (int) $facture['id'],
@@ -1461,11 +1553,11 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true) {
                 'client_nom' => trim((string) ($facture['raison_sociale'] ?? '')),
                 'client_tel' => trim((string) ($facture['client_telephone'] ?? '')),
                 'adresse' => $adresse,
-                'tracking_active' => (int) ($facture['tracking_active'] ?? 0),
+                'tracking_active' => $tracking_active,
                 'statut' => $statut_bl,
                 'statut_label' => livreur_facture_statut_livraison($facture),
-                'geo_ready' => $lat !== null && $lng !== null,
-                'suivi_url' => 'suivi.php?bl_id=' . (int) $facture['id'],
+                'geo_ready' => $geo_ready,
+                'suivi_url' => 'suivi.php?' . $suivi_qs,
                 'terminee' => false,
             ];
         }

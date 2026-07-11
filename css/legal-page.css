@@ -1,0 +1,215 @@
+/**
+ * Pages légales — Sugar Paper
+ */
+.legal-page {
+    max-width: 920px;
+    margin: 40px auto;
+    padding: 40px 24px 80px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: var(--ombre-douce, 0 4px 20px rgba(229, 72, 138, 0.08));
+}
+
+.legal-page h1 {
+    color: var(--titres, #3d2800);
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 16px;
+    text-align: center;
+    border-bottom: 3px solid var(--couleur-dominante, #E5488A);
+    padding-bottom: 15px;
+    line-height: 1.3;
+}
+
+.legal-page .legal-updated {
+    text-align: center;
+    color: #737373;
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+.legal-page h2 {
+    color: var(--titres, #3d2800);
+    font-size: 1.25rem;
+    margin-top: 36px;
+    margin-bottom: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    scroll-margin-top: 90px;
+}
+
+.legal-page h2:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+.legal-page h3 {
+    color: #4a4a4a;
+    font-size: 1.05rem;
+    margin-top: 22px;
+    margin-bottom: 10px;
+}
+
+.legal-page h4 {
+    color: #4a4a4a;
+    font-size: 0.98rem;
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+
+.legal-page p,
+.legal-page li {
+    color: var(--texte-fonce, #3d2800);
+    font-size: 15px;
+    line-height: 1.85;
+    margin-bottom: 12px;
+}
+
+.legal-page p {
+    text-align: justify;
+}
+
+.legal-page ul,
+.legal-page ol {
+    margin: 12px 0 18px;
+    padding-left: 28px;
+}
+
+.legal-page li {
+    margin-bottom: 8px;
+}
+
+.legal-page a {
+    color: var(--couleur-dominante, #E5488A);
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.legal-page a:hover {
+    color: var(--accent-promo, #F77F00);
+    text-decoration: underline;
+}
+
+.legal-toc {
+    background: #fdf8fa;
+    border: 1px solid rgba(229, 72, 138, 0.15);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 32px;
+}
+
+.legal-toc strong {
+    display: block;
+    margin-bottom: 12px;
+    color: var(--titres, #3d2800);
+}
+
+.legal-toc ol {
+    margin: 0;
+    padding-left: 22px;
+    columns: 1;
+}
+
+@media (min-width: 640px) {
+    .legal-toc ol {
+        columns: 2;
+        column-gap: 24px;
+    }
+}
+
+.legal-toc li {
+    margin-bottom: 6px;
+    font-size: 14px;
+    break-inside: avoid;
+}
+
+.legal-table-wrap {
+    overflow-x: auto;
+    margin: 18px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.legal-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    min-width: 520px;
+}
+
+.legal-table-wrap th,
+.legal-table-wrap td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    vertical-align: top;
+}
+
+.legal-table-wrap th {
+    background: #fdf0f5;
+    color: var(--titres, #3d2800);
+    font-weight: 600;
+}
+
+.legal-table-wrap tr:last-child td {
+    border-bottom: none;
+}
+
+.legal-note {
+    font-size: 13px;
+    color: #737373;
+    font-style: italic;
+    margin-top: 20px;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: #fdf0f5;
+    border-radius: 8px;
+    border-left: 4px solid var(--couleur-dominante, #E5488A);
+    text-align: left;
+}
+
+.legal-cross {
+    margin-top: 28px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #fdf8fa;
+    font-size: 14px;
+}
+
+.legal-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.legal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fdf0f5;
+    color: var(--couleur-dominante, #E5488A);
+    border: 1px solid rgba(229, 72, 138, 0.2);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding: 12px 24px;
+    background: var(--couleur-dominante, #E5488A);
+    color: #ffffff !important;
+    text-decoration: none !important;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.back-link:hover {
+    background: var(--accent-promo, #F77F00);
+    color: #ffffff !important;
+}

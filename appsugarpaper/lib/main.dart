@@ -16,19 +16,20 @@ import 'dart:convert';
 import 'dart:collection';
 import 'dart:async';
 import 'dart:io' show Platform;
+import 'config/webview_site_config.dart';
 import 'firebase_options.dart';
 import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
 import 'services/native_permission_service.dart';
+import 'services/livreur_tracking_service.dart';
 import 'widgets/app_version_gate.dart';
 import 'theme/app_colors.dart';
 
-/// URL du site chargée dans la WebView (production)
-const String kMarketplaceBaseUrl = 'https://sugar-paper.com/';
+/// URL du site chargée dans la WebView — voir [kMarketplaceBaseUrl] dans webview_site_config.dart
 /// Durée max de l'écran de chargement initial
 const Duration kInitialLoaderMaxDuration = Duration(seconds: 5);
 /// Logo splash + chargement initial (identique au splash natif iOS/Android)
-const String kSplashLogoAsset = 'assets/images/sugar_paper_splash_logo.png';
+const String kSplashLogoAsset = 'assets/images/sugar_paper_splash_logo_padded.png';
 
 Future<void>? _firebaseBootstrapFuture;
 
@@ -59,8 +60,7 @@ Future<void> _bootstrapFirebase() async {
   }
 }
 bool _isMarketplaceHost(String host) {
-  final h = host.toLowerCase();
-  return h == 'sugar-paper.com' || h == 'www.sugar-paper.com';
+  return isMarketplaceHost(host);
 }
 
 /// Normalise les liens partagés (apex sans www, chemins boutique conservés).
@@ -73,11 +73,8 @@ String normalizeMarketplaceUrl(String url) {
     if (!uri.hasScheme || !uri.hasAuthority) {
       return resolveRelativeMarketUrl(url);
     }
-    var host = uri.host.toLowerCase();
-    if (host == 'www.sugar-paper.com') {
-      host = 'sugar-paper.com';
-    }
-    if (!_isMarketplaceHost(host)) {
+    final host = normalizeMarketplaceHost(uri.host);
+    if (!isMarketplaceHost(host)) {
       return url;
     }
     return uri.replace(host: host).toString();
@@ -176,13 +173,28 @@ class _WebViewScreenState extends State<WebViewScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _startInitialLoadTimers();
-    _initializeFCM();
-    _resolveMarketplaceEntryUrl();
+    unawaited(_initializeFCM());
+    unawaited(_resolveMarketplaceEntryUrl());
+    Timer(const Duration(seconds: 4), () {
+      if (!mounted || _marketplaceEntryUrlReady) {
+        return;
+      }
+      setState(() {
+        _marketplaceEntryUrl = kMarketplaceBaseUrl;
+        _currentUrl = kMarketplaceBaseUrl;
+        _marketplaceEntryUrlReady = true;
+      });
+    });
   }
 
   /// Attend le deep link (App Links / Universal Links) avant de créer la WebView.
   Future<void> _resolveMarketplaceEntryUrl() async {
-    await _initDeepLinks();
+    try {
+      await _initDeepLinks().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {},
+      );
+    } catch (_) {}
     await _loadSavedUrl();
     if (!mounted) return;
     final resolved = (_currentUrl != null && _currentUrl!.isNotEmpty)
@@ -238,6 +250,110 @@ class _WebViewScreenState extends State<WebViewScreen>
     await _injectWebViewPerformanceOptimizations();
     await _injectJavaScript();
     await _registerFCMTokenInWebView();
+    _scheduleLivreurTrackingRestoreIfNeeded();
+  }
+
+  void _scheduleLivreurTrackingRestoreIfNeeded() {
+    final url = (_currentUrl ?? '').toLowerCase();
+    if (!url.contains('/admin/livreurs/suivi.php')) {
+      return;
+    }
+    Future<void>.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        unawaited(_tryRestoreLivreurTracking());
+      }
+    });
+  }
+
+  Future<String?> _getWebViewCookieHeader() async {
+    if (kIsWeb) {
+      return null;
+    }
+    final origin = _currentUrl ?? kMarketplaceBaseUrl;
+    try {
+      final cookies = await CookieManager.instance().getCookies(
+        url: WebUri(origin),
+      );
+      if (cookies.isEmpty) {
+        return null;
+      }
+      return cookies.map((c) => '${c.name}=${c.value}').join('; ');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _tryRestoreLivreurTracking() async {
+    if (kIsWeb || !mounted) {
+      return;
+    }
+    await LivreurTrackingService.instance.restoreIfNeeded(
+      getCookieHeader: _getWebViewCookieHeader,
+      requestPermissions: () async {
+        if (!mounted) {
+          return false;
+        }
+        return NativePermissionService.requestDeliveryTrackingPermissions(
+          context,
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleStartDeliveryTracking(dynamic raw) async {
+    if (kIsWeb) {
+      return {'success': false, 'error': 'Non disponible sur le web'};
+    }
+    if (!mounted) {
+      return {'success': false, 'error': 'Application non prête'};
+    }
+    Map<String, dynamic> config;
+    if (raw is Map) {
+      config = raw.map((key, value) => MapEntry(key.toString(), value));
+    } else if (raw is String && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map) {
+          config = decoded.map((key, value) => MapEntry(key.toString(), value));
+        } else {
+          return {'success': false, 'error': 'Configuration invalide'};
+        }
+      } catch (_) {
+        return {'success': false, 'error': 'Configuration invalide'};
+      }
+    } else {
+      return {'success': false, 'error': 'Configuration manquante'};
+    }
+
+    if ((config['siteOrigin'] ?? '').toString().isEmpty) {
+      config['siteOrigin'] = normalizeMarketplaceUrl(
+        _currentUrl ?? kMarketplaceBaseUrl,
+      ).replaceAll(RegExp(r'/+$'), '');
+      try {
+        final uri = Uri.parse(_currentUrl ?? kMarketplaceBaseUrl);
+        config['siteOrigin'] = '${uri.scheme}://${uri.host}';
+      } catch (_) {}
+    }
+
+    return LivreurTrackingService.instance.start(
+      rawConfig: config,
+      getCookieHeader: _getWebViewCookieHeader,
+      requestPermissions: () =>
+          NativePermissionService.requestDeliveryTrackingPermissions(context),
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleStopDeliveryTracking(dynamic _) async {
+    if (kIsWeb) {
+      return {'success': false, 'error': 'Non disponible sur le web'};
+    }
+    return LivreurTrackingService.instance.stop(
+      getCookieHeader: _getWebViewCookieHeader,
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleDeliveryTrackingStatus(dynamic _) async {
+    return LivreurTrackingService.instance.status();
   }
 
   @override
@@ -285,9 +401,12 @@ class _WebViewScreenState extends State<WebViewScreen>
   Future<void> _initDeepLinks() async {
     final appLinks = AppLinks();
 
-    // Lien ayant lancé l'app à froid (cold start)
+    // Lien ayant lancé l'app à froid (cold start) — peut bloquer sur certains Android
     try {
-      final initialUri = await appLinks.getInitialLink();
+      final initialUri = await appLinks.getInitialLink().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
       if (initialUri != null && _isMarketplaceHost(initialUri.host)) {
         _deepLinkInitUrl = normalizeMarketplaceUrl(initialUri.toString());
         _currentUrl = _deepLinkInitUrl;
@@ -313,6 +432,13 @@ class _WebViewScreenState extends State<WebViewScreen>
       if (savedUrl != null && savedUrl.isNotEmpty) {
         if (savedUrl.contains('aria-edu.com') ||
             savedUrl.contains('samapiece.it.com')) {
+          await prefs.remove('last_webview_url');
+          _currentUrl = null;
+        } else if (!kIsWeb &&
+            Platform.isAndroid &&
+            kAndroidUseSamapieceForTesting &&
+            savedUrl.contains('sugar-paper.com')) {
+          /* Tests Android sur samapiece.com — ignorer l'ancienne URL prod */
           await prefs.remove('last_webview_url');
           _currentUrl = null;
         } else {
@@ -474,6 +600,28 @@ class _WebViewScreenState extends State<WebViewScreen>
           return {'success': false, 'error': 'No url'};
         }
         return await _handleOpenExternalUrl(args[0].toString());
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'startDeliveryTracking',
+      callback: (args) async {
+        final payload = args.isNotEmpty ? args[0] : null;
+        return await _handleStartDeliveryTracking(payload);
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'stopDeliveryTracking',
+      callback: (args) async {
+        return await _handleStopDeliveryTracking(null);
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'getDeliveryTrackingStatus',
+      callback: (args) async {
+        return await _handleDeliveryTrackingStatus(null);
       },
     );
   }
@@ -871,6 +1019,42 @@ class _WebViewScreenState extends State<WebViewScreen>
             });
           },
 
+          startDeliveryTracking: function(config) {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('startDeliveryTracking', config || {})
+                .then(result => {
+                  if (result && result.success) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Suivi natif impossible'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          stopDeliveryTracking: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('stopDeliveryTracking')
+                .then(result => {
+                  if (result && result.success) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Arrêt suivi natif impossible'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          getDeliveryTrackingStatus: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('getDeliveryTrackingStatus')
+                .then(result => resolve(result || { success: false }))
+                .catch(error => reject(error));
+            });
+          },
+
           isNativeApp: function() {
             return true;
           }
@@ -1212,6 +1396,10 @@ class _WebViewScreenState extends State<WebViewScreen>
                   },
                   onReceivedError: (controller, request, error) {
                     print('WebView Error: ${error.description}');
+                    if (request.isForMainFrame ?? true) {
+                      _finishInitialLoad();
+                      _isPageLoadingNotifier.value = false;
+                    }
                   },
                   shouldOverrideUrlLoading: (controller, navigationAction) async {
                     final uri = navigationAction.request.url;
@@ -1327,7 +1515,7 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final ringSize = (size.width * 0.78).clamp(260.0, 340.0);
-    final logoWidth = ringSize * 0.68;
+    final logoSize = (size.width * 0.52).clamp(200.0, 280.0);
 
     return ColoredBox(
       color: const Color(0xFFFFFFFF),
@@ -1335,7 +1523,7 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader> {
         child: Center(
           child: _MarketplaceLoaderContent(
             ringSize: ringSize,
-            logoWidth: logoWidth,
+            logoSize: logoSize,
             showLoadingRing: _showLoadingRing,
           ),
         ),
@@ -1347,53 +1535,52 @@ class _MarketplaceLoaderState extends State<_MarketplaceLoader> {
 class _MarketplaceLoaderContent extends StatelessWidget {
   const _MarketplaceLoaderContent({
     required this.ringSize,
-    required this.logoWidth,
+    required this.logoSize,
     required this.showLoadingRing,
   });
 
   final double ringSize;
-  final double logoWidth;
+  final double logoSize;
   final bool showLoadingRing;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: ringSize,
-      height: ringSize,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedOpacity(
-            opacity: showLoadingRing ? 1 : 0,
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOut,
-            child: SizedBox(
-              width: ringSize,
-              height: ringSize,
-              child: const CircularProgressIndicator(
-                strokeWidth: 4.5,
-                strokeCap: StrokeCap.round,
-                backgroundColor: Color(0x1AE5488A),
-                valueColor: AlwaysStoppedAnimation<Color>(kOrangePromo),
-              ),
+    return Stack(
+      alignment: Alignment.center,
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedOpacity(
+          opacity: showLoadingRing ? 1 : 0,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+          child: SizedBox(
+            width: ringSize,
+            height: ringSize,
+            child: const CircularProgressIndicator(
+              strokeWidth: 4.5,
+              strokeCap: StrokeCap.round,
+              backgroundColor: Color(0x1AE5488A),
+              valueColor: AlwaysStoppedAnimation<Color>(kOrangePromo),
             ),
           ),
-          Image.asset(
-            kSplashLogoAsset,
-            width: logoWidth,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.high,
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset(
-                'assets/images/logo_market.png',
-                width: logoWidth,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+        Image.asset(
+          kSplashLogoAsset,
+          width: logoSize,
+          height: logoSize,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stackTrace) {
+            return Image.asset(
+              'assets/images/logo_market.png',
+              width: logoSize,
+              height: logoSize,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
+            );
+          },
+        ),
+      ],
     );
   }
 }

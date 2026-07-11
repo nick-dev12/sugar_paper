@@ -1,10 +1,12 @@
-# Soumission App Store — COLObanes (iOS)
+# Soumission App Store — Sugar Paper (iOS)
 
-## Rejet Guideline 5.1.1(ii) — chaînes d'objectif (Purpose Strings)
+## Guideline 5.1.1 — chaînes d'objectif (`Info.plist`)
 
-Apple exige que chaque `NS*UsageDescription` dans `Info.plist` explique **comment** et **pourquoi** l'app utilise la ressource, avec un **exemple concret**. Les formulations du type « l'application a besoin d'accéder à… » sont refusées.
+Apple exige que chaque `NS*UsageDescription` explique **comment** et **pourquoi** l'app utilise la ressource, avec un **exemple concret**.
 
-Les textes ont été mis à jour dans `ios/Runner/Info.plist`. Un **dialogue in-app** (`lib/services/native_permission_service.dart`) s'affiche avant la boîte système pour la caméra et la localisation, avec les mêmes finalités que les chaînes Info.plist.
+✅ Configuré dans `ios/Runner/Info.plist` (caméra, photothèque, localisation usage + arrière-plan livreur).
+
+Un **dialogue in-app** (`lib/services/native_permission_service.dart`) précède la boîte système pour la caméra, la localisation client et le suivi livraison livreur.
 
 Référence : [Human Interface Guidelines — Privacy](https://developer.apple.com/design/human-interface-guidelines/privacy#Requesting-permission)
 
@@ -12,11 +14,9 @@ Référence : [Human Interface Guidelines — Privacy](https://developer.apple.c
 
 | Plateforme | Identifiant |
 |------------|-------------|
-| iOS (App Store Connect) | `com.colobanes.app` |
-| Android | `com.colobanes.app` |
-| Firebase `GoogleService-Info.plist` | `BUNDLE_ID` = `com.colobanes.app` |
-
-> Si dans la console Firebase vous avez créé une app iOS sous `com.ariaedu.app`, **ajoutez une seconde app iOS** avec le bundle `com.colobanes.app`, téléchargez le nouveau `GoogleService-Info.plist` et placez-le dans `ios/Runner/`.
+| iOS (App Store Connect) | `com.sugarpaper.app` |
+| Android | `com.sugarpaper.app` |
+| Firebase `GoogleService-Info.plist` | `BUNDLE_ID` = `com.sugarpaper.app` |
 
 ## Build sur Mac (Xcode)
 
@@ -25,52 +25,56 @@ Référence : [Human Interface Guidelines — Privacy](https://developer.apple.c
 - macOS avec Xcode 15+
 - Flutter SDK stable (`flutter doctor`)
 - Compte Apple Developer + certificats de distribution
-- Fichier `ios/Runner/GoogleService-Info.plist` présent (emplacement officiel Firebase / Flutter)
+- `ios/Runner/GoogleService-Info.plist` (projet Firebase **sugar-paper**)
 
 ### Étapes
 
 ```bash
-cd colobane
+cd appsugarpaper
 flutter pub get
 cd ios
-pod install   # génère Podfile si absent après premier flutter build ios
+pod install
 cd ..
 flutter build ipa --release
 ```
 
 Ou ouvrir **`ios/Runner.xcworkspace`** dans Xcode :
 
-1. Sélectionner la cible **Runner** → **Signing & Capabilities** : équipe + bundle `com.colobanes.app`
-2. Vérifier que **GoogleService-Info.plist** apparaît dans le groupe Runner (coche « Target Membership » Runner)
-3. **Product → Archive** → distribuer vers App Store Connect
+1. Cible **Runner** → **Signing & Capabilities** : équipe + bundle `com.sugarpaper.app`
+2. Ajouter **Push Notifications** et **Background Modes** → cocher **Location updates** et **Remote notifications**
+3. Vérifier **GoogleService-Info.plist** (Target Membership Runner)
+4. **Product → Archive** → App Store Connect
 
 ### Firebase (notifications)
 
-- `firebase_core` et `firebase_messaging` sont initialisés dans `lib/main.dart`
-- Demande de permission : `FCMService.requestNotificationPermission()` (dialogue iOS / Android 13+)
-- `Info.plist` : `UIBackgroundModes` → `remote-notification`
-- `Runner.entitlements` : `aps-environment` (passer à **`production`** avant l’archive App Store si besoin)
-- Dans Xcode : cible **Runner** → **Signing & Capabilities** → ajouter **Push Notifications**
-- Console Firebase : clé **APNs** (fichier .p8) uploadée pour l’app iOS `com.colobanes.app`
-- Pas d'Analytics IDFA : pas de module `FirebaseAnalytics` avec suivi publicitaire
-- `FirebaseAppDelegateProxyEnabled` = `false` dans `Info.plist` (gestion via plugins Flutter)
+- `firebase_core` / `firebase_messaging` dans `lib/main.dart`
+- Permission : `FCMService.requestNotificationPermission()` (dialogue système iOS)
+- `Info.plist` : `UIBackgroundModes` → `remote-notification`, `location`
+- `Runner.entitlements` : `aps-environment` → **`production`** avant archive store
+- Console Firebase : clé APNs (.p8) pour `com.sugarpaper.app`
 
-> Sur iOS, il n’existe pas de clé `NS*UsageDescription` pour les notifications push : le système affiche sa propre boîte de dialogue lors de `requestPermission()`.
+## App Store Connect — confidentialité et review
 
-### App Store Connect — confidentialité
+### App Privacy
 
-Dans **App Privacy**, déclarer notamment :
+- **Localisation précise** : adresse livraison (action « Localiser ») ; suivi livreur en course active (**arrière-plan limité aux livreurs**)
+- **Photos** : contenu utilisateur (profil, commande)
+- **Identifiants** : jeton push
+- Ne pas déclarer le micro (non utilisé)
 
-- Données de localisation (coarse/precise) — livraison, inscription, boutiques proches, emplacement boutique vendeur ; **sur action utilisateur** (« Localiser ») ; **When In Use** uniquement, pas de suivi arrière-plan
-- Photos — contenu fourni par l'utilisateur
-- Identifiants (jeton push FCM/APNs)
-- Données d'utilisation / diagnostics si collectés par Firebase (selon configuration console)
+### Localisation arrière-plan (livreurs)
 
-URL politique de confidentialité : `https://colobanes.com/politique-confidentialite.php`
-URL CGU : `https://colobanes.com/conditions-utilisation.php`
+Apple peut demander une **vidéo** montrant :
+1. Livreur connecté → démarrage livraison sur `admin/livreurs/suivi.php`
+2. Dialogue explicatif in-app puis autorisation « Toujours »
+3. App en arrière-plan → client voit la position sur le suivi
 
-## Après correction
+Texte de résolution de rejet type :
+> Les chaînes Info.plist décrivent l'usage caméra, photos et localisation avec exemples. Un dialogue in-app précède chaque demande. La localisation arrière-plan est réservée aux livreurs pendant une livraison active et s'arrête en fin de course. Politique de confidentialité et CGU mises à jour (sections app mobile et suivi GPS).
 
-1. Incrémenter le **build number** si besoin (version actuelle : `1.2.0+2` dans `pubspec.yaml`)
-2. Soumettre une nouvelle build
-3. Dans la résolution du rejet, indiquer que les chaînes caméra / photos / localisation ont été réécrites avec exemples et finalités détaillées, qu'un dialogue explicatif in-app précède la demande système, que le micro et la localisation arrière-plan ne sont pas utilisés, et que la politique de confidentialité (section 9) et les CGU (section 4 bis) ont été mises à jour
+### URLs légales
+
+- Politique : `https://sugar-paper.com/politique-confidentialite.php`
+- CGU : `https://sugar-paper.com/conditions-utilisation.php`
+
+Voir aussi : `JUSTIFICATIONS_PERMISSIONS.md`

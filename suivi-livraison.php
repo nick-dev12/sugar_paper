@@ -121,15 +121,11 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
 
 <div class="livreur-suivi-app is-public-watch" id="livreur-suivi-app">
     <header class="livreur-suivi-topbar livreur-suivi-topbar--public">
-        <span class="livreur-suivi-topbar__brand"><i class="fas fa-truck-fast" aria-hidden="true"></i></span>
+        <span class="livreur-suivi-topbar__brand" aria-hidden="true"><i class="fas fa-truck-fast"></i></span>
         <h1 class="livreur-suivi-topbar__title"><?php echo htmlspecialchars($statut_label ?: 'Suivi livraison'); ?></h1>
-        <?php if ($client_tel !== ''): ?>
-        <a href="tel:<?php echo htmlspecialchars($client_tel_href); ?>" class="livreur-suivi-topbar__action" aria-label="Appeler">
-            <i class="fas fa-phone" aria-hidden="true"></i>
+        <a href="/index.php" class="livreur-suivi-topbar__action livreur-suivi-topbar__action--brand" aria-label="Sugar Paper — Accueil">
+            <img src="/image/sugar_paper.jpg" alt="Sugar Paper" class="livreur-suivi-topbar__logo">
         </a>
-        <?php else: ?>
-        <span class="livreur-suivi-topbar__action livreur-suivi-topbar__action--placeholder" aria-hidden="true"></span>
-        <?php endif; ?>
     </header>
 
     <div class="livreur-suivi-map-stage">

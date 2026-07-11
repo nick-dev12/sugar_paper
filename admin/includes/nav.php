@@ -48,6 +48,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
 
 <script>
     (function () {
+        function setAdminSidebarOpen(isOpen) {
+            document.documentElement.classList.toggle('admin-sidebar-open', !!isOpen);
+        }
         function toggleAdminSidebar() {
             var sidebar = document.getElementById('adminSidebar');
             var overlay = document.getElementById('sidebarOverlay');
@@ -55,9 +58,11 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 sidebar.classList.toggle('show');
                 overlay.classList.toggle('show');
                 document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+                setAdminSidebarOpen(sidebar.classList.contains('show'));
             }
         }
         window.toggleSidebar = toggleAdminSidebar;
+        window.setAdminSidebarOpen = setAdminSidebarOpen;
         document.addEventListener('DOMContentLoaded', function () {
             var btn = document.getElementById('menuToggle');
             var overlay = document.getElementById('sidebarOverlay');

@@ -7,6 +7,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/webview_site_config.dart';
+
 /// Service pour gérer Firebase Cloud Messaging
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -188,7 +190,7 @@ class FCMService {
 
   /// Code JavaScript à injecter dans la WebView pour enregistrer le token
   static String getTokenRegistrationScript(String token) {
-    final serverUrl = _serverUrl ?? 'https://sugar-paper.com';
+    final serverUrl = _serverUrl ?? kMarketplaceBaseUrl.replaceAll(RegExp(r'/+$'), '');
     final deviceType = (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
     final deviceName = (!kIsWeb && Platform.isIOS)
         ? 'Sugar Paper iOS'

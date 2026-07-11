@@ -160,6 +160,11 @@
     var socketClient = null;
     var lastPostAt = 0;
     var lastRouteRecalcAt = 0;
+    var activeRouteCoords = null;
+    var routeRecalcInFlight = false;
+    var ROUTE_OFF_PATH_THRESHOLD_M = 45;
+    var ROUTE_RECALC_MIN_INTERVAL_MS = 10000;
+    var ROUTE_RECALC_PERIODIC_MS = 45000;
     var driverHeadingDeg = 0;
     var mapBearingDeg = 0;
     var compassHeadingDeg = null;
@@ -182,6 +187,40 @@
     var observerStopped = false;
     var lastMapFollowAt = 0;
     var bearingTargetDeg = 0;
+    var nativeDriverTracking = false;
+
+    function isNativeDriverTrackingAvailable() {
+        return typeof window.LivreurNativeTracking !== 'undefined' &&
+            window.LivreurNativeTracking.isAvailable();
+    }
+
+    function startNativeDriverTracking() {
+        if (!isNativeDriverTrackingAvailable()) {
+            return Promise.resolve(false);
+        }
+        return window.LivreurNativeTracking.start().then(function (result) {
+            var ok = !!(result && result.success);
+            nativeDriverTracking = ok;
+            if (ok) {
+                stopWatch();
+                clearBackgroundTracking();
+            }
+            return ok;
+        }).catch(function () {
+            nativeDriverTracking = false;
+            return false;
+        });
+    }
+
+    function stopNativeDriverTracking() {
+        nativeDriverTracking = false;
+        if (typeof window.LivreurNativeTracking !== 'undefined') {
+            return window.LivreurNativeTracking.stop().catch(function () {
+                return { success: false };
+            });
+        }
+        return Promise.resolve({ success: false });
+    }
 
     function isObserverMode() {
         return !!(cfg.watchOnly || cfg.publicMode);
@@ -257,10 +296,10 @@
             return;
         }
         var now = Date.now();
-        if (wasFirst || now - lastRouteRecalcAt > 45000) {
-            lastRouteRecalcAt = now;
-            drawRoute(lat, lng, client.lat, client.lng, true);
+        if (wasFirst) {
+            lastRouteRecalcAt = 0;
         }
+        maybeRecalculateRoute(lat, lng, wasFirst);
     }
     var NAV_CHEVRON_SVG = '<svg viewBox="0 0 56 56" aria-hidden="true" focusable="false">' +
         '<defs>' +
@@ -314,16 +353,124 @@
         if (etaRangeEl) etaRangeEl.textContent = '—';
     }
 
-    function estimateStraightDurationSeconds(fromLat, fromLng, toLat, toLng) {
+    function distanceMeters(lat1, lng1, lat2, lng2) {
         var R = 6371000;
-        var dLat = (toLat - fromLat) * Math.PI / 180;
-        var dLng = (toLng - fromLng) * Math.PI / 180;
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(fromLat * Math.PI / 180) * Math.cos(toLat * Math.PI / 180)
-            * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        var distM = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function estimateStraightDurationSeconds(fromLat, fromLng, toLat, toLng) {
+        var distM = distanceMeters(fromLat, fromLng, toLat, toLng);
         var speedMs = 25 * 1000 / 3600;
         return Math.max(180, distM / speedMs * 1.35);
+    }
+
+    function toLocalMeters(lat, lng, refLat) {
+        var cosLat = Math.cos(refLat * Math.PI / 180);
+        return {
+            x: lng * Math.PI / 180 * 6371000 * cosLat,
+            y: lat * Math.PI / 180 * 6371000
+        };
+    }
+
+    function distancePointToSegmentMeters(lat, lng, latA, lngA, latB, lngB) {
+        var refLat = lat;
+        var p = toLocalMeters(lat, lng, refLat);
+        var a = toLocalMeters(latA, lngA, refLat);
+        var b = toLocalMeters(latB, lngB, refLat);
+        var abx = b.x - a.x;
+        var aby = b.y - a.y;
+        var apx = p.x - a.x;
+        var apy = p.y - a.y;
+        var abLenSq = abx * abx + aby * aby;
+        if (abLenSq < 1e-6) {
+            return Math.sqrt(apx * apx + apy * apy);
+        }
+        var t = Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq));
+        var cx = a.x + t * abx;
+        var cy = a.y + t * aby;
+        var dx = p.x - cx;
+        var dy = p.y - cy;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function distanceToRouteMeters(lat, lng, coords) {
+        if (!coords || coords.length < 2) {
+            return Infinity;
+        }
+        var min = Infinity;
+        for (var i = 0; i < coords.length - 1; i++) {
+            var seg = coords[i];
+            var segNext = coords[i + 1];
+            var d = distancePointToSegmentMeters(
+                lat, lng,
+                seg[0], seg[1],
+                segNext[0], segNext[1]
+            );
+            if (d < min) {
+                min = d;
+            }
+        }
+        return min;
+    }
+
+    function maybeRecalculateRoute(driverLat, driverLng, force) {
+        var client = getClientCoords();
+        if (client.lat === null || client.lng === null) {
+            return;
+        }
+        if (!force && !deliveryActive && !observerFollowActive && !gpsStreaming) {
+            return;
+        }
+
+        var now = Date.now();
+        var periodicDue = force || (now - lastRouteRecalcAt > ROUTE_RECALC_PERIODIC_MS);
+        var offRoute = false;
+        if (activeRouteCoords && activeRouteCoords.length >= 2) {
+            offRoute = distanceToRouteMeters(driverLat, driverLng, activeRouteCoords) > ROUTE_OFF_PATH_THRESHOLD_M;
+        }
+
+        if (!periodicDue && !offRoute) {
+            return;
+        }
+        if (routeRecalcInFlight) {
+            return;
+        }
+        if (offRoute && !force && now - lastRouteRecalcAt < ROUTE_RECALC_MIN_INTERVAL_MS) {
+            return;
+        }
+
+        lastRouteRecalcAt = now;
+        routeRecalcInFlight = true;
+        if (offRoute && !force && statusEl) {
+            setStatus('Recalcul de l\'itinéraire…', 'pending');
+        }
+        drawRoute(driverLat, driverLng, client.lat, client.lng, true)
+            .finally(function () {
+                routeRecalcInFlight = false;
+            });
+    }
+
+    function syncBackgroundTracking(active) {
+        if (nativeDriverTracking || isNativeDriverTrackingAvailable()) {
+            return;
+        }
+        if (!cfg.enableBackgroundTracking || !cfg.canManage || typeof window.LivreurBgTracker === 'undefined') {
+            return;
+        }
+        if (active || deliveryActive || cfg.trackingActive) {
+            window.LivreurBgTracker.saveSession(cfg);
+        }
+    }
+
+    function clearBackgroundTracking() {
+        if (typeof window.LivreurBgTracker !== 'undefined') {
+            window.LivreurBgTracker.clearSession();
+        }
     }
 
     function parseCoord(v) {
@@ -705,6 +852,7 @@
     function drawStraightRoute(from, to) {
         var layer = ensureRouteLayer();
         layer.clearLayers();
+        activeRouteCoords = [from.slice(), to.slice()];
         L.polyline([from, to], {
             color: '#c26638',
             weight: 4,
@@ -743,6 +891,9 @@
                     weight: 5,
                     opacity: 0.88
                 }).addTo(layer);
+                activeRouteCoords = coords.map(function (pt) {
+                    return [pt[0], pt[1]];
+                });
                 var km = ((data.distance_m || 0) / 1000).toFixed(1);
                 var durationSec = data.duration_s || 0;
                 setEtaFromDuration(durationSec);
@@ -916,8 +1067,10 @@
         gpsStreaming = deliveryActive;
         if (deliveryActive) {
             enableNavigationMode();
+            requestWakeLock();
         } else {
             setNavigationMode(false);
+            releaseWakeLock();
         }
     }
 
@@ -930,6 +1083,7 @@
         disconnectRealtime();
         stopWatch();
         clearAutoRecenterTimer();
+        releaseWakeLock();
         setNavigationMode(false);
         deliveryActive = false;
         gpsStreaming = false;
@@ -1178,6 +1332,9 @@
     }
 
     function postPosition(lat, lng, accuracy, coords) {
+        if (nativeDriverTracking) {
+            return;
+        }
         var now = Date.now();
         if (now - lastPostAt < 4000) {
             emitPositionToSocket(lat, lng, coords || { accuracy: accuracy });
@@ -1201,6 +1358,9 @@
     }
 
     function startWatchStream() {
+        if (nativeDriverTracking) {
+            return true;
+        }
         if (!navigator.geolocation) {
             return false;
         }
@@ -1211,14 +1371,7 @@
                 var lng = pos.coords.longitude;
                 updateDriverMarker(lat, lng, pos.coords);
                 postPosition(lat, lng, pos.coords.accuracy, pos.coords);
-                var now = Date.now();
-                if (now - lastRouteRecalcAt > 45000) {
-                    lastRouteRecalcAt = now;
-                    var client = getClientCoords();
-                    if (client.lat !== null && client.lng !== null) {
-                        drawRoute(lat, lng, client.lat, client.lng, true);
-                    }
-                }
+                maybeRecalculateRoute(lat, lng, false);
             },
             function () {
                 rollbackTrackingStart().finally(function () {
@@ -1306,9 +1459,21 @@
                     );
                 }
                 setDeliveryActive(true);
-                setDeliveryStatusRealtime(false);
-                return beginRealtimeConnection().catch(function () {
-                    /* Erreur temps réel déjà affichée — on garde le GPS actif */
+                return startNativeDriverTracking().then(function (nativeOk) {
+                    if (!nativeOk) {
+                        syncBackgroundTracking(true);
+                        if (!startWatchStream()) {
+                            throw trackingError(
+                                'Flux GPS',
+                                'Impossible de démarrer le suivi continu de position.',
+                                ['Vérifiez les autorisations GPS', 'Réessayez avec un autre navigateur']
+                            );
+                        }
+                    }
+                    setDeliveryStatusRealtime(false);
+                    return beginRealtimeConnection().catch(function () {
+                        /* Erreur temps réel déjà affichée — on garde le GPS actif */
+                    });
                 });
             })
             .catch(function (err) {
@@ -1329,8 +1494,13 @@
         stopWatch();
         disconnectRealtime();
 
-        callWebApi({ action: 'stop' })
+        stopNativeDriverTracking()
+            .catch(function () { return { success: false }; })
             .then(function () {
+                return callWebApi({ action: 'stop' });
+            })
+            .then(function () {
+                clearBackgroundTracking();
                 setDeliveryActive(false);
                 setDeliveryStatusRealtime(false);
                 setStatus('Suivi GPS terminé', 'off');
@@ -1491,18 +1661,23 @@
         setDeliveryActive(true);
         updateTrackingButtons();
         requestDeviceOrientationAccess();
-        if (!startWatchStream()) {
-            setTrackingInactive('Suivi en temps réel inactif');
-            showTrackingAlert({
-                title: 'Reprise impossible',
-                message: 'Le GPS n\'a pas pu reprendre le suivi en cours.',
-                details: ['Autorisez la géolocalisation', 'Appuyez sur Démarrer la livraison'],
+        startNativeDriverTracking().then(function (nativeOk) {
+            if (!nativeOk && !startWatchStream()) {
+                setTrackingInactive('Suivi en temps réel inactif');
+                showTrackingAlert({
+                    title: 'Reprise impossible',
+                    message: 'Le GPS n\'a pas pu reprendre le suivi en cours.',
+                    details: ['Autorisez la géolocalisation', 'Appuyez sur Démarrer la livraison'],
+                });
+                return;
+            }
+            if (!nativeOk) {
+                syncBackgroundTracking(true);
+            }
+            setDeliveryStatusRealtime(false);
+            beginRealtimeConnection().catch(function () {
+                /* popup déjà affichée */
             });
-            return;
-        }
-        setDeliveryStatusRealtime(false);
-        beginRealtimeConnection().catch(function () {
-            /* popup déjà affichée */
         });
     }
 
@@ -1708,7 +1883,7 @@
             }
             toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
             if (compact) {
-                compact.hidden = !collapsed;
+                compact.hidden = true;
             }
             if (label) {
                 label.textContent = collapsed ? 'Agrandir le panneau' : 'Réduire le panneau';
@@ -1746,6 +1921,63 @@
 
     var myDeliveriesRefreshTimer = null;
     var switchModalRenderFn = null;
+    var wakeLockSentinel = null;
+
+    function releaseWakeLock() {
+        if (!wakeLockSentinel) {
+            return;
+        }
+        wakeLockSentinel.release().catch(function () { /* silencieux */ });
+        wakeLockSentinel = null;
+    }
+
+    function requestWakeLock() {
+        if (!cfg.enableBackgroundTracking || !deliveryActive) {
+            return;
+        }
+        if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') {
+            return;
+        }
+        if (wakeLockSentinel) {
+            return;
+        }
+        navigator.wakeLock.request('screen').then(function (sentinel) {
+            wakeLockSentinel = sentinel;
+            sentinel.addEventListener('release', function () {
+                if (wakeLockSentinel === sentinel) {
+                    wakeLockSentinel = null;
+                }
+            });
+        }).catch(function () { /* silencieux */ });
+    }
+
+    function bindBackgroundTracking() {
+        if (!cfg.enableBackgroundTracking) {
+            return;
+        }
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') {
+                if (deliveryActive && watchId === null) {
+                    startWatchStream();
+                }
+                requestWakeLock();
+                return;
+            }
+            /* En arrière-plan : on garde le flux GPS actif (watchId) */
+        });
+        window.addEventListener('pagehide', function () {
+            releaseWakeLock();
+            if (deliveryActive || cfg.trackingActive) {
+                syncBackgroundTracking(true);
+            }
+        });
+        window.addEventListener('beforeunload', function () {
+            releaseWakeLock();
+            if (deliveryActive || cfg.trackingActive) {
+                syncBackgroundTracking(true);
+            }
+        });
+    }
 
     function updateMyDeliveriesUi() {
         var deliveries = Array.isArray(cfg.myDeliveries) ? cfg.myDeliveries : [];
@@ -1756,11 +1988,13 @@
         if (countEl) {
             countEl.textContent = String(count);
         }
-        if (toolbar) {
+        if (toolbar && cfg.canManage) {
+            toolbar.hidden = false;
+        } else if (toolbar) {
             toolbar.hidden = count < 1;
         }
         if (openBtn) {
-            openBtn.disabled = count < 1;
+            openBtn.disabled = false;
         }
         if (typeof switchModalRenderFn === 'function') {
             switchModalRenderFn();
@@ -1804,7 +2038,7 @@
             if (deliveries.length === 0) {
                 var empty = document.createElement('li');
                 empty.className = 'livreur-switch-modal__empty';
-                empty.textContent = 'Aucune livraison en cours assignée.';
+                empty.textContent = 'Aucune livraison en cours assignée à votre compte.';
                 listEl.appendChild(empty);
                 return;
             }
@@ -1813,11 +2047,10 @@
                 var key = deliveryItemKey(item);
                 var isCurrent = key === cfg.currentDeliveryKey;
                 var li = document.createElement('li');
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'livreur-switch-item' + (isCurrent ? ' is-current' : '');
-                btn.setAttribute('role', 'option');
-                btn.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+                li.className = 'livreur-switch-item-wrap' + (isCurrent ? ' is-current' : '');
+
+                var card = document.createElement('div');
+                card.className = 'livreur-switch-item';
 
                 var typeLabel = item.type === 'facture' ? 'Facture' : 'Commande';
                 var numero = item.numero || ('#' + item.id);
@@ -1832,10 +2065,10 @@
                     badges += '<span class="livreur-switch-item__badge livreur-switch-item__badge--status">' + escapeHtml(statutLabel) + '</span>';
                 }
                 if (isCurrent) {
-                    badges += '<span class="livreur-switch-item__badge livreur-switch-item__badge--current">Actuelle</span>';
+                    badges += '<span class="livreur-switch-item__badge livreur-switch-item__badge--current">Affichée</span>';
                 }
 
-                btn.innerHTML =
+                card.innerHTML =
                     '<div class="livreur-switch-item__top">' +
                     '<span class="livreur-switch-item__ref">' + escapeHtml(numero) + '</span>' +
                     '<span class="livreur-switch-item__badges">' + badges + '</span>' +
@@ -1844,17 +2077,26 @@
                     (tel ? '<p class="livreur-switch-item__meta"><i class="fas fa-phone" aria-hidden="true"></i> ' + escapeHtml(tel) + '</p>' : '') +
                     (adresse ? '<p class="livreur-switch-item__meta"><i class="fas fa-location-dot" aria-hidden="true"></i> ' + escapeHtml(adresse) + '</p>' : '');
 
+                li.appendChild(card);
+
                 if (isCurrent) {
-                    btn.disabled = true;
+                    var currentNote = document.createElement('p');
+                    currentNote.className = 'livreur-switch-item__current-note';
+                    currentNote.textContent = 'Livraison actuellement affichée';
+                    li.appendChild(currentNote);
                 } else {
-                    btn.addEventListener('click', function () {
+                    var continueBtn = document.createElement('button');
+                    continueBtn.type = 'button';
+                    continueBtn.className = 'livreur-switch-item__continue';
+                    continueBtn.textContent = 'Continuer la livraison';
+                    continueBtn.addEventListener('click', function () {
                         if (item.suivi_url) {
                             window.location.href = item.suivi_url;
                         }
                     });
+                    li.appendChild(continueBtn);
                 }
 
-                li.appendChild(btn);
                 listEl.appendChild(li);
             });
         }
@@ -1890,8 +2132,18 @@
 
     bindTrackingAlert();
     bindSheetCollapse();
-    bindSwitchDeliveryModal();
-    startMyDeliveriesPolling();
+    if (cfg.canManage) {
+        bindSwitchDeliveryModal();
+        startMyDeliveriesPolling();
+        bindBackgroundTracking();
+        if (cfg.trackingActive) {
+            if (isNativeDriverTrackingAvailable()) {
+                startNativeDriverTracking();
+            } else {
+                syncBackgroundTracking(true);
+            }
+        }
+    }
     bindMapControls();
     bindTrackingButtons();
     bindShareDelivery();

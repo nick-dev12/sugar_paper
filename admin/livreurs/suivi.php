@@ -116,7 +116,9 @@ if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
 }
 $mes_livraisons = [];
 if ($tables_ready) {
-    $mes_livraisons = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], true);
+    $admin_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
+    $mes_livraisons_only_today = ($admin_role === 'livreur');
+    $mes_livraisons = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], $mes_livraisons_only_today, true);
 }
 $mes_livraisons_count = count($mes_livraisons);
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
@@ -216,16 +218,34 @@ $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) :
         </div>
 
         <div class="livreur-suivi-sheet__body" id="livreur-sheet-body">
-            <?php if ($mes_livraisons_count > 0 && !$regarder_mode): ?>
-            <div class="livreur-suivi-sheet__toolbar">
-                <button type="button" class="livreur-suivi-sheet__switch-btn" id="livreur-switch-open" aria-haspopup="dialog">
-                    <span class="livreur-suivi-sheet__switch-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
-                    <span class="livreur-suivi-sheet__switch-text">
-                        Mes livraisons
-                        <strong class="livreur-suivi-sheet__switch-count"><?php echo (int) $mes_livraisons_count; ?></strong>
-                    </span>
-                    <i class="fas fa-chevron-right livreur-suivi-sheet__switch-arrow" aria-hidden="true"></i>
-                </button>
+            <?php if ($can_start_livraison): ?>
+            <div class="livreur-suivi-sheet__controls">
+                <div class="livreur-suivi-sheet__toolbar">
+                    <button type="button" class="livreur-suivi-sheet__switch-btn" id="livreur-switch-open" aria-haspopup="dialog">
+                        <span class="livreur-suivi-sheet__switch-icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
+                        <span class="livreur-suivi-sheet__switch-text">
+                            Mes livraisons
+                            <strong class="livreur-suivi-sheet__switch-count"><?php echo (int) $mes_livraisons_count; ?></strong>
+                        </span>
+                        <i class="fas fa-chevron-right livreur-suivi-sheet__switch-arrow" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="livreur-suivi-sheet__actions">
+                    <button type="button"
+                        class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--start"
+                        id="livreur-suivi-start-tracking"
+                        <?php echo !$geo_ready ? 'disabled' : ''; ?>>
+                        <span class="livreur-suivi-sheet__cta-main">Démarrer la livraison</span>
+                        <span class="livreur-suivi-sheet__cta-sub"><?php echo $geo_ready ? 'Activez le GPS et partagez votre position' : 'Itinéraire non configuré'; ?></span>
+                    </button>
+                    <button type="button"
+                        class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--stop"
+                        id="livreur-suivi-stop-tracking"
+                        hidden>
+                        <span class="livreur-suivi-sheet__cta-main">Terminer</span>
+                        <span class="livreur-suivi-sheet__cta-sub">Arrêter le suivi GPS</span>
+                    </button>
+                </div>
             </div>
             <?php endif; ?>
 
@@ -258,24 +278,7 @@ $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) :
             </div>
         </div>
 
-        <?php if ($can_start_livraison): ?>
-        <div class="livreur-suivi-sheet__actions">
-            <button type="button"
-                class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--start"
-                id="livreur-suivi-start-tracking"
-                <?php echo !$geo_ready ? 'disabled' : ''; ?>>
-                <span class="livreur-suivi-sheet__cta-main">Démarrer la livraison</span>
-                <span class="livreur-suivi-sheet__cta-sub"><?php echo $geo_ready ? 'Activez le GPS et partagez votre position' : 'Itinéraire non configuré'; ?></span>
-            </button>
-            <button type="button"
-                class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--stop"
-                id="livreur-suivi-stop-tracking"
-                hidden>
-                <span class="livreur-suivi-sheet__cta-main">Terminer</span>
-                <span class="livreur-suivi-sheet__cta-sub">Arrêter le suivi GPS</span>
-            </button>
-        </div>
-        <?php elseif ($watch_only && $geo_ready): ?>
+        <?php if ($watch_only && $geo_ready): ?>
         <div class="livreur-suivi-sheet__actions livreur-suivi-sheet__actions--watch">
             <?php if ($show_share_delivery): ?>
             <button type="button"
@@ -304,8 +307,8 @@ $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) :
         <div class="livreur-switch-modal__panel">
             <header class="livreur-switch-modal__head">
                 <div>
-                    <h3 class="livreur-switch-modal__title" id="livreur-switch-modal-title">Changer de livraison</h3>
-                    <p class="livreur-switch-modal__sub">Commandes et factures prises en charge, non terminées — mise à jour automatique</p>
+                    <h3 class="livreur-switch-modal__title" id="livreur-switch-modal-title">Mes livraisons</h3>
+                    <p class="livreur-switch-modal__sub">Vos livraisons prises en charge, non terminées — le GPS continue en arrière-plan.</p>
                 </div>
                 <button type="button" class="livreur-switch-modal__close" id="livreur-switch-close" aria-label="Fermer">
                     <i class="fas fa-times" aria-hidden="true"></i>
@@ -362,7 +365,8 @@ window.LIVREUR_TRACKING_CONFIG = {
     navZoom: 19,
     navRecenterDelayMs: 6000,
     myDeliveries: <?php echo json_encode($mes_livraisons, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
-    myDeliveriesUrl: '/api/tracking/mes-livraisons.php',
+    myDeliveriesUrl: '/api/tracking/mes-livraisons.php?started=1',
+    enableBackgroundTracking: <?php echo $can_start_livraison ? 'true' : 'false'; ?>,
     currentDeliveryKey: <?php echo json_encode(
         $livraison_type === 'facture' ? 'facture-' . (int) $bl_id : 'commande-' . (int) $commande_id,
         JSON_UNESCAPED_UNICODE
@@ -379,8 +383,11 @@ window.LIVREUR_TRACKING_CONFIG = {
 <?php include __DIR__ . '/../../includes/partials/platform_share_modal.php'; ?>
 <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
 <?php endif; ?>
+<script src="/js/livreur-native-tracking-bridge.js<?php echo asset_version_query(); ?>"></script>
+<script src="/js/livreur-bg-tracker.js<?php echo asset_version_query(); ?>"></script>
 <script src="/js/admin-livreur-suivi.js?v=<?php echo (int) @filemtime(__DIR__ . '/../../js/admin-livreur-suivi.js'); ?>"></script>
 
 <?php endif; ?>
 
+<?php $skip_admin_bottom_nav = true; ?>
 <?php include __DIR__ . '/../includes/footer.php'; ?>

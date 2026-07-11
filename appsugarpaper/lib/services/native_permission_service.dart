@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,6 +22,23 @@ class NativePermissionCopy {
       'L\'accès à la localisation est refusé pour Sugar Paper. '
       'Pour préremplir une adresse, activez la localisation '
       'dans les paramètres de votre appareil (Paramètres > Sugar Paper > Localisation).';
+
+  static const deliveryTrackingTitle = 'Suivi GPS livraison';
+  static const deliveryTrackingBody =
+      'Pendant une livraison active, Sugar Paper transmet votre position '
+      'en direct au client et à l\'équipe, y compris si vous quittez '
+      'l\'écran ou mettez l\'application en arrière-plan.\n\n'
+      '• Le suivi s\'arrête quand vous terminez la livraison ou en changez.\n'
+      '• Une notification persistante s\'affiche sur Android pendant la course.\n\n'
+      'Autorisez « Toujours » (iOS) ou « Autoriser tout le temps » (Android) '
+      'pour un suivi fiable en arrière-plan.';
+
+  static const deliveryTrackingDeniedForeverTitle =
+      'Localisation arrière-plan requise';
+  static const deliveryTrackingDeniedForeverBody =
+      'Le suivi livraison nécessite l\'accès à la position en arrière-plan. '
+      'Ouvrez les paramètres de Sugar Paper et choisissez « Toujours » '
+      '(iOS) ou « Autoriser tout le temps » (Android).';
 
   static const cameraTitle = 'Autoriser l\'appareil photo';
   static const cameraBody =
@@ -135,6 +154,81 @@ class NativePermissionService {
       );
     }
     return permission;
+  }
+
+  /// Localisation livreur — « toujours » / arrière-plan pour le suivi GPS en course.
+  static Future<bool> requestDeliveryTrackingPermissions(
+    BuildContext context,
+  ) async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return false;
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.always) {
+      return true;
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (context.mounted) {
+        await _showOpenSettingsDialog(
+          context,
+          title: NativePermissionCopy.deliveryTrackingDeniedForeverTitle,
+          body: NativePermissionCopy.deliveryTrackingDeniedForeverBody,
+        );
+      }
+      return false;
+    }
+
+    if (permission == LocationPermission.denied && context.mounted) {
+      final accepted = await _showRationaleDialog(
+        context,
+        title: NativePermissionCopy.deliveryTrackingTitle,
+        body: NativePermissionCopy.deliveryTrackingBody,
+        icon: Icons.delivery_dining_outlined,
+      );
+      if (!accepted) {
+        return false;
+      }
+    }
+
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.whileInUse) {
+      if (Platform.isAndroid) {
+        final bg = await Permission.locationAlways.request();
+        if (bg.isGranted) {
+          return true;
+        }
+      } else if (Platform.isIOS) {
+        permission = await Geolocator.requestPermission();
+      }
+    }
+
+    if (permission == LocationPermission.always) {
+      return true;
+    }
+
+    if (Platform.isAndroid) {
+      final bg = await Permission.locationAlways.status;
+      if (bg.isGranted) {
+        return true;
+      }
+    }
+
+    if (permission == LocationPermission.whileInUse) {
+      return true;
+    }
+
+    if (permission == LocationPermission.deniedForever && context.mounted) {
+      await _showOpenSettingsDialog(
+        context,
+        title: NativePermissionCopy.deliveryTrackingDeniedForeverTitle,
+        body: NativePermissionCopy.deliveryTrackingDeniedForeverBody,
+      );
+    }
+
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
   }
 
   /// Demande la caméra avec explication préalable (aligné Info.plist).

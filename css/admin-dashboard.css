@@ -77,9 +77,15 @@ body::before {
   background: #ffffff;
   border-right: 1px solid rgba(107, 47, 32, 0.15);
   min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   max-height: 100vh;
+  max-height: 100dvh;
+  max-height: -webkit-fill-available;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   position: fixed;
   left: 0;
   top: 0;
@@ -116,6 +122,7 @@ body::before {
 
 .sidebar-menu {
   padding: 20px 0;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 .menu-item {
@@ -1143,18 +1150,33 @@ body::before {
 
 /* Tablette & mobile — barre de navigation inférieure */
 @media (max-width: 992px) {
+  html.admin-sidebar-open #adminBottomNav {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  html.admin-sidebar-open .sidebar-overlay {
+    z-index: 10025;
+  }
+
   .admin-container {
     margin-left: 0;
   }
 
   .admin-sidebar {
     transform: translateX(-100%);
-    width: 260px;
+    width: min(280px, 88vw);
     z-index: 10030;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .admin-sidebar.show {
     transform: translateX(0);
+  }
+
+  .admin-sidebar .sidebar-menu {
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar-overlay {

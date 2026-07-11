@@ -54,7 +54,11 @@
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Sugar Paper peut enregistrer dans votre photothèque une image que vous téléchargez depuis la plateforme, uniquement lorsque vous utilisez explicitement la fonction d'enregistrement proposée à l'écran.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Sugar Paper utilise votre position uniquement lorsque vous appuyez sur « Localiser » ou « Mettre à jour ma position » pour confirmer votre adresse de livraison ou enregistrer votre adresse à l'inscription. La position n'est jamais suivie en arrière-plan.</string>
+		<string>Sugar Paper utilise votre position pour confirmer une adresse de livraison ou, pendant une livraison active, transmettre votre position au client en direct.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Pendant une livraison en cours, Sugar Paper continue de transmettre votre position au client même si vous quittez l'application, jusqu'à la fin de la course ou le changement de livraison.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>Pendant une livraison en cours, Sugar Paper transmet votre position au client en direct, y compris en arrière-plan, jusqu'à la fin de la course.</string>
 		<!-- Production : HTTPS uniquement (développement local possible via exceptions ciblées si besoin) -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
@@ -69,6 +73,7 @@
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>remote-notification</string>
+			<string>location</string>
 		</array>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>

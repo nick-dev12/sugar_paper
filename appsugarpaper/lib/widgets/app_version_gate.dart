@@ -8,6 +8,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
+import '../config/webview_site_config.dart';
 import '../main.dart' show kSplashLogoAsset;
 import '../services/app_version_service.dart';
 
@@ -36,6 +37,12 @@ class _AppVersionGateState extends State<AppVersionGate> {
   }
 
   Future<void> _runCheck() async {
+    if (kSkipAppVersionCheckForTesting) {
+      if (mounted) {
+        setState(() => _checking = false);
+      }
+      return;
+    }
     final result = await fetchAppVersionCheck();
     if (!mounted) {
       return;
@@ -77,16 +84,17 @@ class _VersionCheckSplash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    final logoSize = (MediaQuery.sizeOf(context).width * 0.52).clamp(200.0, 280.0);
+
+    return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: SizedBox(
-          width: 120,
-          height: 120,
-          child: Image(
-            image: AssetImage(kSplashLogoAsset),
-            fit: BoxFit.contain,
-          ),
+        child: Image.asset(
+          kSplashLogoAsset,
+          width: logoSize,
+          height: logoSize,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
         ),
       ),
     );

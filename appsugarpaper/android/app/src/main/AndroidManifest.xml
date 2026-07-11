@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -40,14 +44,15 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Android App Links : ouvre l'app quand un lien sugar-paper.com est cliqué -->
-            <!-- autoVerify="true" déclenche la vérification via /.well-known/assetlinks.json -->
+            <!-- Android App Links : sugar-paper.com (prod) + samapiece.com (tests provisoires) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="sugar-paper.com"/>
                 <data android:scheme="https" android:host="www.sugar-paper.com"/>
+                <data android:scheme="https" android:host="samapiece.com"/>
+                <data android:scheme="https" android:host="www.samapiece.com"/>
             </intent-filter>
         </activity>
 
@@ -68,6 +73,12 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Suivi GPS livreur en arrière-plan (geolocator) -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         
         <!-- Service Firebase Cloud Messaging pour recevoir les notifications -->
         <service

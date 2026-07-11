@@ -49,6 +49,9 @@ dependencies:
   
   # Localisation GPS
   geolocator: ^12.0.0
+
+  # Temps réel livreur (positions Socket.io)
+  socket_io_client: ^3.1.2
   
   # Stockage local
   shared_preferences: ^2.2.2
@@ -150,7 +153,8 @@ flutter_launcher_icons:
 # Regénérer : dart run flutter_native_splash:create
 flutter_native_splash:
   color: "#FFFFFF"
-  image: assets/images/sugar_paper_splash_logo.png
+  # Logo avec marges pour affichage intégral (évite le rognage sur Android 12+)
+  image: assets/images/sugar_paper_splash_logo_padded.png
   android: true
   ios: true
   web: false
@@ -159,6 +163,6 @@ flutter_native_splash:
   ios_content_mode: scaleAspectFit
   android_12:
     color: "#FFFFFF"
-    image: assets/images/sugar_paper_splash_logo.png
+    image: assets/images/sugar_paper_splash_logo_android12.png
     icon_background_color: "#FFFFFF"
     android_gravity: center

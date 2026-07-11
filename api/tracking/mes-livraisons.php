@@ -28,7 +28,14 @@ if (!livreur_tracking_tables_ready()) {
 }
 
 $only_today = !isset($_GET['all']) || $_GET['all'] !== '1';
-$deliveries = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], $only_today);
+$started_only = isset($_GET['started']) && $_GET['started'] === '1';
+if ($started_only) {
+    $admin_role = admin_current_role();
+    if ($admin_role !== 'livreur') {
+        $only_today = false;
+    }
+}
+$deliveries = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], $only_today, $started_only);
 
 echo json_encode([
     'success' => true,

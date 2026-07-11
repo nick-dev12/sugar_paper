@@ -2,10 +2,9 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import '../config/webview_site_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
-
-const String kAppVersionApiUrl = 'https://sugar-paper.com/api/app_version.php';
 
 /// Résultat du contrôle de version côté serveur.
 class AppVersionCheckResult {

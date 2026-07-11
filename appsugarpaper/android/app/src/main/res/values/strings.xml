@@ -3,7 +3,9 @@
     <string name="app_name">Sugar Paper</string>
     <!-- Justifications permissions — Google Play Console + dialogue in-app -->
     <string name="permission_location_rationale_title">Autoriser la localisation</string>
-    <string name="permission_location_rationale_message">Sugar Paper utilise votre position uniquement lorsque vous appuyez sur « Localiser » ou « Mettre à jour ma position » pour confirmer une adresse de livraison ou enregistrer votre adresse à l\'inscription. Pas de suivi en arrière-plan.</string>
+    <string name="permission_location_rationale_message">Sugar Paper utilise votre position lorsque vous appuyez sur « Localiser » pour une adresse, ou en continu pendant une livraison active (suivi client en direct). Le suivi s\'arrête à la fin de la course.</string>
+    <string name="permission_delivery_tracking_title">Suivi livraison en direct</string>
+    <string name="permission_delivery_tracking_message">Pendant une livraison, Sugar Paper partage votre position avec le client même si l\'application est en arrière-plan. Autorisez « Toujours » pour un suivi fiable.</string>
     <string name="permission_camera_rationale_title">Autoriser l\'appareil photo</string>
     <string name="permission_camera_rationale_message">Sugar Paper utilise l\'appareil photo lorsque vous appuyez sur « Prendre une photo » pour votre profil ou une commande personnalisée. Exemple : photographier un gâteau.</string>
 </resources>
