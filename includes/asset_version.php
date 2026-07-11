@@ -18,16 +18,20 @@ function get_asset_version() {
             return $version;
         }
     }
-    $dir = __DIR__ . '/../css';
-    if (!is_dir($dir)) {
-        $version = '';
-        return $version;
-    }
+    $dirs = [
+        __DIR__ . '/../css',
+        __DIR__ . '/../js',
+    ];
     $max = 0;
-    foreach (glob($dir . '/*.css') as $f) {
-        $m = @filemtime($f);
-        if ($m && $m > $max) {
-            $max = $m;
+    foreach ($dirs as $dir) {
+        if (!is_dir($dir)) {
+            continue;
+        }
+        foreach (glob($dir . '/*.{css,js}', GLOB_BRACE) as $f) {
+            $m = @filemtime($f);
+            if ($m && $m > $max) {
+                $max = $m;
+            }
         }
     }
     $version = $max ? (string) $max : '';

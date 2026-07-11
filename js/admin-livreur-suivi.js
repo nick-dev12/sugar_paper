@@ -720,7 +720,7 @@
         return fetchWatchToken()
             .then(function (token) {
                 setStatus('Connexion au serveur temps réel…', 'pending');
-                return tryConnectRealtime(token, 8000);
+                return tryConnectRealtime(token, 15000);
             })
             .then(function (connected) {
                 setDeliveryStatusRealtime(connected);

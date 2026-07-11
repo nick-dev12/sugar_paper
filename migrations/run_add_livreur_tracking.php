@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `livreur_sessions` (
 livreur_mig_safe_exec($db, "
 CREATE TABLE IF NOT EXISTS `livreur_positions` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `livreur_id` INT NOT NULL,
+  `livreur_id` INT NOT NULL COMMENT 'admin.id (web) ou livreurs.id (app mobile)',
   `commande_id` INT DEFAULT NULL,
   `latitude` DECIMAL(10,8) NOT NULL,
   `longitude` DECIMAL(11,8) NOT NULL,
@@ -91,8 +91,7 @@ CREATE TABLE IF NOT EXISTS `livreur_positions` (
   `recorded_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_livreur_positions_livreur_date` (`livreur_id`, `recorded_at`),
-  KEY `idx_livreur_positions_commande` (`commande_id`),
-  CONSTRAINT `fk_livreur_positions_livreur` FOREIGN KEY (`livreur_id`) REFERENCES `livreurs` (`id`) ON DELETE CASCADE
+  KEY `idx_livreur_positions_commande` (`commande_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ", 'table livreur_positions');
 
@@ -188,6 +187,24 @@ if (livreur_mig_table_exists($db, 'livreur_positions')) {
 if (!livreur_mig_table_exists($db, 'livreurs')) {
     echo "Échec : table livreurs absente.\n";
     exit(1);
+}
+
+// Suivi web : livreur_id = admin.id — supprimer l'ancienne FK vers livreurs si présente
+$fk_q = $db->prepare("
+    SELECT CONSTRAINT_NAME
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'livreur_positions'
+      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+");
+$fk_q->execute();
+foreach ($fk_q->fetchAll(PDO::FETCH_COLUMN) as $fk_name) {
+    try {
+        $db->exec('ALTER TABLE `livreur_positions` DROP FOREIGN KEY `' . str_replace('`', '``', $fk_name) . '`');
+        echo "  OK : FK livreur_positions supprimée ($fk_name)\n";
+    } catch (PDOException $e) {
+        echo "  Note FK ($fk_name) : " . $e->getMessage() . "\n";
+    }
 }
 
 echo "=== Migration terminée avec succès ===\n";

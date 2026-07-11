@@ -8,4 +8,3 @@ unset($_SESSION['commercant_id']);
 // Rediriger vers la page de connexion ou une autre page après la déconnexion
 header('location: ../commerçant.php');
 exit();
-?>

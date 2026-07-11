@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `livreur_sessions` (
 
 CREATE TABLE IF NOT EXISTS `livreur_positions` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `livreur_id` INT NOT NULL,
+  `livreur_id` INT NOT NULL COMMENT 'admin.id (web) ou livreurs.id (app mobile)',
   `commande_id` INT DEFAULT NULL,
   `latitude` DECIMAL(10,8) NOT NULL,
   `longitude` DECIMAL(11,8) NOT NULL,
@@ -42,8 +42,7 @@ CREATE TABLE IF NOT EXISTS `livreur_positions` (
   `recorded_at` DATETIME NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_livreur_positions_livreur_date` (`livreur_id`, `recorded_at`),
-  KEY `idx_livreur_positions_commande` (`commande_id`),
-  CONSTRAINT `fk_livreur_positions_livreur` FOREIGN KEY (`livreur_id`) REFERENCES `livreurs` (`id`) ON DELETE CASCADE
+  KEY `idx_livreur_positions_commande` (`commande_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `tracking_watch_tokens` (

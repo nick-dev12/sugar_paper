@@ -168,6 +168,3 @@ function get_slide_image_path($slide_id) {
     $slide = get_slide_by_id($slide_id);
     return $slide ? $slide['image'] : false;
 }
-
-?>
-

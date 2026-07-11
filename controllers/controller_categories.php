@@ -211,6 +211,3 @@ function process_delete_categorie($categorie_id) {
         return ['success' => false, 'message' => 'Une erreur est survenue lors de la suppression.'];
     }
 }
-
-?>
-

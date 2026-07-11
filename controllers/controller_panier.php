@@ -176,5 +176,3 @@ function process_delete_from_panier()
         return ['success' => false, 'message' => 'Erreur lors de la suppression.'];
     }
 }
-
-?>

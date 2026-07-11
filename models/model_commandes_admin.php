@@ -392,5 +392,3 @@ function get_stats_comptabilite_periode($commandes) {
     ];
 }
 
-?>
-

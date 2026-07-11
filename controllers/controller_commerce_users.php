@@ -17,6 +17,3 @@ if (isset($_SESSION['commercant_id'])) {
         'images' => 'default.png'
     ];
 }
-
-?>
-

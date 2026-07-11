@@ -115,6 +115,3 @@ function upload_trending_image($file) {
         return ['success' => false, 'filename' => null, 'message' => 'Erreur lors de l\'upload du fichier'];
     }
 }
-
-?>
-

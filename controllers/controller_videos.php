@@ -309,5 +309,3 @@ function upload_video_file($file)
         return ['success' => false, 'filename' => null, 'thumbnail' => null, 'message' => 'Erreur lors du déplacement du fichier sur le serveur'];
     }
 }
-
-?>

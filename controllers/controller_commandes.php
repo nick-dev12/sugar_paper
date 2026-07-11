@@ -195,6 +195,3 @@ function process_create_commande() {
         'message' => 'Une erreur est survenue lors de la création de la commande.'
     ];
 }
-
-?>
-

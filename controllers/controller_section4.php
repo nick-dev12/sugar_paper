@@ -99,6 +99,3 @@ function upload_section4_image($file) {
         return ['success' => false, 'filename' => null, 'message' => 'Erreur lors de l\'upload du fichier'];
     }
 }
-
-?>
-

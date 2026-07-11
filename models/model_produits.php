@@ -776,5 +776,3 @@ function get_produits_by_stock_article($stock_article_id)
 {
     return [];
 }
-
-?>

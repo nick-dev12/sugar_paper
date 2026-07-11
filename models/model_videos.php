@@ -163,5 +163,3 @@ function delete_video($id)
         return false;
     }
 }
-
-?>
