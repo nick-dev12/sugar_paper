@@ -174,8 +174,14 @@
     var bearingAnimFrame = null;
     var NAV_ZOOM = cfg.navZoom || 19;
     var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 6000;
+    var MIN_HEADING_DELTA_NAV = 4;
+    var MIN_MOVE_FOR_ANIMATED_FOLLOW = 0.00005;
+    var MAP_FOLLOW_MIN_INTERVAL_MS = 900;
     var positionPollTimer = null;
     var observerFollowActive = false;
+    var observerStopped = false;
+    var lastMapFollowAt = 0;
+    var bearingTargetDeg = 0;
 
     function isObserverMode() {
         return !!(cfg.watchOnly || cfg.publicMode);
@@ -198,6 +204,7 @@
         }
         cfg.trackingActive = false;
         observerFollowActive = false;
+        observerStopped = true;
         stopPositionPolling();
         disconnectRealtime();
         clearAutoRecenterTimer();
@@ -209,8 +216,16 @@
         setStatus('Suivi en temps réel arrêté', 'off');
     }
 
+    function shouldUseCompassHeading() {
+        if (isObserverMode() || !cfg.canManage || !deliveryActive || !navigationMode) {
+            return false;
+        }
+        var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.8;
+        return !moving;
+    }
+
     function applyRemoteDriverPosition(pos) {
-        if (isObserverMode() && !cfg.trackingActive) {
+        if (isObserverMode() && observerStopped) {
             return;
         }
         if (!pos || pos.latitude == null || pos.longitude == null) {
@@ -221,13 +236,16 @@
         if (!isFinite(lat) || !isFinite(lng)) {
             return;
         }
+        if (isObserverMode()) {
+            cfg.trackingActive = true;
+        }
         var coords = {
             heading: pos.heading != null ? parseFloat(pos.heading) : null,
             speed: pos.speed != null ? parseFloat(pos.speed) : null
         };
         var wasFirst = !driverMarker;
         updateDriverMarker(lat, lng, coords);
-        if (!isObserverMode() || !cfg.trackingActive) {
+        if (!isObserverMode()) {
             return;
         }
         observerFollowActive = true;
@@ -369,19 +387,21 @@
         if (!mapHasRotation() || !navigationMode) {
             return;
         }
-        var target = normalizeHeading(targetHeading);
-        driverHeadingDeg = target;
-        cancelBearingAnimation();
+        bearingTargetDeg = normalizeHeading(targetHeading);
+        driverHeadingDeg = bearingTargetDeg;
+        if (bearingAnimFrame) {
+            return;
+        }
 
         function step() {
-            var diff = shortestAngleDiff(mapBearingDeg, target);
-            if (Math.abs(diff) < 0.4) {
-                mapBearingDeg = target;
-                map.setBearing(target);
+            var diff = shortestAngleDiff(mapBearingDeg, bearingTargetDeg);
+            if (Math.abs(diff) < 0.6) {
+                mapBearingDeg = bearingTargetDeg;
+                map.setBearing(mapBearingDeg);
                 bearingAnimFrame = null;
                 return;
             }
-            mapBearingDeg = normalizeHeading(mapBearingDeg + diff * 0.14);
+            mapBearingDeg = normalizeHeading(mapBearingDeg + diff * 0.11);
             map.setBearing(mapBearingDeg);
             bearingAnimFrame = requestAnimationFrame(step);
         }
@@ -398,19 +418,34 @@
         };
     }
 
-    function followDriverNavigation(animate) {
+    function followDriverNavigation(animate, movedDistHint) {
         if (!driverMarker || !navigationMode) {
             return;
         }
-        suppressMapInteractionEvents = true;
         var driverLatLng = driverMarker.getLatLng();
+        var now = Date.now();
+        var movedDist = typeof movedDistHint === 'number' ? movedDistHint : 0;
+        if (!movedDist && lastDriverLat != null && lastDriverLng != null) {
+            movedDist = Math.hypot(driverLatLng.lat - lastDriverLat, driverLatLng.lng - lastDriverLng);
+        }
+        var significantMove = movedDist >= MIN_MOVE_FOR_ANIMATED_FOLLOW;
+        if (!significantMove && now - lastMapFollowAt < MAP_FOLLOW_MIN_INTERVAL_MS) {
+            return;
+        }
+        lastMapFollowAt = now;
+        var shouldAnimate = animate === true && significantMove;
+        var zoom = map.getZoom();
+        if (zoom < NAV_ZOOM - 2) {
+            zoom = NAV_ZOOM;
+        }
+        suppressMapInteractionEvents = true;
         var pad = getNavigationPadding();
-        map.setView(driverLatLng, NAV_ZOOM, {
-            animate: animate !== false,
+        map.setView(driverLatLng, zoom, {
+            animate: shouldAnimate,
             paddingTopLeft: pad.topLeft,
             paddingBottomRight: pad.bottomRight
         });
-        setTimeout(function () { suppressMapInteractionEvents = false; }, animate === false ? 50 : 400);
+        setTimeout(function () { suppressMapInteractionEvents = false; }, shouldAnimate ? 400 : 50);
     }
 
     function makeDriverArrowIcon() {
@@ -452,7 +487,8 @@
     function applyDriverHeading(deg) {
         if (deg === null || deg === undefined || !isFinite(deg)) return;
         var normalized = normalizeHeading(deg);
-        if (Math.abs(normalized - driverHeadingDeg) < 0.5 && navigationMode) return;
+        var delta = Math.abs(shortestAngleDiff(driverHeadingDeg, normalized));
+        if (delta < MIN_HEADING_DELTA_NAV && navigationMode) return;
         driverHeadingDeg = normalized;
 
         if (navigationMode && mapHasRotation()) {
@@ -486,6 +522,21 @@
         }
         var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.8;
         var heading = coords && coords.heading != null ? coords.heading : null;
+
+        if (isObserverMode()) {
+            if (heading != null && isFinite(heading) && heading >= 0) {
+                applyDriverHeading(heading);
+                return;
+            }
+            if (lat != null && lng != null) {
+                var remoteMoveHeading = bearingFromMovement(lat, lng);
+                if (remoteMoveHeading != null) {
+                    applyDriverHeading(remoteMoveHeading);
+                }
+            }
+            return;
+        }
+
         if (moving && heading != null && isFinite(heading) && heading >= 0) {
             gpsCourseHeadingDeg = heading;
             applyDriverHeading(heading);
@@ -501,7 +552,7 @@
                 return;
             }
         }
-        if (compassHeadingDeg != null) {
+        if (shouldUseCompassHeading() && compassHeadingDeg != null) {
             applyDriverHeading(compassHeadingDeg);
         } else if (heading != null && isFinite(heading) && heading >= 0) {
             applyDriverHeading(heading);
@@ -509,6 +560,9 @@
     }
 
     function onDeviceOrientation(event) {
+        if (!shouldUseCompassHeading()) {
+            return;
+        }
         var heading = null;
         if (event.webkitCompassHeading != null && isFinite(event.webkitCompassHeading)) {
             heading = event.webkitCompassHeading;
@@ -517,10 +571,7 @@
         }
         if (heading == null) return;
         compassHeadingDeg = heading;
-        var moving = lastGpsSpeed != null && isFinite(lastGpsSpeed) && lastGpsSpeed >= 0.8;
-        if (!moving || event.webkitCompassHeading != null) {
-            applyDriverHeading(heading);
-        }
+        applyDriverHeading(heading);
     }
 
     function bindDeviceOrientation() {
@@ -613,6 +664,8 @@
     }
 
     function updateDriverMarker(lat, lng, coords, skipFollow) {
+        var prevLat = lastDriverLat;
+        var prevLng = lastDriverLng;
         if (driverMarker) {
             driverMarker.setLatLng([lat, lng]);
         } else {
@@ -624,7 +677,11 @@
         lastDriverLat = lat;
         lastDriverLng = lng;
         if (navigationMode && !skipFollow) {
-            followDriverNavigation(true);
+            var movedDist = 0;
+            if (prevLat != null && prevLng != null) {
+                movedDist = Math.hypot(lat - prevLat, lng - prevLng);
+            }
+            followDriverNavigation(movedDist >= MIN_MOVE_FOR_ANIMATED_FOLLOW, movedDist);
         }
     }
 
@@ -726,6 +783,9 @@
     function applyDeliveryFromPayload(payload) {
         var c = payload && payload.commande ? payload.commande : null;
         if (!c) return;
+        if (c.tracking_active != null) {
+            cfg.trackingActive = parseInt(c.tracking_active, 10) === 1 || c.tracking_active === true;
+        }
         if (c.delivery_latitude != null && c.delivery_longitude != null) {
             cfg.deliveryLat = c.delivery_latitude;
             cfg.deliveryLng = c.delivery_longitude;
@@ -768,22 +828,22 @@
         var driverLng = driverFromServer ? parseCoord(driverFromServer.longitude) : null;
 
         if (driverLat !== null && driverLng !== null) {
-            updateDriverMarker(driverLat, driverLng, driverFromServer ? {
-                heading: driverFromServer.heading != null ? parseFloat(driverFromServer.heading) : null,
-                speed: driverFromServer.speed != null ? parseFloat(driverFromServer.speed) : null
-            } : null);
+            if (isObserverMode()) {
+                applyRemoteDriverPosition(driverFromServer);
+            } else {
+                updateDriverMarker(driverLat, driverLng, driverFromServer ? {
+                    heading: driverFromServer.heading != null ? parseFloat(driverFromServer.heading) : null,
+                    speed: driverFromServer.speed != null ? parseFloat(driverFromServer.speed) : null
+                } : null);
+            }
         }
 
         var routePromise = Promise.resolve();
         if (client.lat !== null && client.lng !== null) {
-            if (driverLat !== null && driverLng !== null) {
+            if (driverLat !== null && driverLng !== null && !isObserverMode()) {
                 routePromise = drawRoute(driverLat, driverLng, client.lat, client.lng);
-                if (isObserverMode() && cfg.trackingActive) {
-                    observerFollowActive = true;
-                    routePromise = routePromise.then(function () {
-                        enableNavigationMode();
-                    });
-                }
+            } else if (driverLat !== null && driverLng !== null && isObserverMode()) {
+                routePromise = Promise.resolve();
             } else if (isObserverMode()) {
                 setStatus('En attente de la position du livreur…', 'pending');
             } else {
@@ -1098,10 +1158,33 @@
         return callWebApi({ action: 'stop' }).catch(function () { /* silencieux */ });
     }
 
-    function postPosition(lat, lng, accuracy) {
+    function emitPositionToSocket(lat, lng, coords) {
+        if (!socketClient || !socketClient.connected || !cfg.canManage) {
+            return;
+        }
+        var payload = {
+            latitude: lat,
+            longitude: lng,
+            accuracy: coords && coords.accuracy != null ? coords.accuracy : null,
+            speed: coords && coords.speed != null ? coords.speed : null,
+            heading: coords && coords.heading != null ? coords.heading : null
+        };
+        if (cfg.blId) {
+            payload.bl_id = cfg.blId;
+        } else if (cfg.commandeId) {
+            payload.commande_id = cfg.commandeId;
+        }
+        socketClient.emit('livreur:position', payload);
+    }
+
+    function postPosition(lat, lng, accuracy, coords) {
         var now = Date.now();
-        if (now - lastPostAt < 4000) return;
+        if (now - lastPostAt < 4000) {
+            emitPositionToSocket(lat, lng, coords || { accuracy: accuracy });
+            return;
+        }
         lastPostAt = now;
+        emitPositionToSocket(lat, lng, coords || { accuracy: accuracy });
         callWebApi({
             action: 'position',
             latitude: lat,
@@ -1127,7 +1210,7 @@
                 var lat = pos.coords.latitude;
                 var lng = pos.coords.longitude;
                 updateDriverMarker(lat, lng, pos.coords);
-                postPosition(lat, lng, pos.coords.accuracy);
+                postPosition(lat, lng, pos.coords.accuracy, pos.coords);
                 var now = Date.now();
                 if (now - lastRouteRecalcAt > 45000) {
                     lastRouteRecalcAt = now;
@@ -1168,8 +1251,11 @@
             })
             .catch(function (err) {
                 setDeliveryStatusRealtime(false);
-                showTrackingAlertFromError(err);
-                throw err;
+                if (!cfg.watchOnly && !cfg.publicMode) {
+                    showTrackingAlertFromError(err);
+                    throw err;
+                }
+                return false;
             });
     }
 
@@ -1211,7 +1297,7 @@
             })
             .then(function (pos) {
                 updateDriverMarker(pos.coords.latitude, pos.coords.longitude, pos.coords);
-                postPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                postPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords);
                 if (!startWatchStream()) {
                     throw trackingError(
                         'Flux GPS',
@@ -1339,7 +1425,7 @@
                     accuracy: pos.accuracy
                 }, true);
                 if (gpsStreaming) {
-                    postPosition(pos.lat, pos.lng, pos.accuracy);
+                    postPosition(pos.lat, pos.lng, pos.accuracy, pos);
                 }
                 var client = getClientCoords();
                 if (client.lat !== null && client.lng !== null) {
@@ -1379,7 +1465,9 @@
         map.on('dragend', onUserMapInteraction);
         map.on('zoomend', onUserMapInteraction);
 
-        bindDeviceOrientation();
+        if (cfg.canManage) {
+            bindDeviceOrientation();
+        }
 
         window.addEventListener('resize', function () {
             setTimeout(function () { map.invalidateSize(); }, 120);
@@ -1467,6 +1555,8 @@
                 }
                 if (data.last_position) {
                     applyRemoteDriverPosition(data.last_position);
+                } else if (cfg.trackingActive && isObserverMode()) {
+                    setStatus('En attente de la position du livreur…', 'pending');
                 }
             })
             .catch(function () { /* silencieux */ });

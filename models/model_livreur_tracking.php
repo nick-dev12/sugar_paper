@@ -1368,7 +1368,25 @@ function livreur_get_last_position($livreur_id, $commande_id = null, $bl_id = nu
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: false;
+        if ($row) {
+            return $row;
+        }
+
+        /* Positions parfois enregistrées sans bl_id/commande_id — repli sur la dernière position du livreur */
+        if ($bl_id !== null || $commande_id !== null) {
+            $fallback = $db->prepare("
+                SELECT latitude, longitude, accuracy, speed, heading, recorded_at, commande_id, bl_id
+                FROM livreur_positions
+                WHERE livreur_id = :livreur_id
+                ORDER BY recorded_at DESC
+                LIMIT 1
+            ");
+            $fallback->execute(['livreur_id' => (int) $livreur_id]);
+            $row = $fallback->fetch(PDO::FETCH_ASSOC);
+            return $row ?: false;
+        }
+
+        return false;
     } catch (PDOException $e) {
         return false;
     }

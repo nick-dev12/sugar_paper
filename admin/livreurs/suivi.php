@@ -78,6 +78,42 @@ $index_back_url = $regarder_mode
     ? '../invoice/bl_voir.php?id=' . (int) $bl_id
     : ('index.php' . ($livraison_type === 'facture' ? '?tab=facture' : ''));
 $show_share_delivery = $livraison && !empty($livraison['livreur_id']);
+$embedded_watch_token = '';
+$initial_watch_payload = null;
+if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
+    $watch_row = null;
+    if ($bl_id > 0) {
+        $watch_row = livreur_create_watch_token(null, 'admin', (int) $_SESSION['admin_id'], null, $bl_id);
+    } elseif ($commande_id > 0) {
+        $watch_row = livreur_create_watch_token($commande_id, 'admin', (int) $_SESSION['admin_id'], null);
+    }
+    if ($watch_row) {
+        $embedded_watch_token = $watch_row['token'];
+        $last_pos = livreur_get_last_position(
+            (int) $livraison['livreur_id'],
+            $commande_id > 0 ? $commande_id : null,
+            $bl_id > 0 ? $bl_id : null
+        );
+        $initial_watch_payload = [
+            'success' => true,
+            'watch_token' => $embedded_watch_token,
+            'livraison_type' => $livraison_type,
+            'commande' => [
+                'id' => $livraison_type === 'facture' ? $bl_id : $commande_id,
+                'numero_commande' => $livraison_type === 'facture'
+                    ? ($livraison['numero_bl'] ?? '')
+                    : ($livraison['numero_commande'] ?? ''),
+                'tracking_active' => $tracking_active_initial,
+                'adresse_livraison' => $livraison['adresse_livraison'] ?? '',
+                'delivery_latitude' => $delivery_lat,
+                'delivery_longitude' => $delivery_lng,
+                'livreur_nom' => trim(($livraison['livreur_prenom'] ?? '') . ' ' . ($livraison['livreur_nom'] ?? '')),
+            ],
+            'last_position' => $last_pos ?: null,
+            'socket_path' => $socket_path,
+        ];
+    }
+}
 $mes_livraisons = [];
 if ($tables_ready) {
     $mes_livraisons = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], true);
@@ -304,6 +340,10 @@ window.LIVREUR_TRACKING_CONFIG = {
     socketUrl: <?php echo json_encode($public_site_url !== '' ? $public_site_url : '', JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
     watchTokenUrl: <?php echo json_encode($watch_token_url, JSON_UNESCAPED_SLASHES); ?>,
+    embeddedWatchToken: <?php echo json_encode($embedded_watch_token, JSON_UNESCAPED_UNICODE); ?>,
+    initialWatchPayload: <?php echo $initial_watch_payload !== null
+        ? json_encode($initial_watch_payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        : 'null'; ?>,
     webApiUrl: '/api/tracking/livreur-web.php',
     indexUrl: <?php echo json_encode($index_back_url, JSON_UNESCAPED_SLASHES); ?>,
     canManage: <?php echo $can_start_livraison ? 'true' : 'false'; ?>,

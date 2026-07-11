@@ -238,12 +238,26 @@ io.on('connection', (socket) => {
   }
 
   socket.on('livreur:position', async (raw) => {
-    if (socket.data.role !== 'livreur') {
+    let livreurId = null;
+    let livreurNom = '';
+
+    if (socket.data.role === 'livreur') {
+      livreurId = socket.data.livreurId;
+      livreurNom = socket.data.livreurNom || '';
+    } else if (socket.data.role === 'watch') {
+      const meta = socket.data.watchMeta || {};
+      if (!meta.tracking_active || !meta.livreur_id) {
+        return;
+      }
+      livreurId = parseInt(meta.livreur_id, 10) || 0;
+      if (livreurId < 1) {
+        return;
+      }
+    } else {
       return;
     }
 
-    const livreurId = socket.data.livreurId;
-    const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId;
+    const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId || 0;
     const blId = parseInt(raw && raw.bl_id, 10) || socket.data.blId || 0;
     const latitude = raw && raw.latitude;
     const longitude = raw && raw.longitude;
