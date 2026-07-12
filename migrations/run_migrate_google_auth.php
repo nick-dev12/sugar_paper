@@ -77,4 +77,3 @@ echo "Migration Google Auth...\n";
 google_auth_migrate_table($db, 'users', 'idx_users_firebase_uid');
 google_auth_migrate_table($db, 'admin', 'idx_admin_firebase_uid');
 echo "Terminé.\n";
-?>

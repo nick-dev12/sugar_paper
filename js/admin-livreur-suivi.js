@@ -30,6 +30,7 @@
     var lastSocketError = '';
     var autostartFailed = false;
     var autostartInProgress = false;
+    var manualDeliveryConfirmed = false;
     if (!mapEl) {
         return;
     }
@@ -178,7 +179,9 @@
         touchRotate: false,
         shiftKeyRotate: false,
         bearing: 0,
-        maxZoom: 19
+        maxZoom: 19,
+        zoomSnap: 0.25,
+        zoomDelta: 0.5
     }).setView(cfg.defaultCenter, cfg.defaultZoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -210,8 +213,13 @@
     var suppressMapInteractionEvents = false;
     var navigationMode = false;
     var bearingAnimFrame = null;
-    var NAV_ZOOM = cfg.navZoom || 19;
-    var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 8000;
+    var NAV_START_ZOOM = typeof cfg.navStartZoom === 'number' ? cfg.navStartZoom : 17.5;
+    var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 10000;
+    var ZOOM_SPEED_SLOW_MAX_KMH = 20;
+    var ZOOM_SPEED_CITY_MAX_KMH = 50;
+    var currentNavZoom = NAV_START_ZOOM;
+    var targetNavZoom = NAV_START_ZOOM;
+    var lastAppliedNavZoom = null;
     var ROUTE_HEADING_LOOKAHEAD_M = 55;
     var ROUTE_SNAP_MAX_M = 120;
     var MIN_MOVE_FOR_ANIMATED_FOLLOW = 0.00005;
@@ -807,6 +815,73 @@
         };
     }
 
+    function speedMsToKmh(speedMs) {
+        if (speedMs == null || !isFinite(speedMs)) {
+            return 0;
+        }
+        return Math.max(0, speedMs * 3.6);
+    }
+
+    /** Zoom cible selon la vitesse GPS (km/h) — conduite moto / voiture. */
+    function getTargetZoomFromSpeedKmh(speedKmh) {
+        var v = Math.max(0, speedKmh);
+        if (v <= ZOOM_SPEED_SLOW_MAX_KMH) {
+            return 19 - (v / ZOOM_SPEED_SLOW_MAX_KMH);
+        }
+        if (v <= ZOOM_SPEED_CITY_MAX_KMH) {
+            return 17 - ((v - ZOOM_SPEED_SLOW_MAX_KMH) / (ZOOM_SPEED_CITY_MAX_KMH - ZOOM_SPEED_SLOW_MAX_KMH));
+        }
+        var fast = Math.min(v, 100);
+        return 15 - ((fast - ZOOM_SPEED_CITY_MAX_KMH) / 50);
+    }
+
+    function resetNavZoomState() {
+        currentNavZoom = NAV_START_ZOOM;
+        targetNavZoom = NAV_START_ZOOM;
+        lastAppliedNavZoom = null;
+    }
+
+    function refreshNavZoomFromSpeed(speedMs) {
+        if (!isDriverNavMode() || mapFollowPaused) {
+            return;
+        }
+        targetNavZoom = getTargetZoomFromSpeedKmh(speedMsToKmh(speedMs));
+        var diff = targetNavZoom - currentNavZoom;
+        if (Math.abs(diff) < 0.04) {
+            currentNavZoom = targetNavZoom;
+            return;
+        }
+        var speedKmh = speedMsToKmh(speedMs);
+        var lerp = speedKmh > 35 ? 0.12 : 0.2;
+        currentNavZoom += diff * lerp;
+    }
+
+    function getDriverNavZoom() {
+        return Math.max(14, Math.min(19, currentNavZoom));
+    }
+
+    function updateRecenterButtonState() {
+        var fitBtn = document.getElementById('livreur-map-fit');
+        var controls = document.querySelector('.livreur-suivi-map-controls');
+        var paused = mapFollowPaused && !isObserverMode();
+        if (fitBtn) {
+            fitBtn.classList.toggle('is-recenter-prompt', paused);
+            var icon = fitBtn.querySelector('i');
+            if (icon) {
+                icon.className = paused ? 'fas fa-crosshairs' : 'fas fa-location-arrow';
+            }
+            fitBtn.setAttribute(
+                'aria-label',
+                paused
+                    ? 'Reprendre le suivi GPS'
+                    : (isObserverMode() ? 'Recentrer sur le livreur' : 'Recentrer et actualiser ma position')
+            );
+        }
+        if (controls) {
+            controls.classList.toggle('is-follow-paused', paused);
+        }
+    }
+
     function followDriverNavigation(animate, movedDistHint) {
         if (!driverMarker || !isDriverNavMode() || mapFollowPaused) {
             return;
@@ -822,11 +897,11 @@
             return;
         }
         lastMapFollowAt = now;
-        var shouldAnimate = animate === true && significantMove;
-        var zoom = map.getZoom();
-        if (zoom < NAV_ZOOM - 2) {
-            zoom = NAV_ZOOM;
-        }
+        refreshNavZoomFromSpeed(lastGpsSpeed);
+        var zoom = getDriverNavZoom();
+        var zoomChanged = lastAppliedNavZoom === null || Math.abs(zoom - lastAppliedNavZoom) >= 0.2;
+        var shouldAnimate = (animate === true && significantMove) || zoomChanged;
+        lastAppliedNavZoom = zoom;
         suppressMapInteractionEvents = true;
         var pad = getNavigationPadding();
         map.setView(driverLatLng, zoom, {
@@ -991,8 +1066,15 @@
                 return;
             }
             mapUserInteracted = false;
-            mapFollowPaused = true;
-            restoreMapOverview(true);
+            mapFollowPaused = false;
+            updateRecenterButtonState();
+            if (isDriverNavMode()) {
+                restoreMapToDriver(true);
+            } else if (isObserverMode()) {
+                restoreMapOverview(true);
+            } else {
+                restoreMapToDriver(true);
+            }
         }, AUTO_RECENTER_MS);
     }
 
@@ -1003,6 +1085,7 @@
         mapUserInteracted = true;
         mapFollowPaused = true;
         clearAutoRecenterTimer();
+        updateRecenterButtonState();
     }
 
     function onUserMapInteraction() {
@@ -1011,6 +1094,7 @@
         }
         mapUserInteracted = true;
         mapFollowPaused = true;
+        updateRecenterButtonState();
         scheduleAutoRecenter();
     }
 
@@ -1039,6 +1123,7 @@
             return;
         }
         setNavigationMode(true);
+        resetNavZoomState();
         refreshDriverMarkerIcon();
         if (driverMarker) {
             var driverLatLng = driverMarker.getLatLng();
@@ -1336,6 +1421,52 @@
         });
     }
 
+    function confirmDeliveryStarted() {
+        setDeliveryActive(true);
+        manualDeliveryConfirmed = true;
+        updateTrackingButtons();
+    }
+
+    function handleAutostartRealtimeFailure() {
+        autostartFailed = true;
+        manualDeliveryConfirmed = false;
+        stopWatch();
+        disconnectRealtime();
+        clearBackgroundTracking();
+        stopNativeDriverTracking().catch(function () { return { success: false }; });
+        setDeliveryActive(false);
+        cfg.trackingActive = false;
+        return rollbackTrackingStart().then(function () {
+            setDeliveryStatusRealtime(false);
+            setTrackingInactive('Suivi en temps réel inactif — appuyez sur Démarrer la livraison');
+            updateTrackingButtons();
+            return false;
+        });
+    }
+
+    function connectRealtimeAfterGpsStart(isManualStart) {
+        setDeliveryStatusRealtime(false);
+        return beginRealtimeConnection()
+            .then(function (connected) {
+                if (connected) {
+                    confirmDeliveryStarted();
+                    return true;
+                }
+                if (cfg.autostart && !isManualStart) {
+                    return handleAutostartRealtimeFailure();
+                }
+                confirmDeliveryStarted();
+                return false;
+            })
+            .catch(function () {
+                if (cfg.autostart && !isManualStart) {
+                    return handleAutostartRealtimeFailure();
+                }
+                confirmDeliveryStarted();
+                return false;
+            });
+    }
+
     function setDeliveryActive(active) {
         deliveryActive = !!active;
         gpsStreaming = deliveryActive;
@@ -1350,15 +1481,15 @@
 
     function updateTrackingButtons() {
         if (startBtn) {
-            var hideStart = deliveryActive || realtimeConnected;
-            if (cfg.autostart && !autostartFailed) {
+            var hideStart = manualDeliveryConfirmed && (deliveryActive || watchId !== null || realtimeConnected);
+            if (cfg.autostart && autostartInProgress) {
                 hideStart = true;
             }
             startBtn.hidden = hideStart;
             startBtn.disabled = autostartInProgress;
         }
         if (stopBtn) {
-            stopBtn.hidden = !(deliveryActive || realtimeConnected);
+            stopBtn.hidden = !manualDeliveryConfirmed || !(deliveryActive || realtimeConnected);
         }
     }
 
@@ -1370,6 +1501,7 @@
         setNavigationMode(false);
         deliveryActive = false;
         gpsStreaming = false;
+        manualDeliveryConfirmed = false;
         autostartInProgress = false;
         updateTrackingButtons();
         if (titleEl) {
@@ -1734,7 +1866,9 @@
             });
     }
 
-    function startTracking() {
+    function startTracking(options) {
+        options = options || {};
+        var isManualStart = options.manual === true;
         if (!cfg.canManage) {
             showTrackingAlert({
                 title: 'Accès refusé',
@@ -1751,18 +1885,19 @@
             });
             return Promise.reject(trackingError('Adresse non localisée', 'L\'adresse client n\'est pas géolocalisée.'));
         }
-        if (deliveryActive && (realtimeConnected || watchId !== null)) {
+        if (deliveryActive && (realtimeConnected || watchId !== null) && manualDeliveryConfirmed) {
             return Promise.resolve(true);
         }
         if (startBtn) startBtn.setAttribute('disabled', 'disabled');
 
-        if (deliveryActive && watchId !== null) {
+        if (deliveryActive && watchId !== null && manualDeliveryConfirmed) {
             return beginRealtimeConnection().finally(function () {
                 if (startBtn) startBtn.removeAttribute('disabled');
             });
         }
 
         setStatus('Activation du suivi GPS…', 'pending');
+        var deferConfirm = cfg.autostart && !isManualStart;
 
         return callWebApi({ action: 'start' })
             .then(function () {
@@ -1779,7 +1914,9 @@
                         ['Vérifiez les autorisations GPS', 'Réessayez avec un autre navigateur']
                     );
                 }
-                setDeliveryActive(true);
+                if (!deferConfirm) {
+                    confirmDeliveryStarted();
+                }
                 return startNativeDriverTracking().then(function (nativeOk) {
                     if (!nativeOk) {
                         syncBackgroundTracking(true);
@@ -1791,10 +1928,7 @@
                             );
                         }
                     }
-                    setDeliveryStatusRealtime(false);
-                    return beginRealtimeConnection().catch(function () {
-                        /* Erreur temps réel déjà affichée — on garde le GPS actif */
-                    });
+                    return connectRealtimeAfterGpsStart(isManualStart);
                 });
             })
             .catch(function (err) {
@@ -1826,6 +1960,7 @@
             .then(function () {
                 clearBackgroundTracking();
                 setDeliveryActive(false);
+                manualDeliveryConfirmed = false;
                 setDeliveryStatusRealtime(false);
                 setStatus('Suivi GPS terminé', 'off');
                 if (cfg.indexUrl) {
@@ -1849,17 +1984,20 @@
         var animateOpt = animate !== false;
 
         if (isDriverNavMode()) {
+            refreshNavZoomFromSpeed(lastGpsSpeed);
             var pad = getNavigationPadding();
-            map.setView(driverLatLng, NAV_ZOOM, {
+            var zoom = getDriverNavZoom();
+            map.setView(driverLatLng, zoom, {
                 animate: animateOpt,
                 paddingTopLeft: pad.topLeft,
                 paddingBottomRight: pad.bottomRight
             });
+            lastAppliedNavZoom = zoom;
             if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
                 smoothSetMapBearing(driverHeadingDeg);
             }
         } else {
-            map.setView(driverLatLng, NAV_ZOOM, { animate: animateOpt });
+            map.setView(driverLatLng, getDriverNavZoom(), { animate: animateOpt });
             if (mapHasRotation()) {
                 cancelBearingAnimation();
                 mapBearingDeg = 0;
@@ -1874,6 +2012,7 @@
         clearAutoRecenterTimer();
         mapUserInteracted = false;
         mapFollowPaused = false;
+        updateRecenterButtonState();
         var fitBtn = document.getElementById('livreur-map-fit');
         if (fitBtn) {
             fitBtn.classList.add('is-loading');
@@ -1959,8 +2098,12 @@
         map.on('dragstart', onUserMapInteractionStart);
         map.on('zoomstart', onUserMapInteractionStart);
         map.on('touchstart', onUserMapInteractionStart);
+        map.on('mousedown', onUserMapInteractionStart);
         map.on('dragend', onUserMapInteraction);
         map.on('zoomend', onUserMapInteraction);
+        map.on('touchend', onUserMapInteraction);
+
+        updateRecenterButtonState();
 
         window.addEventListener('resize', function () {
             setTimeout(function () { map.invalidateSize(); }, 120);
@@ -1973,7 +2116,7 @@
         if (startBtn) {
             startBtn.addEventListener('click', function () {
                 showLoadingOverlay('Activation du suivi GPS…');
-                startTracking()
+                startTracking({ manual: true })
                     .catch(function () { /* alerte déjà affichée */ })
                     .finally(hideLoadingOverlay);
             });
@@ -2018,30 +2161,32 @@
         });
     }
 
-    function resumeActiveTracking() {
+    function resumeActiveTracking(options) {
+        options = options || {};
+        var isManualStart = options.manual === true;
         if (!cfg.trackingActive || !cfg.canManage) {
             return Promise.resolve(false);
         }
-        setDeliveryActive(true);
-        updateTrackingButtons();
+        var deferConfirm = cfg.autostart && !isManualStart && !manualDeliveryConfirmed;
+        if (!deferConfirm) {
+            confirmDeliveryStarted();
+        }
         return startNativeDriverTracking().then(function (nativeOk) {
             if (!nativeOk && !startWatchStream()) {
                 autostartFailed = true;
-                setTrackingInactive('Suivi en temps réel inactif');
-                showTrackingAlert({
-                    title: 'Reprise impossible',
-                    message: 'Le GPS n\'a pas pu reprendre le suivi en cours.',
-                    details: ['Autorisez la géolocalisation', 'Réessayez depuis la liste des livraisons'],
+                return handleAutostartRealtimeFailure().then(function () {
+                    showTrackingAlert({
+                        title: 'Reprise impossible',
+                        message: 'Le GPS n\'a pas pu reprendre le suivi en cours.',
+                        details: ['Autorisez la géolocalisation', 'Appuyez sur Démarrer la livraison pour réessayer'],
+                    });
+                    return Promise.reject(trackingError('Reprise impossible', 'Le GPS n\'a pas pu reprendre le suivi en cours.'));
                 });
-                return Promise.reject(trackingError('Reprise impossible', 'Le GPS n\'a pas pu reprendre le suivi en cours.'));
             }
             if (!nativeOk) {
                 syncBackgroundTracking(true);
             }
-            setDeliveryStatusRealtime(false);
-            return beginRealtimeConnection().catch(function () {
-                /* popup déjà affichée */
-            });
+            return connectRealtimeAfterGpsStart(isManualStart);
         });
     }
 
@@ -2064,14 +2209,18 @@
         }
 
         return trackingPromise
-            .then(function () {
+            .then(function (started) {
                 autostartInProgress = false;
-                autostartFailed = false;
+                if (started !== false) {
+                    autostartFailed = false;
+                }
                 updateTrackingButtons();
             })
             .catch(function (err) {
                 autostartInProgress = false;
-                autostartFailed = true;
+                if (!manualDeliveryConfirmed) {
+                    autostartFailed = true;
+                }
                 updateTrackingButtons();
                 throw err;
             });

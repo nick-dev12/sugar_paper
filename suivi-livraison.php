@@ -215,8 +215,8 @@ window.LIVREUR_TRACKING_CONFIG = {
     deliveryLng: <?php echo $delivery_lng !== null ? json_encode($delivery_lng) : 'null'; ?>,
     defaultCenter: [14.6937, -17.4441],
     defaultZoom: 13,
-    navZoom: 19,
-    navRecenterDelayMs: 8000,
+    navStartZoom: 17.5,
+    navRecenterDelayMs: 10000,
     myDeliveries: [],
     myDeliveriesUrl: '',
     currentDeliveryKey: <?php echo json_encode(
