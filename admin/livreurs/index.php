@@ -234,7 +234,6 @@ foreach ($factures_liste as $facture_row) {
                 <thead>
                     <tr>
                         <th>Client</th>
-                        <th>Statut</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -260,17 +259,9 @@ foreach ($factures_liste as $facture_row) {
                             <?php if ($client_tel !== ''): ?>
                                 <br><span class="livreur-cmd-tel"><i class="fas fa-phone" aria-hidden="true"></i> <?php echo htmlspecialchars($client_tel); ?></span>
                             <?php endif; ?>
-                            <br><small><?php echo htmlspecialchars($cmd['adresse_livraison'] ?? ''); ?></small>
-                        </td>
-                        <td data-label="Statut">
-                            <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars(livreur_statut_label($cmd['statut'] ?? '')); ?></span>
-                            <?php if ($prise_par_moi): ?>
-                                <br><small class="livreur-cmd-mine">Votre livraison</small>
-                            <?php elseif ($prise_par_autre): ?>
-                                <br><small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($cmd['livreur_prenom'] ?? '') . ' ' . ($cmd['livreur_nom'] ?? ''))); ?></small>
-                            <?php endif; ?>
                         </td>
                         <td class="livreur-actions" data-label="Action">
+                            <div class="livreur-actions__btns">
                             <?php if (($is_livreur || $is_admin) && $disponible): ?>
                             <button type="button"
                                 class="btn-primary btn-sm livreur-btn-prendre"
@@ -290,8 +281,10 @@ foreach ($factures_liste as $facture_row) {
                                     <span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">GPS</span>
                                 </a>
-                            <?php elseif ($is_livreur && $prise_par_autre): ?>
-                                <span class="livreur-badge livreur-badge--off">Indisponible</span>
+                            <?php elseif ($prise_par_autre && !$is_admin): ?>
+                                <span class="btn-sm livreur-btn-occupe" aria-disabled="true">
+                                    <i class="fas fa-lock" aria-hidden="true"></i> Occupé
+                                </span>
                             <?php elseif ($is_admin && $prise_par_autre): ?>
                                 <a href="suivi.php?commande_id=<?php echo (int) $cmd['id']; ?>" class="btn-link livreur-btn-link"><i class="fas fa-map-location-dot" aria-hidden="true"></i> GPS</a>
                             <?php elseif ($is_admin && $cmd_livreur_id): ?>
@@ -299,6 +292,13 @@ foreach ($factures_liste as $facture_row) {
                             <?php else: ?>
                                 <span class="livreur-badge livreur-badge--actif">Disponible</span>
                             <?php endif; ?>
+                            </div>
+                            <div class="livreur-actions__status">
+                                <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars(livreur_statut_label($cmd['statut'] ?? '')); ?></span>
+                                <?php if ($prise_par_autre): ?>
+                                    <small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($cmd['livreur_prenom'] ?? '') . ' ' . ($cmd['livreur_nom'] ?? ''))); ?></small>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -326,7 +326,6 @@ foreach ($factures_liste as $facture_row) {
                 <thead>
                     <tr>
                         <th>Client</th>
-                        <th>Statut</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -357,15 +356,8 @@ foreach ($factures_liste as $facture_row) {
                                 <br><span class="livreur-cmd-tel"><i class="fas fa-phone" aria-hidden="true"></i> <?php echo htmlspecialchars($client_tel); ?></span>
                             <?php endif; ?>
                         </td>
-                        <td data-label="Statut">
-                            <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars($statut_livraison); ?></span>
-                            <?php if ($prise_par_moi): ?>
-                                <br><small class="livreur-cmd-mine">Votre livraison</small>
-                            <?php elseif ($prise_par_autre): ?>
-                                <br><small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($f['livreur_prenom'] ?? '') . ' ' . ($f['livreur_nom'] ?? ''))); ?></small>
-                            <?php endif; ?>
-                        </td>
                         <td class="livreur-actions" data-label="Action">
+                            <div class="livreur-actions__btns">
                             <?php if (($is_livreur || $is_admin) && $disponible): ?>
                                 <button type="button"
                                     class="btn-primary btn-sm livreur-btn-prendre"
@@ -385,13 +377,22 @@ foreach ($factures_liste as $facture_row) {
                                     <span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">GPS</span>
                                 </a>
-                            <?php elseif ($is_livreur && $prise_par_autre): ?>
-                                <span class="livreur-badge livreur-badge--off">Indisponible</span>
+                            <?php elseif ($prise_par_autre && !$is_admin): ?>
+                                <span class="btn-sm livreur-btn-occupe" aria-disabled="true">
+                                    <i class="fas fa-lock" aria-hidden="true"></i> Occupé
+                                </span>
                             <?php elseif ($is_admin && $prise_par_autre): ?>
                                 <a href="suivi.php?bl_id=<?php echo $fid; ?>" class="btn-link livreur-btn-link"><i class="fas fa-map-location-dot" aria-hidden="true"></i> GPS</a>
                             <?php else: ?>
                                 <span class="livreur-badge livreur-badge--actif">Disponible</span>
                             <?php endif; ?>
+                            </div>
+                            <div class="livreur-actions__status">
+                                <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars($statut_livraison); ?></span>
+                                <?php if ($prise_par_autre): ?>
+                                    <small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($f['livreur_prenom'] ?? '') . ' ' . ($f['livreur_nom'] ?? ''))); ?></small>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

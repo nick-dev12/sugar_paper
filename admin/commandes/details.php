@@ -24,11 +24,14 @@ if ($commande_id <= 0) {
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_factures.php';
+require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
 $facture = get_facture_by_commande($commande_id);
+$cmd_tracking = livreur_tracking_tables_ready() ? livreur_get_commande_tracking($commande_id) : false;
+$cmd_livraison_suivable = $cmd_tracking && !empty($cmd_tracking['livreur_id']);
 
 if (!$commande) {
     header('Location: index.php');
@@ -95,14 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body>
+<body class="page-admin-doc-detail">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">
         <h1>
             <i class="fas fa-shopping-bag"></i> Commande #<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?>
         </h1>
-        <div class="header-actions">
+        <div class="header-actions header-actions--primary-row">
             <?php if ($facture): ?>
                 <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank">
                     <i class="fas fa-file-invoice"></i> Voir la facture
@@ -111,6 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <a href="generer_facture.php?id=<?php echo $commande_id; ?>" class="btn-primary">
                     <i class="fas fa-file-invoice"></i> Générer une facture
                 </a>
+            <?php endif; ?>
+            <?php if ($cmd_livraison_suivable): ?>
+            <a href="../livreurs/suivi.php?commande_id=<?php echo (int) $commande_id; ?>&amp;regarder=1" class="btn-secondary">
+                <i class="fas fa-map-location-dot"></i> Suivre la livraison
+            </a>
             <?php endif; ?>
             <a href="index.php" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour

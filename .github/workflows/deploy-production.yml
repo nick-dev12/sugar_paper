@@ -27,5 +27,4 @@ jobs:
           command_timeout: 15m
           script: |
             set -euo pipefail
-            export DEPLOY_ENV="${{ secrets.VPS_DEPLOY_ENV || '/home/jomas/deploy-samapiece.env' }}"
             bash /home/jomas/samapiece.com/scripts/deploy.sh

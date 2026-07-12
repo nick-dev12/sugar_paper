@@ -18,7 +18,9 @@ require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 $tables_ready = livreur_tracking_tables_ready();
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? 0);
-$regarder_mode = $bl_id > 0 && isset($_GET['regarder']) && (string) $_GET['regarder'] === '1';
+$regarder_mode = ($bl_id > 0 || $commande_id > 0)
+    && isset($_GET['regarder'])
+    && (string) $_GET['regarder'] === '1';
 
 if (!$regarder_mode && !admin_can_livreur_gps()) {
     header('Location: ../dashboard.php');
@@ -75,7 +77,9 @@ $tracking_active_initial = $livraison ? (int) ($livraison['tracking_active'] ?? 
 $autostart_tracking = isset($_GET['autostart']) && (string) $_GET['autostart'] === '1';
 $watch_only = $regarder_mode || !$can_manage_livraison;
 $index_back_url = $regarder_mode
-    ? '../invoice/bl_voir.php?id=' . (int) $bl_id
+    ? ($bl_id > 0
+        ? '../invoice/bl_voir.php?id=' . (int) $bl_id
+        : '../commandes/details.php?id=' . (int) $commande_id)
     : ('index.php' . ($livraison_type === 'facture' ? '?tab=facture' : ''));
 $show_share_delivery = $livraison && !empty($livraison['livreur_id']);
 $embedded_watch_token = '';
@@ -333,6 +337,29 @@ $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) :
             <button type="button" class="livreur-suivi-alert__ok" id="livreur-suivi-alert-ok">Compris</button>
         </div>
     </div>
+
+    <div id="livreur-suivi-confirm-stop" class="livreur-suivi-alert livreur-suivi-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="livreur-suivi-confirm-stop-title">
+        <div class="livreur-suivi-alert__backdrop" data-livreur-confirm-close></div>
+        <div class="livreur-suivi-alert__panel livreur-suivi-confirm__panel">
+            <div class="livreur-suivi-alert__icon livreur-suivi-confirm__icon" aria-hidden="true">
+                <i class="fas fa-flag-checkered"></i>
+            </div>
+            <h3 class="livreur-suivi-alert__title" id="livreur-suivi-confirm-stop-title">Terminer la livraison ?</h3>
+            <p class="livreur-suivi-alert__message">Confirmez-vous avoir livré la commande et terminé le suivi GPS ?</p>
+            <div class="livreur-suivi-confirm__actions">
+                <button type="button" class="btn-secondary" id="livreur-suivi-confirm-stop-no" data-livreur-confirm-close>Annuler</button>
+                <button type="button" class="btn-primary livreur-suivi-confirm__yes" id="livreur-suivi-confirm-stop-yes">Oui, terminer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="livreur-suivi-loading" class="livreur-suivi-loading" hidden aria-live="polite" aria-busy="true">
+        <div class="livreur-suivi-loading__backdrop"></div>
+        <div class="livreur-suivi-loading__card">
+            <div class="livreur-suivi-loading__spinner" aria-hidden="true"></div>
+            <p class="livreur-suivi-loading__message" id="livreur-suivi-loading-message">Chargement…</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -363,7 +390,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     defaultCenter: [14.6937, -17.4441],
     defaultZoom: 13,
     navZoom: 19,
-    navRecenterDelayMs: 6000,
+    navRecenterDelayMs: 8000,
     myDeliveries: <?php echo json_encode($mes_livraisons, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>,
     myDeliveriesUrl: '/api/tracking/mes-livraisons.php?started=1',
     enableBackgroundTracking: <?php echo $can_start_livraison ? 'true' : 'false'; ?>,

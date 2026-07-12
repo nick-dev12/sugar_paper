@@ -216,7 +216,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     defaultCenter: [14.6937, -17.4441],
     defaultZoom: 13,
     navZoom: 19,
-    navRecenterDelayMs: 6000,
+    navRecenterDelayMs: 8000,
     myDeliveries: [],
     myDeliveriesUrl: '',
     currentDeliveryKey: <?php echo json_encode(

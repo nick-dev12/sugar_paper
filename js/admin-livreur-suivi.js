@@ -22,7 +22,14 @@
     var alertDetailsEl = document.getElementById('livreur-suivi-alert-details');
     var alertOkBtn = document.getElementById('livreur-suivi-alert-ok');
     var alertCloseBtn = document.getElementById('livreur-suivi-alert-close');
+    var loadingOverlayEl = document.getElementById('livreur-suivi-loading');
+    var loadingMessageEl = document.getElementById('livreur-suivi-loading-message');
+    var confirmStopEl = document.getElementById('livreur-suivi-confirm-stop');
+    var confirmStopYesBtn = document.getElementById('livreur-suivi-confirm-stop-yes');
+    var confirmStopNoBtn = document.getElementById('livreur-suivi-confirm-stop-no');
     var lastSocketError = '';
+    var autostartFailed = false;
+    var autostartInProgress = false;
     if (!mapEl) {
         return;
     }
@@ -37,6 +44,35 @@
     function hideTrackingAlert() {
         if (!alertEl) return;
         alertEl.hidden = true;
+    }
+
+    function showLoadingOverlay(message) {
+        if (!loadingOverlayEl) return;
+        if (loadingMessageEl && message) {
+            loadingMessageEl.textContent = message;
+        }
+        loadingOverlayEl.hidden = false;
+        document.body.classList.add('livreur-suivi-loading-open');
+    }
+
+    function setLoadingOverlayMessage(message) {
+        if (loadingMessageEl && message) {
+            loadingMessageEl.textContent = message;
+        }
+    }
+
+    function hideLoadingOverlay() {
+        if (!loadingOverlayEl) return;
+        loadingOverlayEl.hidden = true;
+        document.body.classList.remove('livreur-suivi-loading-open');
+    }
+
+    function shouldAutoStartDriver() {
+        return cfg.canManage
+            && !cfg.watchOnly
+            && !cfg.publicMode
+            && cfg.geoReady
+            && (cfg.autostart || cfg.trackingActive);
     }
 
     function showTrackingAlert(payload) {
@@ -175,7 +211,7 @@
     var navigationMode = false;
     var bearingAnimFrame = null;
     var NAV_ZOOM = cfg.navZoom || 19;
-    var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 6000;
+    var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 8000;
     var ROUTE_HEADING_LOOKAHEAD_M = 55;
     var ROUTE_SNAP_MAX_M = 120;
     var MIN_MOVE_FOR_ANIMATED_FOLLOW = 0.00005;
@@ -189,6 +225,11 @@
     var nativeDriverTracking = false;
     var observerSocketConnecting = false;
     var lastRemotePositionAt = 0;
+    var mapUserInteracted = false;
+    var mapFollowPaused = false;
+    var ROUTE_COLOR = '#e5488a';
+    var ROUTE_WEIGHT = 7;
+    var ROUTE_WEIGHT_FALLBACK = 5;
     var POSITION_POLL_FAST_MS = 1500;
     var POSITION_POLL_NORMAL_MS = 4000;
 
@@ -251,6 +292,24 @@
         return !!(cfg.watchOnly || cfg.publicMode);
     }
 
+    /** Mode navigation livreur : carte qui tourne (cap en haut). */
+    function isDriverNavMode() {
+        return navigationMode && !isObserverMode();
+    }
+
+    function shouldRotateMapWithHeading() {
+        return isDriverNavMode() && mapHasRotation();
+    }
+
+    function ensureNorthUpMap() {
+        if (!mapHasRotation()) {
+            return;
+        }
+        cancelBearingAnimation();
+        mapBearingDeg = 0;
+        map.setBearing(0);
+    }
+
     function driverMarkerLabel() {
         return isObserverMode() ? 'Livreur' : 'Vous';
     }
@@ -301,14 +360,12 @@
             speed: pos.speed != null ? parseFloat(pos.speed) : null
         };
         var wasFirst = !driverMarker;
-        updateDriverMarker(lat, lng, coords);
+        updateDriverMarker(lat, lng, coords, isObserverMode());
         if (!isObserverMode()) {
             return;
         }
         observerFollowActive = true;
-        if (!navigationMode) {
-            enableNavigationMode();
-        }
+        ensureNorthUpMap();
         var client = getClientCoords();
         if (client.lat === null || client.lng === null) {
             return;
@@ -319,20 +376,11 @@
         }
         maybeRecalculateRoute(lat, lng, wasFirst);
     }
-    var NAV_CHEVRON_SVG = '<svg viewBox="0 0 56 56" aria-hidden="true" focusable="false">' +
-        '<defs>' +
-        '<linearGradient id="livreurNavGrad" x1="0.35" y1="0" x2="0.65" y2="1">' +
-        '<stop offset="0%" stop-color="#FFE082"/>' +
-        '<stop offset="42%" stop-color="#FBBC04"/>' +
-        '<stop offset="100%" stop-color="#F29900"/>' +
-        '</linearGradient>' +
-        '</defs>' +
-        '<path d="M28 5 C28 5 48 43 45.5 45.5 C43 48 28 39 28 39 C28 39 13 48 10.5 45.5 C8 43 28 5 28 5 Z" fill="url(#livreurNavGrad)" stroke="#E37400" stroke-width="1.4" stroke-linejoin="round"/>' +
-        '<ellipse cx="28" cy="41" rx="7" ry="2.8" fill="rgba(0,0,0,0.14)"/>' +
-        '</svg>';
-    var DRIVER_ARROW_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-        '<path d="M12 2.5c.45 0 .86.26 1.05.67l7.2 15.6a1.1 1.1 0 0 1-1 1.58h-4.05l-1.2 3.35a1.1 1.1 0 0 1-2.05 0l-1.2-3.35H5.75a1.1 1.1 0 0 1-1-1.58l7.2-15.6c.19-.41.6-.67 1.05-.67z" fill="currentColor"/>' +
-        '</svg>';
+
+    function makeDriverMotoHtml() {
+        return '<div class="livreur-marker-moto" style="transform:rotate(' + driverHeadingDeg + 'deg)">' +
+            '<i class="fas fa-motorcycle" aria-hidden="true"></i></div>';
+    }
 
     function durationToRangeMinutes(durationSeconds) {
         var baseMin = Math.max(1, durationSeconds / 60);
@@ -446,23 +494,22 @@
     }
 
     function shouldShowNavMarker() {
+        if (isObserverMode()) {
+            return false;
+        }
         return navigationMode || deliveryActive || observerFollowActive || cfg.trackingActive;
     }
 
-    function getDriverNavArrowElement() {
+    function getDriverMotoElement() {
         if (!driverMarker) return null;
         var el = driverMarker.getElement();
-        return el ? el.querySelector('.livreur-nav-arrow') : null;
+        return el ? el.querySelector('.livreur-marker-moto') : null;
     }
 
-    function setNavArrowScreenRotation(screenDeg) {
-        var navArrow = getDriverNavArrowElement();
-        if (navArrow) {
-            navArrow.style.transform = 'rotate(' + screenDeg + 'deg)';
-        }
-        var arrow = getDriverArrowElement();
-        if (arrow) {
-            arrow.style.transform = 'rotate(' + screenDeg + 'deg)';
+    function setMotoScreenRotation(screenDeg) {
+        var moto = getDriverMotoElement();
+        if (moto) {
+            moto.style.transform = 'rotate(' + screenDeg + 'deg)';
         }
     }
 
@@ -706,7 +753,7 @@
             cancelBearingAnimation();
             mapBearingDeg = 0;
             map.setBearing(0);
-            resetDriverArrowRotation();
+            resetDriverMotoRotation();
         }
     }
 
@@ -717,12 +764,12 @@
         }
     }
 
-    function resetDriverArrowRotation() {
-        setNavArrowScreenRotation(0);
+    function resetDriverMotoRotation() {
+        setMotoScreenRotation(0);
     }
 
     function smoothSetMapBearing(targetHeading) {
-        if (!mapHasRotation() || !navigationMode) {
+        if (!shouldRotateMapWithHeading()) {
             return;
         }
         bearingTargetDeg = normalizeHeading(targetHeading);
@@ -736,7 +783,7 @@
             if (Math.abs(diff) < 0.4) {
                 mapBearingDeg = bearingTargetDeg;
                 map.setBearing(mapBearingDeg);
-                setNavArrowScreenRotation(0);
+                setMotoScreenRotation(0);
                 bearingAnimFrame = null;
                 return;
             }
@@ -744,7 +791,7 @@
             var stepFactor = absDiff > 35 ? 0.42 : (absDiff > 15 ? 0.28 : 0.18);
             mapBearingDeg = normalizeHeading(mapBearingDeg + diff * stepFactor);
             map.setBearing(mapBearingDeg);
-            setNavArrowScreenRotation(0);
+            setMotoScreenRotation(0);
             bearingAnimFrame = requestAnimationFrame(step);
         }
 
@@ -761,7 +808,7 @@
     }
 
     function followDriverNavigation(animate, movedDistHint) {
-        if (!driverMarker || !navigationMode) {
+        if (!driverMarker || !isDriverNavMode() || mapFollowPaused) {
             return;
         }
         var driverLatLng = driverMarker.getLatLng();
@@ -788,29 +835,28 @@
             paddingBottomRight: pad.bottomRight
         });
         setTimeout(function () { suppressMapInteractionEvents = false; }, shouldAnimate ? 400 : 50);
-        if (driverHeadingDeg > 0 && mapHasRotation()) {
+        if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
             smoothSetMapBearing(driverHeadingDeg);
         }
     }
 
     function makeDriverArrowIcon() {
+        var motoHtml = makeDriverMotoHtml();
         if (shouldShowNavMarker()) {
             return L.divIcon({
                 className: 'livreur-marker-wrap livreur-marker-wrap--driver livreur-marker-wrap--nav',
-                html: '<div class="livreur-marker-icon livreur-marker-icon--driver">' +
-                    '<div class="livreur-nav-arrow">' + NAV_CHEVRON_SVG + '</div></div>',
-                iconSize: [52, 52],
-                iconAnchor: [26, 38],
+                html: '<div class="livreur-marker-icon livreur-marker-icon--driver livreur-marker-icon--moto">' +
+                    motoHtml + '</div>',
+                iconSize: [48, 48],
+                iconAnchor: [24, 24],
             });
         }
         return L.divIcon({
             className: 'livreur-marker-wrap livreur-marker-wrap--driver',
-            html: '<div class="livreur-marker-icon livreur-marker-icon--driver">' +
-                '<div class="livreur-marker-arrow" style="transform:rotate(' + driverHeadingDeg + 'deg)">' +
-                DRIVER_ARROW_SVG +
-                '</div></div>',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
+            html: '<div class="livreur-marker-icon livreur-marker-icon--driver livreur-marker-icon--moto">' +
+                motoHtml + '</div>',
+            iconSize: [44, 44],
+            iconAnchor: [22, 22],
         });
     }
 
@@ -824,9 +870,7 @@
     }
 
     function getDriverArrowElement() {
-        if (!driverMarker) return null;
-        var el = driverMarker.getElement();
-        return el ? el.querySelector('.livreur-marker-arrow') : null;
+        return getDriverMotoElement();
     }
 
     function applyDriverHeading(deg, force) {
@@ -836,19 +880,14 @@
         if (!force && delta < 0.4) return;
         driverHeadingDeg = normalized;
 
-        if (navigationMode && mapHasRotation()) {
-            setNavArrowScreenRotation(0);
+        if (shouldRotateMapWithHeading()) {
+            setMotoScreenRotation(0);
             smoothSetMapBearing(normalized);
             return;
         }
 
-        if (mapHasRotation()) {
-            smoothSetMapBearing(normalized);
-            setNavArrowScreenRotation(0);
-            return;
-        }
-
-        setNavArrowScreenRotation(normalized);
+        ensureNorthUpMap();
+        setMotoScreenRotation(normalized);
     }
 
     function bearingFromMovement(lat, lng) {
@@ -883,9 +922,39 @@
         }
     }
 
+    function restoreMapOverview(animate) {
+        if (!driverMarker) {
+            return;
+        }
+        suppressMapInteractionEvents = true;
+        var animateOpt = animate !== false;
+
+        if (clientMarker) {
+            var group = L.featureGroup([driverMarker, clientMarker]);
+            map.fitBounds(group.getBounds().pad(0.18), {
+                animate: animateOpt,
+                maxZoom: 16,
+                padding: [40, 40]
+            });
+        } else {
+            map.setView(driverMarker.getLatLng(), cfg.defaultZoom || 15, { animate: animateOpt });
+        }
+
+        if (mapHasRotation()) {
+            cancelBearingAnimation();
+            mapBearingDeg = 0;
+            map.setBearing(0);
+            if (!isObserverMode()) {
+                resetDriverMotoRotation();
+            }
+        }
+
+        setTimeout(function () { suppressMapInteractionEvents = false; }, animateOpt ? 450 : 50);
+    }
+
     function focusMapOnDriver(animate) {
         if (!driverMarker) return;
-        if (navigationMode) {
+        if (isDriverNavMode()) {
             followDriverNavigation(animate);
             return;
         }
@@ -912,16 +981,36 @@
     }
 
     function scheduleAutoRecenter() {
-        if (!driverMarker || !navigationMode) return;
+        if (!driverMarker || !mapUserInteracted) {
+            return;
+        }
         clearAutoRecenterTimer();
         autoRecenterTimer = setTimeout(function () {
             autoRecenterTimer = null;
-            restoreMapToDriver(true);
+            if (!mapUserInteracted) {
+                return;
+            }
+            mapUserInteracted = false;
+            mapFollowPaused = true;
+            restoreMapOverview(true);
         }, AUTO_RECENTER_MS);
     }
 
+    function onUserMapInteractionStart() {
+        if (suppressMapInteractionEvents) {
+            return;
+        }
+        mapUserInteracted = true;
+        mapFollowPaused = true;
+        clearAutoRecenterTimer();
+    }
+
     function onUserMapInteraction() {
-        if (suppressMapInteractionEvents || !navigationMode) return;
+        if (suppressMapInteractionEvents) {
+            return;
+        }
+        mapUserInteracted = true;
+        mapFollowPaused = true;
         scheduleAutoRecenter();
     }
 
@@ -937,6 +1026,10 @@
     }
 
     function enableNavigationMode() {
+        if (isObserverMode()) {
+            ensureNorthUpMap();
+            return;
+        }
         if (navigationMode) {
             followDriverNavigation(true);
             if (driverMarker) {
@@ -950,10 +1043,10 @@
         if (driverMarker) {
             var driverLatLng = driverMarker.getLatLng();
             if (!refreshHeadingFromRoute(driverLatLng.lat, driverLatLng.lng) &&
-                driverHeadingDeg > 0 && mapHasRotation()) {
+                driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
                 smoothSetMapBearing(driverHeadingDeg);
             }
-        } else if (driverHeadingDeg > 0 && mapHasRotation()) {
+        } else if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
             smoothSetMapBearing(driverHeadingDeg);
         }
         followDriverNavigation(false);
@@ -978,7 +1071,7 @@
         resolveHeadingFromPosition(coords || null, lat, lng);
         lastDriverLat = lat;
         lastDriverLng = lng;
-        if ((navigationMode || needNavIcon) && !skipFollow) {
+        if (!isObserverMode() && (navigationMode || needNavIcon) && !skipFollow) {
             if (!navigationMode && needNavIcon) {
                 enableNavigationMode();
             }
@@ -1013,10 +1106,10 @@
         activeRouteCoords = [from.slice(), to.slice()];
         lastRouteSegIdx = 0;
         L.polyline([from, to], {
-            color: '#c26638',
-            weight: 4,
-            opacity: 0.65,
-            dashArray: '8, 8'
+            color: ROUTE_COLOR,
+            weight: ROUTE_WEIGHT_FALLBACK,
+            opacity: 0.75,
+            dashArray: '10, 8'
         }).addTo(layer);
     }
 
@@ -1046,9 +1139,11 @@
                     throw new Error('route_empty');
                 }
                 L.polyline(coords, {
-                    color: '#c26638',
-                    weight: 5,
-                    opacity: 0.88
+                    color: ROUTE_COLOR,
+                    weight: ROUTE_WEIGHT,
+                    opacity: 0.92,
+                    lineCap: 'round',
+                    lineJoin: 'round'
                 }).addTo(layer);
                 activeRouteCoords = coords.map(function (pt) {
                     return [pt[0], pt[1]];
@@ -1090,7 +1185,7 @@
 
     function fitMapBounds() {
         if (driverMarker) {
-            focusMapOnDriver(false);
+            restoreMapOverview(false);
         } else if (clientMarker) {
             suppressMapInteractionEvents = true;
             map.setView(clientMarker.getLatLng(), 15);
@@ -1190,8 +1285,10 @@
         }
 
         return routePromise.then(function () {
-            if (driverMarker && (cfg.trackingActive || deliveryActive || isObserverMode())) {
+            if (driverMarker && !isObserverMode() && (cfg.trackingActive || deliveryActive)) {
                 enableNavigationMode();
+            } else if (isObserverMode()) {
+                ensureNorthUpMap();
             }
             fitMapBounds();
         });
@@ -1252,8 +1349,17 @@
     }
 
     function updateTrackingButtons() {
-        if (startBtn) startBtn.hidden = realtimeConnected;
-        if (stopBtn) stopBtn.hidden = !realtimeConnected;
+        if (startBtn) {
+            var hideStart = deliveryActive || realtimeConnected;
+            if (cfg.autostart && !autostartFailed) {
+                hideStart = true;
+            }
+            startBtn.hidden = hideStart;
+            startBtn.disabled = autostartInProgress;
+        }
+        if (stopBtn) {
+            stopBtn.hidden = !(deliveryActive || realtimeConnected);
+        }
     }
 
     function setTrackingInactive(subMessage) {
@@ -1264,6 +1370,7 @@
         setNavigationMode(false);
         deliveryActive = false;
         gpsStreaming = false;
+        autostartInProgress = false;
         updateTrackingButtons();
         if (titleEl) {
             titleEl.textContent = STATUS_TITLES.off;
@@ -1634,7 +1741,7 @@
                 message: 'Vous ne pouvez pas démarrer cette livraison.',
                 details: ['Seul le livreur assigné peut lancer le suivi', 'Reconnectez-vous avec le bon compte'],
             });
-            return;
+            return Promise.reject(trackingError('Accès refusé', 'Vous ne pouvez pas démarrer cette livraison.'));
         }
         if (!cfg.geoReady) {
             showTrackingAlert({
@@ -1642,24 +1749,24 @@
                 message: 'L\'adresse client n\'est pas géolocalisée.',
                 details: ['Retournez à la liste et relancez la livraison avec une adresse valide'],
             });
-            return;
+            return Promise.reject(trackingError('Adresse non localisée', 'L\'adresse client n\'est pas géolocalisée.'));
         }
-        if (realtimeConnected) {
-            return;
+        if (deliveryActive && (realtimeConnected || watchId !== null)) {
+            return Promise.resolve(true);
         }
         if (startBtn) startBtn.setAttribute('disabled', 'disabled');
 
         if (deliveryActive && watchId !== null) {
-            beginRealtimeConnection().finally(function () {
+            return beginRealtimeConnection().finally(function () {
                 if (startBtn) startBtn.removeAttribute('disabled');
             });
-            return;
         }
 
         setStatus('Activation du suivi GPS…', 'pending');
 
-        callWebApi({ action: 'start' })
+        return callWebApi({ action: 'start' })
             .then(function () {
+                cfg.trackingActive = true;
                 return waitForFirstPosition(15000);
             })
             .then(function (pos) {
@@ -1691,9 +1798,12 @@
                 });
             })
             .catch(function (err) {
+                autostartFailed = true;
                 showTrackingAlertFromError(err);
                 return rollbackTrackingStart().finally(function () {
                     setTrackingInactive('Suivi en temps réel inactif');
+                }).then(function () {
+                    throw err;
                 });
             })
             .finally(function () {
@@ -1738,14 +1848,14 @@
         var driverLatLng = driverMarker.getLatLng();
         var animateOpt = animate !== false;
 
-        if (navigationMode) {
+        if (isDriverNavMode()) {
             var pad = getNavigationPadding();
             map.setView(driverLatLng, NAV_ZOOM, {
                 animate: animateOpt,
                 paddingTopLeft: pad.topLeft,
                 paddingBottomRight: pad.bottomRight
             });
-            if (driverHeadingDeg > 0 && mapHasRotation()) {
+            if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
                 smoothSetMapBearing(driverHeadingDeg);
             }
         } else {
@@ -1762,6 +1872,8 @@
 
     function recenterMapOnDriver() {
         clearAutoRecenterTimer();
+        mapUserInteracted = false;
+        mapFollowPaused = false;
         var fitBtn = document.getElementById('livreur-map-fit');
         if (fitBtn) {
             fitBtn.classList.add('is-loading');
@@ -1779,17 +1891,15 @@
             setStatus('Actualisation de la position du livreur…', 'pending');
             fetchLastPositionUpdate()
                 .then(function () {
+                    ensureNorthUpMap();
                     if (driverMarker && cfg.trackingActive) {
-                        restoreMapToDriver(true);
-                        if (!navigationMode) {
-                            enableNavigationMode();
-                        }
+                        restoreMapOverview(true);
                         setStatus(
                             realtimeConnected ? 'Suivi en temps réel actif' : 'Position actualisée',
                             realtimeConnected ? 'live' : 'route'
                         );
                     } else if (driverMarker) {
-                        restoreMapToDriver(true);
+                        restoreMapOverview(true);
                         setStatus('Livraison terminée', 'off');
                     } else {
                         setStatus('Position livreur indisponible', 'pending');
@@ -1846,6 +1956,9 @@
         if (zoomOut) zoomOut.addEventListener('click', function () { map.zoomOut(); });
         if (fitBtn) fitBtn.addEventListener('click', recenterMapOnDriver);
 
+        map.on('dragstart', onUserMapInteractionStart);
+        map.on('zoomstart', onUserMapInteractionStart);
+        map.on('touchstart', onUserMapInteractionStart);
         map.on('dragend', onUserMapInteraction);
         map.on('zoomend', onUserMapInteraction);
 
@@ -1857,54 +1970,122 @@
     }
 
     function bindTrackingButtons() {
-        if (startBtn) startBtn.addEventListener('click', startTracking);
-        if (stopBtn) stopBtn.addEventListener('click', stopTracking);
+        if (startBtn) {
+            startBtn.addEventListener('click', function () {
+                showLoadingOverlay('Activation du suivi GPS…');
+                startTracking()
+                    .catch(function () { /* alerte déjà affichée */ })
+                    .finally(hideLoadingOverlay);
+            });
+        }
+        bindStopConfirmation();
         setDeliveryActive(false);
         realtimeConnected = false;
         updateTrackingButtons();
     }
 
+    function bindStopConfirmation() {
+        if (!stopBtn || !confirmStopEl) {
+            return;
+        }
+
+        function closeConfirmStop() {
+            confirmStopEl.hidden = true;
+            document.body.classList.remove('livreur-suivi-confirm-open');
+        }
+
+        stopBtn.addEventListener('click', function () {
+            confirmStopEl.hidden = false;
+            document.body.classList.add('livreur-suivi-confirm-open');
+        });
+
+        if (confirmStopNoBtn) {
+            confirmStopNoBtn.addEventListener('click', closeConfirmStop);
+        }
+        confirmStopEl.querySelectorAll('[data-livreur-confirm-close]').forEach(function (el) {
+            el.addEventListener('click', closeConfirmStop);
+        });
+        if (confirmStopYesBtn) {
+            confirmStopYesBtn.addEventListener('click', function () {
+                closeConfirmStop();
+                stopTracking();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !confirmStopEl.hidden) {
+                closeConfirmStop();
+            }
+        });
+    }
+
     function resumeActiveTracking() {
         if (!cfg.trackingActive || !cfg.canManage) {
-            return;
+            return Promise.resolve(false);
         }
         setDeliveryActive(true);
         updateTrackingButtons();
-        startNativeDriverTracking().then(function (nativeOk) {
+        return startNativeDriverTracking().then(function (nativeOk) {
             if (!nativeOk && !startWatchStream()) {
+                autostartFailed = true;
                 setTrackingInactive('Suivi en temps réel inactif');
                 showTrackingAlert({
                     title: 'Reprise impossible',
                     message: 'Le GPS n\'a pas pu reprendre le suivi en cours.',
-                    details: ['Autorisez la géolocalisation', 'Appuyez sur Démarrer la livraison'],
+                    details: ['Autorisez la géolocalisation', 'Réessayez depuis la liste des livraisons'],
                 });
-                return;
+                return Promise.reject(trackingError('Reprise impossible', 'Le GPS n\'a pas pu reprendre le suivi en cours.'));
             }
             if (!nativeOk) {
                 syncBackgroundTracking(true);
             }
             setDeliveryStatusRealtime(false);
-            beginRealtimeConnection().catch(function () {
+            return beginRealtimeConnection().catch(function () {
                 /* popup déjà affichée */
             });
         });
     }
 
+    function runDriverAutostart() {
+        if (!shouldAutoStartDriver()) {
+            return Promise.resolve();
+        }
+        autostartInProgress = true;
+        autostartFailed = false;
+        updateTrackingButtons();
+        setLoadingOverlayMessage('Activation du suivi GPS…');
+
+        var trackingPromise;
+        if (deliveryActive && (watchId !== null || realtimeConnected)) {
+            trackingPromise = beginRealtimeConnection();
+        } else if (cfg.trackingActive) {
+            trackingPromise = resumeActiveTracking();
+        } else {
+            trackingPromise = startTracking();
+        }
+
+        return trackingPromise
+            .then(function () {
+                autostartInProgress = false;
+                autostartFailed = false;
+                updateTrackingButtons();
+            })
+            .catch(function (err) {
+                autostartInProgress = false;
+                autostartFailed = true;
+                updateTrackingButtons();
+                throw err;
+            });
+    }
+
     function autoStartTrackingIfNeeded() {
-        if (cfg.watchOnly) {
+        if (cfg.watchOnly || cfg.publicMode) {
             startWatchObserverMode();
-            return;
+            return Promise.resolve();
         }
         if (!cfg.canManage) {
-            return;
+            return Promise.resolve();
         }
-        if (cfg.trackingActive) {
-            resumeActiveTracking();
-            return;
-        }
-        if (cfg.autostart && cfg.geoReady) {
-            startTracking();
-        }
+        return runDriverAutostart();
     }
 
     function buildLastPositionUrl() {
@@ -1995,6 +2176,10 @@
         } else {
             setStatus('Connexion au suivi en direct…', 'pending');
         }
+        ensureNorthUpMap();
+        if (mapEl) {
+            mapEl.classList.add('livreur-tracking-map--watch-mode');
+        }
         restartPositionPolling();
         beginRealtimeConnection()
             .then(function (connected) {
@@ -2011,18 +2196,12 @@
                 } else {
                     setStatus('En attente du démarrage livreur…', 'pending');
                 }
-                if (cfg.trackingActive && driverMarker && !navigationMode) {
-                    enableNavigationMode();
-                }
                 return connected;
             })
             .catch(function () {
                 restartPositionPolling();
                 if (cfg.trackingActive) {
                     setStatus('Actualisation périodique de la position', 'ok');
-                    if (driverMarker && !navigationMode) {
-                        enableNavigationMode();
-                    }
                 } else {
                     setStatus('En attente du démarrage livreur…', 'pending');
                 }
@@ -2393,12 +2572,22 @@
     bindTrackingButtons();
     bindShareDelivery();
     setStatus('Chargement de l\'itinéraire…', 'pending');
+    showLoadingOverlay('Chargement de l\'itinéraire…');
 
     loadTrackingBootstrap()
         .then(function (payload) {
-            return setupItinerary(payload).then(function () {
-                autoStartTrackingIfNeeded();
-            });
+            setLoadingOverlayMessage('Calcul de l\'itinéraire…');
+            return setupItinerary(payload);
+        })
+        .then(function () {
+            if (cfg.watchOnly || cfg.publicMode) {
+                return autoStartTrackingIfNeeded();
+            }
+            if (shouldAutoStartDriver()) {
+                setLoadingOverlayMessage('Activation du suivi en temps réel…');
+                return runDriverAutostart();
+            }
+            return Promise.resolve();
         })
         .catch(function (err) {
             if (cfg.watchOnly || cfg.publicMode) {
@@ -2406,8 +2595,7 @@
                 if (client.lat !== null && client.lng !== null) {
                     setClientMarker(client.lat, client.lng);
                     setStatus('Suivi chargé — position livreur en attente', 'pending');
-                    autoStartTrackingIfNeeded();
-                    return;
+                    return autoStartTrackingIfNeeded();
                 }
                 setStatus('Impossible de charger le suivi : ' + err.message, 'error');
                 return;
@@ -2418,14 +2606,23 @@
                 return refreshFromGeolocation().then(function (pos) {
                     if (pos) {
                         updateDriverMarker(pos.lat, pos.lng, {
-                        heading: pos.heading,
-                        speed: pos.speed
-                    });
+                            heading: pos.heading,
+                            speed: pos.speed
+                        });
                         return drawRoute(pos.lat, pos.lng, client.lat, client.lng);
                     }
                     setStatus('Itinéraire partiel — ' + err.message, 'off');
-                }).then(fitMapBounds);
+                }).then(function () {
+                    if (shouldAutoStartDriver()) {
+                        setLoadingOverlayMessage('Activation du suivi en temps réel…');
+                        return runDriverAutostart();
+                    }
+                    return fitMapBounds();
+                });
             }
             setStatus('Impossible de charger l\'itinéraire : ' + err.message, 'error');
+        })
+        .finally(function () {
+            hideLoadingOverlay();
         });
 })();
