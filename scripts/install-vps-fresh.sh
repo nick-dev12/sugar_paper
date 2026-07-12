@@ -8,7 +8,8 @@
 #   5. Afficher la liste des fichiers sensibles à remettre à la main
 #
 # Usage :
-#   bash install-vps-fresh.sh
+#   bash scripts/install-vps-fresh.sh
+#   (peut être lancé depuis n'importe quel répertoire, y compris le dossier cible)
 #
 # Variables optionnelles (évite les questions) :
 #   SITE_DIR=/home/jomas/sugar-paper.com
@@ -86,6 +87,13 @@ fi
 
 # --- 4. Suppression + clone ---
 mkdir -p "$PARENT_DIR"
+
+# Important : quitter le dossier cible avant rm -rf, sinon le shell perd son cwd
+# et git clone échoue avec « Unable to read current working directory ».
+cd "$PARENT_DIR" || {
+  echo "ERREUR : impossible d'accéder à $PARENT_DIR"
+  exit 1
+}
 
 if [[ -d "$SITE_DIR" ]]; then
   echo "[…] Suppression de $SITE_DIR"
