@@ -1,6 +1,6 @@
-# Déploiement — samapiece.com (simple)
+# Déploiement — sugar-paper.com
 
-**Chemin VPS :** `/home/jomas/samapiece.com`  
+**Chemin VPS :** `/home/jomas/sugar-paper.com`  
 **GitHub :** https://github.com/nick-dev12/sugar_paper.git
 
 ---
@@ -27,7 +27,7 @@ Le script :
 
 1. Vérifie si **git** est installé (sinon l’installe)
 2. Demande **user.name** et **user.email** git
-3. **Supprime** tout `/home/jomas/samapiece.com`
+3. **Supprime** tout `/home/jomas/sugar-paper.com`
 4. **Clone** le dépôt GitHub
 5. Lance `composer install` et `npm` si disponibles
 
@@ -38,7 +38,7 @@ Voir la liste : `scripts/FICHIERS_SENSIBLES.md`
 Minimum :
 
 ```bash
-cd /home/jomas/samapiece.com
+cd /home/jomas/sugar-paper.com
 cp conn/conn.example.php conn/conn.php
 nano conn/conn.php
 
@@ -55,7 +55,7 @@ nano conn/conn.php
 Sur le VPS :
 
 ```bash
-cd /home/jomas/samapiece.com
+cd /home/jomas/sugar-paper.com
 bash scripts/deploy.sh
 ```
 

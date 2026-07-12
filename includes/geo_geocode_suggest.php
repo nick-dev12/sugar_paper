@@ -5,7 +5,7 @@
 
 if (!function_exists('geo_geocode_suggest')) {
 
-    define('GEO_SUGGEST_USER_AGENT', 'SugarPaper-Livreurs/1.0 (https://samapiece.com; livraison@sugar-paper.com)');
+    define('GEO_SUGGEST_USER_AGENT', 'SugarPaper-Livreurs/1.0 (https://sugar-paper.com; livraison@sugar-paper.com)');
     define('GEO_SUGGEST_HTTP_TIMEOUT', 6);
     /** Bbox Sénégal (ouest, sud, est, nord) pour prioriser les résultats locaux. */
     define('GEO_SUGGEST_SN_BBOX', '-17.8,12.4,-11.3,16.7');

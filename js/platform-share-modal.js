@@ -20,8 +20,8 @@
     }
 
     function isInNativeApp() {
-        return !!(window.__COLOBANES_NATIVE_APP || window.flutter_inappwebview
-            || /ColobanesApp/i.test(navigator.userAgent || ''));
+        return !!(window.__SUGARPAPER_NATIVE_APP || window.flutter_inappwebview
+            || /SugarPaperApp/i.test(navigator.userAgent || ''));
     }
 
     /**
@@ -82,8 +82,8 @@
      * Partage via le pont natif Flutter (retourne une Promise bool).
      */
     function nativeShareViaBridge(payload) {
-        if (window.ColobanesNative && typeof window.ColobanesNative.shareContent === 'function') {
-            return window.ColobanesNative.shareContent(payload || {})
+        if (window.SugarPaperNative && typeof window.SugarPaperNative.shareContent === 'function') {
+            return window.SugarPaperNative.shareContent(payload || {})
                 .then(function () { return true; })
                 .catch(function () { return false; });
         }

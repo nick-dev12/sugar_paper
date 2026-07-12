@@ -62,5 +62,5 @@ Si la méthode 1 ne fonctionne pas, récupérez une configuration fraîche :
 
 Après toute modification, attendez 2-5 minutes, puis :
 1. Fermez complètement le navigateur (toutes les fenêtres)
-2. Rouvrez et allez sur http://localhost:5000/admin/dashboard.php
+2. Rouvrez et allez sur https://sugar-paper.com/admin/dashboard.php
 3. Cliquez sur "Activer les notifications"

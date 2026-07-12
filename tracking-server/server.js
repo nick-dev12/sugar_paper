@@ -2,7 +2,7 @@
  * Serveur Socket.io — diffusion positions livreurs en temps réel.
  * Authentification déléguée à PHP (api/tracking/*).
  *
- * Webuzo (samapiece.com) : Apache PHP écoute sur 127.0.0.1:8081 (HTTP).
+ * Webuzo (sugar-paper.com) : Apache PHP écoute sur 127.0.0.1:8081 (HTTP).
  * Port 8082 = HTTPS interne — ne pas utiliser pour les appels Node → PHP.
  */
 require('dotenv').config();
@@ -14,7 +14,7 @@ const { Server } = require('socket.io');
 
 const PORT = parseInt(process.env.TRACKING_PORT || '3001', 10);
 const PHP_BASE = (process.env.TRACKING_PHP_BASE || 'http://127.0.0.1:8081').replace(/\/$/, '');
-const PHP_HOST = (process.env.TRACKING_PHP_HOST || 'samapiece.com').trim();
+const PHP_HOST = (process.env.TRACKING_PHP_HOST || 'sugar-paper.com').trim();
 const INTERNAL_SECRET = process.env.TRACKING_INTERNAL_SECRET || '';
 const SOCKET_PATH = process.env.TRACKING_SOCKET_PATH || '/socket.io';
 
@@ -74,7 +74,7 @@ async function callPhp(path, payload) {
     },
   };
 
-  /* fetch() ignore l'en-tête Host — obligatoire sur Webuzo (vhost samapiece.com) */
+  /* fetch() ignore l'en-tête Host — obligatoire sur Webuzo (vhost sugar-paper.com) */
   if (PHP_HOST) {
     options.headers.Host = PHP_HOST;
   }
@@ -104,7 +104,7 @@ async function callPhp(path, payload) {
 
 async function checkPhpConnection() {
   if (!PHP_HOST) {
-    console.warn('[tracking] TRACKING_PHP_HOST vide — requis sur Webuzo (ex. samapiece.com)');
+    console.warn('[tracking] TRACKING_PHP_HOST vide — requis sur Webuzo (ex. sugar-paper.com)');
     return;
   }
   try {

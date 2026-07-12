@@ -44,15 +44,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Android App Links : sugar-paper.com (prod) + samapiece.com (tests provisoires) -->
+            <!-- Android App Links : sugar-paper.com -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="sugar-paper.com"/>
                 <data android:scheme="https" android:host="www.sugar-paper.com"/>
-                <data android:scheme="https" android:host="samapiece.com"/>
-                <data android:scheme="https" android:host="www.samapiece.com"/>
             </intent-filter>
         </activity>
 

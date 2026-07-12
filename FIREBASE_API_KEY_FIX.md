@@ -18,9 +18,9 @@ Cliquez sur la clé API (ou sur l'icône crayon pour modifier), puis :
 
 - **Option recommandée pour le développement** : Sélectionnez **"Aucune"** (Don't restrict key)
 - **Ou** si vous utilisez "Référents HTTP" :
-  - Ajoutez : `http://localhost:5000/*`
-  - Ajoutez : `http://localhost:*/*` (pour tout port localhost)
-  - Pour la production : `https://votredomaine.com/*`
+  - Ajoutez : `https://sugar-paper.com/*`
+  - Ajoutez : `https://www.sugar-paper.com/*`
+  - Pour la production : `https://sugar-paper.com/*`
 
 #### B) Restrictions d'API (API restrictions)
 

@@ -8,23 +8,23 @@
         }
         return '/auth-firebase-callback.php';
     }
-    var APPLE_PENDING_KEY = 'colobanes_apple_auth_pending';
-    var APPLE_FLAG_KEY = 'colobanes_apple_redirect_in_progress';
+    var APPLE_PENDING_KEY = 'sugarpaper_apple_auth_pending';
+    var APPLE_FLAG_KEY = 'sugarpaper_apple_redirect_in_progress';
 
-    function isColobanesNativeApp() {
-        if (window.__COLOBANES_NATIVE_APP) return true;
+    function isSugarPaperNativeApp() {
+        if (window.__SUGARPAPER_NATIVE_APP) return true;
         if (window.flutter_inappwebview) return true;
-        if (window.ColobanesNative && window.ColobanesNative.isNativeApp) return true;
-        return /ColobanesApp/i.test(navigator.userAgent || '');
+        if (window.SugarPaperNative && window.SugarPaperNative.isNativeApp) return true;
+        return /SugarPaperApp/i.test(navigator.userAgent || '');
     }
 
     function hasNativeGoogleSignIn() {
-        return !!(window.ColobanesNative && typeof window.ColobanesNative.signInWithGoogle === 'function')
+        return !!(window.SugarPaperNative && typeof window.SugarPaperNative.signInWithGoogle === 'function')
             || !!window.flutter_inappwebview;
     }
 
     function hasNativeAppleSignIn() {
-        return !!(window.ColobanesNative && typeof window.ColobanesNative.signInWithApple === 'function')
+        return !!(window.SugarPaperNative && typeof window.SugarPaperNative.signInWithApple === 'function')
             || !!window.flutter_inappwebview;
     }
 
@@ -153,8 +153,8 @@
     }
 
     function getGoogleIdTokenNative() {
-        if (window.ColobanesNative && typeof window.ColobanesNative.signInWithGoogle === 'function') {
-            return window.ColobanesNative.signInWithGoogle().then(function (result) {
+        if (window.SugarPaperNative && typeof window.SugarPaperNative.signInWithGoogle === 'function') {
+            return window.SugarPaperNative.signInWithGoogle().then(function (result) {
                 if (!result || !result.idToken) {
                     throw new Error('Token Google introuvable depuis l’application.');
                 }
@@ -173,8 +173,8 @@
     }
 
     function getAppleIdTokenNative() {
-        if (window.ColobanesNative && typeof window.ColobanesNative.signInWithApple === 'function') {
-            return window.ColobanesNative.signInWithApple().then(function (result) {
+        if (window.SugarPaperNative && typeof window.SugarPaperNative.signInWithApple === 'function') {
+            return window.SugarPaperNative.signInWithApple().then(function (result) {
                 if (!result || !result.idToken) {
                     throw new Error('Token Apple introuvable depuis l’application.');
                 }
@@ -193,7 +193,7 @@
     }
 
     function signInWithGoogle(button) {
-        if (isColobanesNativeApp()) {
+        if (isSugarPaperNativeApp()) {
             if (!hasNativeGoogleSignIn()) {
                 setMessage(
                     button,
@@ -207,7 +207,7 @@
             return;
         }
 
-        if (/ColobanesApp/i.test(navigator.userAgent || '') || window.flutter_inappwebview) {
+        if (/SugarPaperApp/i.test(navigator.userAgent || '') || window.flutter_inappwebview) {
             setMessage(button, 'Connexion Google indisponible dans l’application. Rechargez la page.', true);
             return;
         }
@@ -226,7 +226,7 @@
     }
 
     function isIosWebBrowser() {
-        return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') && !isColobanesNativeApp();
+        return /iPhone|iPad|iPod/i.test(navigator.userAgent || '') && !isSugarPaperNativeApp();
     }
 
     /**
@@ -498,11 +498,11 @@
         completeAppleRedirectIfNeeded();
     }
 
-    window.colobanesCompleteAppleRedirect = completeAppleRedirectIfNeeded;
-    window.colobanesScheduleAppleRedirect = scheduleAppleRedirectCompletion;
+    window.sugarPaperCompleteAppleRedirect = completeAppleRedirectIfNeeded;
+    window.sugarPaperScheduleAppleRedirect = scheduleAppleRedirectCompletion;
 
     function signInWithApple(button) {
-        if (isColobanesNativeApp()) {
+        if (isSugarPaperNativeApp()) {
             if (!hasNativeAppleSignIn()) {
                 setMessage(
                     button,

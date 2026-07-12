@@ -4,7 +4,7 @@
 #   git pull + composer + tracking-server + pm2
 #
 # Usage :
-#   cd /home/jomas/samapiece.com && bash scripts/deploy.sh
+#   cd /home/jomas/sugar-paper.com && bash scripts/deploy.sh
 #
 set -euo pipefail
 
@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="${DEPLOY_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 PM2_APP_NAME="${PM2_APP_NAME:-sugar-tracking}"
-DEPLOY_LOG="${DEPLOY_LOG:-/home/jomas/logs/deploy-samapiece.log}"
+DEPLOY_LOG="${DEPLOY_LOG:-/home/jomas/logs/deploy-sugar-paper.log}"
 
 log() {
   local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"

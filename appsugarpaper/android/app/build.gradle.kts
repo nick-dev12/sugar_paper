@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        // Identifiant unique Colobanes (distinct des autres apps du même éditeur)
+        // Identifiant unique Sugar Paper
         applicationId = "com.sugarpaper.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion

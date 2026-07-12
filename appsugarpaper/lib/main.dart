@@ -430,15 +430,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       final prefs = await SharedPreferences.getInstance();
       final savedUrl = prefs.getString('last_webview_url');
       if (savedUrl != null && savedUrl.isNotEmpty) {
-        if (savedUrl.contains('aria-edu.com') ||
-            savedUrl.contains('samapiece.it.com')) {
-          await prefs.remove('last_webview_url');
-          _currentUrl = null;
-        } else if (!kIsWeb &&
-            Platform.isAndroid &&
-            kAndroidUseSamapieceForTesting &&
-            savedUrl.contains('sugar-paper.com')) {
-          /* Tests Android sur samapiece.com — ignorer l'ancienne URL prod */
+        if (!savedUrl.contains('sugar-paper.com')) {
           await prefs.remove('last_webview_url');
           _currentUrl = null;
         } else {
@@ -884,8 +876,8 @@ class _WebViewScreenState extends State<WebViewScreen>
   Future<void> _injectJavaScript() async {
     const jsCode = '''
       (function() {
-        window.__COLOBANES_NATIVE_APP = true;
-        window.ColobanesNative = {
+        window.__SUGARPAPER_NATIVE_APP = true;
+        window.SugarPaperNative = {
           // Demander l'accès à la caméra
           requestCamera: function() {
             return new Promise((resolve, reject) => {
@@ -1059,9 +1051,8 @@ class _WebViewScreenState extends State<WebViewScreen>
             return true;
           }
         };
-        window.AriaNative = window.ColobanesNative;
 
-        function colobanesNativeSocialSignIn(button, provider, handlerName) {
+        function sugarPaperNativeSocialSignIn(button, provider, handlerName) {
           if (!window.flutter_inappwebview) return;
 
           var wrap = button.closest('.social-auth');
@@ -1143,8 +1134,8 @@ class _WebViewScreenState extends State<WebViewScreen>
         }
 
         // Intercepter Google / Apple AVANT le JS du site (évite popup bloqué en WebView)
-        if (document.documentElement.getAttribute('data-colobanes-social-hook') !== '1') {
-          document.documentElement.setAttribute('data-colobanes-social-hook', '1');
+        if (document.documentElement.getAttribute('data-sugarpaper-social-hook') !== '1') {
+          document.documentElement.setAttribute('data-sugarpaper-social-hook', '1');
           document.addEventListener('click', function(event) {
             var googleBtn = event.target.closest('.google-auth-btn');
             var appleBtn = event.target.closest('.apple-auth-btn');
@@ -1155,17 +1146,17 @@ class _WebViewScreenState extends State<WebViewScreen>
             event.stopImmediatePropagation();
 
             if (googleBtn) {
-              colobanesNativeSocialSignIn(googleBtn, 'google', 'signInWithGoogle');
+              sugarPaperNativeSocialSignIn(googleBtn, 'google', 'signInWithGoogle');
             } else {
-              colobanesNativeSocialSignIn(appleBtn, 'apple', 'signInWithApple');
+              sugarPaperNativeSocialSignIn(appleBtn, 'apple', 'signInWithApple');
             }
           }, true);
-          console.log('ColobanesNative social auth hooks active');
+          console.log('SugarPaperNative social auth hooks active');
         }
         
-        console.log('ColobanesNative API initialized');
+        console.log('SugarPaperNative API initialized');
         try {
-          window.dispatchEvent(new Event('colobanesNativeReady'));
+          window.dispatchEvent(new Event('sugarPaperNativeReady'));
         } catch (e) {}
       })();
     ''';
@@ -1178,8 +1169,8 @@ class _WebViewScreenState extends State<WebViewScreen>
     const perfJs = '''
 (function(){
   document.documentElement.classList.add('is-native-app');
-  if (window.ColobanesPerf && typeof window.ColobanesPerf.refresh === 'function') {
-    window.ColobanesPerf.refresh();
+  if (window.SugarPaperPerf && typeof window.SugarPaperPerf.refresh === 'function') {
+    window.SugarPaperPerf.refresh();
     return;
   }
   if (typeof AOS !== 'undefined' && AOS.init) {
@@ -1259,7 +1250,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                     UserScript(
                       source: '''
 (function(){
-  window.__COLOBANES_NATIVE_APP = true;
+  window.__SUGARPAPER_NATIVE_APP = true;
   document.documentElement.classList.add('is-native-app');
 })();
 ''',

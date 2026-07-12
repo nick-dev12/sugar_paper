@@ -9,9 +9,9 @@
     }
 
     function isNativeApp() {
-        return !!(global.ColobanesNative &&
-            typeof global.ColobanesNative.isNativeApp === 'function' &&
-            global.ColobanesNative.isNativeApp());
+        return !!(global.SugarPaperNative &&
+            typeof global.SugarPaperNative.isNativeApp === 'function' &&
+            global.SugarPaperNative.isNativeApp());
     }
 
     function buildStatusUrl(cfg) {
@@ -40,10 +40,10 @@
     }
 
     function callNative(method, payload) {
-        if (!global.ColobanesNative || typeof global.ColobanesNative[method] !== 'function') {
+        if (!global.SugarPaperNative || typeof global.SugarPaperNative[method] !== 'function') {
             return Promise.resolve({ success: false, error: 'native_unavailable' });
         }
-        return global.ColobanesNative[method](payload).catch(function (err) {
+        return global.SugarPaperNative[method](payload).catch(function (err) {
             return { success: false, error: (err && err.message) ? err.message : 'native_error' };
         });
     }

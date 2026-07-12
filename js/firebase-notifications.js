@@ -15,14 +15,14 @@
     var _activationInProgress = false;
     var _fcmRegistration = null;
 
-    function isColobanesNativeApp() {
-        if (window.__COLOBANES_NATIVE_APP === true) {
+    function isSugarPaperNativeApp() {
+        if (window.__SUGARPAPER_NATIVE_APP === true) {
             return true;
         }
-        if (window.ColobanesNative || window.flutter_inappwebview) {
+        if (window.SugarPaperNative || window.flutter_inappwebview) {
             return true;
         }
-        return /ColobanesApp/i.test(navigator.userAgent || '');
+        return /SugarPaperApp/i.test(navigator.userAgent || '');
     }
 
     function isMobileViewport() {
@@ -30,12 +30,12 @@
     }
 
     function shouldHideWebPushButton() {
-        return isColobanesNativeApp() && isMobileViewport();
+        return isSugarPaperNativeApp() && isMobileViewport();
     }
 
     function applyNativeAppNotificationUi() {
-        var native = isColobanesNativeApp();
-        document.documentElement.classList.toggle('is-colobanes-native-app', native);
+        var native = isSugarPaperNativeApp();
+        document.documentElement.classList.toggle('is-sugarpaper-native-app', native);
         document.documentElement.classList.toggle('hide-web-push-notify-btn', shouldHideWebPushButton());
         return shouldHideWebPushButton();
     }
@@ -531,7 +531,7 @@
                     alert('Permission notifications requise. Autorisez via le cadenas dans la barre d\'adresse.');
                 } else if (msg.indexOf('API key') !== -1 || msg.indexOf('api-key') !== -1) {
                     alert('Clé API Firebase invalide ou mal restreinte.\n\nGoogle Cloud → Identifiants → Browser key :\n'
-                        + '• Référents HTTP : http://localhost:5000/*\n'
+                        + '• Référents HTTP : https://sugar-paper.com/*\n'
                         + '• APIs autorisées : Firebase Installations, FCM Registration, Firebase Cloud Messaging\n'
                         + '• Ou désactivez les restrictions le temps du test');
                 } else {
@@ -746,7 +746,7 @@
             });
         },
 
-        isColobanesNativeApp: isColobanesNativeApp,
+        isSugarPaperNativeApp: isSugarPaperNativeApp,
         shouldHideWebPushButton: shouldHideWebPushButton,
         applyNativeAppNotificationUi: applyNativeAppNotificationUi,
 

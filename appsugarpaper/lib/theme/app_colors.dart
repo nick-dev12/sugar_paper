@@ -9,7 +9,7 @@ const Color kJauneWilton = Color(0xFFF4D35E);
 const Color kTexteFonce = Color(0xFF3D2800);
 const Color kSurfaceSoft = Color(0xFFFFF8FB);
 
-/// Rétrocompatibilité avec l'ancien nommage COLObanes
+/// Couleurs de l'application Sugar Paper
 const Color kBleuPrincipal = kRosePrincipal;
 const Color kBleuPrincipalFonce = kRosePrincipalFonce;
 const Color kBleuLogoMarine = kRosePrincipalFonce;

@@ -33,7 +33,7 @@ Après `install-vps-fresh.sh`, copiez-les depuis votre sauvegarde locale ou recr
 ## Exemples rapides
 
 ```bash
-cd /home/jomas/samapiece.com
+cd /home/jomas/sugar-paper.com
 
 cp conn/conn.example.php conn/conn.php
 nano conn/conn.php
@@ -51,7 +51,7 @@ nano tracking-server/.env
 PORT=3001
 TRACKING_SECRET=votre_secret_identique_a_config/tracking.php
 PHP_BASE_URL=http://127.0.0.1:8081
-PHP_HOST_HEADER=samapiece.com
+PHP_HOST_HEADER=sugar-paper.com
 ```
 
 ## Vérification
@@ -59,5 +59,5 @@ PHP_HOST_HEADER=samapiece.com
 ```bash
 php scripts/tracking_diagnostic.php
 pm2 restart sugar-tracking
-curl -s https://samapiece.com/api/tracking/ping.php
+curl -s https://sugar-paper.com/api/tracking/ping.php
 ```

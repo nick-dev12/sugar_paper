@@ -3,7 +3,7 @@
 # Installation propre du site sur le VPS :
 #   1. Vérifier / installer git
 #   2. Configurer user.name et user.email
-#   3. Supprimer le dossier samapiece.com
+#   3. Supprimer le dossier sugar-paper.com
 #   4. Cloner le dépôt GitHub
 #   5. Afficher la liste des fichiers sensibles à remettre à la main
 #
@@ -11,7 +11,7 @@
 #   bash install-vps-fresh.sh
 #
 # Variables optionnelles (évite les questions) :
-#   SITE_DIR=/home/jomas/samapiece.com
+#   SITE_DIR=/home/jomas/sugar-paper.com
 #   GIT_USER_NAME="Votre Nom"
 #   GIT_USER_EMAIL="vous@email.com"
 #   GIT_REPO=https://github.com/nick-dev12/sugar_paper.git
@@ -20,7 +20,7 @@
 #
 set -euo pipefail
 
-SITE_DIR="${SITE_DIR:-/home/jomas/samapiece.com}"
+SITE_DIR="${SITE_DIR:-/home/jomas/sugar-paper.com}"
 PARENT_DIR="$(dirname "$SITE_DIR")"
 SITE_NAME="$(basename "$SITE_DIR")"
 GIT_REPO="${GIT_REPO:-https://github.com/nick-dev12/sugar_paper.git}"
@@ -62,8 +62,8 @@ if [[ -z "$GIT_USER_NAME" ]]; then
   GIT_USER_NAME="${GIT_USER_NAME:-Sugar Paper}"
 fi
 if [[ -z "$GIT_USER_EMAIL" ]]; then
-  read -r -p "Git user.email [deploy@samapiece.com] : " GIT_USER_EMAIL
-  GIT_USER_EMAIL="${GIT_USER_EMAIL:-deploy@samapiece.com}"
+  read -r -p "Git user.email [deploy@sugar-paper.com] : " GIT_USER_EMAIL
+  GIT_USER_EMAIL="${GIT_USER_EMAIL:-deploy@sugar-paper.com}"
 fi
 
 git config --global user.name "$GIT_USER_NAME"

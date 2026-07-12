@@ -1,6 +1,6 @@
 # Suivi GPS livreurs en temps réel — Documentation complète
 
-Documentation de référence pour le module de **géolocalisation en temps réel** des livreurs, déployé sur **samapiece.com** (VPS Webuzo) et développé dans le projet PHP `site_gateau`.
+Documentation de référence pour le module de **géolocalisation en temps réel** des livreurs, déployé sur **sugar-paper.com** (VPS Webuzo) et développé dans le projet PHP `site_gateau`.
 
 **Date de validation en production :** juillet 2026  
 **Statut :** fonctionnel — suivi GPS + Socket.io temps réel confirmé en prod
@@ -65,7 +65,7 @@ Documentation de référence pour le module de **géolocalisation en temps réel
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│  Navigateur admin (HTTPS samapiece.com)                                  │
+│  Navigateur admin (HTTPS sugar-paper.com)                                  │
 │  ┌──────────────────┐    ┌──────────────────┐    ┌─────────────────┐ │
 │  │ Geolocation API  │    │ Socket.io client │    │ Leaflet + route │ │
 │  │ (GPS navigateur) │    │ (polling only)   │    │ API PHP         │ │
@@ -74,7 +74,7 @@ Documentation de référence pour le module de **géolocalisation en temps réel
             │ POST JSON             │ WSS/HTTPS polling       │ GET
             ▼                       ▼                         ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│  Nginx (443) — samapiece.com                                              │
+│  Nginx (443) — sugar-paper.com                                              │
 │    /                    → Apache PHP (127.0.0.1:8081)                     │
 │    /socket.io/          → Node.js (127.0.0.1:3001)                        │
 └───────────────────────────────────────────────────────────────────────────┘
@@ -111,23 +111,23 @@ Sur le VPS **Webuzo**, Apache PHP n'écoute **pas** sur le port 80 public mais s
 | **8082** | Apache HTTPS interne → **ne pas utiliser** pour les appels Node |
 | **3001** | Node.js Socket.io (localhost uniquement) |
 
-Node doit envoyer l'en-tête HTTP **`Host: samapiece.com`** pour que le virtual host Apache route correctement vers le bon site. **`fetch()` Node ignore cet en-tête** — d'où l'utilisation du module natif `http` dans `server.js`.
+Node doit envoyer l'en-tête HTTP **`Host: sugar-paper.com`** pour que le virtual host Apache route correctement vers le bon site. **`fetch()` Node ignore cet en-tête** — d'où l'utilisation du module natif `http` dans `server.js`.
 
 ---
 
 ## 3. Environnements
 
-### Production (samapiece.com)
+### Production (sugar-paper.com)
 
 | Élément | Valeur |
 |---------|--------|
-| Chemin projet | `/home/jomas/samapiece.com` |
-| URL publique | `https://samapiece.com` |
+| Chemin projet | `/home/jomas/sugar-paper.com` |
+| URL publique | `https://sugar-paper.com` |
 | Node PM2 | `sugar-tracking` (mode **fork**, 1 instance) |
 | Port Node | `3001` |
-| PHP interne Node | `http://127.0.0.1:8081` + `Host: samapiece.com` |
-| Config Nginx custom | `/var/webuzo-data/nginx/custom/domains/samapiece.com.conf` |
-| Config Apache custom | `/var/webuzo-data/apache2/custom/domains/samapiece.com.conf` |
+| PHP interne Node | `http://127.0.0.1:8081` + `Host: sugar-paper.com` |
+| Config Nginx custom | `/var/webuzo-data/nginx/custom/domains/sugar-paper.com.conf` |
+| Config Apache custom | `/var/webuzo-data/apache2/custom/domains/sugar-paper.com.conf` |
 
 ### Développement local (WAMP)
 
@@ -220,12 +220,12 @@ return [
     'node_host' => '127.0.0.1',
     'node_port' => 3001,
     'socket_path' => '/socket.io',
-    'public_site_url' => 'https://samapiece.com',
+    'public_site_url' => 'https://sugar-paper.com',
     'livreur_token_ttl_hours' => 720,
     'watch_token_ttl_minutes' => 480,
     'cors_origins' => [
-        'https://samapiece.com',
-        'https://www.samapiece.com',
+        'https://sugar-paper.com',
+        'https://www.sugar-paper.com',
     ],
 ];
 ```
@@ -278,18 +278,18 @@ cp .env.example .env
 npm install
 ```
 
-### Fichier `.env` production (samapiece.com)
+### Fichier `.env` production (sugar-paper.com)
 
 ```env
 TRACKING_PORT=3001
 TRACKING_SOCKET_PATH=/socket.io
 
 TRACKING_PHP_BASE=http://127.0.0.1:8081
-TRACKING_PHP_HOST=samapiece.com
+TRACKING_PHP_HOST=sugar-paper.com
 
 TRACKING_INTERNAL_SECRET=MEME_CLE_QUE_config_tracking_php
 
-TRACKING_CORS_ORIGINS=https://samapiece.com,https://www.samapiece.com
+TRACKING_CORS_ORIGINS=https://sugar-paper.com,https://www.sugar-paper.com
 ```
 
 ### PM2
@@ -318,7 +318,7 @@ GET http://127.0.0.1:3001/health
 Au démarrage, Node teste PHP via `verify-livreur.php` et log :
 
 ```
-[tracking] PHP joignable (http://127.0.0.1:8081, Host: samapiece.com)
+[tracking] PHP joignable (http://127.0.0.1:8081, Host: sugar-paper.com)
 ```
 
 ### Appels PHP depuis Node
@@ -342,7 +342,7 @@ Endpoints appelés :
 
 ### Bloc Nginx à ajouter
 
-Fichier : `/var/webuzo-data/nginx/custom/domains/samapiece.com.conf`
+Fichier : `/var/webuzo-data/nginx/custom/domains/sugar-paper.com.conf`
 
 ```nginx
 location /socket.io/ {
@@ -378,7 +378,7 @@ upgrade: false,
 Le temps réel fonctionne correctement en polling. Test :
 
 ```bash
-curl "https://samapiece.com/socket.io/?EIO=4&transport=polling"
+curl "https://sugar-paper.com/socket.io/?EIO=4&transport=polling"
 # → HTTP 200 avec payload Engine.IO
 ```
 
@@ -517,7 +517,7 @@ Session admin + permission `admin_can_livreur_gps()` requises.
 **Livreur (app mobile) :**
 
 ```javascript
-io('https://samapiece.com', {
+io('https://sugar-paper.com', {
   path: '/socket.io',
   transports: ['polling'],
   auth: { role: 'livreur', token: 'TOKEN_API' }
@@ -527,7 +527,7 @@ io('https://samapiece.com', {
 **Admin (page suivi) :**
 
 ```javascript
-io('https://samapiece.com', {
+io('https://sugar-paper.com', {
   path: '/socket.io',
   transports: ['polling'],
   upgrade: false,
@@ -663,7 +663,7 @@ Le statut « temps réel actif » n'est affiché **que** si Socket.io est connec
 
 ```bash
 # 1. Code
-cd /home/jomas/samapiece.com
+cd /home/jomas/sugar-paper.com
 git pull
 
 # 2. Migrations BDD
@@ -677,7 +677,7 @@ cp config/tracking.example.php config/tracking.php
 # 4. Node.js
 cd tracking-server
 cp .env.example .env
-# Éditer TRACKING_* (secret identique à PHP, port 8081, host samapiece.com)
+# Éditer TRACKING_* (secret identique à PHP, port 8081, host sugar-paper.com)
 npm install
 pm2 start ecosystem.config.cjs
 pm2 save
@@ -687,14 +687,14 @@ nginx -t && systemctl reload nginx
 
 # 6. Vérifications
 curl http://127.0.0.1:3001/health
-curl "https://samapiece.com/socket.io/?EIO=4&transport=polling"
+curl "https://sugar-paper.com/socket.io/?EIO=4&transport=polling"
 pm2 logs sugar-tracking --lines 30
 ```
 
 ### Test fonctionnel
 
 1. Connexion admin avec `id = livreur_id` de la commande.
-2. Ouvrir `https://samapiece.com/admin/livreurs/suivi.php?commande_id=73`.
+2. Ouvrir `https://sugar-paper.com/admin/livreurs/suivi.php?commande_id=73`.
 3. Autoriser la géolocalisation du navigateur.
 4. Cliquer **Démarrer la livraison**.
 5. Vérifier : carte, itinéraire, **« Suivi en temps réel actif »**, bouton **Terminer**.
@@ -748,7 +748,7 @@ WHERE TABLE_SCHEMA = DATABASE()
 | Problème | Symptôme | Solution appliquée |
 |----------|----------|-------------------|
 | Temps réel affiché sans Socket.io | Statut mensonger | `tracking_realtime_available()` + statuts séparés GPS / temps réel |
-| Node → PHP 404 | Auth Socket.io échoue | Module `http` natif + header `Host: samapiece.com` (pas `fetch`) |
+| Node → PHP 404 | Auth Socket.io échoue | Module `http` natif + header `Host: sugar-paper.com` (pas `fetch`) |
 | Mauvais port Apache | PHP injoignable depuis Node | `TRACKING_PHP_BASE=http://127.0.0.1:8081` (pas 8082 SSL) |
 | WebSocket échoue Webuzo | `connect_error` | Client en **polling seul** (`transports: ['polling']`, `upgrade: false`) |
 | Abandon trop rapide connexion | Popup erreur au 1er échec | Timeout 15 s, ne pas `resolve(false)` au premier `connect_error` |
@@ -841,10 +841,10 @@ css/admin-livreur-suivi.css
 | Liste livraisons admin | `/admin/livreurs/index.php` |
 | Suivi commande | `/admin/livreurs/suivi.php?commande_id={id}` |
 | Health Node local | `http://127.0.0.1:3001/health` |
-| Test Socket.io public | `https://samapiece.com/socket.io/?EIO=4&transport=polling` |
+| Test Socket.io public | `https://sugar-paper.com/socket.io/?EIO=4&transport=polling` |
 | Doc déploiement Node | `tracking-server/README.md` |
 | Doc complète (ce fichier) | `docs/SUIVI_GPS_TEMPS_REEL.md` |
 
 ---
 
-*Document généré à partir de l'implémentation et du déploiement validé sur samapiece.com (Webuzo, PM2, Nginx, Apache 8081).*
+*Document généré à partir de l'implémentation et du déploiement validé sur sugar-paper.com (Webuzo, PM2, Nginx, Apache 8081).*

@@ -48,8 +48,8 @@ if (!isset($_SESSION['admin_id'])) {
                     <strong>Restrictions d'application</strong> :<br>
                     Sélectionnez « Référents HTTP (sites web) » et ajoutez :
                     <ul style="margin-top: 8px;">
-                        <li><code>http://localhost:5000/*</code></li>
-                        <li><code>http://localhost:5000</code></li>
+                        <li><code>https://sugar-paper.com/*</code></li>
+                        <li><code>https://www.sugar-paper.com/*</code></li>
                         <li><code>http://127.0.0.1:5000/*</code></li>
                         <li><code>http://127.0.0.1:5000</code></li>
                     </ul>

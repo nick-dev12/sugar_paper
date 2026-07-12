@@ -1,7 +1,7 @@
 <?php
 /**
  * Migration web : ajout de la colonne image_reference sur commandes_personnalisees
- * À exécuter une fois via : http://localhost:5000/run_migration_image_cp.php
+ * À exécuter une fois via : https://sugar-paper.com/run_migration_image_cp.php
  * Supprimer ce fichier après exécution pour des raisons de sécurité.
  */
 session_start();

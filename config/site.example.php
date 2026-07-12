@@ -4,7 +4,6 @@
  * Copiez ce fichier en config/site.php et modifiez site_url pour la production
  * 
  * En production : https://sugar-paper.com
- * En développement : http://localhost:5000 ou laisser vide pour utiliser $_SERVER['HTTP_HOST']
  */
 
 return [

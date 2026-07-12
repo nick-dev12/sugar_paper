@@ -2,7 +2,7 @@
 /**
  * Script pour corriger l'erreur cURL 60 (SSL certificate)
  * Exécuter depuis la ligne de commande : php fix_ssl_certificates.php
- * Ou ouvrir dans le navigateur : http://localhost:5000/fix_ssl_certificates.php
+ * Ou ouvrir dans le navigateur : https://sugar-paper.com/fix_ssl_certificates.php
  */
 
 $cacert_url = 'https://curl.se/ca/cacert.pem';

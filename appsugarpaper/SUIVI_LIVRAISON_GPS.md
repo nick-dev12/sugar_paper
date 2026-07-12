@@ -4,8 +4,8 @@
 
 L'application Flutter (`appsugarpaper`) charge l'admin Sugar Paper en WebView. Quand un livreur démarre une livraison sur `admin/livreurs/suivi.php`, le site appelle le pont natif :
 
-- `ColobanesNative.startDeliveryTracking(config)` → GPS natif + notification Android + socket/API
-- `ColobanesNative.stopDeliveryTracking()` → arrêt complet
+- `SugarPaperNative.startDeliveryTracking(config)` → GPS natif + notification Android + socket/API
+- `SugarPaperNative.stopDeliveryTracking()` → arrêt complet
 
 Le suivi **continue en arrière-plan** (app minimisée ou autre écran) jusqu'à :
 
