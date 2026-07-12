@@ -1009,6 +1009,11 @@
     font-style: italic;
 }
 
+.livreur-address-suggest__loading {
+    color: #918a44;
+    font-style: normal;
+}
+
 .livreur-demarrage-status {
     font-size: 0.78rem;
     line-height: 1.35;

@@ -1,0 +1,6 @@
+# Un script PHP par ligne (relatif à la racine du projet).
+# Exécuté uniquement si RUN_MIGRATIONS=1 dans deploy.env.
+# Les scripts doivent être idempotents (CREATE IF NOT EXISTS, etc.).
+#
+# Exemple :
+# migrations/run_add_livreur_tracking.php

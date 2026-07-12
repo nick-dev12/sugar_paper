@@ -17,6 +17,7 @@
     var suggestAbort = null;
     var activeSuggestIndex = -1;
     var lastSuggestItems = [];
+    var suggestLoading = false;
     var isComposing = false;
     var suppressSuggest = false;
     var activeBtn = null;
@@ -307,7 +308,23 @@
         list.innerHTML = '';
         activeSuggestIndex = -1;
         lastSuggestItems = [];
+        suggestLoading = false;
         setAddressSuggestExpanded(false);
+    }
+
+    function showAddressSuggestionsLoading() {
+        var list = qs('livreur-address-suggest');
+        if (!list) return;
+        suggestLoading = true;
+        lastSuggestItems = [];
+        list.innerHTML = '';
+        var li = document.createElement('li');
+        li.className = 'livreur-address-suggest__empty livreur-address-suggest__loading';
+        li.textContent = 'Recherche en cours…';
+        list.appendChild(li);
+        list.hidden = false;
+        activeSuggestIndex = -1;
+        setAddressSuggestExpanded(true);
     }
 
     function highlightSuggestItem(items, index) {
@@ -332,16 +349,21 @@
         }, 120);
     }
 
-    function showAddressSuggestions(items) {
+    function showAddressSuggestions(items, meta) {
         var list = qs('livreur-address-suggest');
         if (!list) return;
 
+        suggestLoading = false;
         lastSuggestItems = Array.isArray(items) ? items.slice() : [];
         list.innerHTML = '';
         if (!lastSuggestItems.length) {
             var empty = document.createElement('li');
             empty.className = 'livreur-address-suggest__empty';
-            empty.textContent = 'Aucun lieu trouvé. Appuyez sur Entrée pour relancer la recherche.';
+            if (meta && meta.hint === 'geo_unavailable') {
+                empty.textContent = 'Service de recherche indisponible. Vérifiez la connexion ou réessayez.';
+            } else {
+                empty.textContent = 'Aucun lieu trouvé. Appuyez sur Entrée pour relancer la recherche.';
+            }
             list.appendChild(empty);
             list.hidden = false;
             activeSuggestIndex = -1;
@@ -409,6 +431,8 @@
         var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         suggestAbort = controller;
 
+        showAddressSuggestionsLoading();
+
         var url = '/api/geo-geocode-suggest.php?q=' + encodeURIComponent(q) + '&limit=6';
         fetch(url, {
             headers: { 'Accept': 'application/json' },
@@ -417,14 +441,14 @@
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (data) {
                 if (!data || !data.ok) {
-                    hideAddressSuggestions();
+                    showAddressSuggestions([], { hint: 'geo_unavailable' });
                     return;
                 }
-                showAddressSuggestions(data.suggestions || []);
+                showAddressSuggestions(data.suggestions || [], data);
             })
             .catch(function (err) {
                 if (err && err.name === 'AbortError') return;
-                hideAddressSuggestions();
+                showAddressSuggestions([], { hint: 'geo_unavailable' });
             })
             .finally(function () {
                 if (suggestAbort === controller) {
@@ -445,7 +469,7 @@
         var value = adresseInput.value;
         suggestTimer = setTimeout(function () {
             fetchAddressSuggestions(value);
-        }, 220);
+        }, 380);
     }
 
     function scheduleAddressSuggest() {

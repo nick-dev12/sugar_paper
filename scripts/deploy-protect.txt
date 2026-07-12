@@ -1,0 +1,15 @@
+conn/conn.php
+config/email.php
+config/emailjs.php
+config/site.php
+config/firebase_config.php
+config/firebase_server.php
+config/tracking.php
+tracking-server/.env
+sugar-paper-*.json
+*-firebase-adminsdk-*.json
+AuthKey_*.p8
+upload/
+uploads/
+error_log
+.git/
