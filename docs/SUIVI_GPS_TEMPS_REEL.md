@@ -23,11 +23,13 @@ Documentation de référence pour le module de **géolocalisation en temps réel
 12. [Itinéraires sans péage](#12-itinéraires-sans-péage)
 13. [Statuts affichés à l'utilisateur](#13-statuts-affichés-à-lutilisateur)
 14. [Déploiement pas à pas (VPS Webuzo)](#14-déploiement-pas-à-pas-vps-webuzo)
-15. [Vérifications et commandes utiles](#15-vérifications-et-commandes-utiles)
-16. [Problèmes rencontrés et solutions](#16-problèmes-rencontrés-et-solutions)
-17. [Fichiers du projet](#17-fichiers-du-projet)
-18. [Sécurité](#18-sécurité)
-19. [Évolutions prévues](#19-évolutions-prévues)
+15. [Installation fraîche (`install-vps-fresh.sh`)](#15-installation-fraîche-install-vps-freshsh)
+16. [Checklist de vérification (partie par partie)](#16-checklist-de-vérification-partie-par-partie)
+17. [Vérifications et commandes utiles](#17-vérifications-et-commandes-utiles)
+18. [Problèmes rencontrés et solutions](#18-problèmes-rencontrés-et-solutions)
+19. [Fichiers du projet](#19-fichiers-du-projet)
+20. [Sécurité](#20-sécurité)
+21. [Évolutions prévues](#21-évolutions-prévues)
 
 ---
 
@@ -48,7 +50,14 @@ Documentation de référence pour le module de **géolocalisation en temps réel
 
 - Application mobile Flutter (API livreur préparée, non finalisée).
 - Upgrade WebSocket complet sur Webuzo (le **polling seul** suffit et est utilisé).
-- Paiement, notifications email, suivi client public.
+- Paiement, notifications email lors du suivi.
+
+### Fonctionnalités actives (juillet 2026)
+
+- Suivi admin livreur (`admin/livreurs/suivi.php`) avec autostart `&autostart=1`
+- Mode observation admin (`&regarder=1`) depuis détails commande ou facture
+- Partage lien public client : `suivi-livraison.php` + `api/tracking/share-link.php`
+- Zoom dynamique carte selon vitesse GPS (mode navigation livreur)
 
 ### Principe architectural
 
@@ -221,6 +230,7 @@ return [
     'node_port' => 3001,
     'socket_path' => '/socket.io',
     'public_site_url' => 'https://sugar-paper.com',
+    'socket_url' => 'https://sugar-paper.com',
     'livreur_token_ttl_hours' => 720,
     'watch_token_ttl_minutes' => 480,
     'cors_origins' => [
@@ -280,6 +290,30 @@ npm install
 
 ### Fichier `.env` production (sugar-paper.com)
 
+> **Important :** créez le fichier **en SSH** (`cat > .env`), pas uniquement via l’éditeur Webuzo.
+> L’éditeur du panneau peut produire un fichier illisible par Node (encodage, BOM, placeholder non remplacé).
+
+```bash
+cd /home/jomas/sugar-paper.com/tracking-server
+
+cat > .env << 'EOF'
+TRACKING_PORT=3001
+TRACKING_SOCKET_PATH=/socket.io
+
+TRACKING_PHP_BASE=http://127.0.0.1:8081
+TRACKING_PHP_HOST=sugar-paper.com
+
+TRACKING_INTERNAL_SECRET=MEME_CLE_QUE_config_tracking_php
+
+TRACKING_CORS_ORIGINS=https://sugar-paper.com,https://www.sugar-paper.com
+EOF
+
+chmod 600 .env
+chown jomas:jomas .env
+```
+
+Contenu attendu :
+
 ```env
 TRACKING_PORT=3001
 TRACKING_SOCKET_PATH=/socket.io
@@ -292,13 +326,35 @@ TRACKING_INTERNAL_SECRET=MEME_CLE_QUE_config_tracking_php
 TRACKING_CORS_ORIGINS=https://sugar-paper.com,https://www.sugar-paper.com
 ```
 
+Vérifier que Node lit le secret :
+
+```bash
+node -e "require('dotenv').config({path:'.env'}); console.log(process.env.TRACKING_INTERNAL_SECRET ? 'SECRET OK' : 'SECRET MANQUANT');"
+```
+
+`server.js` charge explicitement `.env` depuis le dossier `tracking-server/` :
+
+```javascript
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+```
+
 ### PM2
 
 ```bash
-cd tracking-server
+cd /home/jomas/sugar-paper.com/tracking-server
+npm install --omit=dev
+
+# Premier démarrage ou après correction du .env : delete puis start (pas seulement restart)
+pm2 delete sugar-tracking 2>/dev/null || true
 pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup    # une seule fois — enregistre le service systemd
+```
+
+Nettoyer les anciens logs d’erreur (ex. secret manquant avant correction) :
+
+```bash
+pm2 flush sugar-tracking
 ```
 
 Configuration PM2 (`ecosystem.config.cjs`) :
@@ -360,10 +416,13 @@ location /socket.io/ {
 }
 ```
 
-Recharger :
+Recharger Nginx (Webuzo — `systemctl reload nginx` peut échouer) :
 
 ```bash
-nginx -t && systemctl reload nginx
+nginx -t
+/usr/local/apps/nginx/sbin/nginx -s reload
+# Alternative : service nginx reload
+# Ou redémarrage Nginx depuis le panneau Webuzo
 ```
 
 ### WebSocket vs polling
@@ -460,9 +519,11 @@ Si `tracking_active=1` en BDD au chargement de la page :
 
 | Endpoint | Méthode | Description |
 |----------|---------|-------------|
+| `/api/tracking/ping.php` | **POST** | Test interne Node → PHP (secret requis) |
 | `/api/tracking/verify-livreur.php` | POST | Valide token session app mobile |
 | `/api/tracking/verify-watch.php` | POST | Valide token watch admin/client |
 | `/api/tracking/persist-position.php` | POST | Enregistre une position |
+| `/api/tracking/share-link.php` | POST | Génère lien public `suivi-livraison.php` |
 
 ### API web livreur (session admin)
 
@@ -603,8 +664,10 @@ window.LIVREUR_TRACKING_CONFIG = {
 |------|----------------|
 | Temps réel **non** connecté | **Démarrer la livraison** |
 | Temps réel **connecté** | **Terminer** |
+| Autostart + échec Socket.io | **Démarrer** (retry manuel) — pas Terminer |
 | Adresse non géolocalisée | Démarrer désactivé |
 | Admin ≠ livreur assigné | Pas de boutons de gestion |
+| Mode `regarder=1` (admin observe) | Pas de démarrage ; bouton **Partager** le suivi public |
 
 ### Popup d'erreurs
 
@@ -659,49 +722,379 @@ Le statut « temps réel actif » n'est affiché **que** si Socket.io est connec
 
 ## 14. Déploiement pas à pas (VPS Webuzo)
 
-### Checklist complète
+### Prérequis
+
+| Outil | Version minimale | Vérification |
+|-------|------------------|--------------|
+| Node.js | ≥ 18 | `node -v` |
+| npm | récent | `npm -v` |
+| PM2 | installé global | `pm2 -v` (`npm install -g pm2`) |
+| Nginx + Apache | Webuzo | `ss -tlnp \| grep httpd` → ports **8081** et **8082** |
+
+### Ordre des opérations (résumé)
+
+```
+1. Code (git clone ou git pull)
+2. conn/conn.php + fichiers sensibles
+3. Migrations BDD (commandes + factures B2B si besoin)
+4. config/tracking.php
+5. tracking-server/.env (même secret)
+6. npm install + PM2
+7. Nginx location /socket.io/
+8. Vérifications couche par couche (section 16)
+9. Test navigateur
+```
+
+### Checklist commandes
 
 ```bash
 # 1. Code
 cd /home/jomas/sugar-paper.com
-git pull
+git pull   # ou install-vps-fresh.sh pour une install neuve
 
-# 2. Migrations BDD
+# 2. Migrations BDD — commandes
 php migrations/run_add_livreur_tracking.php
 php migrations/run_fix_livreur_positions_fk.php
 
+# 2b. Migrations BDD — factures B2B (si module Invoice utilisé)
+php migrations/run_migrate_invoice_bl.php    # si table bons_livraison absente
+php migrations/run_add_livreur_tracking.php  # relancer pour colonnes GPS sur bons_livraison
+
 # 3. Config PHP
 cp config/tracking.example.php config/tracking.php
-# Éditer internal_secret, public_site_url, node_port, cors_origins
+nano config/tracking.php
+chmod 640 config/tracking.php
+chown jomas:jomas config/tracking.php
 
-# 4. Node.js
+# 4. Config Node — voir section 6 (.env en SSH)
 cd tracking-server
-cp .env.example .env
-# Éditer TRACKING_* (secret identique à PHP, port 8081, host sugar-paper.com)
-npm install
+# cat > .env … (voir section 6)
+npm install --omit=dev
+pm2 delete sugar-tracking 2>/dev/null || true
 pm2 start ecosystem.config.cjs
 pm2 save
 
-# 5. Nginx — ajouter location /socket.io/ (voir section 7)
-nginx -t && systemctl reload nginx
+# 5. Nginx — voir section 7
+nginx -t
+/usr/local/apps/nginx/sbin/nginx -s reload
 
-# 6. Vérifications
+# 6. Vérifications — voir section 16
 curl http://127.0.0.1:3001/health
 curl "https://sugar-paper.com/socket.io/?EIO=4&transport=polling"
-pm2 logs sugar-tracking --lines 30
+php scripts/tracking_diagnostic.php {bl_id}
 ```
 
-### Test fonctionnel
+### Test fonctionnel navigateur
 
-1. Connexion admin avec `id = livreur_id` de la commande.
-2. Ouvrir `https://sugar-paper.com/admin/livreurs/suivi.php?commande_id=73`.
+1. Connexion admin dont **`admin_id` = `livreur_id`** de la livraison.
+2. Ouvrir :
+   - Commande : `https://sugar-paper.com/admin/livreurs/suivi.php?commande_id={id}`
+   - Facture : `https://sugar-paper.com/admin/livreurs/suivi.php?bl_id={id}`
+   - Autostart : ajouter `&autostart=1`
 3. Autoriser la géolocalisation du navigateur.
-4. Cliquer **Démarrer la livraison**.
-5. Vérifier : carte, itinéraire, **« Suivi en temps réel actif »**, bouton **Terminer**.
+4. Cliquer **Démarrer la livraison** (ou autostart si Socket.io OK).
+5. Vérifier : carte, itinéraire rose, **« Suivi en temps réel actif »**, bouton **Terminer**.
+
+### Mises à jour quotidiennes (sans tout réinstaller)
+
+```bash
+cd /home/jomas/sugar-paper.com
+bash scripts/deploy.sh
+```
+
+Ce script fait `git pull`, `composer`, `npm` dans `tracking-server/` et `pm2 restart sugar-tracking`.
+Les fichiers sensibles (`config/tracking.php`, `.env`) ne sont **pas** écrasés.
 
 ---
 
-## 15. Vérifications et commandes utiles
+## 15. Installation fraîche (`install-vps-fresh.sh`)
+
+Après `bash scripts/install-vps-fresh.sh`, le code Git est propre mais **tous les fichiers sensibles et données utilisateur sont supprimés**.
+
+### Fichiers à remettre manuellement (obligatoires tracking)
+
+| Fichier | Rôle |
+|---------|------|
+| `conn/conn.php` | Connexion MySQL |
+| `config/tracking.php` | Secret PHP, URL publique, CORS |
+| `tracking-server/.env` | Secret Node, port Apache 8081, host domaine |
+
+Liste complète : `scripts/FICHIERS_SENSIBLES.md`
+
+### Génération du secret partagé
+
+```bash
+openssl rand -hex 32
+```
+
+Copier **exactement la même valeur** dans :
+- `config/tracking.php` → `internal_secret`
+- `tracking-server/.env` → `TRACKING_INTERNAL_SECRET`
+
+### Domaine sugar-paper.com — où le configurer
+
+| Élément | Où |
+|---------|-----|
+| Domaine du site (vhost, SSL, racine web) | **Panneau Webuzo** → domaine `sugar-paper.com` → `/home/jomas/sugar-paper.com` |
+| URL publique / liens partage | `config/tracking.php` → `public_site_url`, `socket_url` |
+| Node → PHP (en-tête Host) | `tracking-server/.env` → `TRACKING_PHP_HOST=sugar-paper.com` |
+| Proxy Socket.io | Nginx : `/var/webuzo-data/nginx/custom/domains/sugar-paper.com.conf` |
+| Secret partagé | `config/tracking.php` + `tracking-server/.env` |
+
+> Le secret **n’est pas** dans Apache/Nginx — uniquement dans les deux fichiers ci-dessus.
+
+### Erreur fréquente après install fraîche
+
+| Symptôme | Cause |
+|----------|--------|
+| `TRACKING_INTERNAL_SECRET manquant` | `.env` absent ou créé via Webuzo avec placeholder |
+| `curl :3001/health` échoue | Node crash → PM2 redémarre en boucle (↺ élevé) |
+| Socket.io → 500 HTML | Node pas sur le port 3001 |
+| `livreur_bl_livraison_columns_ok : non` | Table `bons_livraison` absente ou migration non relancée |
+| BL #X introuvable | Données effacées — recréer factures/commandes en admin |
+
+---
+
+## 16. Checklist de vérification (partie par partie)
+
+Cocher dans cet ordre. Chaque étape doit être **OK** avant la suivante.
+
+### Partie 1 — Prérequis système
+
+```bash
+node -v          # ≥ 18
+npm -v
+pm2 -v
+ss -tlnp | grep httpd   # 8081 (HTTP interne) et 8082 (HTTPS interne)
+```
+
+Test Apache port **8081** (bon virtual host) :
+
+```bash
+curl -X POST http://127.0.0.1:8081/api/tracking/verify-livreur.php \
+  -H "Content-Type: application/json" \
+  -H "Host: sugar-paper.com" \
+  -d '{"token":"test"}'
+```
+
+**Attendu :** `{"valid":false,"error":"unauthorized"}` (JSON, pas HTML 404).
+
+Port **8082** : ne pas utiliser pour Node → PHP (erreur SSL « plain HTTP to SSL port »).
+
+---
+
+### Partie 2 — Base de données
+
+```bash
+cd /home/jomas/sugar-paper.com
+php -r "require 'conn/conn.php'; echo 'BDD OK';"
+php migrations/run_add_livreur_tracking.php
+php migrations/run_fix_livreur_positions_fk.php
+```
+
+Tables et colonnes commandes :
+
+```bash
+php -r "
+require 'conn/conn.php';
+foreach (['livreur_positions','tracking_watch_tokens'] as \$t) {
+  echo \$t . ': ' . (\$db->query(\"SHOW TABLES LIKE '\$t'\")->fetch() ? 'OK' : 'MANQUANT') . PHP_EOL;
+}
+foreach (['livreur_id','delivery_latitude','delivery_longitude','tracking_active'] as \$c) {
+  echo \$c . ': ' . (\$db->query(\"SHOW COLUMNS FROM commandes LIKE '\$c'\")->fetch() ? 'OK' : 'MANQUANT') . PHP_EOL;
+}
+"
+```
+
+Module factures B2B (si suivi `bl_id`) :
+
+```bash
+php -r "
+require 'conn/conn.php';
+require 'models/model_livreur_tracking.php';
+echo 'bons_livraison: ' . (\$db->query(\"SHOW TABLES LIKE 'bons_livraison'\")->fetch() ? 'OK' : 'ABSENTE') . PHP_EOL;
+echo 'livreur_bl_livraison_columns_ok: ' . (livreur_bl_livraison_columns_ok() ? 'oui' : 'non') . PHP_EOL;
+"
+```
+
+Si `bons_livraison: ABSENTE` → `php migrations/run_migrate_invoice_bl.php` puis relancer `run_add_livreur_tracking.php`.
+
+---
+
+### Partie 3 — Fichiers sensibles
+
+```bash
+ls -la conn/conn.php
+ls -la config/tracking.php
+ls -la tracking-server/.env    # fichier caché — utiliser ls -la
+```
+
+---
+
+### Partie 4 — Configuration PHP
+
+```bash
+php -r "
+require 'includes/tracking_config.php';
+\$s = tracking_internal_secret();
+echo strlen(\$s) . ' chars — ';
+echo (\$s !== '' && \$s !== 'REMPLACEZ_PAR_UNE_CLE_SECRETE_LONGUE_ET_ALEATOIRE') ? 'OK' : 'MANQUANT';
+echo PHP_EOL;
+echo 'realtime_available: ' . (tracking_realtime_available() ? 'oui' : 'non') . PHP_EOL;
+"
+```
+
+**Attendu :** `64 chars — OK` et `realtime_available: oui`
+
+Points de contrôle `config/tracking.php` :
+- `public_site_url` = `https://sugar-paper.com` (sans slash final)
+- `socket_url` = `https://sugar-paper.com` (proxy Nginx)
+- `node_port` = `3001`
+- `cors_origins` sans slash final
+
+---
+
+### Partie 5 — Configuration Node (`.env`)
+
+```bash
+cd /home/jomas/sugar-paper.com/tracking-server
+node -e "require('dotenv').config({path:'.env'}); echo process.env.TRACKING_INTERNAL_SECRET ? 'SECRET OK' : 'SECRET MANQUANT';"
+
+php -r "\$c=require '../config/tracking.php'; echo \$c['internal_secret'];"
+echo ""
+grep TRACKING_INTERNAL_SECRET .env
+```
+
+**Attendu :** même chaîne dans PHP et `.env`.
+
+---
+
+### Partie 6 — Node.js + PM2
+
+```bash
+cd tracking-server
+npm install --omit=dev
+pm2 delete sugar-tracking 2>/dev/null || true
+pm2 start ecosystem.config.cjs
+pm2 list
+```
+
+**Attendu PM2 :**
+
+| Champ | Valeur |
+|-------|--------|
+| name | `sugar-tracking` |
+| status | `online` |
+| ↺ restarts | **0** (pas de boucle de crash) |
+| mode | `fork` |
+
+Logs :
+
+```bash
+pm2 logs sugar-tracking --lines 10 --nostream
+```
+
+**Attendu (out.log) :**
+```
+[tracking] Socket.io écoute sur 127.0.0.1:3001 path=/socket.io
+[tracking] PHP joignable (http://127.0.0.1:8081, Host: sugar-paper.com)
+```
+
+**Pas attendu (error.log) :** `TRACKING_INTERNAL_SECRET manquant dans .env`
+
+Health local :
+
+```bash
+curl http://127.0.0.1:3001/health
+```
+
+**Attendu :** `{"ok":true,"service":"tracking-socket"}`
+
+---
+
+### Partie 7 — Nginx (proxy Socket.io)
+
+Fichier : `/var/webuzo-data/nginx/custom/domains/sugar-paper.com.conf`
+
+```bash
+nginx -t
+/usr/local/apps/nginx/sbin/nginx -s reload
+curl "https://sugar-paper.com/socket.io/?EIO=4&transport=polling"
+```
+
+**Attendu :** réponse commençant par `0{"sid":` (Engine.IO), **pas** page HTML 500.
+
+---
+
+### Partie 8 — API PHP interne
+
+> `api/tracking/ping.php` exige **POST**, pas GET.
+
+```bash
+SECRET=$(php -r "require '/home/jomas/sugar-paper.com/includes/tracking_config.php'; echo tracking_internal_secret();")
+
+curl -X POST http://127.0.0.1:8081/api/tracking/ping.php \
+  -H "Content-Type: application/json" \
+  -H "Host: sugar-paper.com" \
+  -H "X-Tracking-Secret: $SECRET"
+```
+
+**Attendu :** `{"ok":true,"service":"tracking-php","realtime":true}`
+
+Diagnostic facture (remplacer `{id}` par un BL existant) :
+
+```bash
+cd /home/jomas/sugar-paper.com
+php scripts/tracking_diagnostic.php {bl_id}
+```
+
+Lister les livraisons disponibles :
+
+```bash
+php -r "
+require 'conn/conn.php';
+echo \"--- Commandes ---\n\";
+print_r(\$db->query('SELECT id, numero_commande, livreur_id FROM commandes WHERE livreur_id IS NOT NULL ORDER BY id DESC LIMIT 5')->fetchAll(PDO::FETCH_ASSOC));
+echo \"--- Factures BL ---\n\";
+\$t = \$db->query(\"SHOW TABLES LIKE 'bons_livraison'\")->fetch();
+if (\$t) print_r(\$db->query('SELECT id, numero_bl, livreur_id FROM bons_livraison ORDER BY id DESC LIMIT 5')->fetchAll(PDO::FETCH_ASSOC));
+else echo 'Table bons_livraison absente\n';
+"
+```
+
+---
+
+### Partie 9 — Test navigateur (bout en bout)
+
+| Étape | Attendu |
+|-------|---------|
+| Carte Leaflet + itinéraire rose | Visible |
+| Autorisation GPS navigateur | Demandée |
+| Clic « Démarrer la livraison » | Pas d’erreur Socket.io |
+| Statut | **« Suivi en temps réel actif »** |
+| Bouton | **Terminer** visible |
+
+**Comportement autostart (`&autostart=1`) :** si Socket.io échoue à l’autostart, le bouton **Démarrer la livraison** reste affiché (pas **Terminer** directement). Le livreur peut relancer manuellement ; le GPS peut fonctionner même si le temps réel est inactif.
+
+---
+
+### Récapitulatif checklist
+
+```
+□ 1. Prérequis Node/PM2/ports Apache
+□ 2. BDD + migrations (commandes + bons_livraison si factures)
+□ 3. Fichiers sensibles présents
+□ 4. config/tracking.php valide
+□ 5. tracking-server/.env — secret identique
+□ 6. PM2 online, ↺ 0, health OK
+□ 7. Nginx /socket.io/ + curl public OK
+□ 8. ping.php POST OK + diagnostic
+□ 9. Test navigateur — temps réel actif
+```
+
+---
+
+## 17. Vérifications et commandes utiles
 
 ### PM2
 
@@ -743,7 +1136,7 @@ WHERE TABLE_SCHEMA = DATABASE()
 
 ---
 
-## 16. Problèmes rencontrés et solutions
+## 18. Problèmes rencontrés et solutions
 
 | Problème | Symptôme | Solution appliquée |
 |----------|----------|-------------------|
@@ -758,10 +1151,20 @@ WHERE TABLE_SCHEMA = DATABASE()
 | INSERT position 400 | « Enregistrement position impossible » | FK `livreur_positions → livreurs` supprimée (`run_fix_livreur_positions_fk.php`) |
 | PM2 cluster | Comportement instable | `exec_mode: 'fork'` dans `ecosystem.config.cjs` |
 | `npm install` à la racine | node_modules incorrect | Toujours `cd tracking-server` avant install |
+| `.env` absent après install fraîche | `TRACKING_INTERNAL_SECRET manquant`, PM2 ↺ élevé | Créer `.env` en SSH ; `pm2 delete` + `pm2 start` |
+| Éditeur Webuzo pour `.env` | Secret lu par `node -e` mais pas par PM2 | Recréer via `cat > .env` en SSH ; `chmod 600` |
+| `systemctl reload nginx` échoue Webuzo | Config Nginx non appliquée | `/usr/local/apps/nginx/sbin/nginx -s reload` |
+| `ping.php` method_not_allowed | Test curl en GET | Utiliser `curl -X POST` + header `X-Tracking-Secret` |
+| Socket.io public → 500 | Node pas sur 3001 | Corriger `.env` puis redémarrer PM2 |
+| `livreur_bl_livraison_columns_ok : non` | `bons_livraison` sans colonnes GPS | `run_migrate_invoice_bl.php` puis relancer `run_add_livreur_tracking.php` |
+| BL #X introuvable diagnostic | Données effacées (install fraîche) | Lister les IDs réels en BDD ; recréer livraisons en admin |
+| Autostart + échec Socket.io | Bouton Terminer affiché trop tôt | Comportement corrigé : **Démarrer** reste visible ; retry manuel |
+| Logs PM2 anciennes erreurs | Confusion après correction | `pm2 flush sugar-tracking` |
+| `tracking_diagnostic.php` introuvable | Mauvais répertoire courant | Lancer depuis `/home/jomas/sugar-paper.com` |
 
 ---
 
-## 17. Fichiers du projet
+## 19. Fichiers du projet
 
 ### Configuration (gitignore / secrets)
 
@@ -787,7 +1190,13 @@ api/routing/directions.php
 api/livreur/*.php
 migrations/run_add_livreur_tracking.php
 migrations/run_fix_livreur_positions_fk.php
-migrations/add_livreur_tracking.sql
+migrations/run_migrate_invoice_bl.php
+scripts/install-vps-fresh.sh
+scripts/deploy.sh
+scripts/FICHIERS_SENSIBLES.md
+scripts/tracking_diagnostic.php
+docs/SUIVI_GPS_TEMPS_REEL.md
+suivi-livraison.php
 ```
 
 ### Node.js
@@ -812,7 +1221,7 @@ css/admin-livreur-suivi.css
 
 ---
 
-## 18. Sécurité
+## 20. Sécurité
 
 - **`internal_secret`** long et aléatoire ; jamais exposé au navigateur.
 - Tokens **watch** : durée limitée (`watch_token_ttl_minutes`), liés à une commande/BL.
@@ -824,7 +1233,7 @@ css/admin-livreur-suivi.css
 
 ---
 
-## 19. Évolutions prévues
+## 21. Évolutions prévues
 
 - [ ] Application **Flutter** livreur (Socket.io + API `/api/livreur/*`).
 - [ ] Upgrade **WebSocket** Nginx si nécessaire (polling suffit actuellement).
@@ -844,7 +1253,12 @@ css/admin-livreur-suivi.css
 | Test Socket.io public | `https://sugar-paper.com/socket.io/?EIO=4&transport=polling` |
 | Doc déploiement Node | `tracking-server/README.md` |
 | Doc complète (ce fichier) | `docs/SUIVI_GPS_TEMPS_REEL.md` |
+| Install fraîche VPS | `scripts/install-vps-fresh.sh` |
+| Fichiers sensibles post-clone | `scripts/FICHIERS_SENSIBLES.md` |
+| Diagnostic BL/commande | `php scripts/tracking_diagnostic.php {bl_id}` |
+| Suivi public partagé | `/suivi-livraison.php?commande_id={id}&token=…` |
 
 ---
 
-*Document généré à partir de l'implémentation et du déploiement validé sur sugar-paper.com (Webuzo, PM2, Nginx, Apache 8081).*
+*Document mis à jour juillet 2026 — déploiement validé sur sugar-paper.com (Webuzo, PM2, Nginx, Apache 8081).*
+*Inclut procédure post-`install-vps-fresh.sh`, checklist de vérification partie par partie, et dépannage production.*

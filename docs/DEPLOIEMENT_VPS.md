@@ -33,7 +33,8 @@ Le script :
 
 ### Remettre les fichiers sensibles à la main
 
-Voir la liste : `scripts/FICHIERS_SENSIBLES.md`
+Voir la liste : `scripts/FICHIERS_SENSIBLES.md`  
+Documentation suivi temps réel : `docs/SUIVI_GPS_TEMPS_REEL.md`
 
 Minimum :
 

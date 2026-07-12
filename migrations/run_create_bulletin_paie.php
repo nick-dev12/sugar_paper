@@ -3,12 +3,9 @@
  * Bulletins de paie : tables parametres + bulletins employés + colonnes fiche employé
  * php migrations/run_create_bulletin_paie.php
  */
-require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/lib/migration_helpers.php';
 
-if (!$db) {
-    fwrite(STDERR, "Connexion BDD impossible.\n");
-    exit(1);
-}
+$db = mig_connect();
 
 $default_rubriques = [
     'gains' => [
@@ -47,8 +44,14 @@ $default_rubriques = [
 
 try {
     $db->exec('SET NAMES utf8mb4');
+    $db->exec('SET FOREIGN_KEY_CHECKS=0');
 
-    $db->exec("
+    $admin_id_type = mig_get_column_type($db, 'admin', 'id');
+    if ($admin_id_type === '') {
+        $admin_id_type = 'int(11)';
+    }
+
+    mig_safe_exec($db, "
 CREATE TABLE IF NOT EXISTS `bulletin_paie_parametres` (
   `id` TINYINT UNSIGNED NOT NULL DEFAULT 1,
   `employeur_nom` VARCHAR(255) NOT NULL DEFAULT '',
@@ -64,22 +67,11 @@ CREATE TABLE IF NOT EXISTS `bulletin_paie_parametres` (
   `forfait_heures_sup_mensuel` DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Forfait HS sursalaire (FCFA / mois)',
   `date_modification` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    ");
-    echo "+ table bulletin_paie_parametres\n";
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ", 'table bulletin_paie_parametres');
 
-    $bulletins_exists = false;
-    try {
-        $chk = $db->query("SHOW TABLES LIKE 'employe_bulletins_paie'");
-        $bulletins_exists = $chk && $chk->rowCount() > 0;
-    } catch (PDOException $e) {
-        $bulletins_exists = false;
-    }
-
-    if ($bulletins_exists) {
-        echo "— table employe_bulletins_paie déjà présente (conservée)\n";
-    } else {
-        $db->exec("
+    if (!mig_table_exists($db, 'employe_bulletins_paie')) {
+        mig_safe_exec($db, "
 CREATE TABLE `employe_bulletins_paie` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `employe_id` INT(11) NOT NULL,
@@ -95,34 +87,26 @@ CREATE TABLE `employe_bulletins_paie` (
   `montant_css` DECIMAL(14,2) NULL DEFAULT NULL,
   `montant_penalites_absence` DECIMAL(14,2) NULL DEFAULT NULL,
   `snapshot_json` LONGTEXT NOT NULL,
-  `admin_id` INT(11) NULL DEFAULT NULL,
+  `admin_id` $admin_id_type NULL DEFAULT NULL,
   `date_creation` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_emp_mois` (`employe_id`, `mois_paie`),
   KEY `idx_date_crea` (`date_creation`),
-  CONSTRAINT `fk_bulletin_employe` FOREIGN KEY (`employe_id`) REFERENCES `employes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_bulletin_admin` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ");
-        echo "+ table employe_bulletins_paie (avec FK)\n";
+  KEY `idx_bulletin_admin` (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ", 'table employe_bulletins_paie');
+    } else {
+        echo "— table employe_bulletins_paie déjà présente (conservée)\n";
     }
 
-    foreach (['salaire_base' => "DECIMAL(14,2) NULL DEFAULT NULL COMMENT 'Salaire de base habituel (FCFA)'",
+    $db->exec('SET FOREIGN_KEY_CHECKS=1');
+
+    foreach ([
+        'salaire_base' => "DECIMAL(14,2) NULL DEFAULT NULL COMMENT 'Salaire de base habituel (FCFA)'",
         'montant_irpp_mensuel' => "DECIMAL(14,2) NULL DEFAULT NULL COMMENT 'IRPP mensuel fixe bulletin (FCFA)'",
         'categorie_paie' => "VARCHAR(120) NULL DEFAULT NULL COMMENT 'Catégorie / classification (bulletin)'",
     ] as $col => $def) {
-        try {
-            $db->exec("ALTER TABLE `employes` ADD COLUMN `$col` $def");
-            echo "+ employes.$col\n";
-        } catch (PDOException $e) {
-            $m = strtolower($e->getMessage());
-            if (strpos($m, 'duplicate') !== false || strpos($m, 'already exists') !== false
-                || strpos($m, 'déjà') !== false) {
-                echo "— employes.$col existe déjà\n";
-            } else {
-                throw $e;
-            }
-        }
+        mig_add_column_if_missing($db, 'employes', $col, $def);
     }
 
     $stmt = $db->query('SELECT COUNT(*) FROM bulletin_paie_parametres WHERE id = 1');
@@ -143,7 +127,7 @@ CREATE TABLE `employe_bulletins_paie` (
     }
 
     echo "\nMigration bulletin de paie terminée.\n";
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     fwrite(STDERR, 'Erreur : ' . $e->getMessage() . "\n");
     exit(1);
 }

@@ -1,22 +1,23 @@
 <?php
 /**
  * Exécute toutes les migrations en ordre (ajouts uniquement, sans suppression de données).
+ * Termine par une réparation automatique du schéma + scan de vérification.
  *
  * Usage :
  *   php migrations/run_all_migrations.php
- *   php migrations/run_all_migrations.php --dry-run
  *   php migrations/run_all_migrations.php --force
+ *   php migrations/run_all_migrations.php --continue
  *   php migrations/run_all_migrations.php --only=livreur_tracking
  *   php migrations/run_all_migrations.php --from=invoice_bl
- *   php migrations/run_all_migrations.php --scan
+ *   php migrations/run_all_migrations.php --no-repair
  *
  * Scripts exclus volontairement (destructifs) :
  *   - run_remove_stock_articles.php
- *   - vider_base_donnees.sql / cleanup_*.sql
  */
 require_once __DIR__ . '/lib/migration_helpers.php';
 
 $opts = mig_parse_cli_args($argv ?? []);
+$no_repair = in_array('--no-repair', $argv ?? [], true);
 $db = mig_connect();
 $migrations_dir = __DIR__;
 $manifest = require $migrations_dir . '/migrations_manifest.php';
@@ -31,12 +32,16 @@ if ($opts['dry_run']) {
 if ($opts['force']) {
     echo "Mode : forcer ré-exécution (--force)\n";
 }
+if ($opts['continue']) {
+    echo "Mode : continuer malgré les erreurs (--continue)\n";
+}
 echo "\n";
 
 $started = false;
 $ran = 0;
 $skipped = 0;
 $errors = 0;
+$failed_ids = [];
 
 foreach ($manifest as $step) {
     $id = $step['id'];
@@ -58,11 +63,12 @@ foreach ($manifest as $step) {
     if (!is_file($path)) {
         echo "! [$id] Script absent : $script\n";
         $errors++;
+        $failed_ids[] = $id;
         continue;
     }
 
     $already = mig_is_applied($db, $id);
-    if ($already && !$opts['force'] && $opts['only'] === '') {
+    if ($already && !$opts['force'] && $opts['only'] === '' && $opts['from'] === '') {
         echo "— [$id] $label (déjà appliqué)\n";
         $skipped++;
         continue;
@@ -81,11 +87,13 @@ foreach ($manifest as $step) {
     if ($code !== 0) {
         echo "!! Échec [$id] code $code\n\n";
         $errors++;
-        if ($opts['only'] === '') {
-            fwrite(STDERR, "Arrêt : corrigez l'erreur puis relancez avec --from=$id\n");
-            exit(1);
+        $failed_ids[] = $id;
+        if (!$opts['continue'] && $opts['only'] === '') {
+            echo "Arrêt sur erreur. Relancez avec --continue ou --from=$id\n";
+            echo "Une réparation automatique sera tentée ci-dessous.\n\n";
+            break;
         }
-        exit(1);
+        continue;
     }
 
     mig_mark_applied($db, $id, $label);
@@ -93,19 +101,45 @@ foreach ($manifest as $step) {
     $ran++;
 }
 
-echo "=== Résumé ===\n";
+echo "=== Résumé migrations ===\n";
 echo "Exécutées : $ran | Ignorées (déjà fait) : $skipped | Erreurs : $errors\n";
+if (!empty($failed_ids)) {
+    echo 'Échecs : ' . implode(', ', $failed_ids) . "\n";
+}
 
-if ($opts['scan'] || (!$opts['dry_run'] && $errors === 0)) {
+if (!$opts['dry_run'] && !$no_repair) {
+    echo "\n";
+    $repair_code = mig_run_php_script($migrations_dir . '/run_schema_repair.php');
+    if ($repair_code !== 0) {
+        $errors++;
+    }
+
+    foreach ($manifest as $step) {
+        if (in_array($step['id'], $failed_ids, true)) {
+            $path = $migrations_dir . '/' . $step['script'];
+            if (!is_file($path)) {
+                continue;
+            }
+            echo "\n>> Nouvelle tentative [" . $step['id'] . "]\n";
+            $code = mig_run_php_script($path);
+            if ($code === 0) {
+                mig_mark_applied($db, $step['id'], $step['label']);
+                echo "OK [" . $step['id'] . "] enregistré après réparation\n";
+            }
+        }
+    }
+}
+
+if (!$opts['dry_run']) {
     echo "\n";
     $scan_code = mig_run_php_script($migrations_dir . '/scan_schema.php');
     if ($scan_code !== 0) {
-        echo "\nAttention : le scan signale des éléments encore manquants.\n";
+        echo "\nLe schéma n'est pas encore complet. Relancez : php migrations/run_all_migrations.php --force\n";
         exit(1);
     }
 }
 
-if ($errors > 0) {
+if ($errors > 0 && !$opts['continue']) {
     exit(1);
 }
 

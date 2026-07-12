@@ -126,6 +126,16 @@ return [
         'script' => 'run_add_tracabilite_produits_categories_stock.php',
     ],
     [
+        'id' => 'logos',
+        'label' => 'Table logos partenaires',
+        'script' => 'run_add_logos.php',
+    ],
+    [
+        'id' => 'caisse_tables',
+        'label' => 'Tables caisse magasin',
+        'script' => 'run_add_caisse_tables.php',
+    ],
+    [
         'id' => 'comptes_rh',
         'label' => 'Module comptes / RH / bulletins de paie',
         'script' => 'run_migrate_comptes_rh.php',

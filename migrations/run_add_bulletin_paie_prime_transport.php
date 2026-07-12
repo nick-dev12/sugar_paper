@@ -3,39 +3,44 @@
  * Ajout prime transport paramètres + table des retraits transport par employé.
  * php migrations/run_add_bulletin_paie_prime_transport.php
  */
-require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/lib/migration_helpers.php';
 
-if (!$db) {
-    fwrite(STDERR, "Connexion BDD impossible.\n");
-    exit(1);
-}
+$db = mig_connect();
 
 try {
     $db->exec('SET NAMES utf8mb4');
-    try {
-        $db->exec("
-            ALTER TABLE `bulletin_paie_parametres`
-            ADD COLUMN `prime_transport_mensuelle` DECIMAL(12,2) NULL DEFAULT NULL
-            COMMENT 'Montant mensuel de référence de la prime de transport'
-        ");
-        echo "+ bulletin_paie_parametres.prime_transport_mensuelle\n";
-    } catch (PDOException $e) {
-        $m = strtolower($e->getMessage());
-        if (strpos($m, 'duplicate') !== false || strpos($m, 'already exists') !== false || strpos($m, 'déjà') !== false) {
-            echo "— bulletin_paie_parametres.prime_transport_mensuelle existe déjà\n";
-        } else {
-            throw $e;
-        }
+    $db->exec('SET FOREIGN_KEY_CHECKS=0');
+
+    $admin_id_type = mig_get_column_type($db, 'admin', 'id');
+    if ($admin_id_type === '') {
+        $admin_id_type = 'int(11)';
     }
 
-    $sql = file_get_contents(__DIR__ . '/add_bulletin_paie_prime_transport.sql');
-    if ($sql === false || trim($sql) === '') {
-        throw new RuntimeException('Fichier SQL introuvable.');
-    }
-    if (preg_match('/CREATE TABLE IF NOT EXISTS `employe_prime_transport_retraits`[\s\S]+$/', $sql, $mCreate)) {
-        $db->exec($mCreate[0]);
-        echo "+ table employe_prime_transport_retraits\n";
-    }
+    mig_add_column_if_missing(
+        $db,
+        'bulletin_paie_parametres',
+        'prime_transport_mensuelle',
+        "DECIMAL(12,2) NULL DEFAULT NULL COMMENT 'Montant mensuel de référence de la prime de transport'"
+    );
+
+    mig_safe_exec($db, "
+CREATE TABLE IF NOT EXISTS `employe_prime_transport_retraits` (
+  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `employe_id` INT(11) NOT NULL,
+  `mois_paie` CHAR(7) NOT NULL COMMENT 'Format YYYY-MM',
+  `nb_jours` SMALLINT UNSIGNED NOT NULL,
+  `montant_deduit` DECIMAL(12,2) NOT NULL,
+  `commentaire` VARCHAR(500) NULL DEFAULT NULL,
+  `admin_id` $admin_id_type NULL DEFAULT NULL,
+  `date_creation` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_emp_transport_employe_mois` (`employe_id`, `mois_paie`),
+  KEY `idx_emp_transport_date` (`date_creation`),
+  KEY `idx_emp_transport_admin` (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ", 'table employe_prime_transport_retraits');
+
+    $db->exec('SET FOREIGN_KEY_CHECKS=1');
 
     $db->exec("
         UPDATE bulletin_paie_parametres

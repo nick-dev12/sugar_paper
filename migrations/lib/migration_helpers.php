@@ -24,13 +24,16 @@ if (!function_exists('mig_connect')) {
 if (!function_exists('mig_is_duplicate_error')) {
     function mig_is_duplicate_error(PDOException $e) {
         $m = strtolower($e->getMessage());
-        $codes = ['23000', '42000', 'HY000'];
+        $codes = ['23000', '42000', 'HY000', '42S21'];
         if (in_array((string) $e->getCode(), $codes, true) && (
             strpos($m, 'duplicate') !== false
             || strpos($m, 'already exists') !== false
             || strpos($m, 'déjà') !== false
+            || strpos($m, 'deja') !== false
             || strpos($m, 'exists') !== false
             || strpos($m, 'multiple primary key') !== false
+            || strpos($m, 'déjà utilisé') !== false
+            || strpos($m, 'deja utilise') !== false
         )) {
             return true;
         }
@@ -93,8 +96,100 @@ if (!function_exists('mig_add_column_if_missing')) {
     }
 }
 
+if (!function_exists('mig_add_column_smart')) {
+    /**
+     * Ajoute une colonne en choisissant la première ancre AFTER disponible.
+     */
+    function mig_add_column_smart(PDO $db, $table, $column, $definition, array $after_candidates = []) {
+        if (mig_column_exists($db, $table, $column)) {
+            echo "  — $table.$column (déjà présent)\n";
+            return false;
+        }
+        if (!mig_table_exists($db, $table)) {
+            echo "  ! table $table absente pour $column\n";
+            return false;
+        }
+        $def = trim($definition);
+        foreach ($after_candidates as $anchor) {
+            if (mig_column_exists($db, $table, $anchor)) {
+                mig_safe_exec(
+                    $db,
+                    "ALTER TABLE `$table` ADD COLUMN `$column` $def AFTER `$anchor`",
+                    "$table.$column"
+                );
+                return true;
+            }
+        }
+        mig_safe_exec($db, "ALTER TABLE `$table` ADD COLUMN `$column` $def", "$table.$column");
+        return true;
+    }
+}
+
+if (!function_exists('mig_scan_gaps')) {
+    function mig_scan_gaps(PDO $db) {
+        $expectations = require __DIR__ . '/../schema_expectations.php';
+        $missing_tables = [];
+        $missing_columns = [];
+        foreach ($expectations['tables'] as $table) {
+            if (!mig_table_exists($db, $table)) {
+                $missing_tables[] = $table;
+            }
+        }
+        foreach ($expectations['columns'] as $item) {
+            $table = $item[0];
+            $column = $item[1];
+            if (!mig_table_exists($db, $table)) {
+                $missing_columns[] = ['table' => $table, 'column' => $column];
+                continue;
+            }
+            if (!mig_column_exists($db, $table, $column)) {
+                $missing_columns[] = ['table' => $table, 'column' => $column];
+            }
+        }
+        return [
+            'missing_tables' => $missing_tables,
+            'missing_columns' => $missing_columns,
+        ];
+    }
+}
+
+if (!function_exists('mig_strip_sql_leading_comments')) {
+    /**
+     * Retire les lignes de commentaire SQL en tête de bloc (-- …).
+     * Ne supprime pas le CREATE/ALTER qui suit un commentaire d'en-tête.
+     */
+    function mig_strip_sql_leading_comments($sql) {
+        $lines = preg_split('/\R/', (string) $sql);
+        $out = [];
+        foreach ($lines as $line) {
+            $trim = trim($line);
+            if ($trim === '' || strpos($trim, '--') === 0) {
+                continue;
+            }
+            $out[] = $line;
+        }
+        return trim(implode("\n", $out));
+    }
+}
+
+if (!function_exists('mig_strip_inline_foreign_keys')) {
+    /**
+     * Retire les CONSTRAINT … FOREIGN KEY inline d'un CREATE TABLE.
+     */
+    function mig_strip_inline_foreign_keys($sql) {
+        return preg_replace(
+            '/,?\s*CONSTRAINT\s+`[^`]+`\s+FOREIGN\s+KEY\s*\([^)]+\)\s+REFERENCES\s+`[^`]+`\s*\([^)]+\)(?:\s+ON\s+DELETE\s+(?:RESTRICT|CASCADE|SET\s+NULL|NO\s+ACTION))?(?:\s+ON\s+UPDATE\s+(?:RESTRICT|CASCADE|SET\s+NULL|NO\s+ACTION))?/i',
+            '',
+            (string) $sql
+        );
+    }
+}
+
 if (!function_exists('mig_exec_sql_file')) {
-    function mig_exec_sql_file(PDO $db, $path, $label = '') {
+    /**
+     * @param bool $strip_fk Retire les FK inline (CREATE TABLE sans contrainte bloquante).
+     */
+    function mig_exec_sql_file(PDO $db, $path, $label = '', $strip_fk = false) {
         if (!is_file($path)) {
             echo "! Fichier SQL absent : $path\n";
             return false;
@@ -108,9 +203,12 @@ if (!function_exists('mig_exec_sql_file')) {
         $applied = 0;
         $skipped = 0;
         foreach ($parts as $stmt) {
-            $stmt = trim($stmt);
-            if ($stmt === '' || strpos($stmt, '--') === 0) {
+            $stmt = mig_strip_sql_leading_comments(trim($stmt));
+            if ($stmt === '') {
                 continue;
+            }
+            if ($strip_fk) {
+                $stmt = mig_strip_inline_foreign_keys($stmt);
             }
             try {
                 $db->exec($stmt);
@@ -182,6 +280,44 @@ if (!function_exists('mig_run_php_script')) {
         $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script_path);
         passthru($cmd, $code);
         return (int) $code;
+    }
+}
+
+if (!function_exists('mig_get_column_type')) {
+    function mig_get_column_type(PDO $db, $table, $column) {
+        if (!mig_column_exists($db, $table, $column)) {
+            return '';
+        }
+        $q = $db->prepare('SHOW COLUMNS FROM `' . str_replace('`', '``', $table) . '` LIKE ?');
+        $q->execute([(string) $column]);
+        $row = $q->fetch(PDO::FETCH_ASSOC);
+        return isset($row['Type']) ? (string) $row['Type'] : '';
+    }
+}
+
+if (!function_exists('mig_try_add_foreign_key')) {
+    function mig_try_add_foreign_key(PDO $db, $table, $constraint, $sql) {
+        try {
+            $check = $db->prepare("
+                SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?
+            ");
+            $check->execute([(string) $table, (string) $constraint]);
+            if ((int) $check->fetchColumn() > 0) {
+                echo "  — FK $constraint (déjà présente)\n";
+                return true;
+            }
+            $db->exec($sql);
+            echo "  + FK $constraint\n";
+            return true;
+        } catch (PDOException $e) {
+            if (mig_is_duplicate_error($e)) {
+                echo "  — FK $constraint (déjà présente)\n";
+                return true;
+            }
+            echo "  ! FK $constraint ignorée : " . $e->getMessage() . "\n";
+            return false;
+        }
     }
 }
 
@@ -280,6 +416,8 @@ if (!function_exists('mig_parse_cli_args')) {
             'scan' => false,
             'only' => '',
             'from' => '',
+            'continue' => false,
+            'repair' => false,
         ];
         if (!is_array($argv)) {
             return $opts;
@@ -299,6 +437,10 @@ if (!function_exists('mig_parse_cli_args')) {
                 $opts['from'] = substr($arg, 6);
             } elseif ($arg === '--from' && isset($argv[$i + 1])) {
                 $opts['from'] = (string) $argv[$i + 1];
+            } elseif ($arg === '--continue') {
+                $opts['continue'] = true;
+            } elseif ($arg === '--repair') {
+                $opts['repair'] = true;
             }
         }
         return $opts;
