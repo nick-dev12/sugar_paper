@@ -5,7 +5,8 @@
  * Webuzo (sugar-paper.com) : Apache PHP écoute sur 127.0.0.1:8081 (HTTP).
  * Port 8082 = HTTPS interne — ne pas utiliser pour les appels Node → PHP.
  */
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const http = require('http');
 const https = require('https');
