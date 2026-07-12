@@ -669,6 +669,53 @@ window.LIVREUR_TRACKING_CONFIG = {
 | Admin ≠ livreur assigné | Pas de boutons de gestion |
 | Mode `regarder=1` (admin observe) | Pas de démarrage ; bouton **Partager** le suivi public |
 
+### Orientation carte (cap / nord)
+
+Trois contextes distincts, commandes **et** factures (`bl_id` ou `commande_id`) :
+
+| Contexte | URL / page | Carte | Icône moto |
+|----------|------------|-------|------------|
+| **Livreur** (navigation) | `suivi.php?…&autostart=1` | **Cap en haut** — la carte pivote avec le GPS (`map.setBearing`) | Fixe (0°) |
+| **Admin observe** | `suivi.php?…&regarder=1` | **Nord en haut** fixe (`bearing=0`) | Pivote selon le cap (`transform: rotate`) |
+| **Client public** | `suivi-livraison.php?…&token=…` | **Nord en haut** fixe | Pivote selon le cap |
+
+Détection JS (`admin-livreur-suivi.js`) :
+
+- `isObserverMode()` → `watchOnly` ou `publicMode` (modes regarder + page publique)
+- `isDriverNavMode()` → livraison active + pas observateur → rotation carte via `leaflet-rotate`
+- Partage public : boutons `#livreur-suivi-share-delivery` et `#livreur-suivi-share-topbar` → `POST /api/tracking/share-link.php` avec `bl_id` ou `commande_id`
+
+### Zoom navigation livreur (mode `autostart`)
+
+Configuration injectée : `navStartZoom: 17.5`, `navRecenterDelayMs: 10000` (dans `suivi.php`).
+
+| Situation | Comportement |
+|-----------|--------------|
+| **Démarrage livraison** | Zoom **17,5** (plage 17–18), carte centrée sur le véhicule, cap en haut |
+| **0–20 km/h** (arrêt, recherche adresse) | Zoom **19 → 18** (détails rue) |
+| **20–50 km/h** (ville) | Zoom **17 → 16** (prochain virage visible) |
+| **> 50 km/h** (route rapide) | Zoom **15 → 14** (anticipation lointaine) |
+| **Transitions** | Interpolation douce (`lerp`) + animation Leaflet si le zoom change |
+| **Toucher / glisser la carte** | Suivi GPS **en pause** (mode libre) |
+| **Bouton recentrage** | Icône **cible** rose pulsante → « Reprendre le suivi GPS » |
+| **Boutons +/- zoom** | Même pause que le glisser + compte à rebours |
+| **10 s sans interaction** | Recentrage auto + reprise zoom dynamique |
+
+Constantes JS : `js/admin-livreur-suivi.js` (`getTargetZoomFromSpeedKmh`, `followDriverNavigation`, `scheduleAutoRecenter`).
+
+### Map matching, recalcul et synchronisation client
+
+| Règle | Configuration |
+|-------|---------------|
+| **Zone tampon (snapping)** | 50 m autour de la polyligne — icône livreur « collée » visuellement à la route |
+| **Confirmation hors-route** | 4 s **ou** 3 relevés GPS consécutifs hors zone avant recalcul API |
+| **Cap parallèle** | Écart ≤ 35° + ≤ 65 m → pas de recalcul (voie de service) |
+| **Cap divergent** | Écart ≥ 70° hors zone → recalcul immédiat (sans attendre le chrono) |
+| **Debounce API** | Minimum **12 s** entre deux appels routing (Valhalla) |
+| **Client / observateur** | Coordonnées GPS **brutes** en temps réel ; polyligne + ETA uniquement via `route:update` WebSocket |
+
+Événements Socket.io : `livreur:route` (émission livreur) → `route:update` (réception client/admin observe).
+
 ### Popup d'erreurs
 
 Mini-modal au clic « Démarrer » en cas d'échec :

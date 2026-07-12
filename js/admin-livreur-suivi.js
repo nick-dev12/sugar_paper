@@ -201,9 +201,15 @@
     var lastRouteRecalcAt = 0;
     var activeRouteCoords = null;
     var routeRecalcInFlight = false;
-    var ROUTE_OFF_PATH_THRESHOLD_M = 45;
-    var ROUTE_RECALC_MIN_INTERVAL_MS = 10000;
+    var ROUTE_MATCH_TOLERANCE_M = 50;
+    var ROUTE_OFF_PATH_THRESHOLD_M = 50;
+    var ROUTE_RECALC_CONFIRM_MS = 4000;
+    var ROUTE_RECALC_CONFIRM_SAMPLES = 3;
+    var ROUTE_RECALC_MIN_INTERVAL_MS = 12000;
     var ROUTE_RECALC_PERIODIC_MS = 45000;
+    var ROUTE_HEADING_PARALLEL_MAX_DEG = 35;
+    var ROUTE_HEADING_DIVERGE_MIN_DEG = 70;
+    var ROUTE_HEADING_PARALLEL_BUFFER_M = 15;
     var driverHeadingDeg = 0;
     var mapBearingDeg = 0;
     var lastGpsSpeed = null;
@@ -215,13 +221,19 @@
     var bearingAnimFrame = null;
     var NAV_START_ZOOM = typeof cfg.navStartZoom === 'number' ? cfg.navStartZoom : 17.5;
     var AUTO_RECENTER_MS = cfg.navRecenterDelayMs || 10000;
-    var ZOOM_SPEED_SLOW_MAX_KMH = 20;
-    var ZOOM_SPEED_CITY_MAX_KMH = 50;
+    /** Vitesses (km/h) et zoom cible — conduite moto / voiture */
+    var ZOOM_SPEED_SLOW_MAX_KMH = 20;   /* 0–20 km/h → zoom 19→18 */
+    var ZOOM_SPEED_CITY_MAX_KMH = 50;   /* 20–50 km/h → zoom 17→16 */
+    var ZOOM_MIN = 14;                  /* > 50 km/h → zoom 15→14 */
+    var ZOOM_MAX = 19;
+    var ZOOM_LERP_SLOW = 0.22;          /* adoucissement zoom à basse vitesse */
+    var ZOOM_LERP_FAST = 0.14;          /* adoucissement zoom à haute vitesse */
+    var ZOOM_APPLY_THRESHOLD = 0.12;    /* delta minimal avant animation carte */
     var currentNavZoom = NAV_START_ZOOM;
     var targetNavZoom = NAV_START_ZOOM;
     var lastAppliedNavZoom = null;
     var ROUTE_HEADING_LOOKAHEAD_M = 55;
-    var ROUTE_SNAP_MAX_M = 120;
+    var ROUTE_SNAP_MAX_M = ROUTE_MATCH_TOLERANCE_M;
     var MIN_MOVE_FOR_ANIMATED_FOLLOW = 0.00005;
     var MAP_FOLLOW_MIN_INTERVAL_MS = 900;
     var positionPollTimer = null;
@@ -235,6 +247,14 @@
     var lastRemotePositionAt = 0;
     var mapUserInteracted = false;
     var mapFollowPaused = false;
+    var offRouteState = {
+        active: false,
+        since: 0,
+        samples: 0,
+        timer: null,
+        lastLat: null,
+        lastLng: null
+    };
     var ROUTE_COLOR = '#e5488a';
     var ROUTE_WEIGHT = 7;
     var ROUTE_WEIGHT_FALLBACK = 5;
@@ -367,22 +387,12 @@
             heading: pos.heading != null ? parseFloat(pos.heading) : null,
             speed: pos.speed != null ? parseFloat(pos.speed) : null
         };
-        var wasFirst = !driverMarker;
         updateDriverMarker(lat, lng, coords, isObserverMode());
         if (!isObserverMode()) {
             return;
         }
         observerFollowActive = true;
         ensureNorthUpMap();
-        var client = getClientCoords();
-        if (client.lat === null || client.lng === null) {
-            return;
-        }
-        var now = Date.now();
-        if (wasFirst) {
-            lastRouteRecalcAt = 0;
-        }
-        maybeRecalculateRoute(lat, lng, wasFirst);
     }
 
     function makeDriverMotoHtml() {
@@ -667,41 +677,143 @@
         return true;
     }
 
-    function maybeRecalculateRoute(driverLat, driverLng, force) {
+    function resetOffRouteState() {
+        offRouteState.active = false;
+        offRouteState.since = 0;
+        offRouteState.samples = 0;
+        offRouteState.lastLat = null;
+        offRouteState.lastLng = null;
+        if (offRouteState.timer) {
+            clearTimeout(offRouteState.timer);
+            offRouteState.timer = null;
+        }
+    }
+
+    function getSnappedDriverPosition(rawLat, rawLng) {
+        if (isObserverMode() || !activeRouteCoords || activeRouteCoords.length < 2) {
+            return { lat: rawLat, lng: rawLng, snapped: false, dist: Infinity };
+        }
+        var snap = snapToRoute(rawLat, rawLng, activeRouteCoords);
+        if (!snap || snap.dist > ROUTE_MATCH_TOLERANCE_M) {
+            return { lat: rawLat, lng: rawLng, snapped: false, dist: snap ? snap.dist : Infinity };
+        }
+        return { lat: snap.lat, lng: snap.lng, snapped: true, dist: snap.dist };
+    }
+
+    function analyzeRouteDeviation(rawLat, rawLng, coords) {
+        if (!activeRouteCoords || activeRouteCoords.length < 2) {
+            return { offRoute: false, immediate: false, dist: 0 };
+        }
+        var dist = distanceToRouteMeters(rawLat, rawLng, activeRouteCoords);
+        if (dist <= ROUTE_OFF_PATH_THRESHOLD_M) {
+            return { offRoute: false, immediate: false, dist: dist };
+        }
+
+        var gpsHeading = coords && coords.heading != null ? parseFloat(coords.heading) : null;
+        var routeHeading = bearingFromRoute(rawLat, rawLng, activeRouteCoords);
+
+        if (gpsHeading != null && isFinite(gpsHeading) && gpsHeading >= 0 && routeHeading != null) {
+            var headingDelta = Math.abs(shortestAngleDiff(gpsHeading, routeHeading));
+            if (headingDelta <= ROUTE_HEADING_PARALLEL_MAX_DEG &&
+                dist <= ROUTE_OFF_PATH_THRESHOLD_M + ROUTE_HEADING_PARALLEL_BUFFER_M) {
+                return { offRoute: false, immediate: false, dist: dist, parallel: true };
+            }
+            if (headingDelta >= ROUTE_HEADING_DIVERGE_MIN_DEG &&
+                dist > ROUTE_OFF_PATH_THRESHOLD_M * 0.6) {
+                return { offRoute: true, immediate: true, dist: dist, headingDelta: headingDelta };
+            }
+        }
+
+        return { offRoute: true, immediate: false, dist: dist };
+    }
+
+    function triggerRouteRecalc(driverLat, driverLng, silent, bypassDebounce) {
         var client = getClientCoords();
         if (client.lat === null || client.lng === null) {
             return;
         }
-        if (!force && !deliveryActive && !observerFollowActive && !gpsStreaming) {
-            return;
-        }
-
         var now = Date.now();
-        var periodicDue = force || (now - lastRouteRecalcAt > ROUTE_RECALC_PERIODIC_MS);
-        var offRoute = false;
-        if (activeRouteCoords && activeRouteCoords.length >= 2) {
-            offRoute = distanceToRouteMeters(driverLat, driverLng, activeRouteCoords) > ROUTE_OFF_PATH_THRESHOLD_M;
-        }
-
-        if (!periodicDue && !offRoute) {
-            return;
-        }
         if (routeRecalcInFlight) {
             return;
         }
-        if (offRoute && !force && now - lastRouteRecalcAt < ROUTE_RECALC_MIN_INTERVAL_MS) {
+        if (!bypassDebounce && now - lastRouteRecalcAt < ROUTE_RECALC_MIN_INTERVAL_MS) {
             return;
         }
 
+        resetOffRouteState();
         lastRouteRecalcAt = now;
         routeRecalcInFlight = true;
-        if (offRoute && !force && statusEl) {
+        if (!silent && statusEl) {
             setStatus('Recalcul de l\'itinéraire…', 'pending');
         }
         drawRoute(driverLat, driverLng, client.lat, client.lng, true)
             .finally(function () {
                 routeRecalcInFlight = false;
             });
+    }
+
+    function maybeRecalculateRoute(driverLat, driverLng, force, coords) {
+        if (isObserverMode() || !cfg.canManage) {
+            return;
+        }
+        var client = getClientCoords();
+        if (client.lat === null || client.lng === null) {
+            return;
+        }
+        if (!force && !deliveryActive && !gpsStreaming) {
+            return;
+        }
+
+        var now = Date.now();
+        var periodicDue = force || (now - lastRouteRecalcAt > ROUTE_RECALC_PERIODIC_MS);
+        var deviation = analyzeRouteDeviation(driverLat, driverLng, coords || null);
+
+        if (!deviation.offRoute) {
+            resetOffRouteState();
+            if (!periodicDue) {
+                return;
+            }
+            triggerRouteRecalc(driverLat, driverLng, true);
+            return;
+        }
+
+        offRouteState.lastLat = driverLat;
+        offRouteState.lastLng = driverLng;
+
+        if (deviation.immediate) {
+            triggerRouteRecalc(driverLat, driverLng, false, true);
+            return;
+        }
+
+        offRouteState.samples += 1;
+        if (!offRouteState.active) {
+            offRouteState.active = true;
+            offRouteState.since = now;
+            if (statusEl) {
+                setStatus('Écart d\'itinéraire détecté…', 'pending');
+            }
+            offRouteState.timer = setTimeout(function () {
+                offRouteState.timer = null;
+                if (!offRouteState.active) {
+                    return;
+                }
+                var lat = offRouteState.lastLat;
+                var lng = offRouteState.lastLng;
+                if (lat == null || lng == null) {
+                    return;
+                }
+                var stillOff = analyzeRouteDeviation(lat, lng, null);
+                if (stillOff.offRoute) {
+                    triggerRouteRecalc(lat, lng, false);
+                } else {
+                    resetOffRouteState();
+                }
+            }, ROUTE_RECALC_CONFIRM_MS);
+        }
+
+        if (offRouteState.samples >= ROUTE_RECALC_CONFIRM_SAMPLES) {
+            triggerRouteRecalc(driverLat, driverLng, false);
+        }
     }
 
     function syncBackgroundTracking(active) {
@@ -822,11 +934,12 @@
         return Math.max(0, speedMs * 3.6);
     }
 
-    /** Zoom cible selon la vitesse GPS (km/h) — conduite moto / voiture. */
+    /** Zoom cible selon la vitesse GPS (km/h) — conduite moto / voiture.
+     *  0–20 km/h : 19→18 | 20–50 km/h : 17→16 | >50 km/h : 15→14 */
     function getTargetZoomFromSpeedKmh(speedKmh) {
         var v = Math.max(0, speedKmh);
         if (v <= ZOOM_SPEED_SLOW_MAX_KMH) {
-            return 19 - (v / ZOOM_SPEED_SLOW_MAX_KMH);
+            return ZOOM_MAX - (v / ZOOM_SPEED_SLOW_MAX_KMH);
         }
         if (v <= ZOOM_SPEED_CITY_MAX_KMH) {
             return 17 - ((v - ZOOM_SPEED_SLOW_MAX_KMH) / (ZOOM_SPEED_CITY_MAX_KMH - ZOOM_SPEED_SLOW_MAX_KMH));
@@ -852,12 +965,12 @@
             return;
         }
         var speedKmh = speedMsToKmh(speedMs);
-        var lerp = speedKmh > 35 ? 0.12 : 0.2;
+        var lerp = speedKmh > 35 ? ZOOM_LERP_FAST : ZOOM_LERP_SLOW;
         currentNavZoom += diff * lerp;
     }
 
     function getDriverNavZoom() {
-        return Math.max(14, Math.min(19, currentNavZoom));
+        return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, currentNavZoom));
     }
 
     function updateRecenterButtonState() {
@@ -893,13 +1006,14 @@
             movedDist = Math.hypot(driverLatLng.lat - lastDriverLat, driverLatLng.lng - lastDriverLng);
         }
         var significantMove = movedDist >= MIN_MOVE_FOR_ANIMATED_FOLLOW;
-        if (!significantMove && now - lastMapFollowAt < MAP_FOLLOW_MIN_INTERVAL_MS) {
+        refreshNavZoomFromSpeed(lastGpsSpeed);
+        var zoom = getDriverNavZoom();
+        var zoomChanged = lastAppliedNavZoom === null ||
+            Math.abs(zoom - lastAppliedNavZoom) >= ZOOM_APPLY_THRESHOLD;
+        if (!significantMove && !zoomChanged && now - lastMapFollowAt < MAP_FOLLOW_MIN_INTERVAL_MS) {
             return;
         }
         lastMapFollowAt = now;
-        refreshNavZoomFromSpeed(lastGpsSpeed);
-        var zoom = getDriverNavZoom();
-        var zoomChanged = lastAppliedNavZoom === null || Math.abs(zoom - lastAppliedNavZoom) >= 0.2;
         var shouldAnimate = (animate === true && significantMove) || zoomChanged;
         lastAppliedNavZoom = zoom;
         suppressMapInteractionEvents = true;
@@ -1001,6 +1115,10 @@
         if (!driverMarker) {
             return;
         }
+        if (isDriverNavMode()) {
+            restoreMapToDriver(animate);
+            return;
+        }
         suppressMapInteractionEvents = true;
         var animateOpt = animate !== false;
 
@@ -1098,6 +1216,20 @@
         scheduleAutoRecenter();
     }
 
+    function pauseDriverMapFollow() {
+        if (!isDriverNavMode()) {
+            return;
+        }
+        onUserMapInteractionStart();
+    }
+
+    function resumeDriverMapFollowCountdown() {
+        if (!isDriverNavMode()) {
+            return;
+        }
+        onUserMapInteraction();
+    }
+
     function refreshDriverMarkerIcon() {
         if (!driverMarker) return;
         var latlng = driverMarker.getLatLng();
@@ -1138,6 +1270,11 @@
     }
 
     function updateDriverMarker(lat, lng, coords, skipFollow) {
+        var rawLat = lat;
+        var rawLng = lng;
+        var display = getSnappedDriverPosition(rawLat, rawLng);
+        lat = display.lat;
+        lng = display.lng;
         var prevLat = lastDriverLat;
         var prevLng = lastDriverLng;
         var needNavIcon = shouldShowNavMarker();
@@ -1205,6 +1342,60 @@
         return Promise.reject(new Error('route_api_unavailable'));
     }
 
+    function setWatchEtaFromDuration(durationSeconds) {
+        if (!etaBlock || !etaRangeEl || !durationSeconds || durationSeconds <= 0) {
+            return;
+        }
+        var range = durationToRangeMinutes(durationSeconds);
+        etaRangeEl.textContent = formatEtaRange(range.min, range.max);
+        etaBlock.hidden = false;
+        if (cfg.publicMode && document.getElementById('livreur-suivi-app')) {
+            document.getElementById('livreur-suivi-app').classList.add('has-live-eta');
+        }
+    }
+
+    function emitRouteToSocket(routeData) {
+        if (!socketClient || !socketClient.connected || isObserverMode() || !cfg.canManage) {
+            return;
+        }
+        if (!routeData || !routeData.coords || routeData.coords.length < 2) {
+            return;
+        }
+        var payload = {
+            coords: routeData.coords,
+            distance_m: routeData.distance_m || 0,
+            duration_s: routeData.duration_s || 0,
+        };
+        if (cfg.blId) {
+            payload.bl_id = cfg.blId;
+        } else if (cfg.commandeId) {
+            payload.commande_id = cfg.commandeId;
+        }
+        socketClient.emit('livreur:route', payload);
+    }
+
+    function applyRouteFromSocket(data) {
+        if (!data || !data.coords || data.coords.length < 2) {
+            return;
+        }
+        var layer = ensureRouteLayer();
+        layer.clearLayers();
+        L.polyline(data.coords, {
+            color: ROUTE_COLOR,
+            weight: ROUTE_WEIGHT,
+            opacity: 0.92,
+            lineCap: 'round',
+            lineJoin: 'round'
+        }).addTo(layer);
+        activeRouteCoords = data.coords.map(function (pt) {
+            return [pt[0], pt[1]];
+        });
+        lastRouteSegIdx = 0;
+        if (isObserverMode() && data.duration_s) {
+            setWatchEtaFromDuration(data.duration_s);
+        }
+    }
+
     function drawRoute(driverLat, driverLng, clientLat, clientLng, silent) {
         if (driverLat === null || driverLng === null || clientLat === null || clientLng === null) {
             return Promise.resolve(false);
@@ -1244,6 +1435,7 @@
                 var km = ((data.distance_m || 0) / 1000).toFixed(1);
                 var durationSec = data.duration_s || 0;
                 setEtaFromDuration(durationSec);
+                emitRouteToSocket(data);
                 var range = durationToRangeMinutes(durationSec);
                 if (!silent) {
                     setStatus('Itinéraire sans péage — ' + km + ' km, ' + formatEtaRange(range.min, range.max), 'route');
@@ -1269,6 +1461,10 @@
     }
 
     function fitMapBounds() {
+        if (isDriverNavMode()) {
+            restoreMapToDriver(false);
+            return;
+        }
         if (driverMarker) {
             restoreMapOverview(false);
         } else if (clientMarker) {
@@ -1501,6 +1697,7 @@
         setNavigationMode(false);
         deliveryActive = false;
         gpsStreaming = false;
+        resetOffRouteState();
         manualDeliveryConfirmed = false;
         autostartInProgress = false;
         updateTrackingButtons();
@@ -1631,6 +1828,13 @@
             socketClient.on('position:update', function (data) {
                 if (!data || data.latitude == null || data.longitude == null) return;
                 applyRemoteDriverPosition(data);
+            });
+
+            socketClient.on('route:update', function (data) {
+                if (!isObserverMode()) {
+                    return;
+                }
+                applyRouteFromSocket(data);
             });
 
             socketClient.on('watch:ready', function (data) {
@@ -1825,7 +2029,7 @@
                 var lng = pos.coords.longitude;
                 updateDriverMarker(lat, lng, pos.coords);
                 postPosition(lat, lng, pos.coords.accuracy, pos.coords);
-                maybeRecalculateRoute(lat, lng, false);
+                maybeRecalculateRoute(lat, lng, false, pos.coords);
             },
             function () {
                 rollbackTrackingStart().finally(function () {
@@ -2091,8 +2295,20 @@
         var zoomOut = document.getElementById('livreur-map-zoom-out');
         var fitBtn = document.getElementById('livreur-map-fit');
 
-        if (zoomIn) zoomIn.addEventListener('click', function () { map.zoomIn(); });
-        if (zoomOut) zoomOut.addEventListener('click', function () { map.zoomOut(); });
+        if (zoomIn) {
+            zoomIn.addEventListener('click', function () {
+                pauseDriverMapFollow();
+                map.zoomIn();
+                resumeDriverMapFollowCountdown();
+            });
+        }
+        if (zoomOut) {
+            zoomOut.addEventListener('click', function () {
+                pauseDriverMapFollow();
+                map.zoomOut();
+                resumeDriverMapFollowCountdown();
+            });
+        }
         if (fitBtn) fitBtn.addEventListener('click', recenterMapOnDriver);
 
         map.on('dragstart', onUserMapInteractionStart);

@@ -321,6 +321,39 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('livreur:route', (raw) => {
+    if (socket.data.role !== 'watch') {
+      return;
+    }
+    const meta = socket.data.watchMeta || {};
+    if (!meta.can_emit_position) {
+      return;
+    }
+
+    const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId || 0;
+    const blId = parseInt(raw && raw.bl_id, 10) || socket.data.blId || 0;
+    const coords = raw && raw.coords;
+    if ((!commandeId && !blId) || !Array.isArray(coords) || coords.length < 2) {
+      return;
+    }
+
+    const routePayload = {
+      commande_id: commandeId || null,
+      bl_id: blId || null,
+      coords,
+      distance_m: raw.distance_m != null ? raw.distance_m : null,
+      duration_s: raw.duration_s != null ? raw.duration_s : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (commandeId) {
+      io.to(`commande_${commandeId}`).emit('route:update', routePayload);
+    }
+    if (blId) {
+      io.to(`bl_${blId}`).emit('route:update', routePayload);
+    }
+  });
+
   socket.on('livreur:join_commande', async (raw) => {
     if (socket.data.role !== 'livreur') {
       return;

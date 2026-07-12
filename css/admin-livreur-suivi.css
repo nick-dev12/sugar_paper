@@ -2867,9 +2867,16 @@ body.livreur-demarrage-open {
 .livreur-suivi-app.is-regarder-mode #livreur-suivi-status-sub,
 .livreur-suivi-app.is-regarder-mode #livreur-suivi-eta,
 .livreur-suivi-app.is-public-watch .livreur-suivi-sheet__adresse,
-.livreur-suivi-app.is-public-watch #livreur-suivi-status-sub,
+.livreur-suivi-app.is-public-watch #livreur-suivi-status-sub {
+    display: none !important;
+}
+
 .livreur-suivi-app.is-public-watch #livreur-suivi-eta {
     display: none !important;
+}
+
+.livreur-suivi-app.is-public-watch.has-live-eta #livreur-suivi-eta {
+    display: flex !important;
 }
 
 .livreur-suivi-alert__icon {
