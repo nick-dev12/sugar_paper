@@ -1,0 +1,2667 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.2
+-- https://www.phpmyadmin.net/
+--
+-- Hôte : localhost:3306
+-- Généré le : dim. 12 juil. 2026 à 07:47
+-- Version du serveur : 11.4.12-MariaDB-cll-lve-log
+-- Version de PHP : 8.4.22
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de données : `ariaqqrw_sugar`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `admin`
+--
+
+CREATE TABLE `admin` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `prenom` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `date_creation` datetime NOT NULL,
+  `derniere_connexion` datetime DEFAULT NULL,
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif',
+  `role` enum('admin','utilisateur') NOT NULL DEFAULT 'admin'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `admin`
+--
+
+INSERT INTO `admin` (`id`, `nom`, `prenom`, `email`, `password`, `date_creation`, `derniere_connexion`, `statut`, `role`) VALUES
+(1, 'sugar', 'paper', 'sugarpaper26@gmail.com', '$2y$10$VaARNwqGxJj4EX0cShtXAOF1S27SN2srwWshD4Bn/32.j277awJ2y', '2026-02-26 17:05:09', '2026-07-08 19:23:56', 'actif', 'admin'),
+(2, 'Mendy', 'Mamita', 'm.mendy@sugar-paper.com', '$2y$10$cnxS0cckLymwZYExGCW5UOib5Q.nHmH6r4/b1..XvOJl/w561YNyG', '2026-02-27 02:45:46', '2026-07-11 13:58:50', 'actif', 'utilisateur'),
+(3, 'Fatou Kine', 'Diallo', 'kine@sugar-paper.com', '$2y$10$92BxPQMr5E1ISHhJKehYGu11uDyArJ4AJ1mM3o4Z3TRZMmSIlLmAa', '2026-02-27 04:44:44', '2026-03-13 12:34:25', 'actif', 'admin'),
+(4, 'Ndour', 'Marie Therese', 'm.therese@sugar-paper.com', '$2y$10$r2s./CSaNlRUqSFUNX0BX.syZx11S.X1vR.vtLMA9CxdCfJqj3E0O', '2026-02-27 07:23:18', '2026-03-05 04:14:17', 'inactif', 'utilisateur'),
+(5, 'Coly', 'Bernice Marguerite', 'b.coly@sugar-paper.com', '$2y$10$UWDC.mwvo0tpthjLf8iVve/K.vMnl7tdtSjnaxJncrjYs1zcRCXgK', '2026-02-27 07:26:47', '2026-03-31 11:05:26', 'actif', 'utilisateur');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `admin_password_reset`
+--
+
+CREATE TABLE `admin_password_reset` (
+  `id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `categories`
+--
+
+CREATE TABLE `categories` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `categories`
+--
+
+INSERT INTO `categories` (`id`, `nom`, `description`, `image`, `date_creation`) VALUES
+(9, 'Cake Topper', '', 'categories/categorie_69a1907a4d1c04.29230474.png', '2026-02-26 17:27:06'),
+(10, 'Impression Alimentaire', '', 'categories/categorie_69a1935937a522.48112399.png', '2026-02-27 07:51:37'),
+(11, 'Imprimante Alimentaire', '', 'categories/categorie_69a193a9ed5cc0.64347391.png', '2026-02-27 07:52:57'),
+(12, 'Moules Inoxydables', '', 'categories/categorie_69a1948bea3157.25897417.png', '2026-02-27 07:56:43'),
+(13, 'Colorant Alimentaire', '', 'categories/categorie_69a1997ddae801.64717247.png', '2026-02-27 08:17:49'),
+(14, 'Outils Pâtisseries', '', 'categories/categorie_69a19a1fb96e28.75387619.jpeg', '2026-02-27 08:20:31'),
+(15, 'Sprinkles', 'Ces petits éléments comestibles, souvent colorés, servent à garnir pâtisseries, cupcakes et crèmes glacées. Ils ajoutent texture, croquant et une touche festive.\r\nBilles brillantes, parfois métalliques (or, argent), parfaites pour l\'élégance.', 'categories/categorie_69a709a2ea44b7.12326308.jpeg', '2026-02-27 08:25:04'),
+(16, 'Boites à Gâteau', '', 'categories/categorie_69a19f09e41982.12719613.png', '2026-02-27 08:41:29'),
+(17, 'Produits Comestibles', '', 'categories/categorie_69a1a025d18dc9.52624029.jpg', '2026-02-27 08:46:13'),
+(18, 'Produits Halal', '', 'categories/categorie_69a1b5f2967ab7.10815618.jpg', '2026-02-27 10:19:14'),
+(19, 'Matériels Cake Design', 'Des outils de pâtisserie pour sublimer vos cakes design et vous faciliter vos réalisations.', 'categories/categorie_69a1b9e9f23597.18312907.jpg', '2026-02-27 10:36:09'),
+(20, 'Moules Silicones', '', 'categories/categorie_69a2b347c1f877.48015566.jpg', '2026-02-28 04:20:07');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `commandes`
+--
+
+CREATE TABLE `commandes` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `client_nom` varchar(255) DEFAULT NULL,
+  `client_prenom` varchar(255) DEFAULT NULL,
+  `client_email` varchar(255) DEFAULT NULL,
+  `client_telephone` varchar(50) DEFAULT NULL,
+  `numero_commande` varchar(50) NOT NULL,
+  `montant_total` decimal(10,2) NOT NULL,
+  `adresse_livraison` text NOT NULL,
+  `zone_livraison_id` int(11) DEFAULT NULL,
+  `frais_livraison` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `telephone_livraison` varchar(50) NOT NULL,
+  `statut` enum('en_attente','confirmee','prise_en_charge','en_preparation','livraison_en_cours','expediee','livree','paye','annulee') NOT NULL DEFAULT 'en_attente',
+  `date_commande` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_livraison` datetime DEFAULT NULL,
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `commandes`
+--
+
+INSERT INTO `commandes` (`id`, `user_id`, `client_nom`, `client_prenom`, `client_email`, `client_telephone`, `numero_commande`, `montant_total`, `adresse_livraison`, `zone_livraison_id`, `frais_livraison`, `telephone_livraison`, `statut`, `date_commande`, `date_livraison`, `notes`) VALUES
+(103, 25, NULL, NULL, NULL, NULL, 'CMD-20260606-438554', 30000.00, 'Maristes - Castor', 26, 2000.00, '+221762123078', 'paye', '2026-06-06 03:26:28', '2026-06-09 06:05:25', 'Je suis au niveau de la clinique ASBEF en face de l’école Notre Dame de Liban'),
+(104, 26, NULL, NULL, NULL, NULL, 'CMD-20260609-8E8765', 9500.00, 'Maristes - Plateau', 2, 2500.00, '775744624', 'paye', '2026-06-08 20:58:00', '2026-06-09 10:04:22', NULL),
+(105, 27, NULL, NULL, NULL, NULL, 'CMD-20260612-81F5AC', 17500.00, 'Maristes - Ouakam', 20, 2500.00, '+221782946354', 'annulee', '2026-06-12 11:48:56', NULL, NULL),
+(106, NULL, 'Douceurs', 'Livianna', NULL, '+221 70 463 03 52', 'CMD-20260702-15BBC8', 9500.00, 'Maristes - Ngor', 24, 2500.00, '+221 70 463 03 52', 'paye', '2026-07-02 05:33:37', '2026-07-02 08:34:10', NULL),
+(107, NULL, 'Kayser', 'Eric', NULL, '+221 77 447 11 77', 'CMD-20260702-388439', 51000.00, 'Maristes - Ville', 21, 2500.00, '+221 77 447 11 77', 'paye', '2026-07-02 05:38:43', '2026-07-02 08:34:31', NULL),
+(108, NULL, 'Delices', 'Petits', NULL, '+221 77 410 01 01', 'CMD-20260702-359840', 6500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 410 01 01', 'paye', '2026-07-02 06:09:23', '2026-07-02 08:49:06', NULL),
+(109, NULL, 'Nd', 'Fatou', NULL, '+221 78 482 27 97', 'CMD-20260702-566F5E', 8500.00, 'Maristes - Medina', 31, 2500.00, '+221 78 482 27 97', 'paye', '2026-07-02 06:14:29', '2026-07-02 08:48:48', NULL),
+(110, NULL, 'Sweet', 'Bakery and', NULL, '778895178', 'CMD-20260702-56A049', 5500.00, 'Maristes - Ngor', 24, 2500.00, '778895178', 'paye', '2026-07-02 06:34:29', '2026-07-02 11:22:29', NULL),
+(111, NULL, 'Mbour', 'Céline', NULL, '+221 77 574 71 22', 'CMD-20260702-F1EB98', 8000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 574 71 22', 'paye', '2026-07-02 07:26:23', '2026-07-02 08:33:15', NULL),
+(112, NULL, '.', 'Maison Du Gateau', NULL, '775100673', 'CMD-20260702-E8C2CB', 4800.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775100673', 'paye', '2026-07-02 08:26:54', '2026-07-02 08:33:02', NULL),
+(113, NULL, 'PATISSERIE', 'KANEL', 'kanelpatisserie@gmail.com', '+221778499377', 'CMD-20260702-EB5479', 9000.00, 'Maristes - Bourguiba', 16, 2000.00, '+221778499377', 'paye', '2026-07-02 09:42:54', '2026-07-02 12:15:00', NULL),
+(114, NULL, 'de Corinne', 'Les Ateliers', NULL, '771943030', 'CMD-20260702-6B25B5', 16000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771943030', 'paye', '2026-07-02 10:28:06', '2026-07-02 10:37:22', NULL),
+(115, NULL, 'Gaye', 'Aminata', NULL, '+221 77 860 20 22', 'CMD-20260702-757379', 4800.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 860 20 22', 'paye', '2026-07-02 11:17:27', '2026-07-02 11:21:01', NULL),
+(116, NULL, 'Sarl', 'LAM BABA', NULL, '+221 77 144 47 56', 'CMD-20260702-63EBE4', 17500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 144 47 56', 'paye', '2026-07-02 12:05:26', '2026-07-02 12:06:14', NULL),
+(117, NULL, 'Liane', 'Secret Gourmand', NULL, '+221 78 422 41 41', 'CMD-20260702-0D5F0A', 10000.00, 'Maristes - Bourguiba', 16, 2000.00, '+221 78 422 41 41', 'paye', '2026-07-02 13:06:24', '2026-07-03 11:56:15', NULL),
+(118, NULL, 'Laye Samb', 'Cogna Laye Samb', NULL, '+221 77 494 11 77', 'CMD-20260702-356B47', 5500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 494 11 77', 'paye', '2026-07-02 13:32:35', '2026-07-03 05:19:40', NULL),
+(119, NULL, '.', 'Bamby’s Cake', NULL, '766738383', 'CMD-20260702-31748B', 11000.00, 'Maristes - Nord foire', 19, 2000.00, '766738383', 'paye', '2026-07-02 14:48:35', '2026-07-03 11:56:29', NULL),
+(120, NULL, '.', 'Bamby’s Cake', NULL, '766738383', 'CMD-20260702-D1E868', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '766738383', 'paye', '2026-07-02 15:06:53', '2026-07-03 11:57:35', NULL),
+(121, NULL, 'Sene', 'Chef Pape', NULL, '+221 77 555 67 81', 'CMD-20260702-DDC19A', 10000.00, 'Maristes - Castor', 26, 2000.00, '+221 77 555 67 81', 'paye', '2026-07-02 15:37:49', '2026-07-03 11:57:11', NULL),
+(122, NULL, '.', 'Kemet', NULL, '+221 76 390 47 46', 'CMD-20260703-E27EFC', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 76 390 47 46', 'paye', '2026-07-03 07:02:06', '2026-07-03 11:55:58', NULL),
+(123, NULL, '.', 'kabo', NULL, '774935181', 'CMD-20260703-360FFA', 18500.00, 'Maristes - Medina', 31, 2500.00, '774935181', 'paye', '2026-07-03 07:07:31', '2026-07-03 11:56:54', NULL),
+(124, 33, NULL, NULL, NULL, NULL, 'CMD-20260703-13FADC', 6000.00, 'Maristes - Maristes', 4, 1000.00, '+221774456848', 'annulee', '2026-07-03 07:14:41', NULL, 'Merci de me livrer avant 17h svp\r\nAdresse : sortie visite technique de Hann'),
+(125, NULL, 'Diop', 'Awa', NULL, '771568182', 'CMD-20260703-29125C', 13500.00, 'Maristes - Ouest foire', 18, 2000.00, '771568182', 'paye', '2026-07-03 07:26:26', '2026-07-03 11:55:19', NULL),
+(126, NULL, 'Fm', 'Cakes', NULL, '781666480', 'CMD-20260703-EF2A52', 5500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '781666480', 'paye', '2026-07-03 08:55:10', '2026-07-03 11:55:03', NULL),
+(127, NULL, 'Leye', 'Fatou', NULL, '775107418', 'CMD-20260703-CB514A', 18500.00, 'Maristes - Castor', 26, 2000.00, '775107418', 'paye', '2026-07-03 09:15:08', '2026-07-03 11:54:46', NULL),
+(128, NULL, 'Cake', 'Gi’s', NULL, '764578316', 'CMD-20260703-9EB711', 25500.00, 'Maristes - Ouest foire', 18, 2000.00, '764578316', 'paye', '2026-07-03 09:23:53', '2026-07-04 08:58:21', NULL),
+(129, NULL, 'Douceur', 'ptite', NULL, '784668565', 'CMD-20260703-E1AD0E', 21500.00, 'Maristes - Liberté 6', 28, 2000.00, '784668565', 'paye', '2026-07-03 09:53:50', '2026-07-03 11:53:43', NULL),
+(130, NULL, '.', 'La Dame De Fer💪🏾', NULL, '774058761', 'CMD-20260703-277293', 4000.00, 'Maristes - Ouest foire', 18, 2000.00, '774058761', 'paye', '2026-07-03 09:56:18', '2026-07-03 11:53:08', NULL),
+(131, NULL, '.', 'K’Rose', NULL, '776588359', 'CMD-20260703-E1807D', 6000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '776588359', 'paye', '2026-07-03 09:57:50', '2026-07-04 12:09:13', NULL),
+(132, NULL, 'l\'amour', 'culinaire', NULL, '778482567', 'CMD-20260703-BAB40C', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '778482567', 'paye', '2026-07-03 10:28:59', '2026-07-03 11:52:45', NULL),
+(133, NULL, 'Lo', 'Mouhamed', NULL, '787141111', 'CMD-20260703-CCDA68', 20000.00, 'Maristes - HLM', 25, 2000.00, '787141111', 'paye', '2026-07-03 10:40:28', '2026-07-04 07:55:48', NULL),
+(134, NULL, 'Gastro numéro personnel', 'Badou', NULL, '765274025', 'CMD-20260703-9A23BC', 12500.00, 'Maristes - Ouakam', 20, 2500.00, '765274025', 'paye', '2026-07-03 10:45:45', '2026-07-03 11:52:28', NULL),
+(135, NULL, 'N', 'Moussa', NULL, '775660295', 'CMD-20260703-4D78B9', 6500.00, 'Maristes - Ouakam', 20, 2500.00, '775660295', 'paye', '2026-07-03 10:55:16', '2026-07-04 07:55:09', NULL),
+(136, NULL, 'c', 'new', NULL, '775343510', 'CMD-20260703-678827', 5000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775343510', 'paye', '2026-07-03 11:10:14', '2026-07-03 11:51:44', NULL),
+(137, NULL, '.', 'Briice', NULL, '771465945', 'CMD-20260703-F0E375', 10500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771465945', 'paye', '2026-07-03 11:17:51', '2026-07-04 07:54:37', NULL),
+(138, NULL, '.', 'Sonam', NULL, '+221 77 274 96 61', 'CMD-20260703-A7D56B', 4000.00, 'Maristes - Maristes', 4, 1000.00, '+221 77 274 96 61', 'paye', '2026-07-03 11:31:06', '2026-07-03 11:51:26', NULL),
+(139, NULL, 'l\'amour', 'culinaire', NULL, '778482567', 'CMD-20260703-7644B0', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '778482567', 'paye', '2026-07-03 12:07:51', '2026-07-04 12:08:38', NULL),
+(140, NULL, 'Fatou', 'Mame', NULL, '773459717', 'CMD-20260703-F78B93', 9000.00, 'Maristes - Nord foire', 19, 2000.00, '773459717', 'paye', '2026-07-03 12:22:07', '2026-07-04 07:54:26', NULL),
+(141, NULL, '.', 'clo', NULL, '774850236', 'CMD-20260703-1C04E7', 11000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '774850236', 'paye', '2026-07-03 12:46:25', '2026-07-04 07:54:14', NULL),
+(142, NULL, '.', 'O Plaisir Gourmand', NULL, '778087333', 'CMD-20260703-913C0A', 24000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '778087333', 'paye', '2026-07-03 14:38:01', '2026-07-04 07:54:03', NULL),
+(143, NULL, 'Ndoye', 'Madame', NULL, '77 763 01 14', 'CMD-20260703-A538B2', 8000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '77 763 01 14', 'paye', '2026-07-03 14:40:42', '2026-07-04 07:53:43', NULL),
+(144, NULL, 'Sarl', 'L.A.M Baba', NULL, '77 144 47 56', 'CMD-20260703-FC273A', 4500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '77 144 47 56', 'paye', '2026-07-03 15:10:23', '2026-07-04 07:53:18', NULL),
+(145, NULL, '.', 'linda', NULL, '773413601', 'CMD-20260704-4B6CCC', 8500.00, 'Maristes - Ville', 21, 2500.00, '773413601', 'paye', '2026-07-04 05:49:08', '2026-07-04 07:53:31', NULL),
+(146, NULL, 'Traiteur', 'Noweli', NULL, '784653761', 'CMD-20260704-EC0538', 9000.00, 'Mariste - Autres', 33, 2000.00, '784653761', 'paye', '2026-07-04 05:51:10', '2026-07-04 07:53:06', NULL),
+(147, NULL, '.', 'Rosalie', NULL, '775345211', 'CMD-20260704-F53B13', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775345211', 'paye', '2026-07-04 06:00:47', '2026-07-04 07:52:16', NULL),
+(148, NULL, 'Food', 'ETK', NULL, '+221 77 627 72 97', 'CMD-20260704-7C3377', 5000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 627 72 97', 'paye', '2026-07-04 07:07:03', '2026-07-04 07:51:58', NULL),
+(149, NULL, 'Cake', 'Gi’s', NULL, '764578316', 'CMD-20260704-EE90D3', 16000.00, 'Maristes - Ouest foire', 18, 2000.00, '764578316', 'paye', '2026-07-04 08:59:42', '2026-07-05 10:04:04', NULL),
+(150, NULL, '.', 'K’Rose', NULL, '776588359', 'CMD-20260704-D1A951', 26000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '776588359', 'paye', '2026-07-04 10:09:01', '2026-07-04 12:08:20', NULL),
+(151, NULL, '.', 'Segoleine', NULL, '+221 77 877 25 18', 'CMD-20260704-7E5025', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 877 25 18', 'paye', '2026-07-04 10:28:07', '2026-07-04 12:07:59', NULL),
+(152, NULL, '.', 'Minata', NULL, '+221 77 148 08 15', 'CMD-20260704-36FB7C', 14000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 148 08 15', 'paye', '2026-07-04 11:04:51', '2026-07-04 12:07:46', NULL),
+(153, NULL, 'Thiam', 'Mme', NULL, '+221 77 728 96 02', 'CMD-20260704-380E1C', 9500.00, 'Mariste - Autres', 33, 2000.00, '+221 77 728 96 02', 'paye', '2026-07-04 11:39:47', '2026-07-05 10:03:48', NULL),
+(154, NULL, '.', 'Kama', NULL, '+221 77 666 06 61', 'CMD-20260704-BF010C', 8000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 666 06 61', 'paye', '2026-07-04 12:06:35', '2026-07-05 10:00:49', NULL),
+(155, NULL, 'Flavour', 'Tasty', NULL, '+221 77 120 32 36', 'CMD-20260704-51D5CF', 18500.00, 'Maristes - Almadie', 14, 3000.00, '+221 77 120 32 36', 'paye', '2026-07-04 15:39:17', '2026-07-05 11:43:36', NULL),
+(156, NULL, 'Flavour', 'Tasty', NULL, '+221 77 120 32 36', 'CMD-20260704-5C89DC', 18500.00, 'Maristes - Almadie', 14, 3000.00, '+221 77 120 32 36', 'paye', '2026-07-04 15:39:17', '2026-07-05 11:44:02', NULL),
+(157, NULL, 'Flavour', 'Tasty', NULL, '77 120 32 36', 'CMD-20260704-95CC83', 21000.00, 'Maristes - Almadie', 14, 3000.00, '77 120 32 36', 'paye', '2026-07-04 15:42:33', '2026-07-05 11:43:24', NULL),
+(158, NULL, 'Flavour', 'Tasty', NULL, '77 120 32 36', 'CMD-20260704-5B2A65', 3500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '77 120 32 36', 'paye', '2026-07-04 15:44:21', '2026-07-05 11:43:08', NULL),
+(159, NULL, 'PATISSERIE', 'KANEL', 'kanelpatisserie@gmail.com', '773306464', 'CMD-20260704-62343E', 10500.00, 'Maristes - Medina', 31, 2500.00, '773306464', 'paye', '2026-07-04 15:56:22', '2026-07-07 05:21:33', NULL),
+(160, NULL, '.', 'Senfood', NULL, '+221 78 539 18 90', 'CMD-20260705-80E876', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 78 539 18 90', 'paye', '2026-07-05 06:10:16', '2026-07-05 10:00:13', NULL),
+(161, NULL, 'Sall', 'Aminata', NULL, '+221 77 591 08 31', 'CMD-20260705-AD9ECC', 8000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 591 08 31', 'paye', '2026-07-05 07:13:46', '2026-07-05 09:59:29', NULL),
+(162, NULL, 'Serigne Fallou', 'Maty mou', NULL, '+221 77 480 16 64', 'CMD-20260705-073370', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 480 16 64', 'paye', '2026-07-05 08:44:16', '2026-07-05 09:59:59', NULL),
+(163, NULL, 'Douceurs', 'Livianna', NULL, '+221 70 463 03 52', 'CMD-20260705-722AF8', 26500.00, 'Maristes - Ngor', 24, 2500.00, '+221 70 463 03 52', 'paye', '2026-07-05 08:57:27', '2026-07-05 09:59:15', NULL),
+(164, NULL, 'de Dior', 'Les Délices', NULL, '+221 77 887 45 36', 'CMD-20260705-A9E222', 6500.00, 'Maristes - Ouakam', 20, 2500.00, '+221 77 887 45 36', 'paye', '2026-07-05 08:59:06', '2026-07-05 09:59:02', NULL),
+(165, NULL, '.', 'Juju', NULL, '221772923128', 'CMD-20260705-9D20FA', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '221772923128', 'paye', '2026-07-05 09:53:45', '2026-07-05 11:23:57', NULL),
+(166, NULL, '.', 'K’Rose', NULL, '776588359', 'CMD-20260705-4448B0', 17000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '776588359', 'paye', '2026-07-05 09:56:20', '2026-07-05 09:58:43', NULL),
+(167, NULL, '.', 'El Company Traiteur', NULL, '771710766', 'CMD-20260705-B60598', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771710766', 'paye', '2026-07-05 11:18:19', '2026-07-05 11:42:54', NULL),
+(168, NULL, 'Fourzoli', 'Madona', NULL, '775317944', 'CMD-20260706-E7A5DE', 12000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775317944', 'paye', '2026-07-06 07:04:30', '2026-07-06 12:01:57', NULL),
+(169, NULL, 'Kelly', 'Goergette', NULL, '777438198', 'CMD-20260706-F6AC12', 6000.00, 'Mariste - Autres', 33, 2000.00, '777438198', 'paye', '2026-07-06 07:50:07', '2026-07-06 12:01:41', NULL),
+(170, NULL, '.', 'binetabibadem', NULL, '+221 78 114 34 93', 'CMD-20260706-1EF67C', 54900.00, 'Maristes - Pikine', 27, 2000.00, '+221 78 114 34 93', 'paye', '2026-07-06 08:37:53', '2026-07-07 05:21:51', NULL),
+(171, NULL, 'Cissé', 'Chef', NULL, '+221 77 993 07 18', 'CMD-20260706-F38BAE', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 993 07 18', 'paye', '2026-07-06 09:25:19', '2026-07-06 12:02:18', NULL),
+(172, NULL, 'Liane', 'Secret Gourmand', NULL, '+221 78 422 41 41', 'CMD-20260706-A105AB', 6000.00, 'Maristes - Bourguiba', 16, 2000.00, '+221 78 422 41 41', 'annulee', '2026-07-06 09:35:22', NULL, NULL),
+(173, NULL, 'Liane', 'Secret Gourmand', NULL, '+221 78 422 41 41', 'CMD-20260706-F131F6', 5000.00, 'Maristes - Bourguiba', 16, 2000.00, '+221 78 422 41 41', 'paye', '2026-07-06 09:44:31', '2026-07-07 11:58:46', NULL),
+(174, NULL, '.', 'Les plaisirs gourmands', NULL, '786056400', 'CMD-20260706-EF0C54', 6000.00, 'Maristes - Liberté 6', 28, 2000.00, '786056400', 'paye', '2026-07-06 10:06:06', '2026-07-07 11:58:33', NULL),
+(175, NULL, 'Barro', 'Abdoulaye', NULL, '+221 78 363 63 59', 'CMD-20260706-4F0B2B', 9000.00, 'Mariste - Autres', 33, 2000.00, '+221 78 363 63 59', 'paye', '2026-07-06 11:09:40', '2026-07-06 12:03:09', NULL),
+(176, NULL, 'Diaw', 'Mme', NULL, '+41 77 990 42 50', 'CMD-20260706-D1C6EB', 12000.00, 'Maristes - Sacré Cœur', 13, 2000.00, '+41 77 990 42 50', 'annulee', '2026-07-06 11:17:17', NULL, NULL),
+(177, NULL, 'Yoff', 'Mara', NULL, '+221 77 300 99 46', 'CMD-20260706-47A2FF', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 300 99 46', 'paye', '2026-07-06 11:57:40', '2026-07-06 12:03:39', NULL),
+(178, NULL, '.', 'Kama', NULL, '+221 77 666 06 61', 'CMD-20260706-72DDAC', 3500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 666 06 61', 'paye', '2026-07-06 12:00:23', '2026-07-06 12:03:20', NULL),
+(179, NULL, 'Diaw', 'Mme', NULL, '+41 77 990 42 50', 'CMD-20260706-0CB232', 21900.00, 'Maristes - Sacré Cœur', 13, 2000.00, '+41 77 990 42 50', 'paye', '2026-07-06 13:20:00', '2026-07-07 05:22:37', NULL),
+(180, NULL, 'Liane', 'Secret Gourmand', NULL, '+221 78 422 41 41', 'CMD-20260706-4190DC', 5500.00, 'Mariste - Autres', 33, 2000.00, '+221 78 422 41 41', 'paye', '2026-07-06 15:59:32', '2026-07-07 11:58:18', NULL),
+(181, NULL, 'Sene', 'Chef Pape', NULL, '+221 77 555 67 81', 'CMD-20260707-2D7D8F', 10000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 555 67 81', 'paye', '2026-07-07 05:55:46', '2026-07-07 11:58:05', NULL),
+(182, 37, NULL, NULL, NULL, NULL, 'CMD-20260707-9876D9', 5000.00, 'Mariste - Fass', 32, 2000.00, '770000000', 'paye', '2026-07-07 06:57:29', '2026-07-07 11:57:53', NULL),
+(183, NULL, 'Dot', 'The', NULL, '+221 78 482 94 60', 'CMD-20260707-CB603B', 15200.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 78 482 94 60', 'paye', '2026-07-07 07:15:08', '2026-07-07 11:57:40', NULL),
+(184, NULL, 'Kayser', 'Eric', NULL, '+221 77 447 11 77', 'CMD-20260707-076399', 16500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 447 11 77', 'paye', '2026-07-07 09:20:48', '2026-07-07 11:57:13', NULL),
+(185, NULL, 'Kayser', 'Eric', NULL, '+221 77 447 11 77', 'CMD-20260707-0F23E8', 16500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 447 11 77', 'paye', '2026-07-07 09:20:48', '2026-07-07 11:57:28', NULL),
+(186, NULL, 'Nasrine', 'Mme Attye', NULL, '+221 77 640 11 40', 'CMD-20260707-E6ED76', 6500.00, 'Maristes - Plateau', 2, 2500.00, '+221 77 640 11 40', 'paye', '2026-07-07 10:07:26', '2026-07-07 11:56:05', NULL),
+(187, NULL, '.', 'Chef Tidiane Ziguechor', NULL, '774050532', 'CMD-20260707-C6E3CF', 5000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '774050532', 'paye', '2026-07-07 10:15:40', '2026-07-07 11:55:54', NULL),
+(188, NULL, 'Cake', 'Gi’s', NULL, '764578316', 'CMD-20260707-962F44', 32500.00, 'Maristes - Ouest foire', 18, 2000.00, '764578316', 'paye', '2026-07-07 10:31:37', '2026-07-08 07:20:27', NULL),
+(189, NULL, '.', 'Layan', NULL, '+221 77 794 40 40', 'CMD-20260707-D8C1E4', 7500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 794 40 40', 'paye', '2026-07-07 11:49:01', '2026-07-07 11:55:43', NULL),
+(190, NULL, '.', 'soulemann Patissier Amsa', NULL, '789257159', 'CMD-20260707-1E2B21', 11500.00, 'Maristes - Liberté 6', 28, 2000.00, '789257159', 'paye', '2026-07-07 12:09:21', '2026-07-08 07:20:10', NULL),
+(191, NULL, 'Dieng', 'Aïssatou Cissé', NULL, '77 654 12 77', 'CMD-20260707-A9D1A1', 12000.00, 'Maristes - Sacré Cœur', 13, 2000.00, '77 654 12 77', 'paye', '2026-07-07 14:47:54', '2026-07-09 08:11:57', NULL),
+(192, NULL, 'Dieng', 'Aïssatou Cissé', NULL, '+221 77 654 12 77', 'CMD-20260707-9C2128', 15000.00, 'Maristes - Sacré Cœur', 13, 2000.00, '+221 77 654 12 77', 'paye', '2026-07-07 14:57:45', '2026-07-09 08:12:08', NULL),
+(193, 39, NULL, NULL, NULL, NULL, 'CMD-20260707-CD7642', 20750.00, 'Maristes - Ouakam', 20, 2500.00, '704087072', 'paye', '2026-07-07 16:43:08', '2026-07-08 11:40:34', NULL),
+(194, NULL, '.', 'SOBO Pâtisserie', NULL, '774314132', 'CMD-20260708-44F9E0', 5000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '774314132', 'paye', '2026-07-08 06:19:48', '2026-07-08 07:19:28', NULL),
+(195, NULL, '.', 'Johana', NULL, '784463424', 'CMD-20260708-22BC67', 12000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '784463424', 'paye', '2026-07-08 06:34:26', '2026-07-08 11:40:21', NULL),
+(196, NULL, 'Delices', 'Petits', NULL, '+221 77 410 01 01', 'CMD-20260708-908186', 6500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 410 01 01', 'paye', '2026-07-08 06:37:45', '2026-07-08 11:39:33', NULL),
+(197, NULL, 'Delices', 'Petits', NULL, '+221 77 410 01 01', 'CMD-20260708-AF256F', 6500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 410 01 01', 'paye', '2026-07-08 06:37:46', '2026-07-08 11:39:20', NULL),
+(198, NULL, '.', 'Sofa', NULL, '+221 76 928 35 97', 'CMD-20260708-EB88FF', 14000.00, 'Maristes - Liberté 6', 28, 2000.00, '+221 76 928 35 97', 'paye', '2026-07-08 06:39:10', '2026-07-08 07:19:41', NULL),
+(199, NULL, '.', 'Hik’scake', NULL, '789099625', 'CMD-20260708-A5D106', 5000.00, 'Mariste - Autres', 33, 2000.00, '789099625', 'paye', '2026-07-08 06:40:42', '2026-07-08 11:38:58', NULL),
+(200, NULL, 'Fourzoli', 'Madona', NULL, '775317944', 'CMD-20260708-112969', 6000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775317944', 'paye', '2026-07-08 09:22:41', '2026-07-09 08:12:22', NULL),
+(201, NULL, '.', 'Juju', NULL, '221772923128', 'CMD-20260708-33E37E', 1500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '221772923128', 'paye', '2026-07-08 10:22:59', '2026-07-08 11:38:16', NULL),
+(202, NULL, 'Sall', 'Aminata', NULL, '+221 77 591 08 31', 'CMD-20260708-B7145F', 6000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 591 08 31', 'paye', '2026-07-08 11:22:35', '2026-07-08 11:37:55', NULL),
+(203, NULL, 'Cake', 'Gi’s', NULL, '764578316', 'CMD-20260708-0BFAC2', 6000.00, 'Maristes - Ouest foire', 18, 2000.00, '764578316', 'paye', '2026-07-08 11:42:08', '2026-07-09 08:12:50', NULL),
+(204, NULL, '.', 'Briice', NULL, '771465945', 'CMD-20260708-6B7C6F', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771465945', 'paye', '2026-07-08 11:43:34', '2026-07-09 08:13:08', NULL),
+(205, NULL, '.', 'Juju', NULL, '221772923128', 'CMD-20260708-CC923A', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '221772923128', 'paye', '2026-07-08 12:30:52', '2026-07-09 08:13:26', NULL),
+(206, NULL, 'Mbaye', 'Mame', NULL, '+221 77 073 80 90', 'CMD-20260708-5640B8', 17000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 073 80 90', 'paye', '2026-07-08 15:16:05', '2026-07-09 08:11:45', NULL),
+(207, NULL, '.', 'O Plaisir Gourmand', NULL, '778087333', 'CMD-20260708-3C569D', 18000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '778087333', 'paye', '2026-07-08 15:23:15', '2026-07-09 08:11:32', NULL),
+(208, NULL, '.', 'Kemet', NULL, '+221 76 390 47 46', 'CMD-20260709-EB1B1A', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 76 390 47 46', 'paye', '2026-07-09 06:05:34', '2026-07-09 08:11:18', NULL),
+(209, NULL, 'Nd', 'Fatou', NULL, '+221 78 482 27 97', 'CMD-20260709-4A6B81', 14500.00, 'Maristes - Medina', 31, 2500.00, '+221 78 482 27 97', 'paye', '2026-07-09 06:23:48', '2026-07-09 08:38:57', NULL),
+(210, NULL, 'Traiteur', 'Mendy', NULL, '+221 77 157 81 24', 'CMD-20260709-1DDCB3', 7500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 157 81 24', 'paye', '2026-07-09 06:53:53', '2026-07-09 08:11:05', NULL),
+(211, NULL, 'MBOUMBA.', 'Jodricia', NULL, '+221 78 865 12 62', 'CMD-20260709-5C0530', 8000.00, 'Mariste - Autres', 33, 2000.00, '+221 78 865 12 62', 'paye', '2026-07-09 07:21:25', '2026-07-09 11:30:31', NULL),
+(212, NULL, '.', 'Patiseyni', NULL, '+221 78 306 56 43', 'CMD-20260709-75E3F5', 6000.00, 'Mariste - Autres', 33, 2000.00, '+221 78 306 56 43', 'paye', '2026-07-09 07:41:59', '2026-07-09 11:30:44', NULL),
+(213, NULL, 'Rassoul', 'Mouhamed', NULL, '+221 78 385 89 44', 'CMD-20260709-3B2C30', 5000.00, 'Mariste - Autres', 33, 2000.00, '+221 78 385 89 44', 'paye', '2026-07-09 07:46:43', '2026-07-09 11:30:13', NULL),
+(214, NULL, '.', 'Helena', NULL, '+221 77 513 78 97', 'CMD-20260709-6DB289', 7500.00, 'Maristes - Ngor', 24, 2500.00, '+221 77 513 78 97', 'paye', '2026-07-09 11:32:22', '2026-07-10 11:43:37', NULL),
+(215, NULL, '.', 'Nadine', NULL, '776516405', 'CMD-20260709-339080', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '776516405', 'paye', '2026-07-09 11:39:47', '2026-07-10 11:26:37', NULL),
+(216, NULL, 'Niang', 'Khalifa', NULL, '+221 78 441 31 51', 'CMD-20260709-E0EDEF', 5750.00, 'Maristes - Ouest foire', 18, 2000.00, '+221 78 441 31 51', 'paye', '2026-07-09 12:03:42', '2026-07-10 11:26:26', NULL),
+(217, NULL, '.', 'Maison Du Gateau', NULL, '775100673', 'CMD-20260709-A9C9C8', 3500.00, 'Maristes - Maristes', 4, 1000.00, '775100673', 'paye', '2026-07-09 12:48:26', '2026-07-10 11:26:13', NULL),
+(218, NULL, 'Kira', 'Les Merveilles de', NULL, '+221 77 279 29 88', 'CMD-20260709-F15F80', 8000.00, 'Maristes - Maristes', 4, 1000.00, '+221 77 279 29 88', 'paye', '2026-07-09 13:20:47', '2026-07-10 11:25:46', NULL),
+(219, NULL, 'Diallo', 'Alioune Badara', NULL, '+221 77 794 57 44', 'CMD-20260709-7170B3', 43500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 794 57 44', 'paye', '2026-07-09 14:28:07', '2026-07-10 11:25:29', NULL),
+(220, NULL, '.', 'Mathilde', NULL, '778256494', 'CMD-20260710-C61B9D', 17000.00, 'Mariste - Autres', 33, 2000.00, '778256494', 'paye', '2026-07-10 06:17:00', '2026-07-10 11:25:16', NULL),
+(221, NULL, 'Ndiaye', 'Amsatou', NULL, '+221 77 573 66 97', 'CMD-20260710-D87C23', 8000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 573 66 97', 'paye', '2026-07-10 06:18:21', '2026-07-10 11:25:05', NULL),
+(222, NULL, 'Le Ndiambour', 'Hôtel Résidence', NULL, '+221 777553773', 'CMD-20260710-0D6490', 12000.00, 'Maristes - Ville', 21, 2500.00, '+221 777553773', 'paye', '2026-07-10 06:23:28', '2026-07-10 11:24:54', NULL),
+(223, NULL, '.', 'Layan', NULL, '+221 77 794 40 40', 'CMD-20260710-BA2CB2', 9500.00, 'Maristes - Ville', 21, 2500.00, '+221 77 794 40 40', 'paye', '2026-07-10 06:28:11', '2026-07-10 11:24:43', NULL),
+(224, NULL, 'de Corinne', 'Les Ateliers', NULL, '771943030', 'CMD-20260710-1140E8', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771943030', 'paye', '2026-07-10 06:35:29', '2026-07-10 11:24:29', NULL),
+(225, NULL, '.', 'Mimi', NULL, '+221 77 690 26 63', 'CMD-20260710-7A1BF9', 32000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 690 26 63', 'paye', '2026-07-10 07:08:39', '2026-07-10 11:24:13', NULL),
+(226, NULL, 'sow', 'Khadija', NULL, '789680653', 'CMD-20260710-5E73FE', 6500.00, 'Maristes - Ngor', 24, 2500.00, '789680653', 'paye', '2026-07-10 07:40:37', '2026-07-10 11:24:01', NULL),
+(227, NULL, 'Pâtisserie', 'Glorious', NULL, '773425054', 'CMD-20260710-3DB441', 8000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '773425054', 'paye', '2026-07-10 08:19:47', '2026-07-10 11:23:50', NULL),
+(228, NULL, 'Pâtisserie', 'Mims', NULL, '771575900', 'CMD-20260710-13FCCC', 27000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771575900', 'paye', '2026-07-10 08:29:05', '2026-07-10 11:23:40', NULL),
+(229, NULL, '.', 'Juju', NULL, '221772923128', 'CMD-20260710-3A4A7A', 14500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '221772923128', 'paye', '2026-07-10 08:47:31', '2026-07-10 11:23:23', NULL),
+(230, NULL, 'Sweet', 'Bakery and', NULL, '778895178', 'CMD-20260710-2DFCA5', 16000.00, 'Maristes - Ngor', 24, 2500.00, '778895178', 'paye', '2026-07-10 09:15:30', '2026-07-10 11:23:12', NULL),
+(231, NULL, '.', 'L’amour Culinaire', NULL, '774543425', 'CMD-20260710-635994', 6500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '774543425', 'paye', '2026-07-10 09:44:22', '2026-07-10 11:22:53', NULL),
+(232, NULL, 'Douceur', 'ptite', NULL, '784668565', 'CMD-20260710-42C71F', 14000.00, 'Maristes - Liberté 6', 28, 2000.00, '784668565', 'paye', '2026-07-10 10:31:48', '2026-07-10 11:22:39', NULL),
+(233, NULL, '.', 'Adriana', NULL, '750398905', 'CMD-20260710-5BA434', 9500.00, 'Maristes - Ville', 21, 2500.00, '750398905', 'paye', '2026-07-10 10:32:53', '2026-07-10 11:22:25', NULL),
+(234, NULL, 'c', 'new', NULL, '775343510', 'CMD-20260710-F85F56', 18000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775343510', 'paye', '2026-07-10 10:47:11', '2026-07-11 10:57:32', NULL),
+(235, NULL, '.', 'Kadiel Gateau', NULL, '775224509', 'CMD-20260710-BCB65B', 4500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775224509', 'paye', '2026-07-10 10:50:35', '2026-07-10 11:43:25', NULL),
+(236, NULL, 'Ndoye', 'Madame', NULL, '77 763 01 14', 'CMD-20260710-07DEC4', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '77 763 01 14', 'paye', '2026-07-10 11:16:00', '2026-07-11 06:12:45', NULL),
+(237, NULL, 'Sarl', 'LAM BABA', NULL, '+221 77 144 47 56', 'CMD-20260710-323987', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 144 47 56', 'paye', '2026-07-10 11:18:43', '2026-07-10 11:22:10', NULL),
+(238, NULL, 'Pâtisserie', 'Mims', NULL, '771575900', 'CMD-20260710-3547E4', 8500.00, 'Maristes - Ville', 21, 2500.00, '771575900', 'paye', '2026-07-10 11:45:23', '2026-07-11 06:13:44', NULL),
+(239, NULL, '.', 'Anta', NULL, '+221 775751112', 'CMD-20260710-86B8F6', 19500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 775751112', 'paye', '2026-07-10 12:15:04', '2026-07-11 06:13:29', NULL),
+(240, NULL, '.', 'La Dame De Fer💪🏾', NULL, '774058761', 'CMD-20260710-34F830', 11000.00, 'Maristes - Ouest foire', 18, 2000.00, '774058761', 'paye', '2026-07-10 12:46:43', '2026-07-11 10:00:40', NULL),
+(241, NULL, 'Ndiaye', 'Aicha', NULL, '771790764', 'CMD-20260710-D71137', 24000.00, 'Mariste - Autres', 33, 2000.00, '771790764', 'paye', '2026-07-10 12:48:45', '2026-07-11 10:00:30', NULL),
+(242, NULL, '.', 'Maison Du Gateau', NULL, '775100673', 'CMD-20260710-D0EAB9', 4500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775100673', 'paye', '2026-07-10 15:53:33', '2026-07-11 06:12:57', NULL),
+(243, NULL, '.', 'Arona', NULL, '773472668', 'CMD-20260710-2820CE', 650.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '773472668', 'paye', '2026-07-10 15:56:50', '2026-07-11 06:13:10', NULL),
+(244, NULL, '.', 'Khadija Patisserie', NULL, '776653835', 'CMD-20260711-7EA284', 9000.00, 'Mariste - Autres', 33, 2000.00, '776653835', 'paye', '2026-07-11 06:15:03', '2026-07-11 10:00:14', NULL),
+(245, NULL, '.', 'El Company Traiteur', NULL, '771710766', 'CMD-20260711-BA5738', 4000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '771710766', 'paye', '2026-07-11 06:27:39', '2026-07-11 10:00:05', NULL),
+(246, NULL, '.', 'Kadiel Gateau', NULL, '775224509', 'CMD-20260711-E88AF4', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '775224509', 'paye', '2026-07-11 07:18:38', '2026-07-11 09:59:51', NULL),
+(247, NULL, 'Food', 'ETK', NULL, '+221 77 627 72 97', 'CMD-20260711-4EB455', 8000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 627 72 97', 'paye', '2026-07-11 07:25:40', '2026-07-11 09:59:21', NULL),
+(248, NULL, '.', 'K’Rose', NULL, '776588359', 'CMD-20260711-CCC2A5', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '776588359', 'en_attente', '2026-07-11 07:37:16', NULL, NULL),
+(249, NULL, 'Sweet', 'Bakery and', NULL, '778895178', 'CMD-20260711-618EC7', 12500.00, 'Maristes - Ngor', 24, 2500.00, '778895178', 'paye', '2026-07-11 07:45:26', '2026-07-11 09:59:05', NULL),
+(250, NULL, 'Cake', 'Gi’s', NULL, '764578316', 'CMD-20260711-197066', 16500.00, 'Maristes - Ouest foire', 18, 2000.00, '764578316', 'paye', '2026-07-11 08:45:53', '2026-07-11 10:01:01', NULL),
+(251, NULL, '.', 'Segoleine', NULL, '+221 77 877 25 18', 'CMD-20260711-F4C1ED', 7500.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 877 25 18', 'paye', '2026-07-11 08:53:03', '2026-07-11 09:58:54', NULL),
+(252, NULL, 'Diaw', 'Mme', NULL, '+41 77 990 42 50', 'CMD-20260711-E5E7CA', 13000.00, 'Maristes - Sacré Cœur', 13, 2000.00, '+41 77 990 42 50', 'paye', '2026-07-11 08:57:02', '2026-07-11 09:58:42', NULL),
+(253, NULL, 'Ndiaye', 'Amsatou', NULL, '+221 77 573 66 97', 'CMD-20260711-35D867', 7000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '+221 77 573 66 97', 'paye', '2026-07-11 09:09:07', '2026-07-11 09:58:30', NULL),
+(254, NULL, 'Chef Max', 'Zeina Pur🍒Délice', NULL, '774515728', 'CMD-20260711-B94185', 29500.00, 'Maristes - Ville', 21, 2500.00, '774515728', 'en_attente', '2026-07-11 09:40:11', NULL, NULL),
+(255, NULL, '.', 'Minata', NULL, '+221 77 148 08 15', 'CMD-20260711-152314', 6000.00, 'Mariste - Autres', 33, 2000.00, '+221 77 148 08 15', 'paye', '2026-07-11 10:15:29', '2026-07-11 10:25:33', NULL),
+(256, NULL, 'Baker', 'Huchard', NULL, '77 216 18 35', 'CMD-20260711-B84A22', 3000.00, 'Récupérer sur place - ( Sugar Paper )', 11, 0.00, '77 216 18 35', 'en_attente', '2026-07-11 14:01:15', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `commandes_personnalisees`
+--
+
+CREATE TABLE `commandes_personnalisees` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `nom` varchar(100) NOT NULL,
+  `prenom` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `telephone` varchar(50) NOT NULL,
+  `description` text NOT NULL,
+  `image_reference` varchar(255) DEFAULT NULL,
+  `type_produit` varchar(255) DEFAULT NULL,
+  `quantite` varchar(100) DEFAULT NULL,
+  `date_souhaitee` date DEFAULT NULL,
+  `zone_livraison_id` int(11) DEFAULT NULL,
+  `prix` decimal(10,2) DEFAULT NULL,
+  `statut` enum('en_attente','confirmee','en_preparation','devis_envoye','acceptee','refusee','terminee','annulee') NOT NULL DEFAULT 'en_attente',
+  `notes_admin` text DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `commandes_personnalisees`
+--
+
+INSERT INTO `commandes_personnalisees` (`id`, `user_id`, `nom`, `prenom`, `email`, `telephone`, `description`, `image_reference`, `type_produit`, `quantite`, `date_souhaitee`, `zone_livraison_id`, `prix`, `statut`, `notes_admin`, `date_creation`, `date_modification`) VALUES
+(6, NULL, 'KHOUMA', 'Ramatoulaye', 'adjaramakhouma@gmail.com', '781517116', 'Cake topper barbie (8 pièces de 5 cm)', NULL, 'Cake Topper', NULL, '2026-06-21', 17, 7000.00, 'terminee', '', '2026-06-21 11:04:43', '2026-06-23 05:51:49'),
+(7, NULL, 'Khouma', 'Ramatoulaye', 'adjaramakhouma@gmail.com', '78151', 'Ensemble cake topper spiderman', NULL, NULL, NULL, NULL, 26, NULL, 'terminee', '', '2026-06-26 12:14:11', '2026-06-27 05:51:28');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `commande_produits`
+--
+
+CREATE TABLE `commande_produits` (
+  `id` int(11) NOT NULL,
+  `commande_id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `nom_produit` varchar(255) DEFAULT NULL,
+  `quantite` int(11) NOT NULL,
+  `prix_unitaire` decimal(10,2) NOT NULL,
+  `prix_total` decimal(10,2) NOT NULL,
+  `couleur` varchar(255) DEFAULT NULL,
+  `poids` varchar(100) DEFAULT NULL,
+  `taille` varchar(100) DEFAULT NULL,
+  `variante_id` int(11) DEFAULT NULL,
+  `variante_nom` varchar(255) DEFAULT NULL,
+  `surcout_poids` decimal(10,2) DEFAULT 0.00,
+  `surcout_taille` decimal(10,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `commande_produits`
+--
+
+INSERT INTO `commande_produits` (`id`, `commande_id`, `produit_id`, `nom_produit`, `quantite`, `prix_unitaire`, `prix_total`, `couleur`, `poids`, `taille`, `variante_id`, `variante_nom`, `surcout_poids`, `surcout_taille`) VALUES
+(184, 103, 114, NULL, 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(185, 103, 13, NULL, 1, 11000.00, 11000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(186, 103, 23, NULL, 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(187, 103, 83, NULL, 1, 1500.00, 1500.00, '#ffab01', NULL, NULL, 35, 'Cake drums 30cm', 0.00, 0.00),
+(188, 103, 37, NULL, 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, 'Poudre Or Comestible', 0.00, 0.00),
+(189, 103, 69, NULL, 1, 3500.00, 3500.00, '#e59c48', NULL, NULL, NULL, NULL, 0.00, 0.00),
+(190, 104, 34, NULL, 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(191, 105, 13, NULL, 1, 11000.00, 11000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(192, 105, 139, NULL, 1, 4000.00, 4000.00, '#858585', NULL, NULL, NULL, 'Moule Ajustable en Inox', 0.00, 0.00),
+(193, 106, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(194, 106, 81, 'Boîtes Cupcakes', 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(195, 106, 15, 'Colorant gel purple', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(196, 107, 55, 'Paquet papiers sucre de 24 feuilles', 1, 43500.00, 43500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(197, 107, 89, 'Peintures comestibles', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(198, 108, 148, 'Couronne Grand Modèle', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(199, 109, 30, 'Cake Topper Sirène', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(200, 110, 102, 'Cake topper', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(201, 111, 119, 'Cake Topper', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(202, 112, 60, 'Boites gateaux', 12, 250.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(203, 112, 108, 'Semelles à gateaux', 12, 150.00, 1800.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(204, 113, 119, 'Cake Topper', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(205, 114, 72, 'Boules Decoratives', 3, 2000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(206, 114, 96, 'Cake topper happy Birthday', 3, 1000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(207, 114, 119, 'Cake Topper 1993', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(208, 114, 118, 'Cake topper Nounours', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(209, 115, 96, 'Palmier', 3, 500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(210, 115, 119, 'Cake Topper', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(211, 115, 144, 'Couronne Petit Format', 1, 1300.00, 1300.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(212, 116, 120, 'Cake topper Mariage', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(213, 116, 125, 'Boîte à Gâteau Carrée 45/30', 1, 4500.00, 4500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(214, 116, 147, 'Fleurs Décoratives Orchidées', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(215, 116, 67, 'Lisseur', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(216, 117, 84, 'Feuilles Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(217, 117, 119, 'Cake Topper', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(218, 118, 118, 'Cake topper', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(219, 118, 72, 'Boules Decoratives', 1, 500.00, 500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(220, 119, 119, 'Cake Topper', 9, 500.00, 4500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(221, 119, 119, 'Cake Topper logo + Chiffre', 1, 4500.00, 4500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(222, 120, 41, 'Lot de 12 tiges chevilles blanches', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(223, 121, 119, 'Cake Topper', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(224, 122, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(225, 123, 90, 'Paillettes comestibles', 2, 4000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(226, 123, 6, 'Impression sur papier Sucre', 2, 4000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(227, 124, 135, NULL, 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(228, 124, 26, NULL, 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(229, 124, 83, NULL, 2, 1000.00, 2000.00, NULL, NULL, NULL, 34, 'Cake drums 25cm', 0.00, 0.00),
+(230, 125, 125, 'Boîte à Gâteau Carrée 26/32', 3, 2500.00, 7500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(231, 125, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(232, 126, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(233, 126, 13, 'Colorant Gel', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(234, 127, 126, 'Boîte à Gâteau Ronde 45/35', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(235, 127, 126, 'Boîte à Gâteau Ronde 45/35', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(236, 127, 150, 'Tapis en Silicone', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(237, 127, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(238, 127, 10, 'Poche à douille', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(239, 128, 6, 'Impression sur papier Sucre', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(240, 128, 71, 'Papillons décoratifs', 2, 1500.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(241, 128, 125, 'Boîte à Gâteau Carrée 45/30', 3, 2500.00, 7500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(242, 128, 144, 'Couronne Petit Format', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(243, 128, 95, 'Cake Topper Personnalisé', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(244, 129, 125, 'Boîte à Gâteau Carrée 45/30', 2, 4000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(245, 129, 19, 'Ensemble Cake Topper Spiderman', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(246, 129, 148, 'Couronne Grand Modèle', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(247, 130, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(248, 131, 97, 'Cake Topper Minnie Mouse', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(249, 132, 95, 'Cake Topper Personnalisé', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(250, 133, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(251, 133, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(252, 133, 148, 'Couronne Grand Modèle', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(253, 133, 136, 'Lisseur pour pâte Sucre', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(254, 133, 135, 'Pince Pâtisserie', 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(255, 133, 147, 'Fleurs Décoratives Orchidées', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(256, 134, 95, 'Cake Topper Personnalisé', 2, 5000.00, 10000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(257, 135, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(258, 136, 95, 'Cake Topper Personnalisé', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(259, 137, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(260, 137, 92, 'Poudre CMC', 1, 6500.00, 6500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(261, 138, 66, 'Palmier', 2, 500.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(262, 138, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(263, 139, 15, 'Colorant gel Wilton', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(264, 140, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(265, 140, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(266, 141, 29, 'Cake Topper Initial', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(267, 141, 77, 'Boîtes Carrées', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(268, 141, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(269, 141, 134, 'Boîte Verrine 24 cavités', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(270, 142, 72, 'Boules Decoratives', 3, 2000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(271, 142, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(272, 142, 119, 'Cake Topper Brawl Stars', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(273, 142, 119, 'Cake Topper K pop', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(274, 142, 119, 'Cake Topper Happy Birthday Daniel', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(275, 143, 119, 'Cake Topper', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(276, 144, 70, 'Perles Comestibles Décoratives', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(277, 144, 135, 'Pince Pâtisserie', 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(278, 145, 84, 'Feuilles Azyme', 2, 3000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(279, 146, 6, 'Impression sur papier Sucre', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(280, 147, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(281, 148, 84, 'Feuilles Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(282, 149, 95, 'Cake Topper Personnalisé', 4, 2500.00, 10000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(283, 149, 77, 'Boîtes Carrées', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(284, 149, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(285, 150, 97, 'Cake Topper Minnie Mouse', 2, 6000.00, 12000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(286, 150, 95, 'Cake Topper Personnalisé', 2, 7000.00, 14000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(287, 151, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(288, 151, 77, 'Boîtes Carrées', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(289, 151, 33, 'Moule silicone', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(290, 152, 95, 'Cake Topper Personnalisé', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(291, 152, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(292, 153, 95, 'Cake Topper Personnalisé', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(293, 153, 95, 'Cake Topper Personnalisé', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(294, 153, 148, 'Couronne Grand Modèle', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(295, 154, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(296, 154, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(297, 155, 154, 'Kit de 9 douille', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(298, 155, 140, 'Moule de 10cm', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(299, 155, 140, 'Moule de 15cm', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(300, 155, 139, 'Moule 20cm', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(301, 156, 154, 'Kit de 9 douille', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(302, 156, 140, 'Moule de 10cm', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(303, 156, 140, 'Moule de 15cm', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(304, 156, 139, 'Moule 20cm', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(305, 157, 154, 'Kit de 9 douille', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(306, 157, 110, 'Moule 10 cm', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(307, 157, 110, 'Moule 15cm', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(308, 157, 110, 'Moule 20cm', 1, 6500.00, 6500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(309, 158, 154, 'Kit de 9 douille', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(310, 159, 102, 'Cake topper', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(311, 160, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(312, 161, 77, 'Boîtes Carrées', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(313, 161, 113, 'Lot de 25 poches à douille', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(314, 162, 29, 'Cake Topper Initial', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(315, 163, 32, 'Chocolat  2kg', 2, 12000.00, 24000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(316, 164, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(317, 165, 6, 'Impression sur papier Sucre', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(318, 166, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(319, 166, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(320, 166, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(321, 167, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(322, 168, 156, 'Feuille Impression comestible A3', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(323, 168, 6, 'Impression sur papier Sucre couleur persistante', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(324, 169, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(325, 170, 151, 'Lot de 5 ustensiles de pâtisserie', 1, 4500.00, 4500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(326, 170, 148, 'Couronne Grand Modèle', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(327, 170, 144, 'Couronne Petit Format', 3, 1300.00, 3900.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(328, 170, 71, 'Papillons décoratifs', 4, 1500.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(329, 170, 67, 'Lisseur 30cm', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(330, 170, 23, 'Lisseurs lot de 4', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(331, 170, 87, 'Paillettes Comestibles', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(332, 170, 147, 'Fleurs Décoratives Orchidées', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(333, 170, 32, 'Moule choco transfert', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(334, 170, 72, 'Boules Decoratives', 3, 2000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(335, 170, 111, 'Emporte piece forme fleur', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(336, 170, 126, 'Boîte à Gâteau Ronde 32/26', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(337, 171, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(338, 172, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(339, 173, 84, 'Feuilles Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(340, 174, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(341, 175, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(342, 176, 118, 'Cake topper personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(343, 176, 97, 'Cake Topper Minnie Mouse', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(344, 177, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(345, 178, 154, 'Kit de 9 douille', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(346, 179, 97, 'Cake Topper Minnie Mouse', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(347, 179, 95, 'Cake Topper Personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(348, 179, 17, 'Support Poche à douilles', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(349, 179, 108, 'Semelles à gateaux 26cm', 2, 200.00, 400.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(350, 179, 125, 'Boîte à Gâteau Carrée 24/22', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(351, 179, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(352, 180, 137, 'Boule et arc en ciel 🌈', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(353, 181, 6, 'Impression sur papier Sucre', 2, 4000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(354, 182, 152, NULL, 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(355, 183, 19, 'Ensemble Cake Topper Spiderman', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(356, 183, 23, 'Lisseurs', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(357, 183, 57, 'Boites gateaux', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(358, 183, 83, 'Cakes drums', 1, 700.00, 700.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(359, 184, 95, 'Cake Topper Personnalisé', 2, 7000.00, 14000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(360, 185, 95, 'Cake Topper Personnalisé', 2, 7000.00, 14000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(361, 186, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(362, 187, 95, 'Cake Topper Personnalisé', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(363, 188, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(364, 188, 95, 'Cake Topper Personnalisé', 2, 5000.00, 10000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(365, 188, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(366, 188, 77, 'Boîtes Carrées', 5, 2500.00, 12500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(367, 189, 95, 'Cake Topper Personnalisé', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(368, 190, 19, 'Ensemble Cake Topper Spiderman', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(369, 190, 57, 'Boites gateaux', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(370, 191, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(371, 191, 72, 'Boules Decoratives', 2, 500.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(372, 191, 119, 'Cake Topper', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(373, 192, 119, 'Cake Topper', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(374, 192, 72, 'Boules Decoratives', 2, 500.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(375, 192, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(376, 192, 70, 'Perles Comestibles Décoratives', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(377, 193, 77, NULL, 1, 3000.00, 3000.00, '#ffffff', NULL, NULL, 24, 'Boîtes  30 cm x 34cm', 0.00, 0.00),
+(378, 193, 29, NULL, 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(379, 193, 69, NULL, 1, 3500.00, 3500.00, '#f6f3ef', NULL, NULL, NULL, NULL, 0.00, 0.00),
+(380, 193, 83, NULL, 2, 2200.00, 4400.00, NULL, NULL, NULL, 36, 'Cake drums 35cm', 0.00, 0.00),
+(381, 193, 128, NULL, 1, 4350.00, 4350.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(382, 194, 6, 'Impression sur papier Sucre avec découpage', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(383, 195, 6, 'Impression sur papier Sucre', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(384, 195, 95, 'Cake Topper Personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(385, 196, 148, 'Couronne Grand Modèle', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(386, 197, 148, 'Couronne Grand Modèle', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(387, 198, 63, 'Cake Form', 1, 12000.00, 12000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(388, 199, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(389, 200, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(390, 200, 15, 'Colorant gel', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(391, 201, 95, 'Cake Topper Personnalisé', 3, 500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(392, 202, 77, 'Boîtes Carrées', 2, 3000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(393, 203, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(394, 204, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(395, 205, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(396, 206, 38, 'Butane Torch', 1, 15000.00, 15000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(397, 207, 6, 'Impression sur papier Sucre', 3, 4000.00, 12000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(398, 207, 6, 'Découpage', 3, 1000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(399, 207, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(400, 207, 119, 'Cake Topper', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(401, 208, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(402, 209, 77, 'Boîtes Carrées', 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(403, 209, 77, 'Boîtes Carrées', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(404, 209, 77, 'Boîtes Carrées', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(405, 209, 66, 'Palmier', 2, 500.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(406, 209, 95, 'Cake Topper Personnalisé', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(407, 209, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(408, 210, 7, 'Emporte Piece', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(409, 210, 26, 'Feuille Or comestible', 1, 1500.00, 1500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(410, 210, 33, 'Moule silicone', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(411, 211, 126, 'Boîte à Gâteau Ronde', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(412, 211, 72, 'Boules Decoratives', 2, 500.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(413, 211, 85, 'Impression sur Papier Azyme', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(414, 212, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(415, 213, 69, 'Perles comestibles Décoratives', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(416, 214, 95, 'Cake Topper Personnalisé', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(417, 215, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(418, 216, 130, 'Couteaux Patisserie 35cm', 1, 3750.00, 3750.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(419, 217, 60, 'Boites gateaux', 10, 250.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(420, 218, 21, 'Ensemble cake Topper Dora', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(421, 219, 55, 'Paquet papiers sucre de 24 feuilles', 1, 43500.00, 43500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(422, 220, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(423, 220, 72, 'Boules Decoratives', 4, 2000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(424, 221, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(425, 222, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(426, 222, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(427, 223, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(428, 223, 84, 'Decoupage', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(429, 223, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(430, 224, 95, 'Cake Topper Personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(431, 225, 95, 'Cake Topper superman', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(432, 225, 95, 'Cake Topper fortnite', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(433, 225, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(434, 225, 68, 'Découpage', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(435, 225, 77, 'Boîtes Carrées', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(436, 225, 81, 'Boîtes Cupcakes', 2, 1500.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(437, 225, 15, 'Colorant gel', 3, 2000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(438, 226, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(439, 227, 72, 'Boules Decoratives', 4, 2000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(440, 228, 77, 'Boîtes Carrées', 2, 2500.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(441, 228, 77, 'Boîtes Carrées', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(442, 228, 48, 'Tapis d’impression', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(443, 228, 69, 'Perles comestibles Décoratives', 2, 3500.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(444, 228, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(445, 228, 95, 'Cake Topper Personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(446, 229, 81, 'Boîtes Cupcakes', 2, 1500.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(447, 229, 95, 'Cake Topper Personnalisé', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(448, 229, 140, 'Moule Ajustable en Inox Carré', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(449, 229, 139, 'Moule Ajustable en Inox', 1, 4500.00, 4500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(450, 230, 69, 'Perles comestibles Décoratives', 3, 3500.00, 10500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(451, 230, 70, 'Perles Comestibles Décoratives', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(452, 231, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(453, 231, 141, 'Lot de 50 Caissettes de Cupcakes', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(454, 232, 26, 'Feuille Or comestible', 2, 1500.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(455, 232, 69, 'Perles comestibles Décoratives', 2, 3500.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(456, 232, 95, 'Cake Topper Personnalisé', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(457, 233, 156, 'Feuille Impression comestible A3', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(458, 234, 6, 'Impression sur papier Sucre', 2, 4000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(459, 234, 72, 'Boules Decoratives', 2, 1500.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(460, 234, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(461, 235, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(462, 235, 95, 'Cake Topper Personnalisé', 1, 1000.00, 1000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(463, 236, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(464, 237, 95, 'Cake Topper Personnalisé', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(465, 238, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(466, 239, 77, 'Boîtes Carrées', 5, 2500.00, 12500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(467, 239, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(468, 240, 95, 'Cake Topper Personnalisé', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(469, 240, 72, 'Boules Decoratives', 2, 2000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(470, 241, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(471, 241, 95, 'Cake Topper Personnalisé', 2, 7000.00, 14000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(472, 241, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(473, 242, 125, 'Boîte à Gâteau', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(474, 242, 125, 'Boîte à Gâteau', 1, 2500.00, 2500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(475, 243, 60, 'Boites gateaux', 1, 300.00, 300.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(476, 243, 60, 'Boites gateaux', 1, 350.00, 350.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(477, 244, 156, 'Feuille Impression comestible A3', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(478, 245, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(479, 246, 19, 'Ensemble Cake Topper Spiderman', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(480, 247, 85, 'Impression sur Papier Azyme', 2, 3000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(481, 248, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(482, 249, 95, 'Cake Topper Personnalisé', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(483, 249, 19, 'Ensemble Cake Topper Moto', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(484, 250, 72, 'Boules Decoratives', 1, 2000.00, 2000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(485, 250, 77, 'Boîtes Carrées', 5, 2500.00, 12500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(486, 251, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(487, 251, 69, 'Perles comestibles Décoratives', 1, 3500.00, 3500.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(488, 252, 95, 'Cake Topper Personnalisé', 1, 6000.00, 6000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(489, 252, 23, 'Lisseurs', 1, 5000.00, 5000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(490, 253, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(491, 254, 95, 'Cake Topper Personnalisé', 1, 7000.00, 7000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(492, 254, 63, 'Cake Form', 1, 8000.00, 8000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(493, 254, 63, 'Cake Form', 1, 12000.00, 12000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(494, 255, 6, 'Impression sur papier Sucre', 1, 4000.00, 4000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00),
+(495, 256, 41, 'Lot de 12 tiges chevilles blanches', 1, 3000.00, 3000.00, NULL, NULL, NULL, NULL, NULL, 0.00, 0.00);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `contacts`
+--
+
+CREATE TABLE `contacts` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(255) NOT NULL,
+  `prenom` varchar(255) NOT NULL DEFAULT '',
+  `telephone` varchar(50) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `contacts`
+--
+
+INSERT INTO `contacts` (`id`, `nom`, `prenom`, `telephone`, `email`, `date_creation`) VALUES
+(4, 'vroling', 'Alvin', '00351920635048', 'vroling@groupeisi.com', '2026-03-09 09:16:41'),
+(5, 'Omar', 'samb', '+13478205815', NULL, '2026-03-09 09:19:48'),
+(6, 'Cake', 'Gi’s', '764578316', NULL, '2026-03-10 07:49:23'),
+(7, 'baro', 'Aby', '783808482', NULL, '2026-03-11 05:52:41'),
+(8, '.', 'Adriana', '750398905', NULL, '2026-03-11 05:53:33'),
+(9, '.', '𝓐ï𝓬𝓱𝓪𝓪𝓪__𝓷𝓭𝓲𝓪𝔂𝓮', '779042249', NULL, '2026-03-11 05:57:33'),
+(10, 'Agne', 'Ibrahima', '771862550', NULL, '2026-03-11 06:01:41'),
+(11, '.', 'Agnès la fée des Merveilles', '781169331', NULL, '2026-03-11 06:02:26'),
+(12, '.', 'Ahmed', '704087072', NULL, '2026-03-11 06:05:52'),
+(13, 'Ndiaye', 'Aicha', '771790764', NULL, '2026-03-11 06:06:39'),
+(14, 'Diop', 'Awa', '771568182', NULL, '2026-03-11 06:10:54'),
+(15, '.', 'Juju', '221772923128', NULL, '2026-03-11 07:46:48'),
+(16, '.', 'Aikena Pâtisserie', '781421515', NULL, '2026-03-11 07:49:49'),
+(17, '.', 'L’amour Culinaire', '774543425', NULL, '2026-03-11 07:57:20'),
+(18, '.', 'Chef Tidiane Ziguechor', '774050532', NULL, '2026-03-11 07:57:49'),
+(19, 'N', 'Queen Annisha', '783593743', NULL, '2026-03-11 07:58:33'),
+(20, '.', 'A.G', '772640042', NULL, '2026-03-11 07:59:12'),
+(21, '.', 'A.Kindy', '775238967', NULL, '2026-03-11 07:59:30'),
+(22, '.', 'A Nos Gourmandises', '772189203', NULL, '2026-03-11 07:59:50'),
+(23, '.', 'Aba', '782207477', NULL, '2026-03-11 08:00:03'),
+(24, '.', 'Ababacar', '776506068', NULL, '2026-03-11 08:00:21'),
+(25, '.', 'Abbassade Bakery', '2126660078', NULL, '2026-03-11 08:02:38'),
+(26, '.', 'Afsatou', '777447497', NULL, '2026-03-11 08:05:35'),
+(27, '.', 'Afsatou N', '777447497', NULL, '2026-03-11 08:10:52'),
+(28, '.', 'Afsatou N', '777447497', NULL, '2026-03-11 08:10:53'),
+(29, '.', '𝓐ï𝓬𝓱𝓪𝓪𝓪__𝓷𝓭𝓲𝓪𝔂𝓮', '779042249', NULL, '2026-03-11 08:12:00'),
+(30, 'Aïda Sarr', 'Sobo Patisserie', '774596193', NULL, '2026-03-11 08:12:20'),
+(31, '.', 'Aissatou Mme Sene', '777816255', NULL, '2026-03-11 08:13:29'),
+(32, '.', 'Amina Gateaux', '764803563', NULL, '2026-03-11 08:14:39'),
+(33, '.', 'Assyskitchen', '777103171', NULL, '2026-03-11 08:24:42'),
+(34, '.', 'Awa’s Cake by Kia', '781253591', NULL, '2026-03-11 08:28:37'),
+(35, 'B', 'Bi Cheikh Traiteur', '775130746', NULL, '2026-03-11 08:30:32'),
+(36, '.', 'Babacar Bodiane X Cake', '778781836', NULL, '2026-03-11 08:31:57'),
+(37, 'Cake', 'Achou’s', '774479787', NULL, '2026-03-11 08:33:31'),
+(38, 'Délice', 'Pur🍒', '784321414', NULL, '2026-03-11 08:34:31'),
+(39, '.', 'Delices By Mounasse Traiteur', '785355137', NULL, '2026-03-11 08:35:12'),
+(40, '.', 'El Company Traiteur', '771710766', NULL, '2026-03-11 08:37:41'),
+(41, '.', 'El Company Traiteur', '776309975', NULL, '2026-03-11 08:38:08'),
+(42, '.', 'El Hadji Thies N', '761958162', NULL, '2026-03-11 08:38:40'),
+(43, 'Enfants Mme Coulibaly', 'La Galerie Des', '774921116', NULL, '2026-03-11 08:39:33'),
+(44, '.', 'Eva Delicious Home Food', '777167378', NULL, '2026-03-11 08:40:31'),
+(45, '.', 'G De Ma', '771543400', NULL, '2026-03-11 08:42:01'),
+(46, '.', 'Gabriella_traiteur', '773744339', NULL, '2026-03-11 08:43:04'),
+(47, '.', 'Gi\'s Cake', '764578316', NULL, '2026-03-11 08:46:19'),
+(48, 'Chef Max', 'Zeina Pur🍒Délice', '774515728', NULL, '2026-03-11 08:47:13'),
+(49, '.', 'Heaven cake', '772011929', NULL, '2026-03-11 08:48:26'),
+(50, '.', 'House’s Cake', '773915409', NULL, '2026-03-11 08:50:14'),
+(51, '.', 'House’s Cake', '773915409', NULL, '2026-03-11 08:50:14'),
+(52, '.', 'hawa 🧑🏼‍🍳🥪et ses Délices👩‍🍳🍽🧁', '771855363', NULL, '2026-03-11 08:51:59'),
+(53, '.', 'Hik’scake', '789099625', NULL, '2026-03-11 08:52:32'),
+(54, 'Hlm', 'Isseu Kane', '777016759', NULL, '2026-03-11 08:53:11'),
+(55, '.', 'House’s Cake', '773915409', NULL, '2026-03-11 08:53:43'),
+(56, '.', 'House’s Cake', '773915409', NULL, '2026-03-11 08:53:43'),
+(57, '.', 'Ka', '780112593', NULL, '2026-03-11 08:55:55'),
+(58, '.', 'Ka', '780112593', NULL, '2026-03-11 08:55:56'),
+(59, '.', 'Kadiel Gateau', '775224509', NULL, '2026-03-11 08:56:32'),
+(60, '.', 'Kadiel Gateaux', '775224509', NULL, '2026-03-11 08:56:49'),
+(61, '.', 'Kadiel Gateaux', '775224509', NULL, '2026-03-11 08:56:50'),
+(62, '.', 'Kalista Food', '767681796', NULL, '2026-03-11 08:57:08'),
+(63, '.', 'Kalista Food', '767681796', NULL, '2026-03-11 08:57:08'),
+(64, '.', 'Karina X Cake', '705071055', NULL, '2026-03-11 08:57:47'),
+(65, '.', 'Karina X Cake', '705071055', NULL, '2026-03-11 08:57:47'),
+(66, '.', 'Khadija Patisserie', '776653835', NULL, '2026-03-11 08:58:30'),
+(67, '.', 'Khadija Patisserie', '776653835', NULL, '2026-03-11 08:58:30'),
+(68, '.', 'Khalil N', '776318597', NULL, '2026-03-11 09:00:21'),
+(69, '.', 'Khalil N', '776318597', NULL, '2026-03-11 09:00:21'),
+(70, '.', 'Khamsa Wade N', '776155933', NULL, '2026-03-11 09:01:19'),
+(71, '.', 'Khamsa Wade N', '776155933', NULL, '2026-03-11 09:01:20'),
+(72, '.', 'Kia Traiteur', '783356070', NULL, '2026-03-11 09:01:56'),
+(73, '.', 'Kia Traiteur', '783356070', NULL, '2026-03-11 09:01:56'),
+(74, '.', 'Kiki Traiteur', '776749191', NULL, '2026-03-11 09:02:34'),
+(75, '.', 'Kiki Traiteur', '776749191', NULL, '2026-03-11 09:02:34'),
+(76, '.', 'Kiki’s', '776849157', NULL, '2026-03-11 09:03:11'),
+(77, '.', 'Kiki’s', '776849157', NULL, '2026-03-11 09:03:11'),
+(78, '.', 'Kiki’s', '776849157', NULL, '2026-03-11 09:03:47'),
+(79, '.', 'Kiki’s', '776849157', NULL, '2026-03-11 09:03:47'),
+(80, '.', 'King Aaron👑', '772622280', NULL, '2026-03-11 09:04:19'),
+(81, '.', 'King Aaron👑', '772622280', NULL, '2026-03-11 09:04:20'),
+(82, '.', 'K’Rose', '776588359', NULL, '2026-03-11 09:07:14'),
+(83, '.', 'K’Rose', '776588359', NULL, '2026-03-11 09:07:14'),
+(84, '.', 'Karina X Cake', '705071055', NULL, '2026-03-11 09:16:09'),
+(85, '.', 'Karina Xcake', '705071055', NULL, '2026-03-11 09:19:10'),
+(86, '.', 'La Dame De Fer💪🏾', '774058761', NULL, '2026-03-11 09:33:32'),
+(87, '.', 'La Dame De Fer💪🏾', '774058761', NULL, '2026-03-11 09:34:56'),
+(88, '.', 'La Dame De Fer💪🏾', '774058761', NULL, '2026-03-11 09:34:56'),
+(89, '.', 'La Spatule 👩‍🍳', '777485495', NULL, '2026-03-11 09:35:22'),
+(90, '.', 'La Spatule 👩‍🍳', '777485495', NULL, '2026-03-11 09:35:22'),
+(91, '.', 'L’amour Culinaire', '774543425', NULL, '2026-03-11 09:36:38'),
+(92, '.', 'Lamp Fall Traiteur', '783069333', NULL, '2026-03-11 09:38:41'),
+(93, '.', 'Les Delices De Fa', '778472602', NULL, '2026-03-11 09:40:44'),
+(94, '.', 'Lhb', '778471358', NULL, '2026-03-11 09:41:14'),
+(95, '.', 'Lhb', '778471358', NULL, '2026-03-11 09:41:14'),
+(96, '.', 'Liane', '773024443', NULL, '2026-03-11 09:41:46'),
+(97, '.', 'Liane', '773024443', NULL, '2026-03-11 09:41:46'),
+(98, '.', 'Madame Ba', '784104358', NULL, '2026-03-11 09:42:53'),
+(99, '.', 'Mara', '632330560', NULL, '2026-03-11 09:43:35'),
+(100, '.', 'Mara', '632330560', NULL, '2026-03-11 09:43:35'),
+(101, '.', 'Momo Chef Pâtissier Mim’s', '776190060', NULL, '2026-03-11 09:44:37'),
+(102, '.', 'Lino’s Cake', '783003202', NULL, '2026-03-11 09:49:34'),
+(103, '.', 'Lino’s Cake', '783003202', NULL, '2026-03-11 09:49:34'),
+(104, '.', 'Lino\'s Cake', '781195126', NULL, '2026-03-11 09:50:46'),
+(105, '.', 'Lino\'s Cake', '79698946', NULL, '2026-03-11 09:51:39'),
+(106, '.', 'Mme Ba X Cake', '773402282', NULL, '2026-03-11 09:53:35'),
+(107, 'N', 'Moussa', '775660295', NULL, '2026-03-11 09:58:57'),
+(108, '.', 'Maison Du Gateau', '775100673', NULL, '2026-03-11 10:02:38'),
+(109, '.', 'O Delices', '783045939', NULL, '2026-03-11 10:04:56'),
+(110, '.', 'O Delices', '783045939', NULL, '2026-03-11 10:04:56'),
+(111, '.', 'O Plaisir Gourmand', '778087333', NULL, '2026-03-11 10:05:20'),
+(112, '.', 'O Plaisir Gourmand', '778087333', NULL, '2026-03-11 10:05:21'),
+(113, '.', 'Paul Italie', '3200476275', NULL, '2026-03-11 10:06:16'),
+(114, '.', 'Paul Italie', '3200476275', NULL, '2026-03-11 10:06:17'),
+(115, 'saveurs de Yasmine', 'Les', '777352869', NULL, '2026-03-11 10:09:30'),
+(116, '.', 'Planet Gateau', '776626233', NULL, '2026-03-11 10:10:01'),
+(117, '.', 'Planet Gateau', '776626233', NULL, '2026-03-11 10:10:01'),
+(118, '.', 'Planet Gateau', '776626233', NULL, '2026-03-11 10:10:47'),
+(119, '.', 'Planet Gateau', '776626233', NULL, '2026-03-11 10:10:47'),
+(120, '.', 'Pollo', '706109344', NULL, '2026-03-11 10:17:28'),
+(121, '.', 'Pollo', '706109344', NULL, '2026-03-11 10:17:28'),
+(122, 'N', 'TP', '772155297', NULL, '2026-03-11 10:32:26'),
+(123, 'N', 'TP', '772155297', NULL, '2026-03-11 10:32:27'),
+(124, 'Fatou Barry', 'Leila', '784359965', NULL, '2026-03-12 08:30:43'),
+(125, 'Fourzoli', 'Madona', '775317944', NULL, '2026-03-12 08:53:14'),
+(126, 'de Corinne', 'Les Ateliers', '771943030', NULL, '2026-03-12 09:29:23'),
+(127, '.', 'soulemann Patissier Amsa', '789257159', NULL, '2026-03-12 10:18:28'),
+(128, '.', 'SOBO Pâtisserie', '774314132', NULL, '2026-03-12 11:22:39'),
+(129, '.', 'Sokhna Gâteau', '781648135', NULL, '2026-03-12 11:23:52'),
+(130, 'Sucrée De Dabakh', 'Delice', '782833628', NULL, '2026-03-12 11:25:39'),
+(131, '.', 'Sweet And Love. Cake', '775062564', NULL, '2026-03-12 11:26:18'),
+(132, '.', 'Thier Gâteau', '783375151', NULL, '2026-03-12 11:27:56'),
+(133, '7 Saveurs', 'Ô', '772305361', NULL, '2026-03-12 11:30:51'),
+(134, 'test', 'tes', '003392568475', NULL, '2026-03-12 12:32:05'),
+(135, '310', 'Moustapha', '774591050', NULL, '2026-03-13 06:50:35'),
+(136, 'sow', 'Khadija', '789680653', NULL, '2026-03-13 07:32:10'),
+(137, 'N', 'Adjovani', '773251781', NULL, '2026-03-13 08:07:32'),
+(138, 'sylvana', '', '774728286', NULL, '2026-03-13 08:28:29'),
+(139, 'Anthony', 'Olivia', '776935011', NULL, '2026-03-13 09:45:53'),
+(140, '.', 'Les plaisirs gourmands', '786056400', NULL, '2026-03-13 10:27:30'),
+(141, 'Douceur', 'ptite', '784668565', NULL, '2026-03-13 11:46:54'),
+(142, 'Cakes', 'Fame', '781069969', NULL, '2026-03-13 12:35:45'),
+(143, '.', 'clo', '774850236', NULL, '2026-03-13 12:51:33'),
+(144, 'delice de', 'Dior', '778874536', NULL, '2026-03-15 09:02:56'),
+(145, 'mouhamed', 'client', '761467008', NULL, '2026-03-15 09:09:10'),
+(146, 'coumba', 'cliente', '771137739', NULL, '2026-03-15 09:20:25'),
+(147, 'khady', 'n', '778310612', NULL, '2026-03-15 12:16:17'),
+(148, '.', 'A.G', '772640042', NULL, '2026-03-20 10:49:55'),
+(149, '.', 'Abd', '771296086', NULL, '2026-03-20 10:51:14'),
+(150, '.', 'Abda Sall😎', '786713484', NULL, '2026-03-20 10:51:32'),
+(151, '.', 'Abdou', '778677061', NULL, '2026-03-20 10:52:02'),
+(152, '.', 'Abdou Yasine Saphire', '3479620057', NULL, '2026-03-20 10:52:52'),
+(153, '.', 'Abdoul Seguriti', '9294342623', NULL, '2026-03-20 10:53:20'),
+(154, '.', 'Abdou Sene Mecanic', '774423045', NULL, '2026-03-20 10:53:55'),
+(155, '.', 'Adji', '9173868469', NULL, '2026-03-20 10:54:19'),
+(156, '.', 'Adama Mgome Bou Fatou Mbaye', '767327004', NULL, '2026-03-20 10:54:48'),
+(157, '.', 'Adja Marketing Digital', '784781085', NULL, '2026-03-20 10:56:25'),
+(158, '.', 'Angel Mendy Preira🥰', '782014857', NULL, '2026-03-20 10:57:10'),
+(159, '.', 'Aminata', '775881781', NULL, '2026-03-20 11:12:02'),
+(160, 'B', 'Bi Cheikh Traiteur', '775130746', NULL, '2026-03-20 11:13:21'),
+(161, '.', 'Ba Africa', '02032', NULL, '2026-03-24 12:42:55'),
+(162, 'Bâ', 'Hibrahima', '775461691', NULL, '2026-03-24 12:43:23'),
+(163, 'Ba Ndiaye', 'Ndeye', '778717819', NULL, '2026-03-24 12:44:00'),
+(164, 'Ba Ndiaye', 'Ndeye', '778717819', NULL, '2026-03-24 12:45:09'),
+(165, 'Ba', 'Petit', '767383464', NULL, '2026-03-24 12:46:20'),
+(166, '.', 'Baba', '709277909', NULL, '2026-03-24 12:46:46'),
+(167, '.', 'Baba Abassade', '6467045653', NULL, '2026-03-24 12:47:19'),
+(168, '.', 'Baba Dibi', '6463633111', NULL, '2026-03-24 12:47:44'),
+(169, '.', 'Bababacar Diop Laser Imprimat', '774356086', NULL, '2026-03-24 12:48:29'),
+(170, '.', 'Baked  By Seya', '764716180', NULL, '2026-03-24 12:50:02'),
+(171, '.', 'Bamby’s Cake', '766738383', NULL, '2026-03-24 12:55:16'),
+(172, '.', 'Betty House', '772264538', NULL, '2026-03-24 12:58:19'),
+(173, '.', 'Big Kheuch N', '772579094', NULL, '2026-03-24 13:11:20'),
+(174, '.', 'Bigue Anna N', '5149154154', NULL, '2026-03-24 13:12:13'),
+(175, '.', 'Bintou Gaye N', '781436044', NULL, '2026-03-24 13:15:41'),
+(176, 'M', 'Nadine', '776516405', NULL, '2026-03-25 09:10:06'),
+(177, 'Gastro numéro personnel', 'Badou', '765274025', NULL, '2026-03-26 11:06:07'),
+(178, 'Mamy', 'Mme Faye', '773927879', NULL, '2026-03-26 11:13:02'),
+(179, 'Sucre', 'Mira', '776099007', NULL, '2026-03-26 11:13:46'),
+(180, 'Mme Dieng', 'Lala', '789210237', NULL, '2026-03-26 11:14:37'),
+(181, 'Mme', 'Popoola', '761218183', NULL, '2026-03-26 11:33:00'),
+(182, 'N', 'Zeina', '775744624', NULL, '2026-03-26 11:34:10'),
+(183, 'Sarl', 'Aikena', '778089789', NULL, '2026-03-26 12:24:46'),
+(184, 'Ridial', 'Bou', '+221 77 418 24 19', NULL, '2026-03-27 09:18:00'),
+(185, 'Deme', 'Amadou', '+221 77 289 95 57', NULL, '2026-03-27 09:35:06'),
+(186, 'Jaber', 'Lyne', '+221 77 858 84 47', NULL, '2026-03-27 09:38:18'),
+(187, 'Ndiaye', 'Amsatou', '+221 77 573 66 97', NULL, '2026-03-27 11:35:25'),
+(188, 'Cake design', 'Leila', '+221 78 435 99 65', NULL, '2026-03-27 15:04:45'),
+(189, 'Kouyaté', 'Mme', '770913020', NULL, '2026-03-27 15:07:29'),
+(190, 'Traiteur', 'Lika', '+221777248478', NULL, '2026-03-27 15:14:37'),
+(191, '✌🏽', 'Coumba', '+221771137739', NULL, '2026-03-28 08:14:38'),
+(192, '❤️❤️', 'Lénitta', '+221778595049', NULL, '2026-03-28 08:16:58'),
+(193, '.', 'Louis', '+221778434481', NULL, '2026-03-28 08:24:40'),
+(194, 'Mbacké', 'Mme', '776404319', NULL, '2026-03-28 09:48:03'),
+(195, 'Café', 'Restaurant Grand', '787329286', NULL, '2026-03-28 09:52:18'),
+(196, 'Sweet', 'Bakery and', '778895178', NULL, '2026-03-28 09:58:05'),
+(197, '.', 'Seli', '773452922', NULL, '2026-03-28 11:28:43'),
+(198, 'Shop', 'Eva-', '+221771353312', NULL, '2026-03-31 08:22:55'),
+(199, 'Mboup', 'Binoush', '773430728', NULL, '2026-03-31 08:53:38'),
+(200, 'Gateau', 'Nex', '783252788', NULL, '2026-03-31 09:01:15'),
+(201, '.', 'Cake and co', '778703906', NULL, '2026-03-31 09:11:24'),
+(202, 'Mbaye', 'Mame Diarra Bousso', '776260380', NULL, '2026-03-31 09:48:53'),
+(203, '.', 'Petit Delice', '774100101', NULL, '2026-03-31 11:53:17'),
+(204, '.', '2SPH', '776468241', NULL, '2026-04-01 07:36:02'),
+(205, 'Malou', 'Juliette', '+221 78 207 49 96', NULL, '2026-04-01 08:18:17'),
+(206, 'Zarrah', 'Dr Marie', '777353113', NULL, '2026-05-06 08:01:29'),
+(207, 'Douceurs', 'Livianna', '+221 70 463 03 52', NULL, '2026-07-02 05:33:37'),
+(208, 'Kayser', 'Eric', '+221 77 447 11 77', NULL, '2026-07-02 05:38:43'),
+(209, 'Delices', 'Petits', '+221 77 410 01 01', NULL, '2026-07-02 06:09:23'),
+(210, 'Nd', 'Fatou', '+221 78 482 27 97', NULL, '2026-07-02 06:14:29'),
+(211, 'Mbour', 'Céline', '+221 77 574 71 22', NULL, '2026-07-02 07:26:23'),
+(212, 'Gaye', 'Aminata', '+221 77 860 20 22', NULL, '2026-07-02 11:17:27'),
+(213, 'Sarl', 'LAM BABA', '+221 77 144 47 56', NULL, '2026-07-02 12:05:26'),
+(214, 'Liane', 'Secret Gourmand', '+221 78 422 41 41', NULL, '2026-07-02 13:06:24'),
+(215, 'Laye Samb', 'Cogna Laye Samb', '+221 77 494 11 77', NULL, '2026-07-02 13:32:35'),
+(216, 'Sene', 'Chef Pape', '+221 77 555 67 81', NULL, '2026-07-02 15:37:49'),
+(217, '.', 'Kemet', '+221 76 390 47 46', NULL, '2026-07-03 07:02:06'),
+(218, '.', 'kabo', '774935181', NULL, '2026-07-03 07:07:31'),
+(219, 'Fm', 'Cakes', '781666480', NULL, '2026-07-03 08:55:10'),
+(220, 'Leye', 'Fatou', '775107418', NULL, '2026-07-03 09:15:08'),
+(221, 'l\'amour', 'culinaire', '778482567', NULL, '2026-07-03 10:28:59'),
+(222, 'Lo', 'Mouhamed', '787141111', NULL, '2026-07-03 10:40:28'),
+(223, 'c', 'new', '775343510', NULL, '2026-07-03 11:10:14'),
+(224, '.', 'Briice', '771465945', NULL, '2026-07-03 11:17:51'),
+(225, '.', 'Sonam', '+221 77 274 96 61', NULL, '2026-07-03 11:31:06'),
+(226, 'Fatou', 'Mame', '773459717', NULL, '2026-07-03 12:22:07'),
+(227, 'Ndoye', 'Madame', '77 763 01 14', NULL, '2026-07-03 14:40:42'),
+(228, '.', 'linda', '773413601', NULL, '2026-07-04 05:49:08'),
+(229, 'Traiteur', 'Noweli', '784653761', NULL, '2026-07-04 05:51:10'),
+(230, '.', 'Rosalie', '775345211', NULL, '2026-07-04 06:00:47'),
+(231, 'Food', 'ETK', '+221 77 627 72 97', NULL, '2026-07-04 07:07:03'),
+(232, '.', 'Segoleine', '+221 77 877 25 18', NULL, '2026-07-04 10:28:07'),
+(233, '.', 'Minata', '+221 77 148 08 15', NULL, '2026-07-04 11:04:51'),
+(234, 'Thiam', 'Mme', '+221 77 728 96 02', NULL, '2026-07-04 11:39:47'),
+(235, '.', 'Kama', '+221 77 666 06 61', NULL, '2026-07-04 12:06:35'),
+(236, 'Flavour', 'Tasty', '+221 77 120 32 36', NULL, '2026-07-04 15:39:17'),
+(237, 'PATISSERIE', 'KANEL', '773306464', 'kanelpatisserie@gmail.com', '2026-07-04 15:56:22'),
+(238, '.', 'Senfood', '+221 78 539 18 90', NULL, '2026-07-05 06:10:16'),
+(239, 'Sall', 'Aminata', '+221 77 591 08 31', NULL, '2026-07-05 07:13:46'),
+(240, 'Serigne Fallou', 'Maty mou', '+221 77 480 16 64', NULL, '2026-07-05 08:44:16'),
+(241, 'de Dior', 'Les Délices', '+221 77 887 45 36', NULL, '2026-07-05 08:59:06'),
+(242, 'Kelly', 'Goergette', '777438198', NULL, '2026-07-06 07:50:07'),
+(243, '.', 'binetabibadem', '+221 78 114 34 93', NULL, '2026-07-06 08:37:53'),
+(244, 'Cissé', 'Chef', '+221 77 993 07 18', NULL, '2026-07-06 09:25:19'),
+(245, 'Barro', 'Abdoulaye', '+221 78 363 63 59', NULL, '2026-07-06 11:09:40'),
+(246, 'Diaw', 'Mme', '+41 77 990 42 50', NULL, '2026-07-06 11:17:17'),
+(247, 'Yoff', 'Mara', '+221 77 300 99 46', NULL, '2026-07-06 11:57:40'),
+(248, 'Dot', 'The', '+221 78 482 94 60', NULL, '2026-07-07 07:15:08'),
+(249, 'Nasrine', 'Mme Attye', '+221 77 640 11 40', NULL, '2026-07-07 10:07:26'),
+(250, '.', 'Layan', '+221 77 794 40 40', NULL, '2026-07-07 11:49:01'),
+(251, 'Dieng', 'Aïssatou Cissé', '77 654 12 77', NULL, '2026-07-07 14:47:54'),
+(252, 'Dieng', 'Aïssatou Cissé', '+221 77 654 12 77', NULL, '2026-07-07 14:57:45'),
+(253, '.', 'Johana', '784463424', NULL, '2026-07-08 06:34:26'),
+(254, '.', 'Sofa', '+221 76 928 35 97', NULL, '2026-07-08 06:39:10'),
+(255, 'Mbaye', 'Mame', '+221 77 073 80 90', NULL, '2026-07-08 15:16:05'),
+(256, 'Traiteur', 'Mendy', '+221 77 157 81 24', NULL, '2026-07-09 06:53:53'),
+(257, 'MBOUMBA.', 'Jodricia', '+221 78 865 12 62', NULL, '2026-07-09 07:21:25'),
+(258, '.', 'Patiseyni', '+221 78 306 56 43', NULL, '2026-07-09 07:41:59'),
+(259, 'Rassoul', 'Mouhamed', '+221 78 385 89 44', NULL, '2026-07-09 07:46:43'),
+(260, '.', 'Helena', '+221 77 513 78 97', NULL, '2026-07-09 11:32:22'),
+(261, 'Niang', 'Khalifa', '+221 78 441 31 51', NULL, '2026-07-09 12:03:42'),
+(262, 'Kira', 'Les Merveilles de', '+221 77 279 29 88', NULL, '2026-07-09 13:20:47'),
+(263, 'Diallo', 'Alioune Badara', '+221 77 794 57 44', NULL, '2026-07-09 14:28:07'),
+(264, '.', 'Mathilde', '778256494', NULL, '2026-07-10 06:17:00'),
+(265, 'Le Ndiambour', 'Hôtel Résidence', '+221 777553773', NULL, '2026-07-10 06:23:28'),
+(266, '.', 'Mimi', '+221 77 690 26 63', NULL, '2026-07-10 07:08:39'),
+(267, 'Pâtisserie', 'Glorious', '773425054', NULL, '2026-07-10 08:19:47'),
+(268, 'Pâtisserie', 'Mims', '771575900', NULL, '2026-07-10 08:29:05'),
+(269, '.', 'Anta', '+221 775751112', NULL, '2026-07-10 12:15:04'),
+(270, '.', 'Arona', '773472668', NULL, '2026-07-10 15:56:50'),
+(271, 'Baker', 'Huchard', '77 216 18 35', NULL, '2026-07-11 14:01:15');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `devis`
+--
+
+CREATE TABLE `devis` (
+  `id` int(11) NOT NULL,
+  `numero_devis` varchar(50) NOT NULL,
+  `client_nom` varchar(100) NOT NULL,
+  `client_prenom` varchar(100) NOT NULL,
+  `client_telephone` varchar(50) NOT NULL,
+  `client_email` varchar(255) DEFAULT NULL,
+  `adresse_livraison` text NOT NULL,
+  `zone_livraison_id` int(11) DEFAULT NULL,
+  `frais_livraison` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `user_id` int(11) DEFAULT NULL,
+  `montant_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `notes` text DEFAULT NULL,
+  `statut` enum('brouillon','envoye','accepte','refuse') NOT NULL DEFAULT 'brouillon',
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `devis_produits`
+--
+
+CREATE TABLE `devis_produits` (
+  `id` int(11) NOT NULL,
+  `devis_id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `nom_produit` varchar(255) DEFAULT NULL,
+  `quantite` int(11) NOT NULL DEFAULT 1,
+  `prix_unitaire` decimal(10,2) NOT NULL,
+  `prix_total` decimal(10,2) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `factures`
+--
+
+CREATE TABLE `factures` (
+  `id` int(11) NOT NULL,
+  `commande_id` int(11) NOT NULL,
+  `numero_facture` varchar(50) NOT NULL,
+  `date_facture` date NOT NULL,
+  `montant_total` decimal(10,2) NOT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `token` varchar(64) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `factures`
+--
+
+INSERT INTO `factures` (`id`, `commande_id`, `numero_facture`, `date_facture`, `montant_total`, `date_creation`, `token`) VALUES
+(83, 104, 'INV00001', '2026-06-09', 9500.00, '2026-06-09 06:04:41', 'b67415aef055e32a426157d08e203ab08ffac6a69fc67b3e3bfe6fa0b6ef958d'),
+(84, 106, 'INV00084', '2026-07-02', 9500.00, '2026-07-02 05:33:43', '855d4e05ade60724baede74e08542d3d51c7bd6d1b0054426f9738dd3a707786'),
+(85, 107, 'INV00085', '2026-07-02', 51000.00, '2026-07-02 05:38:51', '6b2976e01991a19bb19bb5b6a008b7333014bb07ea5569fd5a9c899218dc88b4'),
+(86, 108, 'INV00086', '2026-07-02', 6500.00, '2026-07-02 06:09:29', '6451d42edafce7feff0bd5f9c3a2d4320f14d3b65b22965bca68f7dec2373147'),
+(87, 109, 'INV00087', '2026-07-02', 8500.00, '2026-07-02 06:14:37', '9cc4cfa9f58cac3ab8556a0c4c64c9ed8c3f4f0398f6b6a2a68cbe2925ce1d0c'),
+(88, 110, 'INV00088', '2026-07-02', 5500.00, '2026-07-02 06:34:34', 'd1215568e9b621292c4f494556694280f1fc4f9f785de4e8b25356111c5d0247'),
+(89, 111, 'INV00089', '2026-07-02', 8000.00, '2026-07-02 07:26:29', '14ac6e7047c189742da8cc65d73816dfec882a40199eaa35a08261bc4cfb58bc'),
+(90, 112, 'INV00090', '2026-07-02', 4800.00, '2026-07-02 08:27:09', '74ff45bd806c2c03298e00e7e8815d738911ebf3c1b65a88bb1b62a489ba7f19'),
+(91, 113, 'INV00091', '2026-07-02', 9000.00, '2026-07-02 09:42:59', '11431db00928ceb26eecf8d78826819da282ee04bf14acffdd636e29e335b388'),
+(92, 114, 'INV00092', '2026-07-02', 16000.00, '2026-07-02 10:28:24', '78e4ae87b29980b44a66e7647f334086b870f2f09d73ff69c412bba10519613b'),
+(93, 115, 'INV00093', '2026-07-02', 4800.00, '2026-07-02 11:17:32', '96b0dd690988c7be8bfcccf9b1a3a03192e4fa1dbd561806e4d95ffd9bcc1376'),
+(94, 116, 'INV00094', '2026-07-02', 17500.00, '2026-07-02 12:05:32', 'fce244159591b1239ae16bdd169be9ce5184f00c4c44879025a64df5fed50ca4'),
+(95, 117, 'INV00095', '2026-07-02', 10000.00, '2026-07-02 13:06:32', '9aef843218fc546bd3f82bbd473f9f9a43106900bebd5e3c2911663c8eea54d2'),
+(96, 118, 'INV00096', '2026-07-02', 5500.00, '2026-07-02 13:32:52', 'bb2e038a329df6f413f26f69e0e21547985ec04ac0d4e885133dcc5952e47516'),
+(97, 119, 'INV00097', '2026-07-02', 11000.00, '2026-07-02 14:48:56', 'b8e4e8c61f3360f313f5652d2d5a2d8a567694cf86a34fa2a75e51067b7eaf20'),
+(98, 120, 'INV00098', '2026-07-02', 3000.00, '2026-07-02 15:07:22', '6c89e69278318f53765decd06c3dfd30510044703980460d3f3e19910e2aa075'),
+(99, 121, 'INV00099', '2026-07-02', 10000.00, '2026-07-02 15:37:57', '9798ee607dd0870c3e078b853e0d7c0179964e24780a31a45425a62b5617122e'),
+(100, 122, 'INV00100', '2026-07-03', 3000.00, '2026-07-03 07:02:13', '9606d83bab61a2dc4b29cca57d624a5499a2a3dd525ea6261fb8f16c6f9a97ea'),
+(101, 123, 'INV00101', '2026-07-03', 18500.00, '2026-07-03 07:07:35', '3511122901ae5de58fd21104ac8f6820ceee903591522795c6fa7f3cbde33b0d'),
+(102, 125, 'INV00102', '2026-07-03', 13500.00, '2026-07-03 07:26:32', '20322ea2db277b0de63bf37e3cc2f73ab15e2213e19860269111dcedbaf7504e'),
+(103, 126, 'INV00103', '2026-07-03', 5500.00, '2026-07-03 08:55:23', '1cbb87e6eb1e131b1dd82ee5b6fbf85acb054fccfd8f37a4cb409c8c56b15b74'),
+(104, 127, 'INV00104', '2026-07-03', 18500.00, '2026-07-03 09:15:14', '214cacb9eb907841823d715e9e995a3edaaa9c8a1eb56d6a5c346112c815ac94'),
+(105, 128, 'INV00105', '2026-07-03', 25500.00, '2026-07-03 09:23:57', '64c83b9f0e9def6c8d3dcc333a583b681b2d1e39c17a241fe6ad441876dd5f8d'),
+(106, 129, 'INV00106', '2026-07-03', 21500.00, '2026-07-03 09:53:57', '5cb91a030500ffdbfbfc0fe9c2906d2c90fe5994b81609147add52075d31b661'),
+(107, 130, 'INV00107', '2026-07-03', 4000.00, '2026-07-03 09:56:25', 'e414890289370d493789df356ceb55c9f6166ce643cce3e84d99751c9bab8ed7'),
+(108, 131, 'INV00108', '2026-07-03', 6000.00, '2026-07-03 09:57:57', '8da408d1201bc40a77dee7c15ad2916e648d54cb476a52990a6d801722811d7c'),
+(109, 132, 'INV00109', '2026-07-03', 3000.00, '2026-07-03 10:29:07', 'ebecf26082422182347950e2755853058359efc034730a7781e45e91e9b6d76b'),
+(110, 133, 'INV00110', '2026-07-03', 20000.00, '2026-07-03 10:40:33', '5af08bc65c716ff53e5c42735c9e65addabb6eb1fdf8e06458e104adce910318'),
+(111, 134, 'INV00111', '2026-07-03', 12500.00, '2026-07-03 10:45:51', '4d6b8ca41e4c6970320eb4fb1148df18f99c81d26306d96d035fb18f2e6042ef'),
+(112, 135, 'INV00112', '2026-07-03', 6500.00, '2026-07-03 10:55:23', 'd82afdc5d5df5e28d31a9d623008f6b570564c401e7c2d8f6936bd4ad7698c6e'),
+(113, 136, 'INV00113', '2026-07-03', 5000.00, '2026-07-03 11:10:22', 'f6f5b973a71524370194cb3e3ac9751e68627dddea4133e7b32542103a44af64'),
+(114, 137, 'INV00114', '2026-07-03', 10500.00, '2026-07-03 11:17:56', '5c6697ee373b361b26987f7c630f46adf3e7433e9bd911a32f680b3873157381'),
+(115, 138, 'INV00115', '2026-07-03', 4000.00, '2026-07-03 11:31:11', '05b321fabfffd70842f429499fe11db6b1d38db53f80f3db7bd2a67dc36340c5'),
+(116, 139, 'INV00116', '2026-07-03', 4000.00, '2026-07-03 12:07:57', '2bb4c05af37f09ff84433ea8b632b45173401cab9e3349b43271c8bcb179605f'),
+(117, 140, 'INV00117', '2026-07-03', 9000.00, '2026-07-03 12:22:12', '64f52ed54f050cbee229d2ad51eb33c5bf1d549bc8a6aad6467ed78bd98cdcf0'),
+(118, 141, 'INV00118', '2026-07-03', 11000.00, '2026-07-03 12:46:30', 'cfe069e8b38d360a16cbb13c97353fdc0dd72b99657a90ce9c983a0633a4ba86'),
+(119, 142, 'INV00119', '2026-07-03', 24000.00, '2026-07-03 14:38:14', 'dc8f7107c5c87b4c085c0a86be089f800d9b36dfd55b31ca6aa275e47cc79378'),
+(120, 143, 'INV00120', '2026-07-03', 8000.00, '2026-07-03 14:40:52', 'd5e9cc38c54fc0e24fd55984c3051e49a8d3a41ca90be237ea2a1cccfbbd40d4'),
+(121, 144, 'INV00121', '2026-07-03', 4500.00, '2026-07-03 15:10:29', '53c34ab4e4790831738e7b9fbfe13642898d076b585135b5b3c4da24901ed135'),
+(122, 146, 'INV00122', '2026-07-04', 9000.00, '2026-07-04 05:51:15', 'e62555d897d95737742940d30566805864dcb9f5565d51d5bb85842a61ab6aea'),
+(123, 147, 'INV00123', '2026-07-04', 4000.00, '2026-07-04 06:00:53', 'c39faacde32ca3057dfe1351fb6df495f4c2583b6932fb5982b1e445bb8d8fd3'),
+(124, 148, 'INV00124', '2026-07-04', 5000.00, '2026-07-04 07:07:45', 'd53c9da6385a52999e4998775336090fd35e451efe76c58a687609faef13e1bc'),
+(125, 149, 'INV00125', '2026-07-04', 16000.00, '2026-07-04 08:59:51', '53f2e08c13203618f82f5516a61f22a12ae1110dce663a46a0ed6e137db7896c'),
+(126, 150, 'INV00126', '2026-07-04', 26000.00, '2026-07-04 10:09:08', '37a289aa159e5e0b42421947f1c8adfb2feb851220e9686d578b5c555ba4cbb5'),
+(127, 151, 'INV00127', '2026-07-04', 7000.00, '2026-07-04 10:28:22', '0f1e14b45e3701688afd3c7142c618b3e0ee707267f153cf0381f12c2bec21ce'),
+(128, 152, 'INV00128', '2026-07-04', 14000.00, '2026-07-04 11:04:58', '5305e0810ad7baf5e74bf95c302b5f0f1726cc4debf8abf2a6d4e3a976a4379d'),
+(129, 153, 'INV00129', '2026-07-04', 9500.00, '2026-07-04 11:39:53', '92040ea07dfb715b95f141f4f9e69c20d36decb2305babeacc2923d9c3839e7a'),
+(130, 154, 'INV00130', '2026-07-04', 8000.00, '2026-07-04 12:06:43', 'c235649f7e1ae5e09b3f38fd6efdd98aad115b7a3b0b2b4a0fad93eafd9d267e'),
+(131, 157, 'INV00131', '2026-07-04', 21000.00, '2026-07-04 15:42:51', 'f09dc0e458b8b9bf6ea63010d3ce92d5affedd4a0dd8841e172b9eb404d65937'),
+(132, 158, 'INV00132', '2026-07-04', 3500.00, '2026-07-04 15:44:31', '1b449a095362b32399a81910f0869acf7ba5f2962724c32582b01f6c5f880c2a'),
+(133, 160, 'INV00133', '2026-07-05', 4000.00, '2026-07-05 06:10:22', 'f26e0882e3aca272b8ec66e00afcf030f3ecbb75f4aaf2322dd577e436492bf0'),
+(134, 161, 'INV00134', '2026-07-05', 8000.00, '2026-07-05 07:13:53', 'b5c4642789475e6bae4a35f0589a945bf526eb3a5079ce82ef9f3e483b87b3d5'),
+(135, 162, 'INV00135', '2026-07-05', 3000.00, '2026-07-05 08:44:22', '6092e3287b5799883a9f8132b48665d94cbb9a3ed26393854d6acac927659af8'),
+(136, 163, 'INV00136', '2026-07-05', 26500.00, '2026-07-05 08:57:33', 'f60f045a5f6f506acc2ede6b82cf4dd5ccea598d15fd5fa5cd88f29cdf6215f8'),
+(137, 164, 'INV00137', '2026-07-05', 6500.00, '2026-07-05 08:59:14', '7ce3f8a76bd6f36a7eb99910be098c50b45cd1bc4e8df7a0fcb3fa94610fac51'),
+(138, 165, 'INV00138', '2026-07-05', 7000.00, '2026-07-05 09:53:52', '56143bb9c9fc1a56e6b22e61b4a316b07c096ed94f58c0f2b11522b5870a239a'),
+(139, 166, 'INV00139', '2026-07-05', 17000.00, '2026-07-05 09:56:27', 'e40586ecccb1d6483ad402857a2d5849e1ecd56dab98106e6f1fc5b3ead2d874'),
+(140, 167, 'INV00140', '2026-07-05', 4000.00, '2026-07-05 11:18:27', 'd5ffd11756d992360c92cf74e8217fcbccfe7435289ca25602b0c6c7f779bb3f'),
+(141, 168, 'INV00141', '2026-07-06', 12000.00, '2026-07-06 07:04:42', 'a6163f4e13187259c625557d4c85c0527b6b53d97db16265bc75824f8eacc9c2'),
+(142, 169, 'INV00142', '2026-07-06', 6000.00, '2026-07-06 07:50:18', 'fd03b441d20b3c4306fc9924384e58ea7fe7906dda87d53484cfcab265bce677'),
+(143, 170, 'INV00143', '2026-07-06', 54900.00, '2026-07-06 08:38:26', '22be535705ba585b51541f32057361ae0397b6179eb876c51b088e4303c81f43'),
+(144, 171, 'INV00144', '2026-07-06', 4000.00, '2026-07-06 09:25:54', 'e70f519672425d11ab99f3143884c31db233080b0e334cce149112182b73a4c9'),
+(145, 172, 'INV00145', '2026-07-06', 6000.00, '2026-07-06 09:35:28', '7a5e09fba33fb675f79dcef5a470d7591958029f62577bac9316a843060a5ef3'),
+(146, 173, 'INV00146', '2026-07-06', 5000.00, '2026-07-06 09:44:40', 'ed7dc760c78a1e7ecae3546ca5fc1105f9efd55b539c4bdcab8b67e568cd0b67'),
+(147, 174, 'INV00147', '2026-07-06', 6000.00, '2026-07-06 10:06:14', 'b0835970b868738147cc98a060c605cbaa0d008ec76f62d690e32bbc7d386753'),
+(148, 175, 'INV00148', '2026-07-06', 9000.00, '2026-07-06 11:09:52', '67acd8f7b1cf36cd832917c953866b51dedc75fa7ab437a66137f3bdd5711a56'),
+(149, 176, 'INV00149', '2026-07-06', 12000.00, '2026-07-06 11:17:23', 'c0f137f05474ad0207075723d6ece41689df5770b60875b72ae80e174862cb02'),
+(150, 177, 'INV00150', '2026-07-06', 4000.00, '2026-07-06 11:57:45', '0188fdb5afcd7a69f74959277fd4443c265e50ff0c84ef75ba3fe8f83d696da9'),
+(151, 178, 'INV00151', '2026-07-06', 3500.00, '2026-07-06 12:00:32', '0e77d738e269fe7fdec9f48c32be39fd593703933c03b780de32ada251242afe'),
+(152, 179, 'INV00152', '2026-07-06', 21900.00, '2026-07-06 13:20:06', '2825147b18d1fc91a8c1b5447c33b3cfaea99673a0722445ae110ba7aff871de'),
+(153, 180, 'INV00153', '2026-07-06', 5500.00, '2026-07-06 15:59:39', 'de080dd52972542befbabb6689e9ade1deacfefa39db4004e2c3d450195386d2'),
+(154, 181, 'INV00154', '2026-07-07', 10000.00, '2026-07-07 05:55:53', '6c7918dd9deab443dd615c358aebc2d46d61b75e2e94510d4f232ec8e70c57ee'),
+(155, 183, 'INV00155', '2026-07-07', 15200.00, '2026-07-07 07:15:15', '45a3cb556ced54716c864b1c04f3d40cd3a87d473ec9ca7ec9bb2bdabbc967e3'),
+(156, 184, 'INV00156', '2026-07-07', 16500.00, '2026-07-07 09:20:57', 'e32a89beadf70815bf7037e05fe06f31f22458442165883eee746f11243e86f0'),
+(157, 186, 'INV00157', '2026-07-07', 6500.00, '2026-07-07 10:07:44', '36dcafec6755d07f8d5cce1cc0d5998cefe7b93c743a140fbe2f7ae6ec3546f8'),
+(158, 187, 'INV00158', '2026-07-07', 5000.00, '2026-07-07 10:15:48', '05aba81342a8f63f36af25907ead066ae7a4ca3fe33043d1f30bbc8ebb90ceff'),
+(159, 188, 'INV00159', '2026-07-07', 32500.00, '2026-07-07 10:31:43', '6e715ef6b6b2d79509de13ff2b67e718d3c35779b6d75298673fae65272c0065'),
+(160, 189, 'INV00160', '2026-07-07', 7500.00, '2026-07-07 11:49:06', '6841f9d5d9d9a03f9f08d32b4931a6747947df35c5951dd23e798b42abc1f828'),
+(161, 190, 'INV00161', '2026-07-07', 11500.00, '2026-07-07 12:09:30', '3645f001d7d22b27da3835b931f17d98287c94d8b13a282852e19b8a8dcb908c'),
+(162, 191, 'INV00162', '2026-07-07', 12000.00, '2026-07-07 14:48:01', '422b9075b30c8f032fd867a1ac9ce5b96a1b13700bb4b3677787948686c9cf87'),
+(163, 192, 'INV00163', '2026-07-07', 15000.00, '2026-07-07 14:57:53', '3ac84657bcfee1c92bc75a53f22db03f0b84efd6bdd65ee3fc3cebd155928025'),
+(164, 194, 'INV00164', '2026-07-08', 5000.00, '2026-07-08 06:19:55', '11ece7ae002b3dd182bf5fcd9cad07f3cfe637139805a6d126a14f3380725f03'),
+(165, 195, 'INV00165', '2026-07-08', 12000.00, '2026-07-08 06:34:31', 'ab31dafc23fe7470a7ba82c5cc20b932d5c3a3c092907182865b756dc56be822'),
+(166, 197, 'INV00166', '2026-07-08', 6500.00, '2026-07-08 06:37:55', '8f1a40ea27a0eb0ba3da11c5d3d2222abbb5531a26e3792ff5d2eb0c5103af44'),
+(167, 198, 'INV00167', '2026-07-08', 14000.00, '2026-07-08 06:39:17', '583688a68912d2c7d832d8e914c2516ac8bb36618aea234f6fa844bbfc7169a2'),
+(168, 199, 'INV00168', '2026-07-08', 5000.00, '2026-07-08 06:40:55', '337416c23ca17449a75182fae8ff4359a43a0bd393d00b50422f1539eaaaa0d9'),
+(169, 193, 'INV00169', '2026-07-08', 20750.00, '2026-07-08 07:37:39', '047707594e2d60b58c1239e3d33e4b8fd1db2cd274c5e7edfce6d91b5c00ae73'),
+(170, 200, 'INV00170', '2026-07-08', 6000.00, '2026-07-08 09:22:46', 'd0a558e8bfcddee3ab7d35d3adb55da4bc0927bc6222ad3f923a6c36566dd498'),
+(171, 201, 'INV00171', '2026-07-08', 1500.00, '2026-07-08 10:23:05', '419b94b1848d9a3cdae18eb858086b8e449d9f0e206a3adbfd47af2e231fe365'),
+(172, 202, 'INV00172', '2026-07-08', 6000.00, '2026-07-08 11:22:42', '99ed323c87ab03cb94a7c96bd56b92b8e092ee6c5d1254879981776de421f1f5'),
+(173, 203, 'INV00173', '2026-07-08', 6000.00, '2026-07-08 11:42:14', '6c7b714b5da4a77f783d925f17f67f79e62746b1b8b20e14cfa6ab35a26f0c0f'),
+(174, 204, 'INV00174', '2026-07-08', 4000.00, '2026-07-08 11:43:43', 'e4968748d010f24152b9a85834224e95b7cea21e7bdd47aa2a56fbc1718c4563'),
+(175, 205, 'INV00175', '2026-07-08', 7000.00, '2026-07-08 12:30:58', 'f4ee31bf4a6ff462f99821775845bffbdf389d2a8457898b9f15b0cd173ab3e9'),
+(176, 206, 'INV00176', '2026-07-08', 17000.00, '2026-07-08 15:16:11', '1dd03eb4cc386405b02a23a2856d97a901ce376447bd9f4beb5c30aba38d30af'),
+(177, 207, 'INV00177', '2026-07-08', 18000.00, '2026-07-08 15:23:23', '3735ee8ac4447710a4b19684704892c3d328ef5649d1c1287ae7d6521512f16c'),
+(178, 208, 'INV00178', '2026-07-09', 3000.00, '2026-07-09 06:05:40', 'dc7123d7fd3beaea18ab73f105520288a2e9e6410467b454656fd2fc383ba47f'),
+(179, 209, 'INV00179', '2026-07-09', 14500.00, '2026-07-09 06:23:55', '037c879b5d83e21de88ccc89b95ddecb0ecaee7453a8eafeacd4a70185a7869e'),
+(180, 210, 'INV00180', '2026-07-09', 7500.00, '2026-07-09 06:54:01', 'fd9cf4db8bc2ccecd8fd27ef53183939e4cf1b47cd6f3fb44ef03c70bbdf1c0a'),
+(181, 211, 'INV00181', '2026-07-09', 8000.00, '2026-07-09 07:21:39', 'bc6046667d262ff1261519d50c7014ab6eb20c456f2a344e439944d313e554f2'),
+(182, 212, 'INV00182', '2026-07-09', 6000.00, '2026-07-09 07:42:06', '276e72777b44edd10efa51752ab67332262d06796abd81fa85542084b25666d4'),
+(183, 213, 'INV00183', '2026-07-09', 5000.00, '2026-07-09 07:46:49', 'b57c660cabd1b702f9d1870886985f849bea8d621207fda6f39d96e6a6de4751'),
+(184, 214, 'INV00184', '2026-07-09', 7500.00, '2026-07-09 11:32:28', '23205b976e3726749e467af2d247bb37f443cff2339295d88f8d7a98e9dea177'),
+(185, 215, 'INV00185', '2026-07-09', 4000.00, '2026-07-09 11:39:53', '430a438cb837a6d2c0c112f23a3b033fd125b23ddc4dbb55b2f0b144706218a3'),
+(186, 216, 'INV00186', '2026-07-09', 5750.00, '2026-07-09 12:03:48', 'ceeb944319b732aad3cd1393b314727e48f2c3658403064930e00d9823b4312d'),
+(187, 217, 'INV00187', '2026-07-09', 3500.00, '2026-07-09 12:48:32', '9d3a388f7c50b6112944bae9b5e17ca8122f3cfbe547cfb47a497328e88df7e3'),
+(188, 218, 'INV00188', '2026-07-09', 8000.00, '2026-07-09 13:20:54', '8592b795321d524af2c577e0875c082af0ed03611833f199beb3d69d00150b23'),
+(189, 219, 'INV00189', '2026-07-09', 43500.00, '2026-07-09 14:28:12', '980cef294afd9753b235e2c84837f103715efc79d709bb8a02df5a511db41a38'),
+(190, 220, 'INV00190', '2026-07-10', 17000.00, '2026-07-10 06:17:05', 'f29a9e06244534d432af8b30378e51b6b9726532e0503e449936c96c34b986fb'),
+(191, 221, 'INV00191', '2026-07-10', 8000.00, '2026-07-10 06:18:27', 'f4949fcad0c32e710da7342dc9dae951a1eba204423c62d1115de2727f345b4e'),
+(192, 222, 'INV00192', '2026-07-10', 12000.00, '2026-07-10 06:23:36', 'c585b38f028fe825c181d89bb07909b0c5d36873b5f0a85c7c0fc9d0cdd0ce9d'),
+(193, 223, 'INV00193', '2026-07-10', 9500.00, '2026-07-10 06:28:16', '67553c46068038cc43deda89766dea4dc3c6003d0a92f2907fbdcbd476ab9063'),
+(194, 224, 'INV00194', '2026-07-10', 4000.00, '2026-07-10 06:35:34', 'c24a0e6c312e0ea54ee8c65092dacef0bb3c193d31c9a3de267fde3023f76552'),
+(195, 225, 'INV00195', '2026-07-10', 32000.00, '2026-07-10 07:08:45', 'e8187f9d980897ab22b1758e6618a83d66f06b54163eb6b054a6f7a8013ddbc4'),
+(196, 226, 'INV00196', '2026-07-10', 6500.00, '2026-07-10 07:40:48', '6e96b070c408e40bead18eaae8d7d671275ded2b6714af47e909a60bcb8c5465'),
+(197, 227, 'INV00197', '2026-07-10', 8000.00, '2026-07-10 08:19:56', '72c1e7730248f788c6065c932b6f4c23e70d2657aac74531e059b909b8576a3a'),
+(198, 228, 'INV00198', '2026-07-10', 27000.00, '2026-07-10 08:29:12', '4ae9d50260e32b92cc75842ffc6cc81981b31c6cb224ab7a88b3ca593e661033'),
+(199, 229, 'INV00199', '2026-07-10', 14500.00, '2026-07-10 08:47:36', 'f4e66be2bc72bcc8594b57196a2187fb4efd5087e50d2cceb5b58c8b87fe65a2'),
+(200, 230, 'INV00200', '2026-07-10', 16000.00, '2026-07-10 09:15:37', '6cef4317db2cdf9a60f2b1b491137f8592bf890a05bd6bcc91757963677f8777'),
+(201, 231, 'INV00201', '2026-07-10', 6500.00, '2026-07-10 09:44:28', '8b2872b637856d9c9e5958291f5739eecd1e55cfb61ef40cad06e2978666d8e1'),
+(202, 232, 'INV00202', '2026-07-10', 14000.00, '2026-07-10 10:31:54', '848b6624e5c245ce1b88dee10148141bfc20da57a0e97c07ee864b2482f0c93f'),
+(203, 233, 'INV00203', '2026-07-10', 9500.00, '2026-07-10 10:32:59', '0f7a8e76a42d5e8e7bf9614e303b32f929003c4cfa7958707119a9230408b1ac'),
+(204, 234, 'INV00204', '2026-07-10', 18000.00, '2026-07-10 10:47:16', '7c46dae58c289b17ef6949a884b778046257a19c0e3fdcb1ab28ea903dc3250d'),
+(205, 235, 'INV00205', '2026-07-10', 4500.00, '2026-07-10 10:50:41', '213dc657eb3d2c62ea4f698aae2054889e6f269915d0e5b914fba54dcc896a5d'),
+(206, 236, 'INV00206', '2026-07-10', 7000.00, '2026-07-10 11:16:05', '1f6064a3dda182a1fac3d9f646464ddb2a308b74ab4a062e6ef05a450620f6bd'),
+(207, 237, 'INV00207', '2026-07-10', 4000.00, '2026-07-10 11:18:48', '4cb4e03fe4d3aaa4e35c537b5000a5f7d0003cf4dd95f4f0da1761734cf9773c'),
+(208, 238, 'INV00208', '2026-07-10', 8500.00, '2026-07-10 11:45:29', '1ec97748ab72de0b65677b12f33c0a3c6fb5d7ef91b9d510d89e3f115be94120'),
+(209, 239, 'INV00209', '2026-07-10', 19500.00, '2026-07-10 12:15:11', '3312febfb73584f615cd1c61c2dd31775a8b7d8e03c4349caa2a261f6a8cd155'),
+(210, 240, 'INV00210', '2026-07-10', 11000.00, '2026-07-10 12:46:49', 'ed6dc6c5827fbafb78103042ac0f7fd540c11488f30f486c3ee03a307557d0c2'),
+(211, 241, 'INV00211', '2026-07-10', 24000.00, '2026-07-10 12:48:51', '684986d9391a9a3b7db5eca7ed1d0ae1ea3cd610bf408f9c004659aa00149a81'),
+(212, 242, 'INV00212', '2026-07-10', 4500.00, '2026-07-10 15:53:42', '31811349c0248d4bc536c17810b02dc5a65c2dc9847416c0e3d6c7ae1a64008f'),
+(213, 243, 'INV00213', '2026-07-10', 650.00, '2026-07-10 15:56:58', '45be71248f27ddedefeffbf649552c56e860889765def47f47763336a58fcf9f'),
+(214, 244, 'INV00214', '2026-07-11', 9000.00, '2026-07-11 06:15:08', '65d168471721213990ac841a63aa1a250561d7c84fd4e5a3415a343b128e227a'),
+(215, 245, 'INV00215', '2026-07-11', 4000.00, '2026-07-11 06:27:45', 'acb4bb8c1e2f1b014763530349dd6fd37446b093f463aae3640def2e40fc65ff'),
+(216, 246, 'INV00216', '2026-07-11', 7000.00, '2026-07-11 07:18:44', '4e424b725784e28cc7f9befe2d68fbc253fa52ccb96495e8f500cbbdabcf88fa'),
+(217, 247, 'INV00217', '2026-07-11', 8000.00, '2026-07-11 07:25:47', '4414b56f05ad84e5526397c03f38dbfd8431e609cc3e5816370294c2b3ad21ac'),
+(218, 248, 'INV00218', '2026-07-11', 7000.00, '2026-07-11 07:37:23', '336e7f8a1539bb6c29afd7111774226a6da2f6cc196ce386523f7e588918cb96'),
+(219, 249, 'INV00219', '2026-07-11', 12500.00, '2026-07-11 07:45:33', 'b2f4c6daac192b3831827c05d410ac86ab2d1d714ddb96b794b3b60a51338fe5'),
+(220, 250, 'INV00220', '2026-07-11', 16500.00, '2026-07-11 08:45:58', '773a25f19f7857e78b11c3be4b2d4667c3a07aa6f74d3c13ee21c4b7a06e5869'),
+(221, 251, 'INV00221', '2026-07-11', 7500.00, '2026-07-11 08:53:07', 'c71f167cc6130c686df239d239872c1033dd4eddd230530e57ccda1982192300'),
+(222, 252, 'INV00222', '2026-07-11', 13000.00, '2026-07-11 08:57:07', '69e90368d2bf5a42d200fbe232cf88ee6e80d02bb7b7418fbfdfd5e42b942946'),
+(223, 253, 'INV00223', '2026-07-11', 7000.00, '2026-07-11 09:09:14', '0dc6746eb767b06ea683a0574c7f2a574667e9f19ae192981ee86e96fe40014a'),
+(224, 254, 'INV00224', '2026-07-11', 29500.00, '2026-07-11 09:40:18', 'd70ffc5053420be0239b5cb70e415e302ed2137daa6ade91f7cbe16a8c64bbdb'),
+(225, 255, 'INV00225', '2026-07-11', 6000.00, '2026-07-11 10:15:38', 'a633312cc58338d4d1a117235d78c7e65423bab14e79c8ca161d2e6bac0641fe'),
+(226, 256, 'INV00226', '2026-07-11', 3000.00, '2026-07-11 14:01:21', 'c4f39da6ea6d6efbbb3be84ca98cc1f64428da86c74e2594ccd02caaf556181a');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `factures_devis`
+--
+
+CREATE TABLE `factures_devis` (
+  `id` int(11) NOT NULL,
+  `devis_id` int(11) NOT NULL,
+  `numero_facture` varchar(50) NOT NULL,
+  `date_facture` date NOT NULL,
+  `montant_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `token` varchar(64) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `factures_personnalisees`
+--
+
+CREATE TABLE `factures_personnalisees` (
+  `id` int(11) NOT NULL,
+  `commande_personnalisee_id` int(11) NOT NULL,
+  `numero_facture` varchar(50) NOT NULL,
+  `date_facture` date NOT NULL,
+  `montant_total` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `token` varchar(64) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `factures_personnalisees`
+--
+
+INSERT INTO `factures_personnalisees` (`id`, `commande_personnalisee_id`, `numero_facture`, `date_facture`, `montant_total`, `token`, `date_creation`) VALUES
+(5, 6, 'INV-CP00001', '2026-06-21', 9000.00, '822a302cadbdd49af7ceb3a6ad132a196774e34bcf6fce598d475cb25d886538', '2026-06-21 11:11:09'),
+(6, 7, 'INV-CP00006', '2026-06-27', 2000.00, 'a2802472017e39528ab2fcfcf13a5b1d75e450e9b93b19878d8209299f5bffcd', '2026-06-27 05:51:31');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `favoris`
+--
+
+CREATE TABLE `favoris` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `date_ajout` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `fcm_tokens`
+--
+
+CREATE TABLE `fcm_tokens` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `admin_id` int(11) DEFAULT NULL,
+  `token` varchar(500) NOT NULL,
+  `type` enum('user','admin') NOT NULL DEFAULT 'user',
+  `user_agent` varchar(500) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `fcm_tokens`
+--
+
+INSERT INTO `fcm_tokens` (`id`, `user_id`, `admin_id`, `token`, `type`, `user_agent`, `date_creation`) VALUES
+(1, NULL, NULL, 'eZDJ3MPa5nqjJCUp2xl31z:APA91bHlyuk87Q7NetZ82vXTyWlYIRclndr26-3NYL8P8NgZFg8itZxI9KpnKf-WVxfJJA8MDjfjjws0cKSBiKxfzB6sJsGlgKDS9ycydwDJs9-G1KpH5GM', 'admin', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-26 17:50:37'),
+(2, NULL, NULL, 'dDZcxd_Nax3z831psKsHry:APA91bF_maKp1hHXwQCLlxNbjE3eftcv7g-MUXhz0fJ0e92zkaQX6XepA7mNeg3jMEM7hNIsjb9LA-ueUWo9lC5BXso-KOjnZn8qI8ZYeAW1M497VTHfJ8s', 'user', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 17:51:52'),
+(3, NULL, NULL, 'e9eHGs69VdJtteZ5hTf1St:APA91bG1yYYlNvcdjDyZvx18mKFNBwhLlBsx_Wdkq-SPfTzKY-AfOAeGfWRSu9a9XXEAL8vvJlzFDm4nzsadMVIm3s7bxMkz-bpSgwGMUHRJsbTIm4nLDGk', 'admin', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-27 02:57:55'),
+(4, NULL, NULL, 'dwQLHLljVTrINqUSZHVaB0:APA91bEPeuXmfvOhDN1Vf442eMZrU10G7LQYz9Xo6t61Tmk4WF2uZ3PXmtxNnKuqCZmwXar3YxizkWB-XjABrT0dsAIDckbZNcqJa5Iu9uEfNIcN8M2d6wc', 'admin', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-27 11:16:14'),
+(5, NULL, NULL, 'fDsXn2Or4Tj54YgSvDFLpl:APA91bFbXMEIk-GAXIZIEfDZYhA4HqVM_-amt2hf2cSEctJUg1kSuUBOmxi02MVffqpFFQvk3GdU29jOoRaHbIY-SDwQK-Y3an1gkRCN8wzRe8ZzZN4SirU', 'admin', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-27 11:26:07'),
+(6, NULL, NULL, 'doB-rg6xDcRjWI6xUM6KqY:APA91bESKvV1EGGA4KbwBneoAIlvIfAsZq4cUeXZLd2pJkJJZCZQTJSfmASZwUDVocKF5nofoEYX7qjNSC-ki5LMC1NqMcJFpbZEj_Cl95ZAXWX2qQZgrxw', 'user', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-03-05 04:45:29'),
+(7, NULL, NULL, 'dRjGusEK_eZXpzb9PSVWnm:APA91bEZeaS4DrT_YK05mznw9CgB2L_JhYe-Qv5_sDSAXSxjPcBnerXscBEUsSEu0FnkcgTL18W4KQfndPR5mYfBLLy9KHUXJ05hHntBszWc9gpoK7QW4ds', 'admin', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1', '2026-05-07 05:21:09');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `panier`
+--
+
+CREATE TABLE `panier` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `quantite` int(11) NOT NULL DEFAULT 1,
+  `couleur` varchar(255) DEFAULT NULL,
+  `poids` varchar(100) DEFAULT NULL,
+  `taille` varchar(100) DEFAULT NULL,
+  `date_ajout` datetime NOT NULL DEFAULT current_timestamp(),
+  `variante_id` int(11) DEFAULT NULL,
+  `variante_nom` varchar(255) DEFAULT NULL,
+  `variante_image` varchar(255) DEFAULT NULL,
+  `surcout_poids` decimal(10,2) DEFAULT 0.00,
+  `surcout_taille` decimal(10,2) DEFAULT 0.00,
+  `prix_unitaire` decimal(10,2) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `panier`
+--
+
+INSERT INTO `panier` (`id`, `user_id`, `produit_id`, `quantite`, `couleur`, `poids`, `taille`, `date_ajout`, `variante_id`, `variante_nom`, `variante_image`, `surcout_poids`, `surcout_taille`, `prix_unitaire`) VALUES
+(113, 28, 145, 1, NULL, NULL, NULL, '2026-06-15 13:50:32', NULL, NULL, NULL, 0.00, 0.00, 2500.00),
+(114, 28, 32, 1, NULL, NULL, NULL, '2026-06-15 13:50:49', NULL, NULL, NULL, 0.00, 0.00, 3000.00),
+(115, 28, 11, 1, NULL, NULL, NULL, '2026-06-15 13:50:55', NULL, NULL, NULL, 0.00, 0.00, 3000.00),
+(116, 28, 111, 1, NULL, NULL, NULL, '2026-06-15 14:04:55', NULL, NULL, NULL, 0.00, 0.00, 2500.00),
+(117, 29, 26, 1, NULL, NULL, NULL, '2026-06-20 04:39:03', NULL, NULL, NULL, 0.00, 0.00, 1500.00),
+(119, 29, 70, 1, '#f797bf', NULL, NULL, '2026-06-20 04:41:43', NULL, NULL, NULL, 0.00, 0.00, 3000.00),
+(122, 29, 100, 1, NULL, NULL, NULL, '2026-06-20 04:49:08', 52, 'Rouleau 18cm', 'produits/produit_69b150e74f8ce5.13879607.jpeg', 0.00, 0.00, 4000.00),
+(123, 29, 69, 2, '#e59c48', NULL, NULL, '2026-06-20 04:49:54', NULL, NULL, NULL, 0.00, 0.00, 3500.00),
+(136, 30, 69, 1, '#f6f3ef', NULL, NULL, '2026-06-22 17:30:40', NULL, NULL, NULL, 0.00, 0.00, 3500.00),
+(137, 31, 135, 1, NULL, NULL, NULL, '2026-06-30 16:15:13', NULL, NULL, NULL, 0.00, 0.00, 1500.00),
+(138, 32, 152, 1, NULL, NULL, NULL, '2026-07-02 07:04:04', NULL, 'Moule Layer Cake à fond amovible', 'produits/produit_6a2fe04aea1504.80631556.jpeg', 0.00, 0.00, 3000.00),
+(139, 32, 137, 1, NULL, NULL, NULL, '2026-07-02 07:08:04', NULL, NULL, NULL, 0.00, 0.00, 3500.00),
+(140, 32, 143, 1, NULL, NULL, NULL, '2026-07-02 07:16:19', NULL, NULL, NULL, 0.00, 0.00, 2000.00),
+(141, 32, 69, 1, '#d4cfc9', NULL, NULL, '2026-07-02 07:24:11', NULL, NULL, NULL, 0.00, 0.00, 3500.00),
+(145, 34, 94, 1, NULL, NULL, NULL, '2026-07-03 10:59:12', NULL, NULL, NULL, 0.00, 0.00, 3350.00),
+(146, 34, 154, 1, NULL, NULL, NULL, '2026-07-03 11:00:07', NULL, NULL, NULL, 0.00, 0.00, 3500.00),
+(147, 35, 89, 2, NULL, NULL, NULL, '2026-07-06 12:57:24', NULL, NULL, NULL, 0.00, 0.00, 5000.00),
+(148, 35, 37, 1, NULL, NULL, NULL, '2026-07-06 12:58:08', NULL, NULL, NULL, 0.00, 0.00, 5000.00),
+(149, 35, 88, 2, NULL, NULL, NULL, '2026-07-06 12:58:35', NULL, NULL, NULL, 0.00, 0.00, 5000.00),
+(150, 35, 114, 1, NULL, NULL, NULL, '2026-07-06 12:59:24', NULL, NULL, NULL, 0.00, 0.00, 2000.00),
+(151, 35, 40, 1, NULL, NULL, NULL, '2026-07-06 13:00:46', NULL, NULL, NULL, 0.00, 0.00, 4000.00),
+(152, 35, 85, 1, NULL, NULL, NULL, '2026-07-06 13:01:24', NULL, NULL, NULL, 0.00, 0.00, 3000.00),
+(153, 36, 138, 1, NULL, NULL, NULL, '2026-07-06 21:04:09', NULL, NULL, NULL, 0.00, 0.00, 700.00),
+(155, 36, 66, 1, NULL, NULL, NULL, '2026-07-06 21:05:29', NULL, NULL, NULL, 0.00, 0.00, 600.00),
+(163, 36, 43, 1, '#f7f7f7', NULL, NULL, '2026-07-10 08:55:08', NULL, NULL, NULL, 0.00, 0.00, 5000.00);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `produits`
+--
+
+CREATE TABLE `produits` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `prix` decimal(10,2) NOT NULL,
+  `prix_promotion` decimal(10,2) DEFAULT NULL,
+  `stock` int(11) NOT NULL DEFAULT 0,
+  `categorie_id` int(11) NOT NULL,
+  `stock_article_id` int(11) DEFAULT NULL,
+  `image_principale` varchar(255) DEFAULT NULL,
+  `images` text DEFAULT NULL,
+  `poids` varchar(50) DEFAULT NULL,
+  `unite` varchar(20) NOT NULL DEFAULT 'unité',
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `statut` enum('actif','inactif','rupture_stock') NOT NULL DEFAULT 'actif',
+  `couleurs` varchar(255) DEFAULT NULL COMMENT 'Couleurs disponibles (ex: Rouge, Bleu, Vert)',
+  `taille` varchar(255) DEFAULT NULL COMMENT 'Tailles disponibles (ex: S, M, L ou 21cm, 14.8cm)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `produits`
+--
+
+INSERT INTO `produits` (`id`, `nom`, `description`, `prix`, `prix_promotion`, `stock`, `categorie_id`, `stock_article_id`, `image_principale`, `images`, `poids`, `unite`, `date_creation`, `date_modification`, `statut`, `couleurs`, `taille`) VALUES
+(5, 'cake topper Moana', 'Magnifique', 8000.00, 7000.00, 2147483647, 9, NULL, 'produits/produit_69a2cc30352896.02414373.jpeg', NULL, '', 'unité', '2026-02-26 17:28:59', '2026-02-28 06:08:37', 'actif', NULL, NULL),
+(6, 'Impression sur papier Sucre', 'Feuille de sucre à base de sucre glace et de vanille. L\'impression sur feuille de sucre est une technique de pâtisserie permettant de reproduire des photos, logos ou motifs personnalisés avec des encres comestibles pour décorer des gâteaux.', 4000.00, NULL, 2306, 10, NULL, 'produits/produit_69a19830a41150.98475795.png', '[\"produits\\/produit_69a19830a41150.98475795.png\",\"produits\\/produit_69aea8a5b4a9e2.74727913.jpeg\",\"produits\\/produit_69aea8a5b51d13.48809569.jpeg\"]', NULL, 'unité', '2026-02-27 08:12:16', '2026-07-11 10:57:32', 'actif', '[]', NULL),
+(7, 'Emporte Piece', 'elle dispose de 11 pièces. Faites de jolie découpe avec nos emportes pièces pour vos biscuits et Gâteaux.', 6000.00, NULL, 0, 14, NULL, 'produits/produit_69aeb0e8c1ec30.70278007.jpeg', '[\"produits\\/produit_69aeb0e8c1ec30.70278007.jpeg\"]', NULL, 'unité', '2026-02-27 08:39:43', '2026-07-09 08:11:05', 'actif', '[]', NULL),
+(9, 'moule 3 piéces', 'Moules Charnières 3 pièces', 12200.00, NULL, 2, 12, NULL, 'produits/produit_69a2b6d78c4f83.69263640.png', '[\"produits\\/produit_69a2b6d78c4f83.69263640.png\"]', NULL, 'unité', '2026-02-28 04:35:19', '2026-03-12 09:43:12', 'actif', '[]', NULL),
+(10, 'Poche à douille', 'lot de 20 pièces', 2000.00, NULL, 3, 14, NULL, 'produits/produit_69a2b9b180ab80.63940566.jpg', NULL, NULL, 'unité', '2026-02-28 04:47:29', '2026-07-03 11:54:46', 'actif', NULL, NULL),
+(11, 'moules silicones choco Transfert', 'faite de jolie désert avec nos moules', 3000.00, NULL, 5, 20, NULL, 'produits/produit_69a2ca82c52c20.61844397.jpeg', '[\"produits\\/produit_69a2ca82c52c20.61844397.jpeg\"]', NULL, 'unité', '2026-02-28 04:59:20', '2026-03-04 11:07:19', 'actif', '[\"#c25fdd\",\"#00b336\",\"#41b9e1\",\"#f36d9c\"]', NULL),
+(12, 'moules Layer Cake', 'Ensemble de moules à gâteaux : Vous recevrez 4 moules à gâteaux ronds.\r\n\r\nFond amovible et fermeture à ressort : Le système de fermeture à ressort et le fond amovible facilitent et accélèrent le démoulage, préservant ainsi la forme de vos gâteaux.\r\n\r\nNombreuses utilisations : Chaque moule convient pour réaliser cheesecake, mousse, chiffon cake, quiche, gâteau au café et autres recettes similaires. Vous pouvez également les utiliser ensemble pour créer de magnifiques gâteaux à deux, trois ou quatre étages.\r\n\r\nEntretien : Le revêtement antiadhésif des moules facilite le démoulage et le nettoyage. Évitez d\'utiliser des produits abrasifs comme la laine d\'acier. Nettoyez-les avec une éponge et séchez-les immédiatement après le lavage pour éviter la rouille.', 13500.00, NULL, 5, 12, NULL, 'produits/produit_69aeb374147ab1.38506165.jpeg', '[\"produits\\/produit_69aeb374147ab1.38506165.jpeg\",\"produits\\/produit_69aeb37414a068.29229838.jpeg\"]', NULL, 'unité', '2026-02-28 06:15:45', '2026-04-13 11:38:48', 'actif', '[]', NULL),
+(13, 'Colorant Gel', 'Boite de 12 colorants avec des couleurs magic', 11000.00, NULL, 1, 13, NULL, 'produits/produit_69a2d11aa977e3.49651070.jpeg', NULL, NULL, 'unité', '2026-02-28 06:27:22', '2026-07-03 11:55:02', 'actif', NULL, NULL),
+(14, 'Paquet colorants Gel en tube de 6 couleurs', 'Colorant en gel', 10000.00, NULL, 100, 13, NULL, 'produits/produit_69a2de36d41723.22175338.jpeg', '[\"produits\\/produit_69a2de36d41723.22175338.jpeg\"]', NULL, 'unité', '2026-02-28 07:23:18', '2026-03-02 09:31:13', 'actif', '[\"#e5488a\",\"#ff0000\",\"#03ad00\",\"#000000\",\"#0074cc\",\"#eeff00\"]', NULL),
+(15, 'Colorant gel Wilton', 'Parfait pour les débutants comme pour les professionnels : Comparé aux colorants liquides bas de gamme, ce colorant alimentaire en gel de qualité supérieure est plus facile à doser et permet une coloration goutte à goutte.', 6000.00, NULL, 22, 13, NULL, 'produits/produit_69a2e55b215ff9.60962561.jpeg', NULL, NULL, 'unité', '2026-02-28 07:53:47', '2026-07-10 11:24:13', 'actif', NULL, NULL),
+(16, 'Paquet colorants Gel 16 couleurs', 'Notre kit de colorants alimentaires en gel est composé d\'ingrédients sûrs (sans arachides, sans produits laitiers, sans sucre, sans fruits à coque, sans soja et sans œufs), garantissant des couleurs éclatantes sans altérer le goût ni la texture de vos aliments. La marque\r\nTreedoa s\'engage à fournir des produits sûrs et de haute qualité et à explorer, créer, améliorer et renouveler constamment ses gammes pour répondre au mieux aux besoins de ses clients.', 14000.00, NULL, 50, 13, NULL, 'produits/produit_69a2e68c6a2474.83249695.jpeg', '[\"produits\\/produit_69a2e68c6a2474.83249695.jpeg\"]', NULL, 'unité', '2026-02-28 07:58:52', '2026-03-09 06:36:24', 'actif', '[]', NULL),
+(17, 'Support Poche à douilles', '[Matériau durable] Le support à poche à douille est fabriqué en plastique résistant, garantissant une utilisation prolongée.\r\n\r\n[Caractéristiques du produit] La base du support assure une stabilité optimale, empêchant la poche à douille de vaciller ou de tomber pendant son utilisation. Vous obtiendrez ainsi des décorations plus précises et stables.\r\n\r\n[Nettoyage facile] Grâce à sa base amovible, le support à poche à douille est lavable à la main ou au lave-vaisselle. Sa surface lisse, tant à l\'intérieur qu\'à l\'extérieur, se nettoie facilement à l\'eau.\r\n\r\n[Utilisation facile] Pour décorer vos gâteaux, utilisez ce support à poche à douille pour…', 3500.00, NULL, 49, 19, NULL, 'produits/produit_69a2f67d4abae2.07871075.jpeg', NULL, NULL, 'unité', '2026-02-28 09:06:53', '2026-07-07 05:22:37', 'actif', NULL, NULL),
+(18, 'Poche à douille (grand format)', 'Ce paquet contient : 1 rouleau de 25 poches à douille extra-larges (52 x 25 cm / 52 x 25 cm), compatibles avec toutes les douilles ; il suffit de les couper à la taille souhaitée.\r\n\r\nMatériau : Fabriquées en plastique alimentaire épais et résistant, ces poches sont solides, texturées et de grande capacité.\r\n\r\nFaciles à utiliser : Les bords prédécoupés facilitent l’utilisation et elles sont compatibles avec tous les types de douilles.\r\n\r\nGain de temps : Ces poches à douille jetables vous évitent la corvée du nettoyage.\r\n\r\nUtilisations multiples : Idéales pour réaliser des garnitures, des vermicelles, de la crème pâtissière, du chocolat, de la purée, des biscuits et autres préparations molles, ou pour décorer des gâteaux.', 2500.00, NULL, 100, 14, NULL, 'produits/produit_6a294011336ab7.05999674.jpeg', '[\"produits\\/produit_6a294011336ab7.05999674.jpeg\",\"produits\\/produit_6a294011337eb3.63303735.jpeg\"]', NULL, 'unité', '2026-02-28 09:08:44', '2026-06-10 06:44:33', 'actif', '[]', NULL),
+(19, 'Ensemble Cake Topper Spiderman', 'Cake Topper disponible que sur commande', 8000.00, NULL, 93, 9, NULL, 'produits/produit_69a2fec22d2ff3.65370657.jpeg', NULL, '', 'unité', '2026-02-28 09:42:10', '2026-07-11 09:59:51', 'actif', NULL, NULL),
+(20, 'Ensemble Cake Topper Minnie Mouse', 'Disponible que sur commande', 7000.00, NULL, 996, 9, NULL, 'produits/produit_69a30051b79274.79431229.jpeg', NULL, NULL, 'unité', '2026-02-28 09:48:49', '2026-03-28 08:27:47', 'actif', NULL, NULL),
+(21, 'Ensemble cake Topper Barbie', 'Disponible que sur commande', 7000.00, NULL, 994, 9, NULL, 'produits/produit_69a301a0367e02.64669254.jpeg', NULL, '', 'unité', '2026-02-28 09:54:24', '2026-07-10 11:25:46', 'actif', NULL, NULL),
+(22, 'Emporte Pièce ronde', '12 pièces', 8300.00, NULL, 5, 14, NULL, 'produits/produit_69a304248b2574.18034998.jpeg', '[\"produits\\/produit_69a304248b2574.18034998.jpeg\"]', NULL, 'unité', '2026-02-28 10:05:08', '2026-03-12 09:42:33', 'actif', '[]', NULL),
+(23, 'Lisseurs', 'Lot de 4 pièces', 5000.00, NULL, 45, 19, NULL, 'produits/produit_69a95e2628a916.90247991.jpg', '[\"produits\\/produit_69a95e2628a916.90247991.jpg\",\"produits\\/produit_69a95e50a52a31.91894734.jpg\",\"produits\\/produit_69a95e71a1ceb0.27038988.jpg\",\"produits\\/produit_69a9600febe469.62896988.jpg\",\"produits\\/produit_69a96034aff418.60283925.jpg\"]', '[{\"v\":\"[]\",\"s\":0}]', 'unité', '2026-02-28 10:08:32', '2026-07-11 09:58:42', 'actif', '[\"#f4b8d5\",\"#97ddd5\",\"#e8be26\",\"#f0f0f0\"]', '[{\"v\":\"[]\",\"s\":0}]'),
+(24, 'Kit Imprimante Comestible', 'Idéale pour vous faciliter vos impressions comestibles', 285000.00, NULL, 1, 11, NULL, 'produits/produit_6a0b03b46f8fe6.56881857.jpeg', '[\"produits\\/produit_6a0b03b46f8fe6.56881857.jpeg\"]', NULL, 'unité', '2026-02-28 10:19:47', '2026-05-18 08:19:00', 'actif', '[]', NULL),
+(25, 'Feutre Comestibles', 'Les feutres alimentaires sont des outils de décoration comestibles, parfaits pour dessiner, écrire ou colorier sur des surfaces sèches. \r\nIdéals pour le cake design, les détails sur personnages en pâte à sucre, le coloriage sur biscuits, et les messages personnalisés. Comme la pâte à sucre, la pâte d\'amande, le glaçage royal ou l\'azyme.', 10000.00, NULL, 5, 17, NULL, 'produits/produit_69a30e2bbb33b4.72523008.jpeg', '[\"produits\\/produit_69a30e2bbb33b4.72523008.jpeg\"]', NULL, 'unité', '2026-02-28 10:47:55', '2026-03-03 11:14:20', 'actif', '[\"#e5488a\",\"#049a0e\",\"#0076f5\",\"#000000\",\"#fedc01\"]', NULL),
+(26, 'Feuille Or comestible', 'Magnifique pour vos décorations\r\nElle est utilisée pour apporter une touche de luxe et de brillance à divers plats :\r\nPâtisserie : Décoration de chocolats, macarons, entremets (comme l\'Opéra), gâteaux de mariage ou de fête.\r\nCuisine salée : Ornement de sushis, risottos, viandes d\'exception ou plateaux de fromages.\r\nBoissons : Ajout de paillettes ou de feuilles dans le champagne,et les cocktails', 1500.00, NULL, 91, 17, NULL, 'produits/produit_69a6aeb3e4f0e8.40461321.jpeg', '[\"produits\\/produit_69a6aeb3e4f0e8.40461321.jpeg\",\"produits\\/produit_69a6aeb3e51125.63146797.jpeg\",\"produits\\/produit_69a6aeb3e52390.78771360.jpeg\"]', NULL, 'unité', '2026-02-28 10:50:32', '2026-07-10 11:22:39', 'actif', '[]', NULL),
+(27, 'Moule Cupcakes inoxydable', 'Moule à cupcake en acier inoxydable privilégiés pour leur durabilité exceptionnelle, leur caractère non toxique et leur capacité à supporter de très hautes températures sans se déformer. Contrairement aux moules avec revêtement, ils sont résistants aux rayures et passent généralement au lave-vaisselle.', 2500.00, NULL, 3, 12, NULL, 'produits/produit_69a59060738745.16494293.jpeg', '[\"produits\\/produit_69a59060738745.16494293.jpeg\"]', NULL, 'unité', '2026-02-28 10:55:32', '2026-03-12 10:03:44', 'actif', '[]', NULL),
+(28, 'Cake Topper Communion', '🙏🏾🙏🏾', 6000.00, NULL, 5, 9, NULL, 'produits/produit_69b168c6af50a3.38069657.jpeg', '[\"produits\\/produit_69b168c6af50a3.38069657.jpeg\"]', NULL, 'unité', '2026-02-28 10:57:27', '2026-03-11 09:06:14', 'actif', '[]', NULL),
+(29, 'Cake Topper Initial', 'Disponible que Sur commande', 3000.00, NULL, 46, 9, NULL, 'produits/produit_69b16810f2b378.62429681.jpeg', '[\"produits\\/produit_69b16810f2b378.62429681.jpeg\"]', NULL, 'unité', '2026-02-28 11:00:07', '2026-07-08 11:40:34', 'actif', '[]', NULL),
+(30, 'Cake Topper Sirène', 'Disponible que sur commande', 8000.00, NULL, 8, 9, NULL, 'produits/produit_69a314b9b4cb44.58592652.jpeg', NULL, NULL, 'unité', '2026-02-28 11:15:53', '2026-07-02 08:48:48', 'actif', NULL, NULL),
+(31, 'Lisseur à Gâteau pour angles droits', 'Ce lisseur est top pour une réalisation sans failles!', 2000.00, NULL, 100, 14, NULL, 'produits/produit_69a40fe1e85ff5.59579974.jpeg', '[\"produits\\/produit_69a40fe1e85ff5.59579974.jpeg\"]', NULL, 'unité', '2026-03-01 05:07:29', '2026-03-02 09:28:46', 'actif', '[\"#e5488a\",\"#00ace6\",\"#30b300\"]', NULL),
+(32, 'Moule choco transfert', 'Ce moule sur mesure est parfait pour le choco transfert', 3000.00, NULL, 47, 20, NULL, 'produits/produit_69a4113aada395.69417080.jpeg', '[\"produits\\/produit_69a4113aada395.69417080.jpeg\"]', NULL, 'unité', '2026-03-01 05:13:14', '2026-07-07 05:21:51', 'actif', '[]', NULL),
+(33, 'Moule silicone', 'Ce moule vous sera d’une très grande utilité pour vos créations de décorations comestibles pour vos gateaux ou sucreries !', 2500.00, NULL, 17, 20, NULL, 'produits/produit_69a411e5dcc3c5.51537729.jpeg', NULL, NULL, 'unité', '2026-03-01 05:16:05', '2026-07-09 08:11:05', 'actif', NULL, NULL),
+(34, 'Emportes pièce lettre', 'Les emportes pièces lettre sont conçus pour personnaliser vos créations culinaire.', 7000.00, NULL, 99, 14, NULL, 'produits/produit_69a412e97487e4.55264496.jpeg', NULL, NULL, 'unité', '2026-03-01 05:20:25', '2026-06-09 10:04:22', 'actif', NULL, NULL),
+(35, 'Moule à Sucette', 'Moule silicone permettant de fabriquer jusqu\'à 12 jolies sucettes en isomalt, sucre cuit, chocolat, candy melt..etc', 7000.00, NULL, 11, 20, NULL, 'produits/produit_69a413989b4286.43223653.jpeg', '[\"produits\\/produit_69a413989b4286.43223653.jpeg\"]', NULL, 'unité', '2026-03-01 05:23:20', '2026-03-12 11:47:49', 'actif', '[]', NULL),
+(36, 'Tapis à Patisserie en Silicone Noir', 'Tapis à pâtisserie en silicone noir de qualité supérieure : fabriqué à 100 % en silicone de qualité alimentaire. Elle est plus sûre et plus lisse que n’importe quelle autre feuille de pâtisserie. Le tapis de cuisson 100 % sûr est un excellent choix pour la cuisine domestique. Résistant aux hautes températures et sûr pour une utilisation au four, au micro-ondes et au congélateur (-45°F à 450°F). Outils de cuisson indispensables pour tout boulanger amateur ou chef professionnel\r\nExtra épais et plus grand : feuille de pâtisserie en silicone : 40,6 cm de large x 50,8 cm de long, épaisseur : 0,4 mm. Ce tapis de pâte reste fermement en place et ne se froisse pas et ne glisse pas lors de l\'étalement de la pâte, ce qui vous permet d\'économiser du temps et des efforts. Le tapis de cuisson 100 % sûr est durable, infroissable, ne se décolore pas et réutilisable.', 5000.00, NULL, 9, 14, NULL, 'produits/produit_69a414e4e614e6.61404731.jpeg', '[\"produits\\/produit_69a414e4e614e6.61404731.jpeg\"]', NULL, 'unité', '2026-03-01 05:28:52', '2026-03-31 11:48:31', 'actif', '[]', NULL),
+(37, 'Poudre Or Comestible', 'Parfait pour apporter de la brillance à vos créations. Composé d\'ingrédients de qualité alimentaire, ce produit est sans matières grasses, sans OGM, sans gluten, sans produits laitiers, sans noix, non toxique et comestible. Sans saveur, il n\'altère pas le goût de vos recettes. Les végétariens peuvent également l\'apprécier en toute confiance. Une petite quantité suffit.', 5000.00, NULL, 37, 17, NULL, 'produits/produit_69a41588440450.97474677.jpeg', '[\"produits\\/produit_69a41588440450.97474677.jpeg\",\"produits\\/produit_69aeb320557c81.91931491.jpeg\",\"produits\\/produit_69aeb32055a783.11313956.jpeg\",\"produits\\/produit_69aeb32055bd17.32176740.jpeg\"]', NULL, 'unité', '2026-03-01 05:31:36', '2026-06-09 06:05:25', 'actif', '[]', NULL),
+(38, 'Butane Torch', 'Briquet à butane à une main : Grâce à son utilisation à une main et à sa longue buse, vous gagnez du temps tout en cuisinant en toute sécurité. C\'est l\'accessoire indispensable pour préparer rapidement et facilement de délicieux repas chez vous après une longue journée. Cuisiner devient ainsi plus simple et plus sûr. Chalumeau de cuisine avec indicateur de niveau de gaz : L\'indicateur de niveau de gaz intégré vous permet de contrôler facilement le niveau de gaz et de savoir précisément quand et comment recharger le briquet. Vous pouvez ainsi mieux organiser vos préparations culinaires et vos projets de bricolage. Chalumeau à crème brûlée durable : Son design ergonomique offre une prise en main confortable et vous maintient à distance de la flamme. De plus, sa fabrication en alliage d\'aluminium le rend plus résistant et robuste.', 15000.00, NULL, 29, 14, NULL, 'produits/produit_69aeb6729494f2.48266898.jpeg', '[\"produits\\/produit_69aeb6729494f2.48266898.jpeg\",\"produits\\/produit_69aeb67294b050.28395825.jpeg\",\"produits\\/produit_69aeb67294be86.30263858.jpeg\",\"produits\\/produit_69aeb67294cef6.51118469.jpeg\"]', NULL, 'unité', '2026-03-01 05:34:16', '2026-07-09 08:11:45', 'actif', '[]', NULL),
+(39, 'Moule en Silicone en forme cœur', 'Moule silicone en forme cœur avec marteau très facile à utiliser', 3000.00, NULL, 22, 20, NULL, 'produits/produit_69a416bae107a2.96199573.jpeg', '[\"produits\\/produit_69a416bae107a2.96199573.jpeg\"]', NULL, 'unité', '2026-03-01 05:36:42', '2026-03-10 11:02:56', 'actif', '[]', NULL),
+(40, 'Boules décoratives comestibles', 'Des boules comestibles en Sucre de 130g en argenté ou doré juste pour décorer vos gâteaux.', 4000.00, NULL, 40, 15, NULL, 'produits/produit_69aeae8282d672.78441808.jpeg', '[\"produits\\/produit_69aeae8282d672.78441808.jpeg\"]', NULL, 'unité', '2026-03-01 05:39:01', '2026-03-12 11:57:32', 'actif', '[]', NULL),
+(41, 'Lot de 12 tiges chevilles blanches', '[L\'accessoire indispensable pour les pâtissiers] Ces tiges de support en plastique sont conçues pour séparer délicatement les étages de vos gâteaux et créer un effet de flottement, ajoutant une touche de charme supplémentaire à votre création.\r\n\r\nMatériau de qualité : Fabriquées en plastique alimentaire durable et lisse, ces tiges de support sont plus faciles à couper que les tiges en bois.\r\n\r\n[Taille idéale] Chaque tige mesure 1 cm de diamètre et 24,5 cm de long, une longueur suffisante pour supporter vos gâteaux.\r\n\r\nContenu de l\'emballage : Ce paquet contient 12 tiges de support blanches en plastique, une quantité suffisante pour répondre à vos besoins et idéale pour la réalisation de gâteaux à étages. [Utilisation facile] Insérez-les simplement dans les étages comme des tiges de support. Assez robustes pour supporter le poids des gâteaux à plusieurs étages, ces tiges en plastique s\'adaptent à la plupart des plateaux de séparation blancs, à l\'exception des plus hauts.', 2500.00, NULL, 79, 14, NULL, 'produits/produit_69a4181d971b52.40307270.jpeg', '[\"produits\\/produit_69a4181d971b52.40307270.jpeg\",\"produits\\/produit_69aebeac5a8da1.55614774.jpeg\",\"produits\\/produit_69aebeac5b0088.82723554.jpeg\",\"produits\\/produit_69aebeac5b19c2.71916282.jpeg\"]', NULL, 'unité', '2026-03-01 05:42:37', '2026-07-03 11:57:35', 'actif', '[]', NULL),
+(42, 'Paquet Glitter avec pinceau', 'Paillettes comestibles, poudre comestible pour cocktails, boissons alimentaires, décoration de gâteaux, œufs de Pâques, pâtisseries, macarons, fraises, 5,1 g (or, rose, bleu, argent)', 10000.00, NULL, 75, 17, NULL, 'produits/produit_69aeba49253f75.56323269.jpeg', '[\"produits\\/produit_69aeba49253f75.56323269.jpeg\",\"produits\\/produit_69aeba49257464.25095571.jpeg\",\"produits\\/produit_69aeba492592c1.82518057.jpeg\"]', NULL, 'unité', '2026-03-01 05:45:48', '2026-03-09 08:17:13', 'actif', '[\"#e5488a\",\"#00ccff\",\"#fbff00\",\"#000000\"]', NULL),
+(43, 'Spray Paillettes Comestible en 4 couleurs', 'Pour mettre de la couleur dans vos créations', 5000.00, NULL, 21, 17, NULL, 'produits/produit_69a41973a05196.10386347.jpeg', '[\"produits\\/produit_69a41973a05196.10386347.jpeg\"]', NULL, 'unité', '2026-03-01 05:48:19', '2026-03-13 11:52:31', 'actif', '[\"#e5488a\",\"#0db520\",\"#121212\",\"#f7f7f7\"]', NULL),
+(44, 'Moule à tarte', 'Moule parfait pour la cuisson de vos tartes!', 4000.00, NULL, 5, 12, NULL, 'produits/produit_69a41ad356ea56.13960358.png', NULL, '', 'unité', '2026-03-01 05:54:11', '2026-03-31 11:48:31', 'actif', NULL, NULL),
+(45, 'Moule en forme cœur', 'Parfait pour cuir vos gourmandises en forme cœur', 3500.00, 2500.00, 34, 12, NULL, 'produits/produit_69a6f7a446beb2.39969990.jpg', '[\"produits\\/produit_69a6f7a446beb2.39969990.jpg\"]', NULL, 'unité', '2026-03-01 05:56:19', '2026-03-03 10:00:52', 'actif', '[]', NULL),
+(46, 'Lot de 100 caissettes à cupcake doré', 'Parfait pour vos doublures de cupcake', 10000.00, 5000.00, 6, 14, NULL, 'produits/produit_69a41c1ebe53e1.60239228.jpeg', '[\"produits\\/produit_69a41c1ebe53e1.60239228.jpeg\"]', NULL, 'unité', '2026-03-01 05:59:42', '2026-03-09 08:18:32', 'actif', '[]', NULL),
+(47, 'Rouleau Pâtisserie', 'Parfait pour étaler vos pâtes de très grande qualité, en acier inoxydable pas de risque de moisissure ou de fissure grâce à sa surface non poreuse.', 7500.00, NULL, 23, 14, NULL, 'produits/produit_69a58f8823a1b5.85914273.jpeg', '[\"produits\\/produit_69a58f8823a1b5.85914273.jpeg\"]', NULL, 'unité', '2026-03-01 06:02:33', '2026-03-02 08:24:24', 'actif', '[]', NULL),
+(48, 'Tapis d’impression', 'Pour mettre des designs dans vos réalisations\r\nMatériaux : fabriqués à partir de plastique dur qui peut aider à créer des motifs plus réalistes ; le plastique permet un positionnement et un alignement faciles ; les motifs en relief peuvent également être utilisés comme gabarits de glaçage.', 2000.00, NULL, 67, 19, NULL, 'produits/produit_69a6cc35107bb5.30517971.jpeg', '[\"produits\\/produit_69a6cc35107bb5.30517971.jpeg\",\"produits\\/produit_69a6cc35109bb3.51353444.jpeg\",\"produits\\/produit_69a6cc3510a7c1.29573440.jpeg\"]', NULL, 'unité', '2026-03-01 06:07:12', '2026-07-10 11:23:40', 'actif', '[]', NULL),
+(50, 'Tour de desserts', 'Idéal pour vos expositions de gourmandises.', 5000.00, NULL, 17, 14, NULL, 'produits/produit_69a438bd6a6ad6.50604475.jpeg', '[\"produits\\/produit_69a438bd6a6ad6.50604475.jpeg\"]', NULL, 'unité', '2026-03-01 08:01:49', '2026-03-03 05:46:29', 'actif', '[\"#e5488a\",\"#00bd0d\",\"#0074bd\",\"#fbff00\",\"#ff6600\",\"#e54848\"]', NULL),
+(51, 'Lot de 100 Caissettes à Cupcake Rose', 'Parfait pour vos doublures de cupcakes.', 4000.00, NULL, 2, 14, NULL, 'produits/produit_69a43967ad5f05.95599462.jpeg', '[\"produits\\/produit_69a43967ad5f05.95599462.jpeg\"]', NULL, 'unité', '2026-03-01 08:04:39', '2026-05-06 11:26:57', 'actif', '[]', NULL),
+(52, 'Pochoir', 'Spécialement conçu pour faire ressortir toutes sortes de motifs sur vos cakes design.\r\nIls permettent de réaliser des motifs détaillés sur la surface ou les côtés d\'un gâteau. \r\nSe placent sur une surface bien figée. On peut y appliquer de la crème au beurre, du glaçage royal, du sucre glace ou utiliser un aérographe.\r\n Les ensembles de pochoirs en plastique PVC réutilisables (souvent vendus par lots de 3 à 12 pièces) offrent des motifs variés comme la dentelle, les cœurs ou les fleurs.', 2500.00, NULL, 59, 19, NULL, 'produits/produit_69aec7b5ca4be5.04721678.jpeg', '[\"produits\\/produit_69aec7b5ca4be5.04721678.jpeg\",\"produits\\/produit_69aec7b5cac767.00476369.jpeg\",\"produits\\/produit_69aec7b5cae956.72949742.jpeg\",\"produits\\/produit_69aec7b5cb0643.58076108.jpeg\",\"produits\\/produit_69aec7b5cb2305.41446346.jpeg\"]', NULL, 'unité', '2026-03-01 08:07:40', '2026-03-13 12:45:26', 'actif', '[]', NULL),
+(53, 'Moule à madeleine en Silicone', 'Très pratique pour faire cuire les madeleines.', 2000.00, NULL, 20, 20, NULL, 'produits/produit_69a43b4984e021.84894661.jpeg', NULL, '', 'unité', '2026-03-01 08:12:41', '2026-03-01 10:21:31', 'actif', NULL, NULL),
+(54, 'Douille 3 en 1', 'Parfait pour vos pochages de trois couleurs très résistant et pratique.', 2000.00, NULL, 25, 14, NULL, 'produits/produit_69a43bd334e742.22801295.jpeg', NULL, NULL, 'unité', '2026-03-01 08:14:59', NULL, 'actif', NULL, NULL),
+(55, 'Paquet papiers sucre de 24 feuilles', 'Découvrez pourquoi les professionnels de la pâtisserie et de la décoration intérieure font confiance à nos feuilles de glaçage Supreme pour leurs impressions comestibles. Ce paquet de 24 feuilles au format Lettre (21,6 x 27,9 cm) est la référence en matière de papier alimentaire, offrant une épaisseur, une opacité et une facilité d\'utilisation supérieures aux marques génériques.\r\n\r\nPourquoi choisir « Supreme » :\r\n\r\nImpressions éclatantes : La finition blanche brillante et opaque garantit des photos et des logos nets et colorés, sans effet délavé.\r\n\r\nFormule facile à décoller : Conçue pour se décoller facilement de la feuille de support.\r\n\r\nImpression facile : Conçue pour s\'insérer facilement dans les imprimantes alimentaires Canon et Epson, sans bourrage.\r\n\r\nUtilisation polyvalente : Fond parfaitement dans la crème au beurre, le fondant, le chocolat et le glaçage royal pour un rendu professionnel.\r\n\r\nDétails du produit :\r\n\r\nQuantité : 24 feuilles par paquet.\r\n\r\nFormat : Lettre standard (21,6 x 27,9 cm).\r\n\r\nDurée de conservation : jusqu’à 24 mois (sachet argenté refermable inclus).\r\n\r\nConvient aux régimes alimentaires : certifié casher, halal, sans gluten, sans noix et végétalien.\r\n\r\nConseils de conservation : conservez les feuilles de glaçage dans leur sachet refermable d’origine à température ambiante.', 43500.00, NULL, 98, 10, NULL, 'produits/produit_69a43ddb0a2b83.52208779.jpeg', '[\"produits\\/produit_69a43ddb0a2b83.52208779.jpeg\"]', NULL, 'unité', '2026-03-01 08:23:39', '2026-07-10 11:25:29', 'actif', '[]', NULL),
+(56, 'Boites gateaux rondes', 'conservation d\'aliments ( gateaux; autres ...).Permet de garder le contenu à l\'abri de l\'humidité.Le couvercle transparent facilite l\'ouverture et assure une fermeture hermetique.', 2000.00, NULL, 500, 16, NULL, 'produits/produit_69a598839f5e08.98932903.jpeg', '[\"produits\\/produit_69a598839f5e08.98932903.jpeg\"]', NULL, 'unité', '2026-03-02 09:02:43', '2026-03-24 12:46:32', 'actif', '[\"#e89726\",\"#fbf4f9\",\"#b51a00\"]', NULL),
+(57, 'Boites gateaux', 'Boites gateaux transparentes rondes il est composé d\'un cylindre transparent et d\'un couvercle fermé avec une ouverture circulaire protégée par une grille.', 2000.00, NULL, 22, 16, NULL, 'produits/produit_69a5b214f09ba9.09440594.jpg', '[\"produits\\/produit_69a5b214f09ba9.09440594.jpg\",\"produits\\/produit_69a9a314e71478.17138574.jpeg\",\"produits\\/produit_69a9a32acfcfd2.38675840.jpeg\",\"produits\\/produit_69a9a3652aaad4.42390459.jpeg\"]', NULL, 'unité', '2026-03-02 10:51:48', '2026-07-08 07:20:10', 'actif', '[\"#1e1a1c\",\"#e9b21c\",\"#f0f3f4\",\"#e22400\",\"#e63b7a\"]', NULL),
+(60, 'Boites gateaux', 'Les boîtes d\'emballage pour gâteaux se déclinent principalement en modèles pâtissiers classiques, en formats de transport robustes et en versions écologiques. \r\nElles sont essentielles pour protéger les créations durant le transport tout en assurant une présentation élégante.', 250.00, NULL, 2976, 16, NULL, 'produits/produit_69a6bf3ff1c329.02579417.jpeg', '[\"produits\\/produit_69a6bf3ff1c329.02579417.jpeg\"]', NULL, 'unité', '2026-03-03 06:00:15', '2026-07-11 06:13:10', 'actif', '[]', NULL),
+(63, 'Cake Form', 'Il permet d\'obtenir des côtés parfaitement droits et des dessus plats sans effort.\r\nFacilite l\'application rapide de la ganache ou de la crème.\r\n Idéal pour réaliser des gâteaux avec des angles nets (square cakes).\r\n Le système permet de retirer le contour en plastique après le refroidissement de la ganache.\r\nDisponible en plusieurs formes et tailles pour s\'adapter à différentes créations.', 8000.00, NULL, 95, 19, NULL, 'produits/produit_69a967f8a546b9.89959176.jpeg', '[\"produits\\/produit_69a967f8a546b9.89959176.jpeg\",\"produits\\/produit_69ac464c2d0e32.78098684.jpeg\",\"produits\\/produit_69ac464c2d1d99.42621468.jpeg\",\"produits\\/produit_69ac464c2d25d3.60373878.jpeg\",\"produits\\/produit_6a2fd1806ae120.96723537.jpeg\"]', NULL, 'unité', '2026-03-03 06:20:17', '2026-07-08 07:19:41', 'actif', '[]', NULL),
+(66, 'Bougies d\'anniversaire ....', 'Ces bougies d\'anniversaire incurvées sont parfaites pour décorer des gâteaux lors de fêtes. \r\nContenu : Pack de 6 bougies.\r\nDesign : Forme de courbe en S lisse avec une finition brillante.\r\nUsage : Idéal pour les anniversaires, anniversaires de mariage et autres célébrations.', 600.00, NULL, 596, 14, NULL, 'produits/produit_69a6c91d8a7d09.65462086.jpeg', '[\"produits\\/produit_69a6c91d8a7d09.65462086.jpeg\",\"produits\\/produit_69a6c9316c0692.35660451.jpeg\"]', NULL, 'unité', '2026-03-03 06:38:54', '2026-07-09 08:38:57', 'actif', '[\"#d73c3c\",\"#47d73c\",\"#ebc505\",\"#d7d6d0\",\"#c4a96e\"]', NULL),
+(67, 'Lisseur', 'Ce lisseur est un coupe-pâte ou racloir de cuisine en acier inoxydable. \r\nDimensions : 30 cm de longueur et 12 cm de hauteur. \r\nUtilisation: Idéal pour couper et diviser les pâtes (pain, pizza, gnocchi).', 3000.00, NULL, 47, 14, NULL, 'produits/produit_69a96594225511.93521349.jpeg', '[\"produits\\/produit_69a96594225511.93521349.jpeg\"]', '[{\"v\":\"[]\",\"s\":0}]', 'unité', '2026-03-03 07:15:23', '2026-07-07 05:21:51', 'actif', '[\"#94898e\"]', '[{\"v\":\"[]\",\"s\":0}]'),
+(68, 'Cartouche Alimentaire', 'Les cartouches d\'encre alimentaire de type CLI-281 sont des cartouches compatibles pour imprimantes Canon PIXMA, utilisées pour l\'impression sur feuilles en sucre ou azyme. Elles contiennent de l\'encre comestible certifiée, composée d\'eau, de glycérol et de colorants alimentaires, idéale pour personnaliser des gâteaux.', 60000.00, NULL, 96, 11, NULL, 'produits/produit_69a6da6f56afc0.45624778.png', '[\"produits\\/produit_69a6da6f56afc0.45624778.png\",\"produits\\/produit_69a6da6f56d3e2.45377129.jpeg\"]', NULL, 'unité', '2026-03-03 07:56:15', '2026-07-10 11:24:13', 'actif', '[\"#e5489c\",\"#292426\",\"#f0c905\",\"#3674d9\"]', NULL),
+(69, 'Perles comestibles Décoratives', 'Les perles comestibles, type de sprinkles, sont de petits décors en sucre, ronds et brillants, utilisés pour embellir pâtisseries, cupcakes et gâteaux (cake pops, donuts). Disponibles en diverses couleurs (or; argent; blanc) et tailles (généralement 2 à 8 mm), elles ajoutent une texture croquante et une touche d\'élégance, s\'appliquant sur un glaçage frais.', 3500.00, NULL, 96, 15, NULL, 'produits/produit_69a7066c52a331.04363908.jpeg', '[\"produits\\/produit_69a7066c52a331.04363908.jpeg\",\"produits\\/produit_69a7066c52d0d3.95394804.jpg\",\"produits\\/produit_69a7066c52e932.70732003.jpg\",\"produits\\/produit_69a7066c530347.91981015.jpg\"]', NULL, 'unité', '2026-03-03 11:03:56', '2026-07-11 09:58:54', 'actif', '[\"#e59c48\",\"#d4cfc9\",\"#f6f3ef\"]', NULL),
+(70, 'Perles Comestibles Décoratives', 'les type de sprinkles, sont de petits décors en sucre, ronds et brillants, utilisés pour embellir pâtisseries, cupcakes et gâteaux (cake pops, donuts). Disponibles en diverses couleurs (or, argent, blanc) et tailles (généralement 2 à 8 mm), elles ajoutent une texture croquante et une touche d\'élégance, s\'appliquant sur un glaçage frais, ronds et brillants, utilisés pour embellir pâtisseries, cupcakes et gâteaux (cake pops, donuts). Disponibles en diverses couleurs (or, argent, métallisé) et tailles (généralement 2 à 8 mm), elles ajoutent une texture croquante et une touche d\'élégance, s\'appliquant sur un glaçage frais.', 3000.00, NULL, 247, 15, NULL, 'produits/produit_69a70d32a328f1.78967809.jpeg', '[\"produits\\/produit_69a70d32a328f1.78967809.jpeg\",\"produits\\/produit_69a80af0533101.10296759.jpg\",\"produits\\/produit_69a80b16e322b5.27853150.jpg\",\"produits\\/produit_69a80b2e832870.63608298.jpg\",\"produits\\/produit_69a80b6b04c444.19920531.jpg\",\"produits\\/produit_69a80b846b3584.65355047.jpg\",\"produits\\/produit_69a80ba561c4f0.56923226.jpg\",\"produits\\/produit_69a80c601615a3.00265402.jpg\"]', NULL, 'unité', '2026-03-03 11:32:50', '2026-07-10 11:23:12', 'actif', '[\"#f797bf\",\"#151314\",\"#793691\",\"#20a6df\",\"#71da2b\",\"#db9c14\",\"#db1414\"]', NULL),
+(71, 'Papillons décoratifs', 'Papillons en 3D (Papier ou Carton) : Ces modèles non comestibles sont généralement livrés à plat. Il suffit de plier légèrement les ailes au centre pour créer un effet de relief réaliste. Ils sont souvent fixés sur des tiges métalliques ou en plastique pour être piqués dans le gâteau.', 1500.00, NULL, 63, 19, NULL, 'produits/produit_69a807a451d249.48380222.jpg', '[\"produits\\/produit_69a807a451d249.48380222.jpg\",\"produits\\/produit_69a807a4531776.66442347.png\",\"produits\\/produit_69a807a45374a7.28172259.webp\",\"produits\\/produit_69a807a4538941.02971745.jpg\"]', NULL, 'unité', '2026-03-04 05:21:24', '2026-07-07 05:21:51', 'actif', '[\"#ea9fbe\",\"#c78ec7\"]', NULL),
+(72, 'Boules Decoratives', 'Lot de 20 boules Multiformes.\r\nNos boules décoratives pour gâteaux sont des éléments de cake design incontournables (polystyrène, plastique ou sucre) utilisés pour ajouter du volume, de la couleur et une touche chic (or, argent, pastel) aux créations. Légères et souvent montées sur pics, elles permettent de personnaliser rapidement gâteaux d\'anniversaire et de fête.', 2000.00, NULL, 240, 19, 4, 'produits/produit_69a8556b305984.25735549.jpg', '[\"produits\\/produit_69a8556b305984.25735549.jpg\",\"produits\\/produit_69a8556b307224.01014834.jpg\",\"produits\\/produit_69a8556b307c71.26402862.jpg\",\"produits\\/produit_69a8556b308582.74792147.jpg\",\"produits\\/produit_69a8556b309210.19408011.jpg\",\"produits\\/produit_69a8556b30a5e9.36436043.jpg\",\"produits\\/produit_69a8556b30b935.34157720.jpg\",\"produits\\/produit_69a8556b30cf22.11509967.jpg\"]', NULL, 'unité', '2026-03-04 10:53:15', '2026-07-11 10:57:32', 'actif', '[\"#e594b6\",\"#94bbe5\",\"#e8e8e8\",\"#d4a31c\",\"#0f0e0a\",\"#2e65bd\"]', NULL),
+(77, 'Boîtes Carrées', 'Les boîtes à gâteaux carrées transparentes sont idéales pour mettre en valeur vos créations (cake design, entremets, gâteaux à étages) tout en assurant leur protection lors du transport. Elles sont composées d\'une base rigide, de parois en plastique et d\'un couvercle.', 2000.00, NULL, 457, 16, NULL, 'produits/produit_69a998f8e3cd99.90616701.jpeg', '[\"produits\\/produit_69a998f8e3cd99.90616701.jpeg\",\"produits\\/produit_69a9a4ad9800d9.60397130.jpeg\",\"produits\\/produit_69a9a4c7698ca7.56347154.jpeg\"]', NULL, 'unité', '2026-03-05 09:48:34', '2026-07-11 10:01:01', 'actif', '[\"#e63b7a\",\"#ff6a00\",\"#d38301\",\"#ffffff\",\"#cde8b5\"]', NULL),
+(78, 'Colle Alimentaire', 'Les colle alimentaires Ercorart sont  idéales pour le cake design, coller des disques azymes, des décors en sucre ou des modelages.\r\nElles S\'appliquent facilement au pinceau, offrant une adhérence rapide, notamment à la verticale.', 6500.00, NULL, 20, 13, NULL, 'produits/produit_69ac3630024641.94232671.jpeg', '[\"produits\\/produit_69ac3630024641.94232671.jpeg\",\"produits\\/produit_69ac3630026361.94093719.jpeg\"]', NULL, 'unité', '2026-03-05 10:08:04', '2026-03-07 09:29:04', 'actif', '[]', NULL),
+(79, 'Bougies d’anniversaires', 'Les bougies d\'anniversaire chiffres en paraffine de 0 à 9  sont des éléments décoratifs . Elles sont utilisées pour orner les gâteaux. Elles symbolisent l\'âge de la personne, avec des styles variés : classiques colorés', 600.00, NULL, 100, 19, NULL, 'produits/produit_69a99e3af020b1.91555290.jpeg', '[\"produits\\/produit_69a99e3af020b1.91555290.jpeg\"]', NULL, 'unité', '2026-03-05 10:16:10', '2026-03-07 08:41:56', 'actif', '[\"#e5488a\",\"#fefb41\",\"#e292fe\",\"#b1dd8b\",\"#74a7ff\"]', NULL),
+(80, 'Présentoirs à gâteaux', 'Présentoirs à gâteaux ronds et hauts en acrylique transparent, parfaits pour les mariages, les événements et les fêtes d\'anniversaire. Retirez le film protecteur avant utilisation.', 3750.00, NULL, 75, 19, NULL, 'produits/produit_69a9a7a827a738.78085348.jpeg', '[\"produits\\/produit_69a9a7a827a738.78085348.jpeg\"]', NULL, 'unité', '2026-03-05 10:56:24', '2026-03-24 13:01:58', 'actif', '[\"#ffffff\"]', NULL),
+(81, 'Boîtes Cupcakes', 'Les boites Cupcakes en carton blanc, conçu pour transporter et présenter des pâtisseries individuelles. Elle comprend une fenêtre transparente pour la visibilité et un insert cartonné (cale) pour maintenir les gâteaux, évitant ainsi que le glaçage ne soit abîmé.', 1000.00, NULL, 145, 16, NULL, 'produits/produit_69ac20c3c31204.64928073.jpeg', '[\"produits\\/produit_69ac20c3c31204.64928073.jpeg\"]', NULL, 'unité', '2026-03-05 11:24:11', '2026-07-10 11:24:13', 'actif', '[]', NULL),
+(82, 'Plateaux tournants 30cm', 'Les plateaux tournants à dispositif rotatif à 360°, manuel , sont  utilisés pour présenter, décorer ou manipuler des objets (gâteaux, miniatures, produits) . Il se compose d\'une base stable et d\'un plateau supérieur, facilitant l\'accès à 360° ou une visibilité optimale.', 14000.00, NULL, 39, 14, NULL, 'produits/produit_69ac3b24793675.09864968.jpeg', '[\"produits\\/produit_69ac3b24793675.09864968.jpeg\",\"produits\\/produit_69ac3b24795d67.09469827.jpeg\",\"produits\\/produit_69ac3b24797566.26447169.jpeg\",\"produits\\/produit_69ac3b24798d76.75366531.jpeg\",\"produits\\/produit_69ac3b247996f1.29851697.jpeg\"]', NULL, 'unité', '2026-03-07 09:50:12', '2026-05-06 11:26:57', 'actif', '[\"#e63b7a\",\"#ffffff\",\"#5c5c5c\",\"#ffab01\"]', NULL),
+(83, 'Cakes drums', 'Un cake drum (tambour à gâteau) est un support rigide et épais (env. 10-12 mm) indispensable en pâtisserie pour présenter et transporter des gâteaux lourds ou à étages. Fabriqué en carton compressé recouvert d\'un film alimentaire, il offre une base stable, élégante et solide qui ne plie pas.', 700.00, NULL, 93, 14, NULL, 'produits/produit_69ac457885aab6.61918007.jpeg', '[\"produits\\/produit_69ac457885aab6.61918007.jpeg\",\"produits\\/produit_69ac457885bea3.63422088.jpeg\",\"produits\\/produit_69ac457885e064.88109038.jpeg\",\"produits\\/produit_69ac457885ee73.68565558.jpeg\"]', NULL, 'unité', '2026-03-07 10:34:16', '2026-07-08 11:40:34', 'actif', '[\"#000000\",\"#707070\",\"#ffab01\"]', NULL),
+(84, 'Feuilles Azyme', 'Notre feuille d\'azyme, également appelée papier hostie ou wafer paper, est un papier comestible sans goût à base d\'amidon (pomme de terre ou riz) principalement utilisé pour la décoration de gâteaux, la confection de nougat et les impressions alimentaires.', 3000.00, NULL, 594, 10, NULL, 'produits/produit_69aea266253cd5.75118448.jpeg', '[\"produits\\/produit_69aea266253cd5.75118448.jpeg\",\"produits\\/produit_69aea2662574e5.05477934.jpeg\",\"produits\\/produit_69aea26625aa06.55787205.jpeg\"]', NULL, 'unité', '2026-03-09 06:35:18', '2026-07-10 11:24:43', 'actif', '[]', NULL),
+(85, 'Impression sur Papier Azyme', 'La feuille Azyme idéale pour vos impressions comestibles à mettre sur vos gateaux qu’importe l’image que vous souhaitez imprimer.', 3000.00, NULL, 92, 10, NULL, 'produits/produit_69b2bf2ead7fd8.59187288.jpeg', '[\"produits\\/produit_69b2bf2ead7fd8.59187288.jpeg\"]', NULL, 'unité', '2026-03-09 06:41:01', '2026-07-11 09:59:21', 'actif', '[]', NULL),
+(86, 'Impression sur Papier Choco Transfert', 'L\'impression sur feuille de transfert pour chocolat permet de personnaliser des créations pâtissières avec des logos, des photos ou des motifs colorés. Le principe repose sur une feuille de plastique (souvent du PET) enduite d\'une fine couche de beurre de cacao et de colorants alimentaires, qui se transfère sur le chocolat lors du refroidissement.', 4000.00, NULL, 95, 10, NULL, 'produits/produit_69afebca947125.75128205.jpeg', '[\"produits\\/produit_69afebca947125.75128205.jpeg\",\"produits\\/produit_69afebca94cd32.69871853.jpeg\",\"produits\\/produit_69afebca94ec17.45442061.jpeg\",\"produits\\/produit_69afebca950483.79243252.jpeg\"]', NULL, 'unité', '2026-03-09 07:17:22', '2026-03-24 12:49:23', 'actif', '[]', NULL),
+(87, 'Paillettes Comestibles', 'Nos paillettes comestibles sont des décorations scintillantes spécialement conçues pour être ingérées en toute sécurité sur des pâtisseries ou dans des boissons. Contrairement aux paillettes de loisirs créatifs, elles sont fabriquées à partir d\'ingrédients alimentaires comme le sucre, l\'amidon de maïs, la gomme arabique ou la maltodextrine.', 5000.00, NULL, 51, 17, NULL, 'produits/produit_69aeb20b0da3c8.97234381.jpeg', '[\"produits\\/produit_69aeb20b0da3c8.97234381.jpeg\",\"produits\\/produit_69aeb20b0e44a2.19028249.jpeg\",\"produits\\/produit_69aeb20b0e73f4.41761997.jpeg\",\"produits\\/produit_69aeb99e709632.94809338.jpeg\",\"produits\\/produit_69aeb99e70bbe6.81744690.jpeg\",\"produits\\/produit_69aeb99e70cd36.13664886.jpeg\",\"produits\\/produit_69aeb99e70dd32.00231988.jpeg\"]', NULL, 'unité', '2026-03-09 07:42:03', '2026-07-07 05:21:51', 'actif', '[\"#ffb5af\",\"#ffd977\",\"#c2c2c2\",\"#ffffff\"]', NULL),
+(88, 'Peintures Comestibles l\'unité', 'Ensemble de peinture comestible à paillettes métalliques : Ces peintures à gâteaux à la texture fine permettent de créer un effet pailleté ultra-brillant, idéal pour apporter une touche métallique à vos décorations de gâteaux. Disponibles en 3 couleurs métalliques : or, or rose et blanc argenté. Toutes les couleurs sont magnifiques. Parfaites pour décorer gâteaux, chocolats et bonbons fondus.', 5000.00, NULL, 5, 17, NULL, 'produits/produit_69aeb461719c25.03410515.jpeg', '[\"produits\\/produit_69aeb461719c25.03410515.jpeg\"]', NULL, 'unité', '2026-03-09 07:52:01', '2026-03-25 09:01:02', 'actif', '[\"#ee719e\",\"#fecb3e\",\"#adadad\"]', NULL),
+(89, 'Peintures comestibles', 'Sans odeur ni goût : Contrairement aux autres peintures pour gâteaux, la peinture métallisée Nomeca est sans odeur et sans goût, préservant ainsi la saveur de vos préparations. Composée d\'ingrédients de qualité alimentaire, elle est sans matières grasses, sans OGM, sans gluten, sans produits laitiers, sans fruits à coque, non toxique et 100 % comestible. Les végétariens peuvent également l\'utiliser en toute sérénité. Peinture pour gâteaux luxueuse : Sa texture fine offre une brillance éclatante. Élégante, elle crée un effet ultra-brillant et apporte une finition métallique vibrante à vos créations. Le coffret comprend quatre couleurs : or, or rose, argent et rouge. Toutes les couleurs sont magnifiques. C\'est le choix idéal pour décorer gâteaux, chocolats et bonbons fondus.', 5000.00, NULL, 7, 17, NULL, 'produits/produit_69aeb5d4244c53.21279640.jpeg', '[\"produits\\/produit_69aeb5d4244c53.21279640.jpeg\",\"produits\\/produit_69aeb5d42471e2.84732103.jpeg\",\"produits\\/produit_69aeb5d4248c86.75801271.jpeg\",\"produits\\/produit_69aeb5d4249f99.11969427.jpeg\"]', NULL, 'unité', '2026-03-09 07:58:12', '2026-07-02 08:34:31', 'actif', '[\"#d19d01\",\"#e22400\",\"#e63b7a\",\"#858585\"]', NULL),
+(90, 'Paillettes comestibles', 'Couleurs éclatantes : Notre poudre pailletée comestible se décline dans les couleurs suivantes : noir charbon, or, blanc perle, gris argent, brun café, or rose, bleu corail, vert paon, violet lavande, jaune citron, orange carotte et rouge rubis. Chaque flacon contient 4 g de poudre scintillante comestible et est muni d\'un bouchon en liège individuel perforé, permettant une répartition homogène de la poudre. Très fine, la poudre pailletée se mélange facilement.\r\n\r\nSûre et végane : Notre poudre pailletée comestible est sans danger, car elle est composée à 100 % de poudre de qualité alimentaire. Sans allergènes, sans matières grasses, sans produits laitiers, sans gluten, sans fruits à coque, sans OGM et non toxique, elle convient parfaitement aux végétariens et aux personnes sujettes aux allergies. Sans goût, elle n\'altère pas la saveur des aliments. La poudre pailletée comestible Rbugr adhère parfaitement aux surfaces sèches et humides.', 4000.00, NULL, 52, 17, NULL, 'produits/produit_69aeb8891df104.77283089.jpeg', '[\"produits\\/produit_69aeb8891df104.77283089.jpeg\",\"produits\\/produit_69aeb8891e2cf0.52011330.jpeg\",\"produits\\/produit_69aeb8891e5bc7.33331945.jpeg\",\"produits\\/produit_69aeb8891e85b3.63131207.jpeg\"]', '[{\"v\":\"4g\",\"s\":0}]', 'unité', '2026-03-09 08:09:45', '2026-07-03 11:56:54', 'actif', '[\"#ffffff\",\"#e22400\",\"#858585\",\"#ee719e\",\"#333333\",\"#5c5c5c\",\"#7a219e\",\"#f5ec00\",\"#01c7fc\"]', NULL),
+(91, 'Balance Électrique Rechargeable', 'La balance de cuisine peut être alimentée par un câble de chargement USB-C ou par 2 piles AAA (câble USB et piles inclus).\r\nGrand écran et lecture facile : Cette balance numérique CROWNFUL est dotée d\'un grand écran en acier inoxydable permettant de peser des aliments dans de grands récipients. Son affichage incliné assure une lecture facile des résultats. Ses dimensions sont de 20 x 14 x 1,8 cm.\r\n\r\nPlage de mesure et précision : Cette balance de cuisine offre une large plage de mesure, de 3 g à 15 kg, avec une précision de 1 g. Pour des résultats précis, placez toujours la balance sur une surface plane et dure.', 10000.00, NULL, 0, 14, NULL, 'produits/produit_69aebb9059dea7.03796491.jpeg', '[\"produits\\/produit_69aebb9059dea7.03796491.jpeg\",\"produits\\/produit_69aebb905a0b41.81310942.jpeg\",\"produits\\/produit_69aebb905a2cc9.88111766.jpeg\",\"produits\\/produit_69aebb905a5275.59460989.jpeg\",\"produits\\/produit_69aebb905a71b9.99126476.jpeg\",\"produits\\/produit_69aebb905a8fc8.92467093.jpeg\",\"produits\\/produit_69aebb905aada4.45550776.jpeg\",\"produits\\/produit_69aebb905ac5d0.97466876.jpeg\"]', NULL, 'unité', '2026-03-09 08:22:40', '2026-05-23 11:40:38', 'actif', '[]', NULL),
+(92, 'Poudre CMC', 'Épaissit et stabilise les préparations : Apporte de la viscosité aux boissons, sauces et produits laitiers, prévenant la séparation et améliorant leur texture. Garantit une consistance homogène dans toutes les préparations, des vinaigrettes aux sirops de fruits, tout en préservant une texture naturelle en bouche.\r\n\r\nIndispensable en pâtisserie sans gluten : Améliore la structure du pain, des gâteaux et des viennoiseries sans gluten en leur apportant élasticité et humidité. Contribue à prévenir l\'émiettement et assure une mie moelleuse et régulière dans les produits de boulangerie dépourvus de gluten.\r\n\r\nPrévient la cristallisation de la glace dans les desserts glacés : Couramment utilisée dans les crèmes glacées, les sorbets et les yaourts glacés, la CMC prévient la cristallisation de la glace, garantissant une texture onctueuse et crémeuse. Elle améliore également la conservation en maintenant l\'homogénéité des mélanges et en prévenant la séparation des ingrédients.\r\n\r\nFacile à utiliser : Se dissout rapidement dans les liquides chauds ou froids. Pour épaissir, utiliser environ 0,3 à 1 % du poids des ingrédients. En pâtisserie, mélanger aux ingrédients secs avant d\'ajouter les liquides pour une répartition homogène et une meilleure consistance. Conservation : À conserver dans un récipient hermétique, dans un endroit frais et sec. Évitez tout contact avec l\'humidité, car la CMC est très absorbante et peut s\'agglomérer si elle n\'est pas correctement scellée.', 6500.00, NULL, 6, 17, NULL, 'produits/produit_69aebd5e5d5eb1.03840710.jpeg', '[\"produits\\/produit_69aebd5e5d5eb1.03840710.jpeg\",\"produits\\/produit_69aebd5e5d8449.51189789.jpeg\",\"produits\\/produit_69aebd5e5d9b31.83520964.jpeg\"]', NULL, 'unité', '2026-03-09 08:30:22', '2026-07-04 07:54:37', 'actif', '[]', NULL),
+(93, 'Paquet Colorants Alimentaires Gel 8 couleurs', 'Colorants alimentaires pour la décoration de gâteaux : Ce kit de colorants alimentaires en gel hautement concentrés contient des couleurs éclatantes (10 ml par flacon). Chaque colorant est unique et vous pouvez mélanger différentes teintes pour créer vos propres couleurs personnalisées pour diverses occasions comme Noël, Halloween, Pâques, les réunions de famille ou les fêtes à thème.\r\n\r\nIngrédients de qualité alimentaire : Ce kit de colorants alimentaires en gel est composé d’ingrédients de qualité alimentaire supérieure. Il est sans produits laitiers, sans gluten, sans arachides et sans OGM. Le colorant colore intensément les aliments ; il n’en modifie ni le goût ni la texture et convient aux végétariens.', 10000.00, NULL, 5, 18, NULL, 'produits/produit_69aec096a138e5.51009764.jpeg', '[\"produits\\/produit_69aec096a138e5.51009764.jpeg\",\"produits\\/produit_69aec096a15ed5.16934873.jpeg\"]', NULL, 'unité', '2026-03-09 08:44:06', '2026-03-12 09:04:23', 'actif', '[\"#669d34\",\"#ff6a00\",\"#e22400\",\"#e63b7a\",\"#7a219e\",\"#333333\",\"#0061fe\",\"#ffffff\"]', NULL),
+(94, 'Moule en Silicone Multi-cavités', 'Savourez vos créations pâtissières : Le moule à chocolat en silicone mesure 29,5 x 17,2 x 3 cm (L x l x H). Dimensions des cavités : 13 x 3,5 x 2,5 cm (L x l x H). L’utilisation de moules à gâteaux au chocolat en silicone multi-cavités simplifie la pâtisserie.\r\n\r\nSûrs et résistants : Tous nos moules sont fabriqués en silicone 100 % alimentaire. Ils supportent des températures allant de -60 °C à 230 °C. D’une excellente durabilité, ces moules à pâtisserie en silicone peuvent être utilisés jusqu’à 3 500 fois sans se déformer. Ils passent également au lave-vaisselle.\r\n\r\nFaciles à utiliser et à nettoyer : Le moule à gâteau en silicone possède une surface antiadhésive qui permet un démoulage facile et rapide, pour des résultats de cuisson optimaux. Il suffit d’une légère pression des doigts pour le démouler. (Le démoulage sera plus facile après 1 heure de congélation.)', 3350.00, NULL, 7, 20, NULL, 'produits/produit_69afe999d7ee00.03958450.jpeg', '[\"produits\\/produit_69afe999d7ee00.03958450.jpeg\",\"produits\\/produit_69afe999d855a1.98339364.jpeg\",\"produits\\/produit_69afe999d8add3.81367442.jpeg\",\"produits\\/produit_69afe999d8db77.42815100.jpeg\",\"produits\\/produit_69afe999d93621.88063590.jpeg\",\"produits\\/produit_69afe999d94c63.41606652.jpeg\"]', NULL, 'unité', '2026-03-10 05:51:21', '2026-03-12 09:02:57', 'actif', '[]', NULL),
+(95, 'Cake Topper Personnalisé', 'Les cake toppers personnalé avec prénom et age sont des accessoires de décoration non comestibles à piquer au sommet d\'un gâteau pour personnaliser une célébration.', 4000.00, NULL, 381, 9, NULL, 'produits/produit_69b16744696cb5.36754975.jpeg', '[\"produits\\/produit_69b16744696cb5.36754975.jpeg\",\"produits\\/produit_69b167446991f8.09616776.jpeg\"]', NULL, 'unité', '2026-03-10 08:25:38', '2026-07-11 10:57:32', 'actif', '[]', NULL),
+(96, 'Cake topper prénom', 'Un cake topper avec prénom est l\'accessoire idéal pour transformer un gâteau classique en une création unique et personnalisée.', 2000.00, NULL, 988, 9, NULL, 'produits/produit_69b164e4761fa4.92995331.jpeg', '[\"produits\\/produit_69b164e4761fa4.92995331.jpeg\"]', NULL, 'unité', '2026-03-10 08:35:22', '2026-07-02 11:21:01', 'actif', '[]', NULL);
+INSERT INTO `produits` (`id`, `nom`, `description`, `prix`, `prix_promotion`, `stock`, `categorie_id`, `stock_article_id`, `image_principale`, `images`, `poids`, `unite`, `date_creation`, `date_modification`, `statut`, `couleurs`, `taille`) VALUES
+(97, 'Cake Topper Minnie Mouse', 'Parfait pour sublimer les gateaux de vos princesses.', 6000.00, NULL, 293, 9, NULL, 'produits/produit_69b162f670ecc5.87130028.jpeg', '[\"produits\\/produit_69b162f670ecc5.87130028.jpeg\",\"produits\\/produit_69b162f6711a23.28865312.jpeg\"]', NULL, 'unité', '2026-03-10 09:08:02', '2026-07-07 05:22:37', 'actif', '[]', NULL),
+(99, 'Cake Train', 'Coffret de train électrique avec rails en plastique, modèle éducatif pour la décoration de gâteaux', 3500.00, NULL, 100, 19, NULL, 'produits/produit_69b14cbb166e79.44245342.jpeg', '[\"produits\\/produit_69b14cbb166e79.44245342.jpeg\",\"produits\\/produit_69b14cbb168c38.18166510.jpeg\",\"produits\\/produit_69b14cbb16b963.13740167.jpeg\",\"produits\\/produit_69b14cbb16d834.65149245.jpeg\",\"produits\\/produit_69b14cbb16ecc2.78924348.jpeg\",\"produits\\/produit_69b14cbb16fc47.73468193.jpeg\"]', NULL, 'unité', '2026-03-11 07:06:35', '2026-03-11 07:25:59', 'actif', '[]', NULL),
+(100, 'Rouleau Rhodoïd', 'Le rouleau de rhodoïd est un film en plastique transparent, rigide et de qualité alimentaire, essentiel en pâtisserie et chocolaterie pour le cerclage d\'entremets (mousses, bavarois) et la réalisation de décors en chocolat. Il permet un démoulage impeccable et des contours lisses, se découpant facilement à la longueur souhaitée.', 1500.00, NULL, 29, 14, NULL, 'produits/produit_69b150e74b19e3.97550881.jpeg', '[\"produits\\/produit_69b150e74b19e3.97550881.jpeg\",\"produits\\/produit_69b150e74bee88.21209934.jpeg\"]', NULL, 'unité', '2026-03-11 07:24:23', '2026-05-06 11:26:57', 'actif', '[]', NULL),
+(101, 'Cake Topper Paw Patrol', '👌', 7000.00, NULL, 98, 9, NULL, 'produits/produit_69b16c213cf770.91825131.jpeg', '[\"produits\\/produit_69b16c213cf770.91825131.jpeg\"]', NULL, 'unité', '2026-03-11 09:20:33', NULL, 'actif', '[]', NULL),
+(102, 'Cake topper cercle', 'Parfait pour personnaliser vos gateaux', 6000.00, NULL, 95, 9, NULL, 'produits/produit_69b17f39b824d3.79102646.jpeg', '[\"produits\\/produit_69b17f39b824d3.79102646.jpeg\"]', NULL, 'unité', '2026-03-11 10:42:01', '2026-07-07 05:21:33', 'actif', '[]', NULL),
+(103, 'lot de 3 minis moules à charnières', 'Ce lot de trois mini-moules à charnières est idéal pour réaliser des portions individuelles de gâteaux, cheesecakes ou quiches. Fabriqués en acier avec un revêtement antiadhésif, ils garantissent un démoulage facile et une cuisson homogène. Pratiques, ils disposent d\'un fond amovible et d\'un clip pour retirer facilement les préparations.', 8000.00, NULL, 0, 12, NULL, 'produits/produit_69b29cbb0ff515.63512471.jpg', '[\"produits\\/produit_69b29cbb0ff515.63512471.jpg\",\"produits\\/produit_69b29cd611ec83.96554101.jpeg\",\"produits\\/produit_69b29cf357d3c2.80737426.jpeg\"]', NULL, 'unité', '2026-03-12 05:32:39', '2026-03-31 10:12:24', 'actif', '[]', NULL),
+(104, 'Moules chaussures', 'Un moule à chaussure pour gâteau est un outil de pâtisserie, en silicone souple ou plastique rigide, conçu pour créer des décorations, comme des escarpins, baskets ou chaussons. Idéal pour les gâteaux, il permet de mouler pâte à sucre, chocolat ou isolat, offrant un démoulage facile et un résultat détaillé.', 15000.00, NULL, 3, 20, NULL, 'produits/produit_69b28a261a4c10.79974142.jpeg', '[\"produits\\/produit_69b28a261a4c10.79974142.jpeg\",\"produits\\/produit_69b28a261e3b98.75402025.jpeg\",\"produits\\/produit_69b28a261e82a4.59004321.jpeg\"]', NULL, 'unité', '2026-03-12 05:40:54', '2026-03-12 07:01:26', 'actif', '[]', NULL),
+(105, 'Rouleau Pâtisserie', 'Un rouleau à pâtisserie est un ustensile cylindrique essentiel utilisé pour abaisser et aplatir uniformément diverses pâtes (tarte, pizza, biscuits ou pâte à sucre). Selon vos besoins.', 10000.00, NULL, 2, 14, NULL, 'produits/produit_69b28ba77c96d0.43165471.jpeg', '[\"produits\\/produit_69b28ba77c96d0.43165471.jpeg\",\"produits\\/produit_69b28ba77d3c26.20957694.jpeg\",\"produits\\/produit_69b28ba77da9b9.36701932.jpeg\"]', NULL, 'unité', '2026-03-12 05:47:19', '2026-03-12 09:14:42', 'actif', '[]', NULL),
+(106, 'Moule cuisson rectangulaire anti-adhésif', 'Ce moule de cuisson rectangulaire anti-adhésif est un ustensile de pâtisserie conçu pour assurer une diffusion homogène de la chaleur et un démoulage sans effort. Principalement utilisé pour les cakes, les gateaux pains, lasagnes ou brownies, et formats adaptés aux besoins domestiques ou professionnels.', 9000.00, NULL, 3, 12, NULL, 'produits/produit_69b28d3876ae66.61496505.jpeg', '[\"produits\\/produit_69b28d3876ae66.61496505.jpeg\",\"produits\\/produit_69b28d38771376.30035531.jpeg\",\"produits\\/produit_69b28d38771df0.64291799.jpeg\",\"produits\\/produit_69b28d38772602.79148772.jpeg\"]', NULL, 'unité', '2026-03-12 05:54:00', '2026-03-12 09:14:58', 'actif', '[]', NULL),
+(107, 'Moule Inoxydable', 'Le moule Inoxydable est un conducteur de chaleur constant. Bien qu\'il chauffe moins vite que l\'aluminium, il assure une cuisson homogène, idéale pour les génoises, les pains de mie ou les entremets.', 4000.00, NULL, 0, 12, NULL, 'produits/produit_69b28ebde6d6b9.31298212.jpeg', '[\"produits\\/produit_69b28ebde6d6b9.31298212.jpeg\",\"produits\\/produit_69b28ebde995a1.33526953.jpeg\",\"produits\\/produit_69b28ebde9ffa7.94713623.jpeg\",\"produits\\/produit_69b28ebdea1293.05706212.jpeg\"]', NULL, 'unité', '2026-03-12 06:00:29', '2026-03-31 11:48:31', 'actif', '[]', NULL),
+(108, 'Semelles à gateaux', 'La semelle à gateau est un support plat et rigide utilisé pour manipuler, transporter et présenter les pâtisseries. Elle est essentielle pour assurer la stabilité du gâteau.', 150.00, NULL, 284, 16, NULL, 'produits/produit_69b2937f391e78.75952414.jpg', '[\"produits\\/produit_69b2937f391e78.75952414.jpg\",\"produits\\/produit_69b2937f3945a6.79589767.jpg\",\"produits\\/produit_69b2937f395335.77020879.jpg\",\"produits\\/produit_69b2937f396a38.92479839.jpg\"]', NULL, 'unité', '2026-03-12 06:20:47', '2026-07-07 05:22:37', 'actif', '[]', NULL),
+(109, 'Emporte-pièce', 'Cet ensemble d\'emporte-pièce est un accessoire de découpe, utilisé pour donner une forme précise et répétitive à une pâte (biscuits, pâte à sucre, pâte d\'amande). C\'est l\'outil indispensable pour les sablés de Noël, les décors de gâteaux ou le cake design.', 8750.00, NULL, 1, 14, NULL, 'produits/produit_69b29523a794d3.28019857.jpeg', '[\"produits\\/produit_69b29523a794d3.28019857.jpeg\",\"produits\\/produit_69b29523a7f966.43565410.jpeg\",\"produits\\/produit_69b29523a84447.30387411.jpeg\"]', NULL, 'unité', '2026-03-12 06:27:47', '2026-03-12 09:42:05', 'actif', '[]', NULL),
+(110, 'Moule à cannoli', 'Ce moule à cannoli est un accessoire de pâtisserie cylindrique indispensable pour réaliser la coque croustillante des célèbres pâtisseries siciliennes.', 1000.00, NULL, 36, 12, NULL, 'produits/produit_69b2971d435ab0.63258217.jpeg', '[\"produits\\/produit_69b2971d435ab0.63258217.jpeg\",\"produits\\/produit_69b2971d43b4d2.27862480.jpeg\",\"produits\\/produit_69b2971d43c874.78496446.jpeg\"]', NULL, 'unité', '2026-03-12 06:36:13', '2026-07-05 11:43:24', 'actif', '[]', NULL),
+(111, 'Emporte piece forme fleur', 'Cet emporte-pièce en forme de fleur est un outil de découpe polyvalent utilisé pour créer des biscuits, des décors en pâte à sucre ou des pièces de présentation. Il permet de transformer une simple pâte en une forme printanière et élégante en un seul geste.', 2500.00, NULL, 17, 14, NULL, 'produits/produit_69b299fc601b27.27626565.jpeg', '[\"produits\\/produit_69b299fc601b27.27626565.jpeg\",\"produits\\/produit_69b299fc603a09.80524858.jpeg\",\"produits\\/produit_69b299fc6050c2.46628548.jpeg\"]', NULL, 'unité', '2026-03-12 06:48:28', '2026-07-07 05:21:51', 'actif', '[]', NULL),
+(112, 'Moule en corne de crème', 'Cette moule en corne est un accessoire de pâtisserie de forme conique, principalement utilisé pour confectionner des \"cornes d\'abondance\" ou des \"cornets à la crème\" en pâte feuilletée.', 1000.00, NULL, 2, 12, NULL, 'produits/produit_69b29bd2bc4205.90557564.jpeg', '[\"produits\\/produit_69b29bd2bc4205.90557564.jpeg\",\"produits\\/produit_69b29bd2bc7282.65207368.jpeg\",\"produits\\/produit_69b29bd2bc7b20.58567798.jpeg\",\"produits\\/produit_69b29bd2bc8871.32070147.jpeg\"]', NULL, 'unité', '2026-03-12 06:56:18', '2026-04-01 11:09:50', 'actif', '[]', NULL),
+(113, 'Lot de 10 boules discothèques', 'Boule de discothèque pour gâteau est une miniature sphérique décorative, généralement en mousse recouverte de centaines de petits carrés de miroir argentés ou colorés. Légère et brillante, elle reflète la lumière, parfaite pour des thèmes anniversaires ou mariages. Souvent montée sur pic, elle se plante facilement.', 3000.00, NULL, 10, 19, NULL, 'produits/produit_69b2a0e831e262.64646773.jpg', '[\"produits\\/produit_69b2a0e831e262.64646773.jpg\",\"produits\\/produit_69b2a0e8327097.23492070.jpg\",\"produits\\/produit_69b2a0e8328508.46669691.jpg\",\"produits\\/produit_69b2a0e83299a6.02722997.jpeg\"]', NULL, 'unité', '2026-03-12 07:18:00', '2026-07-05 09:59:29', 'actif', '[]', NULL),
+(114, 'Pinceaux Patisseries', 'Ce lot de pinceaux de pâtisserie est un ustensile de cuisine indispensable pour appliquer avec précision des liquides ou des matières grasses sur des préparations culinaires.', 2000.00, NULL, 6, 14, NULL, 'produits/produit_69b2a2a98ad213.57461468.jpg', '[\"produits\\/produit_69b2a2a98ad213.57461468.jpg\",\"produits\\/produit_69b2a2a98ae8b6.51668935.jpg\",\"produits\\/produit_69b2a2a98aff29.81962649.jpg\"]', NULL, 'unité', '2026-03-12 07:25:29', '2026-06-09 06:05:25', 'actif', '[]', NULL),
+(115, 'Scrapers de patisserie', 'Ce scraper de pâtisserie est un outil plat et rigide utilisé pour manipuler la pâte, nettoyer les surfaces de travail et lisser les gâteaux.', 2000.00, NULL, 30, 14, NULL, 'produits/produit_69b2a478d85f45.83363451.jpg', '[\"produits\\/produit_69b2a478d85f45.83363451.jpg\",\"produits\\/produit_69b2a478d87a09.61167899.jpg\",\"produits\\/produit_69b2a478d88542.87986336.jpg\",\"produits\\/produit_69b2a478d88c90.09499529.jpg\",\"produits\\/produit_69b2a478d89634.80940178.jpg\"]', NULL, 'unité', '2026-03-12 07:33:12', '2026-03-12 07:34:48', 'actif', '[\"#8a2474\",\"#74d5e2\",\"#eebfe5\",\"#91ca9c\"]', NULL),
+(116, 'Couronne anniversaire', 'Cette couronne d\'anniversaire est un accessoire festif, souvent utilisé pour mettre à l\'honneur la personne qui fête son jour spécial.', 1500.00, NULL, 17, 19, NULL, 'produits/produit_69b2b4e7b6e390.71216500.jpeg', '[\"produits\\/produit_69b2b4e7b6e390.71216500.jpeg\",\"produits\\/produit_69b2b4e7b7e1b4.84466446.jpeg\",\"produits\\/produit_69b2b4e7b7f035.86534417.jpeg\"]', NULL, 'unité', '2026-03-12 08:43:19', '2026-03-13 13:04:02', 'actif', '[]', NULL),
+(117, 'Moules Ronds Inoxydables', 'Moule à tarte de la marque Cooking Concepts est un Moule en acier robuste avec revêtement antiadhésif.\r\nConçu pour une répartition uniforme de la chaleur.\r\nDimensions de 9 pouces (environ 23 cm)\r\nLavage à la main uniquement.', 4000.00, NULL, 20, 12, NULL, 'produits/produit_69b2cc4c9bac45.35008378.jpeg', '[\"produits\\/produit_69b2cc4c9bac45.35008378.jpeg\"]', NULL, 'unité', '2026-03-12 10:13:52', '2026-03-12 11:18:57', 'actif', '[]', NULL),
+(118, 'Cake topper cercle Fille', '🥰', 6000.00, NULL, 898, 9, NULL, 'produits/produit_69b2d9bd420f88.97975574.jpeg', '[\"produits\\/produit_69b2d9bd420f88.97975574.jpeg\"]', NULL, 'unité', '2026-03-12 11:20:29', '2026-07-03 05:19:40', 'actif', '[]', NULL),
+(119, 'Cake Topper Célébrité', '🎉', 8000.00, NULL, 96, 9, NULL, 'produits/produit_69b2db15da1460.80191857.jpeg', '[\"produits\\/produit_69b2db15da1460.80191857.jpeg\"]', NULL, 'unité', '2026-03-12 11:26:13', '2026-07-09 08:12:08', 'actif', '[]', NULL),
+(120, 'Cake topper Mariage', 'Parfait pour sublimer vos gateaux de mariage .', 3000.00, NULL, 699, 9, NULL, 'produits/produit_69b2dda0564ee4.97800612.jpeg', '[\"produits\\/produit_69b2dda0564ee4.97800612.jpeg\",\"produits\\/produit_69b2dda0569cb1.06716561.jpeg\",\"produits\\/produit_69b2dda056cd33.61911264.jpeg\"]', NULL, 'unité', '2026-03-12 11:37:04', '2026-07-02 12:06:14', 'actif', '[]', NULL),
+(121, 'Sprinkles mixes', 'Ce sont des vermicelles et confettis comestibles pour la décoration de pâtisseries.\r\nCes décors en sucre ajoutent des couleurs et des formes variées aux gâteaux. \r\nIls sont parfaits pour embellir cupcakes, gâteaux et autres douceurs. \r\nLe mélange présenté inclut des perles, des bâtonnets et d\'autres formes dans des tons violets et argentés.', 3500.00, NULL, 130, 15, NULL, 'produits/produit_69b2ec3162cba6.79169104.jpeg', '[\"produits\\/produit_69b2ec3162cba6.79169104.jpeg\",\"produits\\/produit_69b2ec31630419.87740251.jpeg\",\"produits\\/produit_69b2ec31631650.26221087.jpeg\",\"produits\\/produit_69b2eda9b36b59.81127994.jpeg\"]', NULL, 'unité', '2026-03-12 12:39:13', '2026-03-12 12:45:29', 'actif', '[]', NULL),
+(123, 'Boîte à Verrine 12 empreintes', 'La boîte à verrines 12 empreintes est un emballage ingénieux et compact conçu pour accueillir exactement douze verrines individuelles dans un espace optimisé. Grâce à son plateau intérieur doté de 12 cavités parfaitement calibrées, chaque verrine reste parfaitement calée, verticale et séparée des autres, même lors de trajets en voiture ou de manipulations fréquentes.', 1500.00, NULL, 47, 16, NULL, 'produits/produit_69c421732059a3.01455296.png', '[\"produits\\/produit_69c421732059a3.01455296.png\",\"produits\\/produit_69c4217320c312.70125873.png\",\"produits\\/produit_69c42173210794.49246277.jpeg\",\"produits\\/produit_69c421732122d0.96125659.jpeg\",\"produits\\/produit_69c42173213a76.03827515.jpeg\",\"produits\\/produit_69c421732150c8.93726482.png\"]', NULL, 'unité', '2026-03-25 11:21:10', '2026-05-23 11:40:15', 'actif', '[]', NULL),
+(124, 'Pot de Verrine 10 pièces avec cuillères', 'Élégants, pratiques et 100 % adaptés à la présentation de vos desserts et mises en bouche. Leur transparence parfaite met en valeur les belles couches colorées de vos créations sucrées ou salées. Idéal pour la vente à emporter, les traiteurs, les pâtissiers et les événements.', 1500.00, NULL, 98, 14, NULL, 'produits/produit_69c57a6fc4a849.72520520.jpeg', '[\"produits\\/produit_69c57a6fc4a849.72520520.jpeg\",\"produits\\/produit_69c57a6fc5b6d7.69513067.jpeg\",\"produits\\/produit_69dd21f8802d12.10005480.jpeg\",\"produits\\/produit_69dd21f8815bc6.50863666.jpeg\"]', NULL, 'unité', '2026-03-26 14:26:55', '2026-05-23 11:40:15', 'actif', '[]', NULL),
+(125, 'Boîte à Gâteau Carrée 45/30', 'Boîte à gâteau transparente à socle doré carré 30 cm et d\'une hauteur de 45 cm. La boîte est vendue en kit de 3 pièces : le couvercle, le corps et la base.', 5000.00, NULL, 88, 16, NULL, 'produits/produit_69c584663f2c25.09422616.jpeg', '[\"produits\\/produit_69c584663f2c25.09422616.jpeg\"]', NULL, 'unité', '2026-03-26 15:09:26', '2026-07-11 06:12:57', 'actif', '[\"#d19d01\"]', NULL),
+(126, 'Boîte à Gâteau Ronde 45/35', 'Boîte à gâteau transparente à socle doré ronde de 35cm de diamètre et d\'une hauteur de 45 cm. La boîte est vendue en kit de 3 pièces : le couvercle, le corps et la base.', 5000.00, NULL, 95, 16, NULL, 'produits/produit_69c585f9497f03.56885052.jpeg', '[\"produits\\/produit_69c585f9497f03.56885052.jpeg\"]', NULL, 'unité', '2026-03-26 15:16:09', '2026-07-09 11:30:31', 'actif', '[\"#d19d01\"]', NULL),
+(127, 'Ensemble Boîte et pot à Verrine de 12 cavités', 'L’ensemble typique comprend :\r\n•  1 boîte de transport / présentation à 12 cavités (ou « 12 empreintes »)\r\n•  12 pots / verrines individuels', 2850.00, NULL, 96, 16, NULL, 'produits/produit_69dd28e2554da3.33032671.jpeg', '[\"produits\\/produit_69dd28e2554da3.33032671.jpeg\"]', NULL, 'unité', '2026-04-13 12:36:19', '2026-05-23 11:34:45', 'actif', '[]', NULL),
+(128, 'Ensemble Boîte et pot à Verrine de 24 cavités', 'L’ensemble typique comprend :\r\n•  1 boîte de transport / présentation à 24 cavités (ou « 24 empreintes »)\r\n•  12 pots / verrines individuels', 4350.00, NULL, 99, 16, NULL, 'produits/produit_69dd28cf6338a9.88505036.jpeg', '[\"produits\\/produit_69dd28cf6338a9.88505036.jpeg\"]', NULL, 'unité', '2026-04-13 12:37:57', '2026-07-08 11:40:34', 'actif', '[]', NULL),
+(129, 'Couteaux Patisserie 30cm', 'Le couteau à génoise (ou couteau scie à pâtisserie) est un outil à longue lame dentelée, flexible et fine, conçu pour découper les génoises, entremets et gâteaux mous sans les écraser ni les déchirer.\r\nIl permet une coupe nette en un seul geste grâce à ses dents fines et peut aussi servir de spatule pour étaler les crèmes ou glaçages grâce à son côté lisse.\r\nIndispensable en pâtisserie pour des tranches précises et régulières !', 3200.00, NULL, 100, 14, NULL, 'produits/produit_69dd210a1c1960.50280649.jpeg', '[\"produits\\/produit_69dd210a1c1960.50280649.jpeg\"]', NULL, 'unité', '2026-04-13 12:59:54', NULL, 'actif', '[]', NULL),
+(130, 'Couteaux Patisserie 35cm', 'Le couteau à génoise (ou couteau scie à pâtisserie) est un outil à longue lame dentelée, flexible et fine, conçu pour découper les génoises, entremets et gâteaux mous sans les écraser ni les déchirer.\r\nIl permet une coupe nette en un seul geste grâce à ses dents fines et peut aussi servir de spatule pour étaler les crèmes ou glaçages grâce à son côté lisse.\r\nIndispensable en pâtisserie pour des tranches précises et régulières !', 3750.00, NULL, 99, 14, NULL, 'produits/produit_69dd215668b116.07471656.jpeg', '[\"produits\\/produit_69dd215668b116.07471656.jpeg\"]', NULL, 'unité', '2026-04-13 13:01:10', '2026-07-10 11:26:26', 'actif', '[]', NULL),
+(131, 'Spatule courbée 25cm', 'Lisser les glaçages, crèmes ou ganaches sur les gâteaux sans que les doigts ne gênent. Étaler uniformément les pâtes dans les moules, niveler les préparations ou décoller délicatement des fonds de tarte. La courbure offre un meilleur contrôle et une angle plus naturel.', 2500.00, NULL, 100, 14, NULL, 'produits/produit_69dd234371cc59.84106157.jpeg', '[\"produits\\/produit_69dd234371cc59.84106157.jpeg\"]', NULL, 'unité', '2026-04-13 13:09:23', NULL, 'actif', '[]', NULL),
+(132, 'Spatule courbée 30cm', 'Lisser les glaçages, crèmes ou ganaches sur les gâteaux sans que les doigts ne gênent. Étaler uniformément les pâtes dans les moules, niveler les préparations ou décoller délicatement des fonds de tarte. La courbure offre un meilleur contrôle et une angle plus naturel.', 3000.00, NULL, 100, 14, NULL, 'produits/produit_69dd238a79e593.38979788.jpeg', '[\"produits\\/produit_69dd238a79e593.38979788.jpeg\"]', NULL, 'unité', '2026-04-13 13:10:34', NULL, 'actif', '[]', NULL),
+(133, 'Spatule plate 36cm', 'Lisser les glaçages, crèmes, ganaches ou buttercream sur le dessus et surtout les côtés des gâteaux. La lame droite permet d’obtenir des finitions très nettes et verticales sur les parois.\r\n•  Étaler uniformément de la pâte, des crèmes ou des nappages.\r\n•  Démouler délicatement des préparations, soulever des tranches de gâteau ou des biscuits.\r\n•  Réaliser des finitions précises sur des entremets, layer cakes ou cupcakes.', 3300.00, NULL, 100, 14, NULL, 'produits/produit_69dd24b61d7f22.00709910.jpeg', '[\"produits\\/produit_69dd24b61d7f22.00709910.jpeg\",\"produits\\/produit_69dd24b61da4b3.91062275.jpeg\"]', NULL, 'unité', '2026-04-13 13:15:34', NULL, 'actif', '[]', NULL),
+(134, 'Boîte Verrine 24 cavités', 'La boîte à verrines 24 empreintes est un emballage ingénieux et compact conçu pour accueillir exactement 24 verrines individuelles dans un espace optimisé. Grâce à son plateau intérieur doté de 24 cavités parfaitement calibrées, chaque verrine reste parfaitement calée, verticale et séparée des autres, même lors de trajets en voiture ou de manipulations fréquentes.', 2500.00, NULL, 99, 16, NULL, 'produits/produit_69e0bbcc642228.74275902.jpeg', '[\"produits\\/produit_69e0bbcc642228.74275902.jpeg\"]', NULL, 'unité', '2026-04-16 06:37:00', '2026-07-04 07:54:14', 'actif', '[]', NULL),
+(135, 'Pince Pâtisserie', 'Outil De Décoration De Gâteau En Acier Inoxydable Outil de cuisson polyvalent', 1500.00, NULL, 33, 14, NULL, 'produits/produit_69e118a21375a2.75038800.jpeg', '[\"produits\\/produit_69e118a21375a2.75038800.jpeg\",\"produits\\/produit_69e118a21614e9.52664104.jpeg\"]', NULL, 'unité', '2026-04-16 13:13:06', '2026-07-04 07:55:48', 'actif', '[]', NULL),
+(136, 'Lisseur pour pâte Sucre', 'Lisseur pour pâte à sucre qui permet de travailler les angles et les côtés de vos gâteaux recouverts de pâte à sucre ou pâte d\'amande. La surface et les contours de vos gâteaux auront désormais une belle surface parfaitement unie et sans défauts, base parfaite pour la décoration! Résultat digne d\'un professionnel', 2000.00, NULL, 16, 14, NULL, 'produits/produit_69e11c55932797.28591399.jpeg', '[\"produits\\/produit_69e11c55932797.28591399.jpeg\"]', NULL, 'unité', '2026-04-16 13:28:53', '2026-07-04 07:55:48', 'actif', '[\"#e5488a\",\"#d9ec37\",\"#01c7fc\",\"#ffffff\"]', NULL),
+(137, 'Boule et arc en ciel 🌈', 'Lot boules et arc en ciel Multiformes\r\nNos décoratives pour gâteaux sont des éléments de cake design incontournables (polystyrène, plastique ou sucre) utilisés pour ajouter du volume, de la couleur et une touche chic (or, argent, pastel) aux créations. Légères et souvent montées sur pics, elles permettent de personnaliser rapidement gâteaux d\'anniversaire et de fête.', 3500.00, NULL, 99, 19, NULL, 'produits/produit_69e274e158d6a1.21411362.jpeg', '[\"produits\\/produit_69e274e158d6a1.21411362.jpeg\",\"produits\\/produit_69e274e1590739.69138337.jpeg\",\"produits\\/produit_69e274e1591d68.58628989.jpeg\",\"produits\\/produit_69e274e15939c1.18398864.jpeg\",\"produits\\/produit_69e274e15953d0.32348838.jpeg\",\"produits\\/produit_69e274e1597617.40747971.jpeg\",\"produits\\/produit_69e274e1598cc5.46292691.jpeg\",\"produits\\/produit_69e274e159a391.98168818.jpeg\",\"produits\\/produit_69e274e159ba18.87267814.jpeg\",\"produits\\/produit_69e274e159d1e5.77590498.jpeg\"]', NULL, 'unité', '2026-04-17 13:58:57', '2026-07-07 11:58:18', 'actif', '[\"#e5488a\",\"#982abc\",\"#ff6a00\",\"#00a1d8\",\"#b51a00\",\"#f4a4c0\",\"#6ae548\",\"#d97ae6\"]', NULL),
+(138, 'Fouet en Silicone', 'Mélangez, fouettez, grattez sans abîmer vos plats !Ce fouet en silicone résiste à la chaleur et passe au lave-vaisselle. Léger, maniable, et sans danger pour vos poêles antiadhésives et bols en inox. Fini les traces de métal.', 700.00, NULL, 100, 14, NULL, 'produits/produit_6a293c4b3e6f26.54372277.jpeg', '[\"produits\\/produit_6a293c4b3e6f26.54372277.jpeg\",\"produits\\/produit_6a293c4b3ecf02.85464785.jpeg\",\"produits\\/produit_6a293c4b3ee2b7.67916039.jpeg\",\"produits\\/produit_6a293c4b3ef9e6.53043102.jpeg\"]', NULL, 'unité', '2026-06-10 06:28:27', '2026-06-10 06:29:45', 'actif', '[\"#b51a00\",\"#4e7a27\",\"#5e30eb\"]', NULL),
+(139, 'Moule Ajustable en Inox', 'Un seul outil pour une dizaine de créations possibles.Nos cerceaux inox ajustables de forme ronds, carrés et rectangulaires s\'adaptent à la taille et à la forme de vos gâteaux sans encombrer vos placards.C\'est l\'accessoire pro qui simplifie la vie de tous les pâtissiers, amateurs ou Confirmés.', 4000.00, NULL, 72, 12, NULL, 'produits/produit_6a293f13854e86.90377811.jpeg', '[\"produits\\/produit_6a293f13854e86.90377811.jpeg\",\"produits\\/produit_6a293f13860ab7.91670886.jpeg\",\"produits\\/produit_6a293f13862a81.45631957.jpeg\",\"produits\\/produit_6a293f138637f2.66201955.jpeg\",\"produits\\/produit_6a293f13864724.49463242.jpeg\",\"produits\\/produit_6a293f13866bb7.92139237.jpeg\"]', NULL, 'unité', '2026-06-10 06:40:19', '2026-07-10 11:23:23', 'actif', '[\"#858585\"]', NULL),
+(140, 'Moule Ajustable en Inox Carré', 'Le moule parfait pour vos cuissons de gâteaux carré sans risque de démoulage raté.', 4000.00, NULL, 45, 12, NULL, 'produits/produit_6a2940d72db853.28639184.jpeg', '[\"produits\\/produit_6a2940d72db853.28639184.jpeg\",\"produits\\/produit_6a2940d72dcac9.31799359.jpeg\",\"produits\\/produit_6a2940d72ddc15.96680781.jpeg\"]', NULL, 'unité', '2026-06-10 06:47:51', '2026-07-10 11:23:23', 'actif', '[\"#707070\"]', NULL),
+(141, 'Lot de 50 Caissettes de Cupcakes', 'Des caissettes parfaites indispensables pour maintenir la forme de vos gâteaux pendant la cuisson et soigner leur présentation et qui entrent au four sans soucis .', 2500.00, NULL, 199, 14, NULL, 'produits/produit_6a29428b5ef8a4.11764968.jpeg', '[\"produits\\/produit_6a29428b5ef8a4.11764968.jpeg\",\"produits\\/produit_6a29428b5f8044.47853748.jpeg\",\"produits\\/produit_6a29428b5f8d58.88542644.jpeg\",\"produits\\/produit_6a29428b5f97b9.78304057.jpeg\",\"produits\\/produit_6a29428b5f9ff1.74393785.jpeg\",\"produits\\/produit_6a29428b5fb9e6.30292199.jpeg\"]', NULL, 'unité', '2026-06-10 06:55:07', '2026-07-10 11:22:53', 'actif', '[\"#e5488a\",\"#999999\",\"#ffab01\",\"#32c759\",\"#583300\",\"#d19d01\",\"#ffffff\"]', NULL),
+(142, 'Lot de 20 papillons comestibles', 'Des papillons totalement comestibles en wafer Paper pour décorer vos réalisations.', 2000.00, NULL, 250, 17, NULL, 'produits/produit_6a298b02b5b153.37543494.jpeg', '[\"produits\\/produit_6a298b02b5b153.37543494.jpeg\",\"produits\\/produit_6a298b02b5de65.71023909.jpeg\",\"produits\\/produit_6a298b02b5fbf1.50410598.jpeg\"]', NULL, 'unité', '2026-06-10 12:04:18', NULL, 'actif', '[]', NULL),
+(143, 'Lot de 20 fleurs comestibles', 'Des fleurs totalement comestibles et colorées pour embellir vos gâteaux', 2000.00, NULL, 300, 17, NULL, 'produits/produit_6a298e013e0885.15113689.jpeg', '[\"produits\\/produit_6a298e013e0885.15113689.jpeg\",\"produits\\/produit_6a298e013e3661.62408205.jpeg\"]', NULL, 'unité', '2026-06-10 12:17:05', NULL, 'actif', '[]', NULL),
+(144, 'Couronne Petit Format', 'Des couronnes sur mesure pour apporter une touche personnalisée à vos réalisations.', 1000.00, NULL, 105, 19, NULL, 'produits/produit_6a2994c7bcc667.22238565.jpeg', '[\"produits\\/produit_6a2994c7bcc667.22238565.jpeg\",\"produits\\/produit_6a2994c7bd3c79.54095506.jpeg\",\"produits\\/produit_6a2994c7bd52d1.48614137.jpeg\",\"produits\\/produit_6a2994c7bd65b7.14499960.jpeg\"]', NULL, 'unité', '2026-06-10 12:45:59', '2026-07-07 05:21:51', 'actif', '[\"#d38301\",\"#ffc777\",\"#999999\"]', NULL),
+(145, 'Moule demi-sphère en Silicone', 'l\'ustensile incontournable en pâtisserie pour réaliser des dômes parfaits, des inserts, des coques en chocolat ou des entremets individuels brillants.Grâce à sa flexibilité, il assure un démoulage net sans casser vos préparations, qu\'elles soient congelées ou cuites au four.', 2500.00, NULL, 50, 20, NULL, 'produits/produit_6a2a91815f07b9.70932751.jpeg', '[\"produits\\/produit_6a2a91815f07b9.70932751.jpeg\",\"produits\\/produit_6a2a91815fa068.50144970.jpeg\",\"produits\\/produit_6a2a91815fac21.11634274.jpeg\",\"produits\\/produit_6a2a91815fc732.25026971.jpeg\",\"produits\\/produit_6a2a91815fe5b6.91811028.jpeg\",\"produits\\/produit_6a2a91816006e1.52048580.jpeg\"]', NULL, 'unité', '2026-06-11 06:44:17', NULL, 'actif', '[\"#ee719e\",\"#32c759\",\"#01c7fc\",\"#5a1c00\"]', NULL),
+(146, 'Papillons Décoratives', 'Les papillons décoratifs pour gâteaux apportent une touche de poésie, de légèreté et d\'élégance à toutes vos créations, particulièrement sur les entremets bombés ou les glaçages miroirs.', 1500.00, NULL, 150, 19, NULL, 'produits/produit_6a2a92c5016726.78251489.jpeg', '[\"produits\\/produit_6a2a92c5016726.78251489.jpeg\",\"produits\\/produit_6a2a92c50185d9.70441090.jpeg\",\"produits\\/produit_6a2a92c501a186.50406927.jpeg\",\"produits\\/produit_6a2a92c501b311.71786952.jpeg\",\"produits\\/produit_6a2a92c501c1e6.28108921.jpeg\",\"produits\\/produit_6a2a92c501d2e4.84405707.jpeg\",\"produits\\/produit_6a2a92c501e658.67787818.jpeg\"]', NULL, 'unité', '2026-06-11 06:49:41', NULL, 'actif', '[\"#f4a4c0\",\"#f5ec00\",\"#000000\",\"#93e3fd\",\"#ffffff\"]', NULL),
+(147, 'Fleurs Décoratives Orchidées', 'Fleurs artificielles\r\nElles s\'installent rapidement et se retirent en un clin d\'œil au moment de la découpe. Elles sont idéales si vous voulez conserver la décoration en souvenir après l\'événement.', 2000.00, NULL, 96, 19, NULL, 'produits/produit_6a2a942a9fc6a5.55704463.jpeg', '[\"produits\\/produit_6a2a942a9fc6a5.55704463.jpeg\",\"produits\\/produit_6a2a942a9fd8a5.85452521.jpeg\",\"produits\\/produit_6a2a942a9fe410.42465668.jpeg\",\"produits\\/produit_6a2a942aa00061.77096117.jpeg\",\"produits\\/produit_6a2a942aa023b7.14822832.jpeg\",\"produits\\/produit_6a2a94a969b882.20503133.jpeg\"]', NULL, 'unité', '2026-06-11 06:55:38', '2026-07-07 05:21:51', 'actif', '[\"#ffffff\",\"#864ffe\",\"#ee719e\"]', NULL),
+(148, 'Couronne Grand Modèle', 'Ces couronnes rigides en alliage ou en métal léger apportent un relief tridimensionnel incomparable et une brillance authentique. Elles sont souvent ornées de fausses perles ou de strass scintillants, offrant un rendu haut de gamme digne d\'une reine ou d\'un roi. L\'immense avantage est qu\'elles se lavent facilement pour être conservées en souvenir ou réutilisées lors d\'un prochain événement.', 3500.00, NULL, 293, 19, NULL, 'produits/produit_6a2a9bbe8e12e3.49289749.jpeg', '[\"produits\\/produit_6a2a9bbe8e12e3.49289749.jpeg\",\"produits\\/produit_6a2a9bbe8ec9d7.73417661.jpeg\",\"produits\\/produit_6a2a9bbe8ed877.27280518.jpeg\",\"produits\\/produit_6a2a9bbe8ee464.41101014.jpeg\",\"produits\\/produit_6a2a9bbe8eefc0.72033562.jpeg\",\"produits\\/produit_6a2a9bbe8efd71.76777548.jpeg\"]', NULL, 'unité', '2026-06-11 07:27:58', '2026-07-08 11:39:33', 'actif', '[\"#f4a4c0\",\"#c2c2c2\",\"#efcaff\",\"#4e7a27\",\"#b51a00\",\"#01c7fc\",\"#0161fd\"]', NULL),
+(149, 'Thermomètre Digital', 'Notre thermomètre digital est un outil indispensable pour réussir les étapes délicates comme le tempérage du chocolat, la cuisson du caramel ou la meringue italienne. Le choix du modèle dépend principalement de vos habitudes en cuisine et des recettes que vous réalisez.', 4000.00, NULL, 60, 14, NULL, 'produits/produit_6a2fd21e0d7910.83531069.jpeg', '[\"produits\\/produit_6a2fd21e0d7910.83531069.jpeg\",\"produits\\/produit_6a2fd21e0d8e38.15060315.jpeg\"]', NULL, 'unité', '2026-06-15 06:21:18', NULL, 'actif', '[]', NULL),
+(150, 'Tapis en Silicone', 'Notre tapis en silicone offre une surface naturellement antiadhésive qui assure une diffusion homogène de la chaleur, évitant ainsi que le dessous de vos biscuits ou de vos choux ne brûle.', 5000.00, NULL, 74, 14, NULL, 'produits/produit_6a2fd2cc348bf5.26415877.jpeg', '[\"produits\\/produit_6a2fd2cc348bf5.26415877.jpeg\",\"produits\\/produit_6a2fd2cc34b9f7.81112543.jpeg\",\"produits\\/produit_6a2fd2cc34dba7.45340368.jpeg\"]', NULL, 'unité', '2026-06-15 06:24:12', '2026-07-03 11:54:46', 'actif', '[\"#e5488a\",\"#0161fd\",\"#01c7fc\",\"#32c759\"]', NULL),
+(151, 'Lot de 5 ustensiles de pâtisserie', 'Le kit parfait pour faciliter vos réalisations culinaires. Ce kit comprend un fouet , un pinceaux trois spatules', 4500.00, NULL, 99, 14, NULL, 'produits/produit_6a2fd461d87571.78380220.jpeg', '[\"produits\\/produit_6a2fd461d87571.78380220.jpeg\",\"produits\\/produit_6a2fd461d8c9b2.79220888.jpeg\",\"produits\\/produit_6a2fd461d8dae8.09284658.jpeg\",\"produits\\/produit_6a2fd461d8eb14.45768224.jpeg\"]', NULL, 'unité', '2026-06-15 06:30:57', '2026-07-07 05:21:51', 'actif', '[]', NULL),
+(152, 'Moule Layer Cake à fond amovible', 'Nos moules à layer cake doté d’un fond amovible (ou d’une charnière). Cela permet d\'extraire la génoise verticalement sans risquer de briser le biscuit ou d\'abîmer sa forme rectiligne.', 3000.00, NULL, 49, 19, NULL, 'produits/produit_6a2fe04aea1504.80631556.jpeg', '[\"produits\\/produit_6a2fe04aea1504.80631556.jpeg\",\"produits\\/produit_6a2fe04aeb66d4.71012435.jpeg\",\"produits\\/produit_6a2fe04aeb7cd6.63934639.jpeg\",\"produits\\/produit_6a2fe04aeb9668.03568498.jpeg\",\"produits\\/produit_6a2fe04aeba5e5.13096090.jpeg\"]', NULL, 'unité', '2026-06-15 07:21:46', '2026-07-07 11:57:53', 'actif', '[]', NULL),
+(153, 'Support de Gâteau en Spirale', 'une structure en plastique décorative qui entoure un gâteau de mariage, soit un présentoir à plusieurs plateaux décalés pour fleurs.', 4800.00, NULL, 10, 19, NULL, 'produits/produit_6a302ccd703a36.13913307.jpeg', '[\"produits\\/produit_6a302ccd703a36.13913307.jpeg\",\"produits\\/produit_6a302ccd7054d2.42775205.jpeg\",\"produits\\/produit_6a302ccd7065f0.45525837.jpeg\",\"produits\\/produit_6a302ccd707597.48824510.jpeg\",\"produits\\/produit_6a302ccd707d23.26469187.jpeg\"]', NULL, 'unité', '2026-06-15 12:48:13', NULL, 'actif', '[]', NULL),
+(154, 'Kit de 9 douille', 'Pour un pochage parfait avec plusieurs design ce kit est indispensable. Maîtrisez le débit et donnez une forme spécifique aux préparations (pâtes, cremes, glaçages) pour pocher, décorer', 3500.00, NULL, 595, 14, NULL, 'produits/produit_6a3ea3daac5c27.32339319.jpeg', '[\"produits\\/produit_6a3ea3daac5c27.32339319.jpeg\"]', NULL, 'unité', '2026-06-26 12:07:54', '2026-07-06 12:03:20', 'actif', '[]', NULL),
+(156, 'Feuille Impression comestible A3', 'Feuille Sucre à base de sucre glace et de vanille. L’impression sur Feuille de Sucre est une technique de pâtisserie permettant de reproduire des photos, logos ou motifs personnalisés avec des encres comestibles pour décorer des gâteaux.', 7000.00, NULL, 997, 10, NULL, 'produits/produit_6a4b8acd2e5002.30023612.jpeg', '[\"produits\\/produit_6a4b8acd2e5002.30023612.jpeg\"]', NULL, 'unité', '2026-07-06 07:00:29', '2026-07-11 10:00:14', 'actif', '[]', NULL),
+(157, 'Cartouches d’encres alimentaires', 'Lot de 5 cartouches d’encre comestibles pour les impressions comestibles sur papier sucre ou azym à consommer sans danger.', 60000.00, NULL, 100, 11, NULL, 'produits/produit_6a4e3009b49956.28274280.jpeg', '[\"produits\\/produit_6a4e3009b49956.28274280.jpeg\"]', NULL, 'unité', '2026-07-08 07:10:01', '2026-07-08 07:16:14', 'actif', '[]', NULL),
+(158, 'Ruban', 'Ruban d’emballage de gâteaux', 2500.00, NULL, 100, 16, NULL, 'produits/produit_6a4e3151ddb138.87692482.jpeg', '[\"produits\\/produit_6a4e3151ddb138.87692482.jpeg\"]', NULL, 'unité', '2026-07-08 07:15:29', NULL, 'actif', '[\"#ff3a30\",\"#ffffff\",\"#cbf0ff\"]', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `produits_variantes`
+--
+
+CREATE TABLE `produits_variantes` (
+  `id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `nom` varchar(255) NOT NULL,
+  `prix` decimal(10,2) NOT NULL,
+  `prix_promotion` decimal(10,2) DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `ordre` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `produits_variantes`
+--
+
+INSERT INTO `produits_variantes` (`id`, `produit_id`, `nom`, `prix`, `prix_promotion`, `image`, `ordre`) VALUES
+(9, 67, 'Lisseur 25cm x 12cm', 3000.00, NULL, 'produits/produit_69a9669c4711f0.36120465.jpeg', 0),
+(10, 67, 'Lisseur 30cm x 12cm', 3500.00, NULL, 'produits/produit_69a9669c476f15.21971088.jpeg', 1),
+(11, 63, 'Cake Form 10 cm', 8000.00, NULL, 'produits/produit_69a967b071e442.02144071.jpeg', 0),
+(12, 63, 'Cake Form 15 cm', 12000.00, NULL, 'produits/produit_69a967b0725670.69186553.jpeg', 1),
+(13, 63, 'Cake Form 20 cm', 15000.00, NULL, 'produits/produit_69a967b072ddd0.97923186.jpeg', 2),
+(14, 56, 'Boites rondes 22cm x 24 cm', 2000.00, NULL, 'produits/produit_69a9871a921190.88870547.jpeg', 0),
+(15, 56, 'Boites rondes 26cm x 32cm', 2500.00, NULL, 'produits/produit_69a9871a9270b9.09683390.jpeg', 1),
+(16, 57, 'Boites de 22cm x 24cm', 2000.00, NULL, 'produits/produit_69a98998c8b4d5.65858491.jpeg', 0),
+(17, 57, 'Boites de 26cm x 32cm', 2500.00, NULL, 'produits/produit_69a98998c906e5.69517149.jpeg', 1),
+(18, 60, 'Boites gateaux 22 cm', 250.00, NULL, 'produits/produit_69a98b8e7a6b94.41430106.webp', 0),
+(19, 60, 'Boîtes Gateaux 26 cm', 300.00, NULL, 'produits/produit_69a98b8e7ae0a9.50003362.webp', 1),
+(20, 60, 'Boites gateaux 28 cm', 350.00, NULL, 'produits/produit_69a98b8e7b5847.56416699.webp', 2),
+(21, 77, 'Boîtes 22 cm x 24cm', 2000.00, NULL, 'produits/produit_69a997c2a0eaf8.10170921.jpeg', 0),
+(22, 77, 'Boîtes 26cm x 32cm', 2500.00, NULL, 'produits/produit_69a997c2a12e55.87714662.jpeg', 1),
+(23, 77, 'Boîtes  22cm x 16cm', 1700.00, NULL, 'produits/produit_69a997c2a17077.18545112.jpeg', 2),
+(24, 77, 'Boîtes  30 cm x 34cm', 3000.00, NULL, 'produits/produit_69a997c2a1a437.27096597.jpeg', 3),
+(25, 77, 'Boîtes 30cm x 45cm', 4000.00, NULL, 'produits/produit_69a997c2a1f856.47577881.jpeg', 4),
+(26, 77, 'Boîtes 35cm x 45cm', 4500.00, NULL, 'produits/produit_69a997c2a23687.51614624.jpeg', 5),
+(27, 80, 'Présentoir 15cm', 3750.00, NULL, 'produits/produit_69a9a7a82831a9.71968223.jpeg', 0),
+(28, 80, 'Présentoir 20 cm', 4500.00, NULL, 'produits/produit_69a9a7a828d729.85364800.jpeg', 1),
+(29, 80, 'Présentoir 25 cm', 5700.00, NULL, 'produits/produit_69a9a7a82919f7.64467320.jpeg', 2),
+(30, 81, 'Boîtes 6 cavités', 1000.00, NULL, 'produits/produit_69ac21db7e4c39.28745551.jpeg', 0),
+(32, 81, 'Boîte 12 cavités', 1500.00, NULL, 'produits/produit_69ac2139ddd2a3.37359850.jpeg', 1),
+(33, 83, 'Cake drums 20cm', 750.00, NULL, 'produits/produit_69ac45788642c1.62464605.jpeg', 0),
+(34, 83, 'Cake drums 25cm', 1000.00, NULL, 'produits/produit_69ac4578868633.14811049.jpeg', 1),
+(35, 83, 'Cake drums 30cm', 1500.00, NULL, 'produits/produit_69ac457886c439.68605810.jpeg', 2),
+(36, 83, 'Cake drums 35cm', 2200.00, NULL, 'produits/produit_69ac45788716b2.78705417.jpeg', 3),
+(37, 84, 'Paquet de 50 feuilles A4', 55000.00, NULL, 'produits/produit_69aea2662643c8.28086716.jpeg', 0),
+(38, 84, 'Paquet de 100 feuilles A4', 100000.00, NULL, 'produits/produit_69aea266287590.85730806.jpeg', 1),
+(39, 6, 'Impression comestible format A4', 4000.00, NULL, 'produits/produit_69aea8a5b5e1a9.60915713.jpeg', 0),
+(40, 6, 'Impression comestible format A3', 7000.00, NULL, 'produits/produit_69aea8a5b62d39.20074333.jpeg', 1),
+(41, 41, 'Lot de 12 tiges 30cm', 3000.00, NULL, 'produits/produit_69aebeac5bbb55.51238666.jpeg', 0),
+(42, 95, 'Cake topper 12 à 14 cm', 4000.00, NULL, 'produits/produit_69b00dc21f4090.62128177.jpeg', 0),
+(43, 99, 'Cake train Fille', 3500.00, NULL, 'produits/produit_69b14cbb17ec59.14511087.jpeg', 0),
+(44, 99, 'Cake train Spiderman', 3500.00, NULL, 'produits/produit_69b14cbb188974.79543181.jpeg', 1),
+(45, 99, 'Cake train Dinosaure', 3500.00, NULL, 'produits/produit_69b14cbb18cad3.40415205.jpeg', 2),
+(46, 99, 'Cake train Paw Patrol', 3500.00, NULL, 'produits/produit_69b14cbb190f77.06579218.jpeg', 3),
+(47, 100, 'Rouleau 6cm', 1500.00, NULL, 'produits/produit_69b150e74d92e1.84880326.jpeg', 0),
+(48, 100, 'Rouleau 8cm', 2000.00, NULL, 'produits/produit_69b150e74e18e7.94893675.jpeg', 1),
+(49, 100, 'Rouleau 10cm', 2500.00, NULL, 'produits/produit_69b150e74e8f93.58232691.jpeg', 2),
+(50, 100, 'Rouleau 12cm', 3000.00, NULL, 'produits/produit_69b150e74ec504.99148386.jpeg', 3),
+(51, 100, 'Rouleau 16cm', 3500.00, NULL, 'produits/produit_69b150e74f33a6.91162443.jpeg', 4),
+(52, 100, 'Rouleau 18cm', 4000.00, NULL, 'produits/produit_69b150e74f8ce5.13879607.jpeg', 5),
+(53, 100, 'Rouleau 20cm', 4500.00, NULL, 'produits/produit_69b150e7502422.03033346.jpeg', 6),
+(54, 37, 'Poudre Argentée comestible', 5000.00, NULL, 'produits/produit_69b162a0d4e7f7.45126403.jpeg', 0),
+(55, 108, 'Semelle 22cm', 150.00, NULL, 'produits/produit_69b2937f3ac4d9.77904756.jpg', 0),
+(56, 108, 'Semelle 26cm', 200.00, NULL, 'produits/produit_69b2937f3e5e05.84215503.jpg', 1),
+(57, 108, 'Semelle 28cm', 250.00, NULL, NULL, 2),
+(58, 120, 'Mr and Mrs Personnalisé', 5000.00, NULL, 'produits/produit_69b2dda0578073.70503769.jpeg', 0),
+(59, 120, 'MR and Mrs', 6000.00, NULL, 'produits/produit_69b2dda0584ea3.50817090.jpeg', 1),
+(60, 119, 'Cake Topper Christiano', 8000.00, NULL, 'produits/produit_69c2c642e44e50.31988995.jpeg', 0),
+(61, 119, 'Cake topper Artiste', 8000.00, NULL, 'produits/produit_69c2ca1a7bf068.75331010.png', 1),
+(62, 119, 'Cake Topper Barça', 7000.00, NULL, 'produits/produit_69c2ca1a802583.44705080.png', 2),
+(63, 119, 'Mbappé', 5000.00, NULL, 'produits/produit_69c2ca1a83b488.87357800.png', 3),
+(65, 123, 'Boîte à Verrine 24 empreintes', 2000.00, NULL, 'produits/produit_69c42116cd4d18.74580635.jpeg', 0),
+(66, 124, 'Pot de Verrine 20 pièces avec cuillères', 2500.00, NULL, 'produits/produit_69c57ab0997af0.08996976.jpeg', 0),
+(67, 138, 'Petit format', 700.00, NULL, 'produits/produit_6a293c4b3fc7e9.45457337.jpeg', 0),
+(68, 138, 'Moyen Format', 1000.00, NULL, 'produits/produit_6a293c4b404a60.12723661.jpeg', 1),
+(69, 138, 'Grand Format', 1200.00, NULL, 'produits/produit_6a293c4b408e02.37317024.jpeg', 2),
+(70, 139, 'Moule 8.5cm Hauteur', 4000.00, NULL, 'produits/produit_6a293f1386ea09.61056424.jpeg', 0),
+(71, 139, 'Moule 10cm hauteur', 4500.00, NULL, 'produits/produit_6a293f13877d37.19193149.jpeg', 1),
+(72, 139, 'Moule 12cm Hauteur', 5000.00, NULL, 'produits/produit_6a293f1387e441.44181139.jpeg', 2),
+(73, 139, 'Moule 15cm hauteur', 6500.00, NULL, 'produits/produit_6a293f13884cd8.86660331.jpeg', 3),
+(74, 139, 'Moule 20cm Hauteur', 7500.00, NULL, 'produits/produit_6a293f1388aff3.33737649.jpeg', 4),
+(75, 144, 'Couronne Petit Format Perlé', 1250.00, NULL, 'produits/produit_6a2994c7bdd148.27880387.jpeg', 0),
+(76, 148, 'Couronne en Métal dur', 4000.00, NULL, 'produits/produit_6a2a9bbe8fbe42.68988457.jpeg', 0),
+(77, 148, 'Couronne en Métal dur', 4000.00, NULL, 'produits/produit_6a2a9bbe900b91.10356613.jpeg', 1),
+(78, 63, 'Cake form 25cm', 19000.00, NULL, 'produits/produit_6a2fd1806edf85.16195375.jpeg', 3),
+(79, 152, 'Moule 10cm', 3000.00, NULL, 'produits/produit_6a2fe04aec0860.83564990.jpeg', 0),
+(80, 152, 'Moule 15cm', 5000.00, NULL, 'produits/produit_6a2fe04aec9b14.51184561.jpeg', 1),
+(81, 152, 'Moule 20cm', 6500.00, NULL, 'produits/produit_6a2fe04aed9b12.89980291.jpeg', 2),
+(82, 152, 'Moule 25cm', 8700.00, NULL, 'produits/produit_6a2fe04aee2397.54612664.jpeg', 3),
+(83, 153, 'Petit format', 4800.00, NULL, 'produits/produit_6a302ccd710597.89606721.jpeg', 0),
+(84, 153, 'Grand format', 6800.00, NULL, 'produits/produit_6a302ccd7166c0.21408920.jpeg', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `produits_visites`
+--
+
+CREATE TABLE `produits_visites` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `produit_id` int(11) NOT NULL,
+  `date_visite` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `produits_visites`
+--
+
+INSERT INTO `produits_visites` (`id`, `user_id`, `produit_id`, `date_visite`) VALUES
+(212, 25, 69, '2026-06-05 18:59:13'),
+(219, 25, 93, '2026-06-05 18:47:44'),
+(221, 25, 37, '2026-06-05 18:48:52'),
+(222, 25, 83, '2026-06-05 18:50:05'),
+(223, 25, 14, '2026-06-05 18:54:03'),
+(224, 25, 16, '2026-06-05 18:54:17'),
+(225, 25, 13, '2026-06-05 18:54:47'),
+(229, 24, 63, '2026-06-09 15:53:20'),
+(232, 24, 100, '2026-06-09 15:53:30'),
+(233, 27, 139, '2026-06-12 11:35:12'),
+(234, 27, 63, '2026-06-12 11:37:19'),
+(235, 28, 63, '2026-06-15 13:52:50'),
+(236, 28, 16, '2026-06-15 13:55:02'),
+(237, 29, 90, '2026-06-20 04:35:31'),
+(238, 29, 84, '2026-06-20 04:37:16'),
+(239, 29, 66, '2026-06-20 04:40:15'),
+(240, 29, 70, '2026-06-20 04:45:05'),
+(243, 29, 69, '2026-06-20 04:51:13'),
+(248, 29, 94, '2026-06-20 04:48:47'),
+(250, 29, 100, '2026-06-20 04:49:16'),
+(263, 29, 24, '2026-06-20 04:51:42'),
+(264, 29, 93, '2026-06-20 05:05:02'),
+(266, 29, 16, '2026-06-20 05:05:33'),
+(267, 29, 14, '2026-06-20 05:05:45'),
+(268, 29, 13, '2026-06-20 05:06:00'),
+(269, 29, 15, '2026-06-20 05:06:20'),
+(270, 29, 111, '2026-06-20 05:21:57'),
+(271, 30, 69, '2026-06-22 17:30:34'),
+(275, 32, 152, '2026-07-02 07:04:13'),
+(277, 32, 150, '2026-07-02 07:04:27'),
+(278, 32, 154, '2026-07-02 07:05:53'),
+(279, 32, 141, '2026-07-02 07:05:43'),
+(281, 32, 137, '2026-07-02 07:06:17'),
+(282, 32, 140, '2026-07-02 07:08:25'),
+(283, 32, 139, '2026-07-02 07:10:56'),
+(284, 32, 117, '2026-07-02 07:10:28'),
+(286, 32, 104, '2026-07-02 07:11:08'),
+(287, 32, 41, '2026-07-02 07:13:33'),
+(288, 32, 143, '2026-07-02 07:16:42'),
+(290, 32, 69, '2026-07-02 07:23:47'),
+(291, 32, 146, '2026-07-02 07:31:57'),
+(292, 33, 83, '2026-07-03 07:05:54'),
+(293, 33, 147, '2026-07-03 07:07:12'),
+(294, 34, 24, '2026-07-03 11:05:30'),
+(295, 36, 100, '2026-07-06 21:05:00'),
+(296, 36, 19, '2026-07-06 21:06:40'),
+(297, 36, 112, '2026-07-06 21:09:34'),
+(298, 38, 6, '2026-07-07 10:16:41'),
+(299, 39, 77, '2026-07-07 16:38:32'),
+(300, 39, 83, '2026-07-07 16:28:04'),
+(302, 39, 41, '2026-07-07 16:28:24'),
+(303, 39, 34, '2026-07-07 16:28:52'),
+(304, 39, 69, '2026-07-07 16:29:46'),
+(305, 39, 29, '2026-07-07 16:34:11'),
+(307, 39, 56, '2026-07-07 16:36:03'),
+(311, 36, 43, '2026-07-10 08:54:53');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `section4_config`
+--
+
+CREATE TABLE `section4_config` (
+  `id` int(11) NOT NULL,
+  `titre` varchar(255) DEFAULT NULL,
+  `texte` varchar(255) DEFAULT NULL,
+  `image_fond` varchar(255) DEFAULT NULL,
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif',
+  `date_modification` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `section4_config`
+--
+
+INSERT INTO `section4_config` (`id`, `titre`, `texte`, `image_fond`, `statut`, `date_modification`) VALUES
+(1, 'Bienvenue au Sugar Paper', 'Tous les produits a petit prix', 'market.png', 'actif', '2026-03-08 08:33:44'),
+(2, 'Bienvenue au Sugar Paper', 'Tous les produits a petit prix', 'section4_1772454251_69a5816b23097.png', 'actif', '2026-03-02 07:24:11');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `slider`
+--
+
+CREATE TABLE `slider` (
+  `id` int(11) NOT NULL,
+  `titre` varchar(255) NOT NULL,
+  `paragraphe` text DEFAULT NULL,
+  `image` varchar(255) NOT NULL,
+  `bouton_texte` varchar(100) DEFAULT NULL,
+  `bouton_lien` varchar(255) DEFAULT NULL,
+  `ordre` int(11) NOT NULL DEFAULT 0,
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif',
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `slider`
+--
+
+INSERT INTO `slider` (`id`, `titre`, `paragraphe`, `image`, `bouton_texte`, `bouton_lien`, `ordre`, `statut`, `date_creation`, `date_modification`) VALUES
+(13, 'Promo', 'Promo', 'slider_1772729097_69a9b3095bf4e.png', '', '', 4, 'actif', '2026-03-05 11:09:57', '2026-03-05 11:44:57'),
+(15, 'Pâtisserie', 'Pâtisserie', 'slider_1782914197_6a451c9551008.jpeg', '', '', 2, 'inactif', '2026-03-05 11:15:26', '2026-07-08 11:21:20'),
+(17, 'personalisation', 'personalisation', 'slider_1783524043_6a4e6acb6f040.png', '', '', 3, 'actif', '2026-03-05 11:47:15', '2026-07-08 11:20:43'),
+(18, 'anniversairee', 'anniversairee', 'slider_1772729615_69a9b50f1c2ae.png', '', '', 6, 'actif', '2026-03-05 11:53:35', NULL),
+(19, 'Imprimante', 'Impression', 'slider_1783523952_6a4e6a700a2ae.png', '', '', 1, 'actif', '2026-07-01 09:09:41', '2026-07-08 11:19:12');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `stock_mouvements`
+--
+
+CREATE TABLE `stock_mouvements` (
+  `id` int(11) NOT NULL,
+  `type` enum('entree','sortie','inventaire') NOT NULL,
+  `produit_id` int(11) DEFAULT NULL,
+  `quantite` int(11) NOT NULL,
+  `quantite_avant` int(11) DEFAULT NULL,
+  `quantite_apres` int(11) DEFAULT NULL,
+  `reference_type` varchar(50) DEFAULT NULL,
+  `reference_id` int(11) DEFAULT NULL,
+  `reference_numero` varchar(100) DEFAULT NULL,
+  `date_mouvement` datetime NOT NULL DEFAULT current_timestamp(),
+  `notes` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `stock_mouvements`
+--
+
+INSERT INTO `stock_mouvements` (`id`, `type`, `produit_id`, `quantite`, `quantite_avant`, `quantite_apres`, `reference_type`, `reference_id`, `reference_numero`, `date_mouvement`, `notes`) VALUES
+(154, 'sortie', 13, 1, 3, 2, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(155, 'sortie', 23, 1, 49, 48, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(156, 'sortie', 83, 1, 97, 96, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(157, 'sortie', 114, 1, 7, 6, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(158, 'sortie', 37, 1, 38, 37, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(159, 'sortie', 69, 1, 112, 111, 'commande', 103, 'CMD-20260606-438554', '2026-06-09 06:05:25', 'Vente commande CMD-20260606-438554 (statut payé)'),
+(160, 'sortie', 34, 1, 100, 99, 'commande', 104, 'CMD-20260609-8E8765', '2026-06-09 10:04:22', 'Vente commande CMD-20260609-8E8765 (statut payé)'),
+(161, 'inventaire', 138, 100, 0, 100, 'ajustement', NULL, NULL, '2026-06-10 06:29:45', 'Ajustement manuel : +100'),
+(162, 'sortie', 60, 12, 3000, 2988, 'commande', 112, 'CMD-20260702-E8C2CB', '2026-07-02 08:33:02', 'Vente commande CMD-20260702-E8C2CB (statut payé)'),
+(163, 'sortie', 108, 12, 298, 286, 'commande', 112, 'CMD-20260702-E8C2CB', '2026-07-02 08:33:02', 'Vente commande CMD-20260702-E8C2CB (statut payé)'),
+(164, 'sortie', 119, 1, 119, 118, 'commande', 111, 'CMD-20260702-F1EB98', '2026-07-02 08:33:15', 'Vente commande CMD-20260702-F1EB98 (statut payé)'),
+(165, 'sortie', 81, 1, 150, 149, 'commande', 106, 'CMD-20260702-15BBC8', '2026-07-02 08:34:10', 'Vente commande CMD-20260702-15BBC8 (statut payé)'),
+(166, 'sortie', 15, 1, 30, 29, 'commande', 106, 'CMD-20260702-15BBC8', '2026-07-02 08:34:10', 'Vente commande CMD-20260702-15BBC8 (statut payé)'),
+(167, 'sortie', 69, 1, 111, 110, 'commande', 106, 'CMD-20260702-15BBC8', '2026-07-02 08:34:10', 'Vente commande CMD-20260702-15BBC8 (statut payé)'),
+(168, 'sortie', 55, 1, 100, 99, 'commande', 107, 'CMD-20260702-388439', '2026-07-02 08:34:31', 'Vente commande CMD-20260702-388439 (statut payé)'),
+(169, 'sortie', 89, 1, 8, 7, 'commande', 107, 'CMD-20260702-388439', '2026-07-02 08:34:31', 'Vente commande CMD-20260702-388439 (statut payé)'),
+(170, 'sortie', 30, 1, 9, 8, 'commande', 109, 'CMD-20260702-566F5E', '2026-07-02 08:48:48', 'Vente commande CMD-20260702-566F5E (statut payé)'),
+(171, 'sortie', 148, 1, 300, 299, 'commande', 108, 'CMD-20260702-359840', '2026-07-02 08:49:06', 'Vente commande CMD-20260702-359840 (statut payé)'),
+(172, 'sortie', 119, 1, 118, 117, 'commande', 114, 'CMD-20260702-6B25B5', '2026-07-02 10:37:22', 'Vente commande CMD-20260702-6B25B5 (statut payé)'),
+(173, 'sortie', 118, 1, 900, 899, 'commande', 114, 'CMD-20260702-6B25B5', '2026-07-02 10:37:22', 'Vente commande CMD-20260702-6B25B5 (statut payé)'),
+(174, 'sortie', 96, 3, 994, 991, 'commande', 114, 'CMD-20260702-6B25B5', '2026-07-02 10:37:22', 'Vente commande CMD-20260702-6B25B5 (statut payé)'),
+(175, 'sortie', 72, 3, 286, 283, 'commande', 114, 'CMD-20260702-6B25B5', '2026-07-02 10:37:22', 'Vente commande CMD-20260702-6B25B5 (statut payé)'),
+(176, 'sortie', 119, 1, 117, 116, 'commande', 115, 'CMD-20260702-757379', '2026-07-02 11:21:01', 'Vente commande CMD-20260702-757379 (statut payé)'),
+(177, 'sortie', 96, 3, 991, 988, 'commande', 115, 'CMD-20260702-757379', '2026-07-02 11:21:01', 'Vente commande CMD-20260702-757379 (statut payé)'),
+(178, 'sortie', 144, 1, 110, 109, 'commande', 115, 'CMD-20260702-757379', '2026-07-02 11:21:01', 'Vente commande CMD-20260702-757379 (statut payé)'),
+(179, 'sortie', 102, 1, 97, 96, 'commande', 110, 'CMD-20260702-56A049', '2026-07-02 11:22:29', 'Vente commande CMD-20260702-56A049 (statut payé)'),
+(180, 'sortie', 125, 1, 100, 99, 'commande', 116, 'CMD-20260702-63EBE4', '2026-07-02 12:06:14', 'Vente commande CMD-20260702-63EBE4 (statut payé)'),
+(181, 'sortie', 120, 1, 700, 699, 'commande', 116, 'CMD-20260702-63EBE4', '2026-07-02 12:06:14', 'Vente commande CMD-20260702-63EBE4 (statut payé)'),
+(182, 'sortie', 147, 1, 100, 99, 'commande', 116, 'CMD-20260702-63EBE4', '2026-07-02 12:06:14', 'Vente commande CMD-20260702-63EBE4 (statut payé)'),
+(183, 'sortie', 67, 1, 49, 48, 'commande', 116, 'CMD-20260702-63EBE4', '2026-07-02 12:06:14', 'Vente commande CMD-20260702-63EBE4 (statut payé)'),
+(184, 'sortie', 119, 1, 116, 115, 'commande', 113, 'CMD-20260702-EB5479', '2026-07-02 12:15:00', 'Vente commande CMD-20260702-EB5479 (statut payé)'),
+(185, 'sortie', 118, 1, 899, 898, 'commande', 118, 'CMD-20260702-356B47', '2026-07-03 05:19:40', 'Vente commande CMD-20260702-356B47 (statut payé)'),
+(186, 'sortie', 72, 1, 283, 282, 'commande', 118, 'CMD-20260702-356B47', '2026-07-03 05:19:40', 'Vente commande CMD-20260702-356B47 (statut payé)'),
+(187, 'sortie', 72, 1, 282, 281, 'commande', 138, 'CMD-20260703-A7D56B', '2026-07-03 11:51:26', 'Vente commande CMD-20260703-A7D56B (statut payé)'),
+(188, 'sortie', 66, 2, 600, 598, 'commande', 138, 'CMD-20260703-A7D56B', '2026-07-03 11:51:26', 'Vente commande CMD-20260703-A7D56B (statut payé)'),
+(189, 'sortie', 95, 1, 444, 443, 'commande', 136, 'CMD-20260703-678827', '2026-07-03 11:51:44', 'Vente commande CMD-20260703-678827 (statut payé)'),
+(190, 'sortie', 95, 2, 443, 441, 'commande', 134, 'CMD-20260703-9A23BC', '2026-07-03 11:52:28', 'Vente commande CMD-20260703-9A23BC (statut payé)'),
+(191, 'sortie', 95, 1, 441, 440, 'commande', 132, 'CMD-20260703-BAB40C', '2026-07-03 11:52:45', 'Vente commande CMD-20260703-BAB40C (statut payé)'),
+(192, 'sortie', 95, 1, 440, 439, 'commande', 130, 'CMD-20260703-277293', '2026-07-03 11:53:08', 'Vente commande CMD-20260703-277293 (statut payé)'),
+(193, 'sortie', 125, 2, 99, 97, 'commande', 129, 'CMD-20260703-E1AD0E', '2026-07-03 11:53:43', 'Vente commande CMD-20260703-E1AD0E (statut payé)'),
+(194, 'sortie', 19, 1, 98, 97, 'commande', 129, 'CMD-20260703-E1AD0E', '2026-07-03 11:53:43', 'Vente commande CMD-20260703-E1AD0E (statut payé)'),
+(195, 'sortie', 148, 1, 299, 298, 'commande', 129, 'CMD-20260703-E1AD0E', '2026-07-03 11:53:43', 'Vente commande CMD-20260703-E1AD0E (statut payé)'),
+(196, 'sortie', 126, 1, 100, 99, 'commande', 127, 'CMD-20260703-CB514A', '2026-07-03 11:54:46', 'Vente commande CMD-20260703-CB514A (statut payé)'),
+(197, 'sortie', 126, 2, 99, 97, 'commande', 127, 'CMD-20260703-CB514A', '2026-07-03 11:54:46', 'Vente commande CMD-20260703-CB514A (statut payé)'),
+(198, 'sortie', 72, 1, 281, 280, 'commande', 127, 'CMD-20260703-CB514A', '2026-07-03 11:54:46', 'Vente commande CMD-20260703-CB514A (statut payé)'),
+(199, 'sortie', 10, 1, 4, 3, 'commande', 127, 'CMD-20260703-CB514A', '2026-07-03 11:54:46', 'Vente commande CMD-20260703-CB514A (statut payé)'),
+(200, 'sortie', 150, 1, 75, 74, 'commande', 127, 'CMD-20260703-CB514A', '2026-07-03 11:54:46', 'Vente commande CMD-20260703-CB514A (statut payé)'),
+(201, 'sortie', 13, 1, 2, 1, 'commande', 126, 'CMD-20260703-EF2A52', '2026-07-03 11:55:02', 'Vente commande CMD-20260703-EF2A52 (statut payé)'),
+(202, 'sortie', 69, 1, 110, 109, 'commande', 126, 'CMD-20260703-EF2A52', '2026-07-03 11:55:03', 'Vente commande CMD-20260703-EF2A52 (statut payé)'),
+(203, 'sortie', 125, 3, 97, 94, 'commande', 125, 'CMD-20260703-29125C', '2026-07-03 11:55:19', 'Vente commande CMD-20260703-29125C (statut payé)'),
+(204, 'sortie', 6, 1, 2351, 2350, 'commande', 125, 'CMD-20260703-29125C', '2026-07-03 11:55:19', 'Vente commande CMD-20260703-29125C (statut payé)'),
+(205, 'sortie', 85, 1, 100, 99, 'commande', 122, 'CMD-20260703-E27EFC', '2026-07-03 11:55:58', 'Vente commande CMD-20260703-E27EFC (statut payé)'),
+(206, 'sortie', 119, 1, 115, 114, 'commande', 117, 'CMD-20260702-0D5F0A', '2026-07-03 11:56:15', 'Vente commande CMD-20260702-0D5F0A (statut payé)'),
+(207, 'sortie', 84, 1, 600, 599, 'commande', 117, 'CMD-20260702-0D5F0A', '2026-07-03 11:56:15', 'Vente commande CMD-20260702-0D5F0A (statut payé)'),
+(208, 'sortie', 119, 9, 114, 105, 'commande', 119, 'CMD-20260702-31748B', '2026-07-03 11:56:29', 'Vente commande CMD-20260702-31748B (statut payé)'),
+(209, 'sortie', 119, 1, 105, 104, 'commande', 119, 'CMD-20260702-31748B', '2026-07-03 11:56:29', 'Vente commande CMD-20260702-31748B (statut payé)'),
+(210, 'sortie', 6, 2, 2350, 2348, 'commande', 123, 'CMD-20260703-360FFA', '2026-07-03 11:56:54', 'Vente commande CMD-20260703-360FFA (statut payé)'),
+(211, 'sortie', 90, 2, 54, 52, 'commande', 123, 'CMD-20260703-360FFA', '2026-07-03 11:56:54', 'Vente commande CMD-20260703-360FFA (statut payé)'),
+(212, 'sortie', 119, 1, 104, 103, 'commande', 121, 'CMD-20260702-DDC19A', '2026-07-03 11:57:11', 'Vente commande CMD-20260702-DDC19A (statut payé)'),
+(213, 'sortie', 41, 1, 80, 79, 'commande', 120, 'CMD-20260702-D1E868', '2026-07-03 11:57:35', 'Vente commande CMD-20260702-D1E868 (statut payé)'),
+(214, 'sortie', 84, 1, 599, 598, 'commande', 148, 'CMD-20260704-7C3377', '2026-07-04 07:51:58', 'Vente commande CMD-20260704-7C3377 (statut payé)'),
+(215, 'sortie', 6, 1, 2348, 2347, 'commande', 147, 'CMD-20260704-F53B13', '2026-07-04 07:52:16', 'Vente commande CMD-20260704-F53B13 (statut payé)'),
+(216, 'sortie', 6, 1, 2347, 2346, 'commande', 146, 'CMD-20260704-EC0538', '2026-07-04 07:53:06', 'Vente commande CMD-20260704-EC0538 (statut payé)'),
+(217, 'sortie', 135, 1, 35, 34, 'commande', 144, 'CMD-20260703-FC273A', '2026-07-04 07:53:18', 'Vente commande CMD-20260703-FC273A (statut payé)'),
+(218, 'sortie', 70, 1, 250, 249, 'commande', 144, 'CMD-20260703-FC273A', '2026-07-04 07:53:18', 'Vente commande CMD-20260703-FC273A (statut payé)'),
+(219, 'sortie', 84, 2, 598, 596, 'commande', 145, 'CMD-20260704-4B6CCC', '2026-07-04 07:53:31', 'Vente commande CMD-20260704-4B6CCC (statut payé)'),
+(220, 'sortie', 119, 1, 103, 102, 'commande', 143, 'CMD-20260703-A538B2', '2026-07-04 07:53:43', 'Vente commande CMD-20260703-A538B2 (statut payé)'),
+(221, 'sortie', 119, 1, 102, 101, 'commande', 142, 'CMD-20260703-913C0A', '2026-07-04 07:54:03', 'Vente commande CMD-20260703-913C0A (statut payé)'),
+(222, 'sortie', 119, 1, 101, 100, 'commande', 142, 'CMD-20260703-913C0A', '2026-07-04 07:54:03', 'Vente commande CMD-20260703-913C0A (statut payé)'),
+(223, 'sortie', 119, 1, 100, 99, 'commande', 142, 'CMD-20260703-913C0A', '2026-07-04 07:54:03', 'Vente commande CMD-20260703-913C0A (statut payé)'),
+(224, 'sortie', 6, 1, 2346, 2345, 'commande', 142, 'CMD-20260703-913C0A', '2026-07-04 07:54:03', 'Vente commande CMD-20260703-913C0A (statut payé)'),
+(225, 'sortie', 72, 3, 280, 277, 'commande', 142, 'CMD-20260703-913C0A', '2026-07-04 07:54:03', 'Vente commande CMD-20260703-913C0A (statut payé)'),
+(226, 'sortie', 134, 1, 100, 99, 'commande', 141, 'CMD-20260703-1C04E7', '2026-07-04 07:54:14', 'Vente commande CMD-20260703-1C04E7 (statut payé)'),
+(227, 'sortie', 77, 1, 488, 487, 'commande', 141, 'CMD-20260703-1C04E7', '2026-07-04 07:54:14', 'Vente commande CMD-20260703-1C04E7 (statut payé)'),
+(228, 'sortie', 29, 1, 49, 48, 'commande', 141, 'CMD-20260703-1C04E7', '2026-07-04 07:54:14', 'Vente commande CMD-20260703-1C04E7 (statut payé)'),
+(229, 'sortie', 69, 1, 109, 108, 'commande', 141, 'CMD-20260703-1C04E7', '2026-07-04 07:54:14', 'Vente commande CMD-20260703-1C04E7 (statut payé)'),
+(230, 'sortie', 85, 1, 99, 98, 'commande', 140, 'CMD-20260703-F78B93', '2026-07-04 07:54:26', 'Vente commande CMD-20260703-F78B93 (statut payé)'),
+(231, 'sortie', 6, 1, 2345, 2344, 'commande', 140, 'CMD-20260703-F78B93', '2026-07-04 07:54:26', 'Vente commande CMD-20260703-F78B93 (statut payé)'),
+(232, 'sortie', 6, 1, 2344, 2343, 'commande', 137, 'CMD-20260703-F0E375', '2026-07-04 07:54:37', 'Vente commande CMD-20260703-F0E375 (statut payé)'),
+(233, 'sortie', 92, 1, 7, 6, 'commande', 137, 'CMD-20260703-F0E375', '2026-07-04 07:54:37', 'Vente commande CMD-20260703-F0E375 (statut payé)'),
+(234, 'sortie', 6, 1, 2343, 2342, 'commande', 135, 'CMD-20260703-4D78B9', '2026-07-04 07:55:09', 'Vente commande CMD-20260703-4D78B9 (statut payé)'),
+(235, 'sortie', 95, 1, 439, 438, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(236, 'sortie', 95, 1, 438, 437, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(237, 'sortie', 148, 1, 298, 297, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(238, 'sortie', 147, 1, 99, 98, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(239, 'sortie', 136, 1, 17, 16, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(240, 'sortie', 135, 1, 34, 33, 'commande', 133, 'CMD-20260703-CCDA68', '2026-07-04 07:55:48', 'Vente commande CMD-20260703-CCDA68 (statut payé)'),
+(241, 'sortie', 125, 3, 94, 91, 'commande', 128, 'CMD-20260703-9EB711', '2026-07-04 08:58:21', 'Vente commande CMD-20260703-9EB711 (statut payé)'),
+(242, 'sortie', 95, 1, 437, 436, 'commande', 128, 'CMD-20260703-9EB711', '2026-07-04 08:58:21', 'Vente commande CMD-20260703-9EB711 (statut payé)'),
+(243, 'sortie', 6, 1, 2342, 2341, 'commande', 128, 'CMD-20260703-9EB711', '2026-07-04 08:58:21', 'Vente commande CMD-20260703-9EB711 (statut payé)'),
+(244, 'sortie', 144, 1, 109, 108, 'commande', 128, 'CMD-20260703-9EB711', '2026-07-04 08:58:21', 'Vente commande CMD-20260703-9EB711 (statut payé)'),
+(245, 'sortie', 71, 2, 69, 67, 'commande', 128, 'CMD-20260703-9EB711', '2026-07-04 08:58:21', 'Vente commande CMD-20260703-9EB711 (statut payé)'),
+(246, 'sortie', 95, 1, 436, 435, 'commande', 152, 'CMD-20260704-36FB7C', '2026-07-04 12:07:46', 'Vente commande CMD-20260704-36FB7C (statut payé)'),
+(247, 'sortie', 6, 1, 2341, 2340, 'commande', 152, 'CMD-20260704-36FB7C', '2026-07-04 12:07:46', 'Vente commande CMD-20260704-36FB7C (statut payé)'),
+(248, 'sortie', 77, 1, 487, 486, 'commande', 151, 'CMD-20260704-7E5025', '2026-07-04 12:07:59', 'Vente commande CMD-20260704-7E5025 (statut payé)'),
+(249, 'sortie', 6, 1, 2340, 2339, 'commande', 151, 'CMD-20260704-7E5025', '2026-07-04 12:07:59', 'Vente commande CMD-20260704-7E5025 (statut payé)'),
+(250, 'sortie', 33, 1, 20, 19, 'commande', 151, 'CMD-20260704-7E5025', '2026-07-04 12:07:59', 'Vente commande CMD-20260704-7E5025 (statut payé)'),
+(251, 'sortie', 97, 2, 297, 295, 'commande', 150, 'CMD-20260704-D1A951', '2026-07-04 12:08:20', 'Vente commande CMD-20260704-D1A951 (statut payé)'),
+(252, 'sortie', 95, 2, 435, 433, 'commande', 150, 'CMD-20260704-D1A951', '2026-07-04 12:08:20', 'Vente commande CMD-20260704-D1A951 (statut payé)'),
+(253, 'sortie', 15, 2, 29, 27, 'commande', 139, 'CMD-20260703-7644B0', '2026-07-04 12:08:38', 'Vente commande CMD-20260703-7644B0 (statut payé)'),
+(254, 'sortie', 97, 1, 295, 294, 'commande', 131, 'CMD-20260703-E1807D', '2026-07-04 12:09:13', 'Vente commande CMD-20260703-E1807D (statut payé)'),
+(255, 'sortie', 95, 1, 433, 432, 'commande', 166, 'CMD-20260705-4448B0', '2026-07-05 09:58:43', 'Vente commande CMD-20260705-4448B0 (statut payé)'),
+(256, 'sortie', 95, 1, 432, 431, 'commande', 166, 'CMD-20260705-4448B0', '2026-07-05 09:58:43', 'Vente commande CMD-20260705-4448B0 (statut payé)'),
+(257, 'sortie', 72, 2, 277, 275, 'commande', 166, 'CMD-20260705-4448B0', '2026-07-05 09:58:43', 'Vente commande CMD-20260705-4448B0 (statut payé)'),
+(258, 'sortie', 6, 1, 2339, 2338, 'commande', 164, 'CMD-20260705-A9E222', '2026-07-05 09:59:02', 'Vente commande CMD-20260705-A9E222 (statut payé)'),
+(259, 'sortie', 32, 2, 50, 48, 'commande', 163, 'CMD-20260705-722AF8', '2026-07-05 09:59:15', 'Vente commande CMD-20260705-722AF8 (statut payé)'),
+(260, 'sortie', 77, 2, 486, 484, 'commande', 161, 'CMD-20260705-AD9ECC', '2026-07-05 09:59:29', 'Vente commande CMD-20260705-AD9ECC (statut payé)'),
+(261, 'sortie', 113, 1, 11, 10, 'commande', 161, 'CMD-20260705-AD9ECC', '2026-07-05 09:59:29', 'Vente commande CMD-20260705-AD9ECC (statut payé)'),
+(262, 'sortie', 29, 1, 48, 47, 'commande', 162, 'CMD-20260705-073370', '2026-07-05 09:59:59', 'Vente commande CMD-20260705-073370 (statut payé)'),
+(263, 'sortie', 6, 1, 2338, 2337, 'commande', 160, 'CMD-20260705-80E876', '2026-07-05 10:00:13', 'Vente commande CMD-20260705-80E876 (statut payé)'),
+(264, 'sortie', 95, 1, 431, 430, 'commande', 154, 'CMD-20260704-BF010C', '2026-07-05 10:00:49', 'Vente commande CMD-20260704-BF010C (statut payé)'),
+(265, 'sortie', 72, 1, 275, 274, 'commande', 154, 'CMD-20260704-BF010C', '2026-07-05 10:00:49', 'Vente commande CMD-20260704-BF010C (statut payé)'),
+(266, 'sortie', 95, 1, 430, 429, 'commande', 153, 'CMD-20260704-380E1C', '2026-07-05 10:03:48', 'Vente commande CMD-20260704-380E1C (statut payé)'),
+(267, 'sortie', 95, 1, 429, 428, 'commande', 153, 'CMD-20260704-380E1C', '2026-07-05 10:03:48', 'Vente commande CMD-20260704-380E1C (statut payé)'),
+(268, 'sortie', 148, 1, 297, 296, 'commande', 153, 'CMD-20260704-380E1C', '2026-07-05 10:03:48', 'Vente commande CMD-20260704-380E1C (statut payé)'),
+(269, 'sortie', 77, 1, 484, 483, 'commande', 149, 'CMD-20260704-EE90D3', '2026-07-05 10:04:04', 'Vente commande CMD-20260704-EE90D3 (statut payé)'),
+(270, 'sortie', 95, 4, 428, 424, 'commande', 149, 'CMD-20260704-EE90D3', '2026-07-05 10:04:04', 'Vente commande CMD-20260704-EE90D3 (statut payé)'),
+(271, 'sortie', 72, 1, 274, 273, 'commande', 149, 'CMD-20260704-EE90D3', '2026-07-05 10:04:04', 'Vente commande CMD-20260704-EE90D3 (statut payé)'),
+(272, 'sortie', 6, 1, 2337, 2336, 'commande', 165, 'CMD-20260705-9D20FA', '2026-07-05 11:23:57', 'Vente commande CMD-20260705-9D20FA (statut payé)'),
+(273, 'sortie', 6, 1, 2336, 2335, 'commande', 167, 'CMD-20260705-B60598', '2026-07-05 11:42:54', 'Vente commande CMD-20260705-B60598 (statut payé)'),
+(274, 'sortie', 154, 1, 600, 599, 'commande', 158, 'CMD-20260704-5B2A65', '2026-07-05 11:43:08', 'Vente commande CMD-20260704-5B2A65 (statut payé)'),
+(275, 'sortie', 110, 1, 39, 38, 'commande', 157, 'CMD-20260704-95CC83', '2026-07-05 11:43:24', 'Vente commande CMD-20260704-95CC83 (statut payé)'),
+(276, 'sortie', 110, 1, 38, 37, 'commande', 157, 'CMD-20260704-95CC83', '2026-07-05 11:43:24', 'Vente commande CMD-20260704-95CC83 (statut payé)'),
+(277, 'sortie', 110, 1, 37, 36, 'commande', 157, 'CMD-20260704-95CC83', '2026-07-05 11:43:24', 'Vente commande CMD-20260704-95CC83 (statut payé)'),
+(278, 'sortie', 154, 1, 599, 598, 'commande', 157, 'CMD-20260704-95CC83', '2026-07-05 11:43:24', 'Vente commande CMD-20260704-95CC83 (statut payé)'),
+(279, 'sortie', 139, 1, 75, 74, 'commande', 155, 'CMD-20260704-51D5CF', '2026-07-05 11:43:36', 'Vente commande CMD-20260704-51D5CF (statut payé)'),
+(280, 'sortie', 140, 1, 50, 49, 'commande', 155, 'CMD-20260704-51D5CF', '2026-07-05 11:43:36', 'Vente commande CMD-20260704-51D5CF (statut payé)'),
+(281, 'sortie', 140, 1, 49, 48, 'commande', 155, 'CMD-20260704-51D5CF', '2026-07-05 11:43:36', 'Vente commande CMD-20260704-51D5CF (statut payé)'),
+(282, 'sortie', 154, 1, 598, 597, 'commande', 155, 'CMD-20260704-51D5CF', '2026-07-05 11:43:36', 'Vente commande CMD-20260704-51D5CF (statut payé)'),
+(283, 'sortie', 139, 1, 74, 73, 'commande', 156, 'CMD-20260704-5C89DC', '2026-07-05 11:44:02', 'Vente commande CMD-20260704-5C89DC (statut payé)'),
+(284, 'sortie', 140, 1, 48, 47, 'commande', 156, 'CMD-20260704-5C89DC', '2026-07-05 11:44:02', 'Vente commande CMD-20260704-5C89DC (statut payé)'),
+(285, 'sortie', 140, 1, 47, 46, 'commande', 156, 'CMD-20260704-5C89DC', '2026-07-05 11:44:02', 'Vente commande CMD-20260704-5C89DC (statut payé)'),
+(286, 'sortie', 154, 1, 597, 596, 'commande', 156, 'CMD-20260704-5C89DC', '2026-07-05 11:44:02', 'Vente commande CMD-20260704-5C89DC (statut payé)'),
+(287, 'sortie', 6, 1, 2335, 2334, 'commande', 169, 'CMD-20260706-F6AC12', '2026-07-06 12:01:41', 'Vente commande CMD-20260706-F6AC12 (statut payé)'),
+(288, 'sortie', 156, 1, 1000, 999, 'commande', 168, 'CMD-20260706-E7A5DE', '2026-07-06 12:01:57', 'Vente commande CMD-20260706-E7A5DE (statut payé)'),
+(289, 'sortie', 6, 1, 2334, 2333, 'commande', 168, 'CMD-20260706-E7A5DE', '2026-07-06 12:01:57', 'Vente commande CMD-20260706-E7A5DE (statut payé)'),
+(290, 'sortie', 6, 1, 2333, 2332, 'commande', 171, 'CMD-20260706-F38BAE', '2026-07-06 12:02:18', 'Vente commande CMD-20260706-F38BAE (statut payé)'),
+(291, 'sortie', 95, 1, 424, 423, 'commande', 175, 'CMD-20260706-4F0B2B', '2026-07-06 12:03:09', 'Vente commande CMD-20260706-4F0B2B (statut payé)'),
+(292, 'sortie', 154, 1, 596, 595, 'commande', 178, 'CMD-20260706-72DDAC', '2026-07-06 12:03:20', 'Vente commande CMD-20260706-72DDAC (statut payé)'),
+(293, 'sortie', 6, 1, 2332, 2331, 'commande', 177, 'CMD-20260706-47A2FF', '2026-07-06 12:03:39', 'Vente commande CMD-20260706-47A2FF (statut payé)'),
+(294, 'sortie', 102, 1, 96, 95, 'commande', 159, 'CMD-20260704-62343E', '2026-07-07 05:21:33', 'Vente commande CMD-20260704-62343E (statut payé)'),
+(295, 'sortie', 126, 1, 97, 96, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(296, 'sortie', 72, 3, 273, 270, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(297, 'sortie', 148, 1, 296, 295, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(298, 'sortie', 144, 3, 108, 105, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(299, 'sortie', 147, 2, 98, 96, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(300, 'sortie', 23, 1, 48, 47, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(301, 'sortie', 71, 4, 67, 63, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(302, 'sortie', 32, 1, 48, 47, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(303, 'sortie', 111, 2, 19, 17, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(304, 'sortie', 67, 1, 48, 47, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(305, 'sortie', 151, 1, 100, 99, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(306, 'sortie', 87, 1, 52, 51, 'commande', 170, 'CMD-20260706-1EF67C', '2026-07-07 05:21:51', 'Vente commande CMD-20260706-1EF67C (statut payé)'),
+(307, 'sortie', 125, 1, 91, 90, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(308, 'sortie', 108, 2, 286, 284, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(309, 'sortie', 97, 1, 294, 293, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(310, 'sortie', 95, 1, 423, 422, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(311, 'sortie', 72, 2, 270, 268, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(312, 'sortie', 17, 1, 50, 49, 'commande', 179, 'CMD-20260706-0CB232', '2026-07-07 05:22:37', 'Vente commande CMD-20260706-0CB232 (statut payé)'),
+(313, 'sortie', 95, 2, 422, 420, 'commande', 189, 'CMD-20260707-D8C1E4', '2026-07-07 11:55:43', 'Vente commande CMD-20260707-D8C1E4 (statut payé)'),
+(314, 'sortie', 95, 1, 420, 419, 'commande', 187, 'CMD-20260707-C6E3CF', '2026-07-07 11:55:54', 'Vente commande CMD-20260707-C6E3CF (statut payé)'),
+(315, 'sortie', 6, 1, 2331, 2330, 'commande', 186, 'CMD-20260707-E6ED76', '2026-07-07 11:56:05', 'Vente commande CMD-20260707-E6ED76 (statut payé)'),
+(316, 'sortie', 95, 2, 419, 417, 'commande', 184, 'CMD-20260707-076399', '2026-07-07 11:57:13', 'Vente commande CMD-20260707-076399 (statut payé)'),
+(317, 'sortie', 95, 2, 417, 415, 'commande', 185, 'CMD-20260707-0F23E8', '2026-07-07 11:57:28', 'Vente commande CMD-20260707-0F23E8 (statut payé)'),
+(318, 'sortie', 57, 1, 24, 23, 'commande', 183, 'CMD-20260707-CB603B', '2026-07-07 11:57:40', 'Vente commande CMD-20260707-CB603B (statut payé)'),
+(319, 'sortie', 19, 1, 97, 96, 'commande', 183, 'CMD-20260707-CB603B', '2026-07-07 11:57:40', 'Vente commande CMD-20260707-CB603B (statut payé)'),
+(320, 'sortie', 23, 1, 47, 46, 'commande', 183, 'CMD-20260707-CB603B', '2026-07-07 11:57:40', 'Vente commande CMD-20260707-CB603B (statut payé)'),
+(321, 'sortie', 83, 1, 96, 95, 'commande', 183, 'CMD-20260707-CB603B', '2026-07-07 11:57:40', 'Vente commande CMD-20260707-CB603B (statut payé)'),
+(322, 'sortie', 152, 1, 50, 49, 'commande', 182, 'CMD-20260707-9876D9', '2026-07-07 11:57:53', 'Vente commande CMD-20260707-9876D9 (statut payé)'),
+(323, 'sortie', 6, 2, 2330, 2328, 'commande', 181, 'CMD-20260707-2D7D8F', '2026-07-07 11:58:05', 'Vente commande CMD-20260707-2D7D8F (statut payé)'),
+(324, 'sortie', 137, 1, 100, 99, 'commande', 180, 'CMD-20260706-4190DC', '2026-07-07 11:58:18', 'Vente commande CMD-20260706-4190DC (statut payé)'),
+(325, 'sortie', 6, 1, 2328, 2327, 'commande', 174, 'CMD-20260706-EF0C54', '2026-07-07 11:58:33', 'Vente commande CMD-20260706-EF0C54 (statut payé)'),
+(326, 'sortie', 84, 1, 596, 595, 'commande', 173, 'CMD-20260706-F131F6', '2026-07-07 11:58:46', 'Vente commande CMD-20260706-F131F6 (statut payé)'),
+(327, 'sortie', 6, 1, 2327, 2326, 'commande', 194, 'CMD-20260708-44F9E0', '2026-07-08 07:19:28', 'Vente commande CMD-20260708-44F9E0 (statut payé)'),
+(328, 'sortie', 63, 1, 96, 95, 'commande', 198, 'CMD-20260708-EB88FF', '2026-07-08 07:19:41', 'Vente commande CMD-20260708-EB88FF (statut payé)'),
+(329, 'sortie', 57, 1, 23, 22, 'commande', 190, 'CMD-20260707-1E2B21', '2026-07-08 07:20:10', 'Vente commande CMD-20260707-1E2B21 (statut payé)'),
+(330, 'sortie', 19, 1, 96, 95, 'commande', 190, 'CMD-20260707-1E2B21', '2026-07-08 07:20:10', 'Vente commande CMD-20260707-1E2B21 (statut payé)'),
+(331, 'sortie', 77, 5, 483, 478, 'commande', 188, 'CMD-20260707-962F44', '2026-07-08 07:20:27', 'Vente commande CMD-20260707-962F44 (statut payé)'),
+(332, 'sortie', 95, 2, 415, 413, 'commande', 188, 'CMD-20260707-962F44', '2026-07-08 07:20:27', 'Vente commande CMD-20260707-962F44 (statut payé)'),
+(333, 'sortie', 6, 1, 2326, 2325, 'commande', 188, 'CMD-20260707-962F44', '2026-07-08 07:20:27', 'Vente commande CMD-20260707-962F44 (statut payé)'),
+(334, 'sortie', 72, 2, 268, 266, 'commande', 188, 'CMD-20260707-962F44', '2026-07-08 07:20:27', 'Vente commande CMD-20260707-962F44 (statut payé)'),
+(335, 'sortie', 77, 2, 478, 476, 'commande', 202, 'CMD-20260708-B7145F', '2026-07-08 11:37:55', 'Vente commande CMD-20260708-B7145F (statut payé)'),
+(336, 'sortie', 95, 3, 413, 410, 'commande', 201, 'CMD-20260708-33E37E', '2026-07-08 11:38:16', 'Vente commande CMD-20260708-33E37E (statut payé)'),
+(337, 'sortie', 85, 1, 98, 97, 'commande', 199, 'CMD-20260708-A5D106', '2026-07-08 11:38:58', 'Vente commande CMD-20260708-A5D106 (statut payé)'),
+(338, 'sortie', 148, 1, 295, 294, 'commande', 197, 'CMD-20260708-AF256F', '2026-07-08 11:39:20', 'Vente commande CMD-20260708-AF256F (statut payé)'),
+(339, 'sortie', 148, 1, 294, 293, 'commande', 196, 'CMD-20260708-908186', '2026-07-08 11:39:33', 'Vente commande CMD-20260708-908186 (statut payé)'),
+(340, 'sortie', 95, 1, 410, 409, 'commande', 195, 'CMD-20260708-22BC67', '2026-07-08 11:40:21', 'Vente commande CMD-20260708-22BC67 (statut payé)'),
+(341, 'sortie', 6, 1, 2325, 2324, 'commande', 195, 'CMD-20260708-22BC67', '2026-07-08 11:40:21', 'Vente commande CMD-20260708-22BC67 (statut payé)'),
+(342, 'sortie', 77, 1, 476, 475, 'commande', 193, 'CMD-20260707-CD7642', '2026-07-08 11:40:34', 'Vente commande CMD-20260707-CD7642 (statut payé)'),
+(343, 'sortie', 128, 1, 100, 99, 'commande', 193, 'CMD-20260707-CD7642', '2026-07-08 11:40:34', 'Vente commande CMD-20260707-CD7642 (statut payé)'),
+(344, 'sortie', 29, 1, 47, 46, 'commande', 193, 'CMD-20260707-CD7642', '2026-07-08 11:40:34', 'Vente commande CMD-20260707-CD7642 (statut payé)'),
+(345, 'sortie', 83, 2, 95, 93, 'commande', 193, 'CMD-20260707-CD7642', '2026-07-08 11:40:34', 'Vente commande CMD-20260707-CD7642 (statut payé)'),
+(346, 'sortie', 69, 1, 108, 107, 'commande', 193, 'CMD-20260707-CD7642', '2026-07-08 11:40:34', 'Vente commande CMD-20260707-CD7642 (statut payé)'),
+(347, 'sortie', 33, 2, 19, 17, 'commande', 210, 'CMD-20260709-1DDCB3', '2026-07-09 08:11:05', 'Vente commande CMD-20260709-1DDCB3 (statut payé)'),
+(348, 'sortie', 7, 1, 1, 0, 'commande', 210, 'CMD-20260709-1DDCB3', '2026-07-09 08:11:05', 'Vente commande CMD-20260709-1DDCB3 (statut payé)'),
+(349, 'sortie', 26, 1, 94, 93, 'commande', 210, 'CMD-20260709-1DDCB3', '2026-07-09 08:11:05', 'Vente commande CMD-20260709-1DDCB3 (statut payé)'),
+(350, 'sortie', 85, 1, 97, 96, 'commande', 208, 'CMD-20260709-EB1B1A', '2026-07-09 08:11:18', 'Vente commande CMD-20260709-EB1B1A (statut payé)'),
+(351, 'sortie', 119, 1, 99, 98, 'commande', 207, 'CMD-20260708-3C569D', '2026-07-09 08:11:32', 'Vente commande CMD-20260708-3C569D (statut payé)'),
+(352, 'sortie', 95, 1, 409, 408, 'commande', 207, 'CMD-20260708-3C569D', '2026-07-09 08:11:32', 'Vente commande CMD-20260708-3C569D (statut payé)'),
+(353, 'sortie', 6, 3, 2324, 2321, 'commande', 207, 'CMD-20260708-3C569D', '2026-07-09 08:11:32', 'Vente commande CMD-20260708-3C569D (statut payé)'),
+(354, 'sortie', 6, 3, 2321, 2318, 'commande', 207, 'CMD-20260708-3C569D', '2026-07-09 08:11:32', 'Vente commande CMD-20260708-3C569D (statut payé)'),
+(355, 'sortie', 38, 1, 30, 29, 'commande', 206, 'CMD-20260708-5640B8', '2026-07-09 08:11:45', 'Vente commande CMD-20260708-5640B8 (statut payé)'),
+(356, 'sortie', 119, 1, 98, 97, 'commande', 191, 'CMD-20260707-A9D1A1', '2026-07-09 08:11:57', 'Vente commande CMD-20260707-A9D1A1 (statut payé)'),
+(357, 'sortie', 72, 1, 266, 265, 'commande', 191, 'CMD-20260707-A9D1A1', '2026-07-09 08:11:57', 'Vente commande CMD-20260707-A9D1A1 (statut payé)'),
+(358, 'sortie', 72, 2, 265, 263, 'commande', 191, 'CMD-20260707-A9D1A1', '2026-07-09 08:11:57', 'Vente commande CMD-20260707-A9D1A1 (statut payé)'),
+(359, 'sortie', 119, 1, 97, 96, 'commande', 192, 'CMD-20260707-9C2128', '2026-07-09 08:12:08', 'Vente commande CMD-20260707-9C2128 (statut payé)'),
+(360, 'sortie', 72, 2, 263, 261, 'commande', 192, 'CMD-20260707-9C2128', '2026-07-09 08:12:08', 'Vente commande CMD-20260707-9C2128 (statut payé)'),
+(361, 'sortie', 72, 1, 261, 260, 'commande', 192, 'CMD-20260707-9C2128', '2026-07-09 08:12:08', 'Vente commande CMD-20260707-9C2128 (statut payé)'),
+(362, 'sortie', 70, 1, 249, 248, 'commande', 192, 'CMD-20260707-9C2128', '2026-07-09 08:12:08', 'Vente commande CMD-20260707-9C2128 (statut payé)'),
+(363, 'sortie', 95, 1, 408, 407, 'commande', 200, 'CMD-20260708-112969', '2026-07-09 08:12:22', 'Vente commande CMD-20260708-112969 (statut payé)'),
+(364, 'sortie', 15, 2, 27, 25, 'commande', 200, 'CMD-20260708-112969', '2026-07-09 08:12:22', 'Vente commande CMD-20260708-112969 (statut payé)'),
+(365, 'sortie', 6, 1, 2318, 2317, 'commande', 203, 'CMD-20260708-0BFAC2', '2026-07-09 08:12:50', 'Vente commande CMD-20260708-0BFAC2 (statut payé)'),
+(366, 'sortie', 6, 1, 2317, 2316, 'commande', 204, 'CMD-20260708-6B7C6F', '2026-07-09 08:13:08', 'Vente commande CMD-20260708-6B7C6F (statut payé)'),
+(367, 'sortie', 95, 1, 407, 406, 'commande', 205, 'CMD-20260708-CC923A', '2026-07-09 08:13:26', 'Vente commande CMD-20260708-CC923A (statut payé)'),
+(368, 'sortie', 77, 1, 475, 474, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(369, 'sortie', 77, 1, 474, 473, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(370, 'sortie', 77, 1, 473, 472, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(371, 'sortie', 95, 1, 406, 405, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(372, 'sortie', 85, 1, 96, 95, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(373, 'sortie', 66, 2, 598, 596, 'commande', 209, 'CMD-20260709-4A6B81', '2026-07-09 08:38:57', 'Vente commande CMD-20260709-4A6B81 (statut payé)'),
+(374, 'sortie', 69, 1, 107, 106, 'commande', 213, 'CMD-20260709-3B2C30', '2026-07-09 11:30:13', 'Vente commande CMD-20260709-3B2C30 (statut payé)'),
+(375, 'sortie', 126, 1, 96, 95, 'commande', 211, 'CMD-20260709-5C0530', '2026-07-09 11:30:31', 'Vente commande CMD-20260709-5C0530 (statut payé)'),
+(376, 'sortie', 85, 1, 95, 94, 'commande', 211, 'CMD-20260709-5C0530', '2026-07-09 11:30:31', 'Vente commande CMD-20260709-5C0530 (statut payé)'),
+(377, 'sortie', 72, 2, 260, 258, 'commande', 211, 'CMD-20260709-5C0530', '2026-07-09 11:30:31', 'Vente commande CMD-20260709-5C0530 (statut payé)'),
+(378, 'sortie', 6, 1, 2316, 2315, 'commande', 212, 'CMD-20260709-75E3F5', '2026-07-09 11:30:44', 'Vente commande CMD-20260709-75E3F5 (statut payé)'),
+(379, 'sortie', 95, 1, 405, 404, 'commande', 237, 'CMD-20260710-323987', '2026-07-10 11:22:10', 'Vente commande CMD-20260710-323987 (statut payé)'),
+(380, 'sortie', 156, 1, 999, 998, 'commande', 233, 'CMD-20260710-5BA434', '2026-07-10 11:22:25', 'Vente commande CMD-20260710-5BA434 (statut payé)'),
+(381, 'sortie', 95, 1, 404, 403, 'commande', 232, 'CMD-20260710-42C71F', '2026-07-10 11:22:39', 'Vente commande CMD-20260710-42C71F (statut payé)'),
+(382, 'sortie', 26, 2, 93, 91, 'commande', 232, 'CMD-20260710-42C71F', '2026-07-10 11:22:39', 'Vente commande CMD-20260710-42C71F (statut payé)'),
+(383, 'sortie', 69, 2, 106, 104, 'commande', 232, 'CMD-20260710-42C71F', '2026-07-10 11:22:39', 'Vente commande CMD-20260710-42C71F (statut payé)'),
+(384, 'sortie', 6, 1, 2315, 2314, 'commande', 231, 'CMD-20260710-635994', '2026-07-10 11:22:53', 'Vente commande CMD-20260710-635994 (statut payé)'),
+(385, 'sortie', 141, 1, 200, 199, 'commande', 231, 'CMD-20260710-635994', '2026-07-10 11:22:53', 'Vente commande CMD-20260710-635994 (statut payé)'),
+(386, 'sortie', 69, 3, 104, 101, 'commande', 230, 'CMD-20260710-2DFCA5', '2026-07-10 11:23:12', 'Vente commande CMD-20260710-2DFCA5 (statut payé)'),
+(387, 'sortie', 70, 1, 248, 247, 'commande', 230, 'CMD-20260710-2DFCA5', '2026-07-10 11:23:12', 'Vente commande CMD-20260710-2DFCA5 (statut payé)'),
+(388, 'sortie', 81, 2, 149, 147, 'commande', 229, 'CMD-20260710-3A4A7A', '2026-07-10 11:23:23', 'Vente commande CMD-20260710-3A4A7A (statut payé)'),
+(389, 'sortie', 95, 1, 403, 402, 'commande', 229, 'CMD-20260710-3A4A7A', '2026-07-10 11:23:23', 'Vente commande CMD-20260710-3A4A7A (statut payé)'),
+(390, 'sortie', 139, 1, 73, 72, 'commande', 229, 'CMD-20260710-3A4A7A', '2026-07-10 11:23:23', 'Vente commande CMD-20260710-3A4A7A (statut payé)'),
+(391, 'sortie', 140, 1, 46, 45, 'commande', 229, 'CMD-20260710-3A4A7A', '2026-07-10 11:23:23', 'Vente commande CMD-20260710-3A4A7A (statut payé)'),
+(392, 'sortie', 77, 2, 472, 470, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(393, 'sortie', 77, 1, 470, 469, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(394, 'sortie', 95, 1, 402, 401, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(395, 'sortie', 72, 2, 258, 256, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(396, 'sortie', 48, 2, 69, 67, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(397, 'sortie', 69, 2, 101, 99, 'commande', 228, 'CMD-20260710-13FCCC', '2026-07-10 11:23:40', 'Vente commande CMD-20260710-13FCCC (statut payé)'),
+(398, 'sortie', 72, 4, 256, 252, 'commande', 227, 'CMD-20260710-3DB441', '2026-07-10 11:23:50', 'Vente commande CMD-20260710-3DB441 (statut payé)'),
+(399, 'sortie', 72, 2, 252, 250, 'commande', 226, 'CMD-20260710-5E73FE', '2026-07-10 11:24:01', 'Vente commande CMD-20260710-5E73FE (statut payé)'),
+(400, 'sortie', 77, 2, 469, 467, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(401, 'sortie', 81, 2, 147, 145, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(402, 'sortie', 95, 1, 401, 400, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(403, 'sortie', 95, 1, 400, 399, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(404, 'sortie', 15, 3, 25, 22, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(405, 'sortie', 6, 1, 2314, 2313, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(406, 'sortie', 68, 1, 97, 96, 'commande', 225, 'CMD-20260710-7A1BF9', '2026-07-10 11:24:13', 'Vente commande CMD-20260710-7A1BF9 (statut payé)'),
+(407, 'sortie', 95, 1, 399, 398, 'commande', 224, 'CMD-20260710-1140E8', '2026-07-10 11:24:29', 'Vente commande CMD-20260710-1140E8 (statut payé)'),
+(408, 'sortie', 95, 1, 398, 397, 'commande', 223, 'CMD-20260710-BA2CB2', '2026-07-10 11:24:43', 'Vente commande CMD-20260710-BA2CB2 (statut payé)'),
+(409, 'sortie', 84, 1, 595, 594, 'commande', 223, 'CMD-20260710-BA2CB2', '2026-07-10 11:24:43', 'Vente commande CMD-20260710-BA2CB2 (statut payé)'),
+(410, 'sortie', 6, 1, 2313, 2312, 'commande', 223, 'CMD-20260710-BA2CB2', '2026-07-10 11:24:43', 'Vente commande CMD-20260710-BA2CB2 (statut payé)'),
+(411, 'sortie', 95, 1, 397, 396, 'commande', 222, 'CMD-20260710-0D6490', '2026-07-10 11:24:54', 'Vente commande CMD-20260710-0D6490 (statut payé)'),
+(412, 'sortie', 69, 1, 99, 98, 'commande', 222, 'CMD-20260710-0D6490', '2026-07-10 11:24:54', 'Vente commande CMD-20260710-0D6490 (statut payé)'),
+(413, 'sortie', 95, 1, 396, 395, 'commande', 221, 'CMD-20260710-D87C23', '2026-07-10 11:25:05', 'Vente commande CMD-20260710-D87C23 (statut payé)'),
+(414, 'sortie', 95, 1, 395, 394, 'commande', 220, 'CMD-20260710-C61B9D', '2026-07-10 11:25:16', 'Vente commande CMD-20260710-C61B9D (statut payé)'),
+(415, 'sortie', 72, 4, 250, 246, 'commande', 220, 'CMD-20260710-C61B9D', '2026-07-10 11:25:16', 'Vente commande CMD-20260710-C61B9D (statut payé)'),
+(416, 'sortie', 55, 1, 99, 98, 'commande', 219, 'CMD-20260709-7170B3', '2026-07-10 11:25:29', 'Vente commande CMD-20260709-7170B3 (statut payé)'),
+(417, 'sortie', 21, 1, 995, 994, 'commande', 218, 'CMD-20260709-F15F80', '2026-07-10 11:25:46', 'Vente commande CMD-20260709-F15F80 (statut payé)'),
+(418, 'sortie', 60, 10, 2988, 2978, 'commande', 217, 'CMD-20260709-A9C9C8', '2026-07-10 11:26:13', 'Vente commande CMD-20260709-A9C9C8 (statut payé)'),
+(419, 'sortie', 130, 1, 100, 99, 'commande', 216, 'CMD-20260709-E0EDEF', '2026-07-10 11:26:26', 'Vente commande CMD-20260709-E0EDEF (statut payé)'),
+(420, 'sortie', 6, 1, 2312, 2311, 'commande', 215, 'CMD-20260709-339080', '2026-07-10 11:26:37', 'Vente commande CMD-20260709-339080 (statut payé)'),
+(421, 'sortie', 95, 1, 394, 393, 'commande', 235, 'CMD-20260710-BCB65B', '2026-07-10 11:43:25', 'Vente commande CMD-20260710-BCB65B (statut payé)'),
+(422, 'sortie', 69, 1, 98, 97, 'commande', 235, 'CMD-20260710-BCB65B', '2026-07-10 11:43:25', 'Vente commande CMD-20260710-BCB65B (statut payé)'),
+(423, 'sortie', 95, 1, 393, 392, 'commande', 214, 'CMD-20260709-6DB289', '2026-07-10 11:43:37', 'Vente commande CMD-20260709-6DB289 (statut payé)'),
+(424, 'sortie', 95, 1, 392, 391, 'commande', 236, 'CMD-20260710-07DEC4', '2026-07-11 06:12:45', 'Vente commande CMD-20260710-07DEC4 (statut payé)'),
+(425, 'sortie', 125, 1, 90, 89, 'commande', 242, 'CMD-20260710-D0EAB9', '2026-07-11 06:12:57', 'Vente commande CMD-20260710-D0EAB9 (statut payé)'),
+(426, 'sortie', 125, 1, 89, 88, 'commande', 242, 'CMD-20260710-D0EAB9', '2026-07-11 06:12:57', 'Vente commande CMD-20260710-D0EAB9 (statut payé)'),
+(427, 'sortie', 60, 1, 2978, 2977, 'commande', 243, 'CMD-20260710-2820CE', '2026-07-11 06:13:10', 'Vente commande CMD-20260710-2820CE (statut payé)'),
+(428, 'sortie', 60, 1, 2977, 2976, 'commande', 243, 'CMD-20260710-2820CE', '2026-07-11 06:13:10', 'Vente commande CMD-20260710-2820CE (statut payé)'),
+(429, 'sortie', 77, 5, 467, 462, 'commande', 239, 'CMD-20260710-86B8F6', '2026-07-11 06:13:29', 'Vente commande CMD-20260710-86B8F6 (statut payé)'),
+(430, 'sortie', 95, 1, 391, 390, 'commande', 239, 'CMD-20260710-86B8F6', '2026-07-11 06:13:29', 'Vente commande CMD-20260710-86B8F6 (statut payé)'),
+(431, 'sortie', 95, 1, 390, 389, 'commande', 238, 'CMD-20260710-3547E4', '2026-07-11 06:13:44', 'Vente commande CMD-20260710-3547E4 (statut payé)'),
+(432, 'sortie', 95, 1, 389, 388, 'commande', 253, 'CMD-20260711-35D867', '2026-07-11 09:58:30', 'Vente commande CMD-20260711-35D867 (statut payé)'),
+(433, 'sortie', 95, 1, 388, 387, 'commande', 252, 'CMD-20260711-E5E7CA', '2026-07-11 09:58:42', 'Vente commande CMD-20260711-E5E7CA (statut payé)'),
+(434, 'sortie', 23, 1, 46, 45, 'commande', 252, 'CMD-20260711-E5E7CA', '2026-07-11 09:58:42', 'Vente commande CMD-20260711-E5E7CA (statut payé)'),
+(435, 'sortie', 6, 1, 2311, 2310, 'commande', 251, 'CMD-20260711-F4C1ED', '2026-07-11 09:58:54', 'Vente commande CMD-20260711-F4C1ED (statut payé)'),
+(436, 'sortie', 69, 1, 97, 96, 'commande', 251, 'CMD-20260711-F4C1ED', '2026-07-11 09:58:54', 'Vente commande CMD-20260711-F4C1ED (statut payé)'),
+(437, 'sortie', 95, 1, 387, 386, 'commande', 249, 'CMD-20260711-618EC7', '2026-07-11 09:59:05', 'Vente commande CMD-20260711-618EC7 (statut payé)'),
+(438, 'sortie', 19, 1, 95, 94, 'commande', 249, 'CMD-20260711-618EC7', '2026-07-11 09:59:05', 'Vente commande CMD-20260711-618EC7 (statut payé)'),
+(439, 'sortie', 85, 2, 94, 92, 'commande', 247, 'CMD-20260711-4EB455', '2026-07-11 09:59:21', 'Vente commande CMD-20260711-4EB455 (statut payé)'),
+(440, 'sortie', 19, 1, 94, 93, 'commande', 246, 'CMD-20260711-E88AF4', '2026-07-11 09:59:51', 'Vente commande CMD-20260711-E88AF4 (statut payé)'),
+(441, 'sortie', 6, 1, 2310, 2309, 'commande', 245, 'CMD-20260711-BA5738', '2026-07-11 10:00:05', 'Vente commande CMD-20260711-BA5738 (statut payé)'),
+(442, 'sortie', 156, 1, 998, 997, 'commande', 244, 'CMD-20260711-7EA284', '2026-07-11 10:00:14', 'Vente commande CMD-20260711-7EA284 (statut payé)'),
+(443, 'sortie', 95, 1, 386, 385, 'commande', 241, 'CMD-20260710-D71137', '2026-07-11 10:00:30', 'Vente commande CMD-20260710-D71137 (statut payé)'),
+(444, 'sortie', 95, 2, 385, 383, 'commande', 241, 'CMD-20260710-D71137', '2026-07-11 10:00:30', 'Vente commande CMD-20260710-D71137 (statut payé)'),
+(445, 'sortie', 72, 1, 246, 245, 'commande', 241, 'CMD-20260710-D71137', '2026-07-11 10:00:30', 'Vente commande CMD-20260710-D71137 (statut payé)'),
+(446, 'sortie', 95, 1, 383, 382, 'commande', 240, 'CMD-20260710-34F830', '2026-07-11 10:00:40', 'Vente commande CMD-20260710-34F830 (statut payé)'),
+(447, 'sortie', 72, 2, 245, 243, 'commande', 240, 'CMD-20260710-34F830', '2026-07-11 10:00:40', 'Vente commande CMD-20260710-34F830 (statut payé)'),
+(448, 'sortie', 77, 5, 462, 457, 'commande', 250, 'CMD-20260711-197066', '2026-07-11 10:01:01', 'Vente commande CMD-20260711-197066 (statut payé)'),
+(449, 'sortie', 72, 1, 243, 242, 'commande', 250, 'CMD-20260711-197066', '2026-07-11 10:01:01', 'Vente commande CMD-20260711-197066 (statut payé)'),
+(450, 'sortie', 6, 1, 2309, 2308, 'commande', 255, 'CMD-20260711-152314', '2026-07-11 10:25:33', 'Vente commande CMD-20260711-152314 (statut payé)'),
+(451, 'sortie', 95, 1, 382, 381, 'commande', 234, 'CMD-20260710-F85F56', '2026-07-11 10:57:32', 'Vente commande CMD-20260710-F85F56 (statut payé)'),
+(452, 'sortie', 6, 2, 2308, 2306, 'commande', 234, 'CMD-20260710-F85F56', '2026-07-11 10:57:32', 'Vente commande CMD-20260710-F85F56 (statut payé)'),
+(453, 'sortie', 72, 2, 242, 240, 'commande', 234, 'CMD-20260710-F85F56', '2026-07-11 10:57:32', 'Vente commande CMD-20260710-F85F56 (statut payé)');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `trending_config`
+--
+
+CREATE TABLE `trending_config` (
+  `id` int(11) NOT NULL,
+  `label` varchar(255) NOT NULL DEFAULT 'categories',
+  `titre` varchar(255) NOT NULL DEFAULT 'Enhance Your Music Experience',
+  `bouton_texte` varchar(255) NOT NULL DEFAULT 'Buy Now!',
+  `bouton_lien` varchar(255) DEFAULT '#',
+  `image` varchar(255) DEFAULT 'speaker.png',
+  `date_modification` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `trending_config`
+--
+
+INSERT INTO `trending_config` (`id`, `label`, `titre`, `bouton_texte`, `bouton_lien`, `image`, `date_modification`) VALUES
+(1, 'categories', 'Enhance Your Music Experience', 'Buy Now!', '#', 'speaker.png', '2026-03-08 08:33:44');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `nom` varchar(100) NOT NULL,
+  `prenom` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `telephone` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif',
+  `accepte_conditions` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Acceptation des conditions d''utilisation (0 = non accepté, 1 = accepté)'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `users`
+--
+
+INSERT INTO `users` (`id`, `nom`, `prenom`, `email`, `telephone`, `password`, `date_creation`, `statut`, `accepte_conditions`) VALUES
+(2, 'Mendy', 'Vroling', 'vrolingmendy0@gmail.com', '+351920635048', '$2y$10$HyRT1ykk6ymycdkYQtls4.ypqpdb9d5f4tNFnNG/RvZrIZDueWpeK', '2026-02-26 16:58:20', 'actif', 1),
+(3, 'jomas', 'nick', 'webgeniuses12@gmail.com', '+221785303879', '$2y$10$0.1F.mAQCQss2cwk/y2v2uYzjoizPvcniEoIWrnZWhGfRya4g9CJS', '2026-02-26 17:40:11', 'actif', 1),
+(4, 'Angue', 'Sylvana', 'anguesylvana@gmail.com', '+221774728286', '$2y$10$BavHLRAVH592B1LpCv4fUebP8INYGoPbP4VYZx0Z8k7qUJVg0cyXq', '2026-03-12 23:08:07', 'actif', 1),
+(5, 'Mendy', '✨🌸M.A.M.I.T.A🌸✨', 'mamitaaaaa22@gmail.com', '+221777330452', '$2y$10$u5Nnw4faJV.zQ8VsI3FAM.9PcsHwkN92PyFqVrPQKvlNNvasBq3DK', '2026-03-13 08:38:48', 'actif', 1),
+(6, 'Dumas', 'Valerie', 'tt346062@gmail.com', '+221775695686', '$2y$10$8eLb8I2zYAJPdunBCY6WUeX6SHufn.FNf14sbRrtsfpCa0RoPq8T.', '2026-03-25 03:12:57', 'actif', 1),
+(7, 'PATISSERIE', 'KANEL', 'kanelpatisserie@gmail.com', '+221778499377', '$2y$10$DjlYtByurGYfGNDhfUv9DexXBBh682bawoYHPK6sHOE92OGIpHIMq', '2026-03-25 08:32:01', 'actif', 1),
+(8, 'Forster', 'Bernadette', 'Leinadianko@gmail.com', '+221781615415', '$2y$10$567pSCss473m3uLzbqV/AeF0iv4770uw25PWk5mh9UZaqn49.Lnzq', '2026-04-03 15:28:18', 'actif', 1),
+(9, 'Soely', 'Bakery', 'soelybakery@yahoo.com', '+221786064616', '$2y$10$pubckg6Iw/EwMuwn13FdYOi0V7TUw3jVqQ2jcZQtRb6BN7MF/zbwO', '2026-04-03 18:29:01', 'actif', 1),
+(10, 'Ndour', 'Oumy', 'ndouroumy99@gmail.com', '+221776703760', '$2y$10$I5E7EFTxjq95g17I9kqb1u2n9gToYI0ZrCvDVVWEJXc7v/fmCYLai', '2026-04-06 15:01:18', 'actif', 1),
+(11, 'Saphie Aidara', 'Diagne', 'saphie.diagne@gmail.com', '785464201', '$2y$10$xeV7XYQGyW/Q5n2LSWlBpOp7LWDN5GXCpbkpcvLVxBY4r13ZOl/Zy', '2026-04-06 17:49:55', 'actif', 1),
+(12, 'Faye', 'Mbery', 'fayembery@live.fr', '773085648', '$2y$10$LaWmwZu6tQXtGS8d9F/P0.lSV1Z/TOKn/ys8RRqi6eEMWi7E2foHi', '2026-04-07 08:29:50', 'actif', 1),
+(13, 'Ka', 'Ndeye', 'ndeyeka04@gmail.com', '786008974', '$2y$10$o.Tp0Qb07ZSsRHcTQQ5HGOtzHYenIcI.pnME3KgkiMQbSQF12OuTG', '2026-04-07 18:46:34', 'actif', 1),
+(14, 'Hounyovi', 'Yannick Raymond', 'yannickhounyovi16@gmail.com', '777627202', '$2y$10$hkBwQ6kRPjt4P.ahGwhTzOjXjBkS6QGAVtkZstG4WsqFDkmxDNpLm', '2026-05-02 10:21:02', 'actif', 1),
+(15, 'Leyanah', 'Yvanie', 'leyanahyvanie@gmail.com', '+221781403852', '$2y$10$FgIQUqbNb8tkRIm58382z.zLvoNsFuxuAlrQ72FtUh5vKAA.DhN9.', '2026-05-05 16:26:39', 'actif', 1),
+(16, 'Sow', 'Mame Jacques Sabel', 'saabelasow@gmail.com', '775969847', '$2y$10$./bfGK10iuaJ2QKoZ8MF8e3yHNGvzXWUFXaky7X33MZYX5fKCcsTC', '2026-05-13 11:03:40', 'actif', 1),
+(17, 'NDAO', 'Seynabou', 'n.seynaboundao@gmail.com', '+33767320533', '$2y$10$9bQ8etEUn5nbvWt0aKMkb.61FHgd06PPBAU2sox1VsZN6TmwxigPm', '2026-05-18 13:54:50', 'actif', 1),
+(18, 'SAWADOGO', 'Rebeca', 'sawadogorebeca751@glail.com', '+221781322860', '$2y$10$BDS/A3TR9mHdHEIqIgw/Ge9OaJBJpgotSnhEi3fYlJ4b2xUevZjyK', '2026-05-21 15:25:53', 'actif', 0),
+(19, 'SAWADOGO', 'Rebeca', 'sawadogorebeca751@gmail.com', '+221781322860', '$2y$10$GgpLcvBiXSEtzP5q3U/mPu/59roPEo.KctS4JqxqTCNPU4RqF2cCG', '2026-05-21 15:31:24', 'actif', 1),
+(20, 'Nunzia', 'Nunzia', 'mansatadiandy@gmail.com', '771036201', '$2y$10$3EP.2avf0QypiZiYJWCKUe4kMJ.gClmr.P73uGTDULSog.KJZrnp6', '2026-05-21 16:28:01', 'actif', 1),
+(21, 'KABA', 'Kadiatou', 'kadiatou45@yahoo.fr', '+221771969029', '$2y$10$PL7HNl9vxGpBfEV7eOubtOOB1ulhS6cmwEXzXDZZN8OyM5UbgjD3G', '2026-05-22 04:05:07', 'actif', 1),
+(22, 'Aminata', 'Baro', 'Baroaminata844@gmail.com', '773222431', '$2y$10$0VEMWpVoGm0pcP68GgzXO.vPmN.M62rUhUeiGHyDs7McqAwmE/p8i', '2026-05-23 03:46:38', 'actif', 1),
+(23, 'Ba', 'Lilyan', 'blonlily@hotmail.com', '771324258', '$2y$10$PyZBJlueTToiHlgOtKoMWus2MS4yY4N3zRsWxi0NFuLiuylY3Xlsy', '2026-05-23 09:45:03', 'actif', 1),
+(24, 'Gueye', 'Ana', 'cheffe_Ana21@hoymail.com', '773617377', '$2y$10$fTl1YIdtOYg1MBjsk1svGe6Nqa4sa3Mlisbq9fPLQvv/d.izwEyx.', '2026-06-04 21:14:57', 'actif', 1),
+(25, 'Mohamed', 'Laida', 'mohamedlaida168@gmail.com', '+221762123078', '$2y$10$Xawfp5IVFFLKdjXzYpp8Xe8wT7Kw7iHgmuoeRoC7bthtLecVsYo/.', '2026-06-05 18:42:08', 'actif', 1),
+(26, 'Zeina', 'Ezzedine', 'zeinasabbah2010@gmail.com', '775744624', '$2y$10$/iy8nM.LSmWH1VSe.xTVgOEUjc6L5LzfOd3QbNYvPg.3qv49Hqk16', '2026-06-08 20:56:38', 'actif', 1),
+(27, 'Sambou', 'Blanche', 'samboublanche2@gmail.com', '+221782946354', '$2y$10$NDtaY/CYV.8ckH6sm50d2efmZMt8eRV0JzpNmgfApH2H/s36BU2vG', '2026-06-12 11:32:34', 'actif', 1),
+(28, 'Basse', 'Louise henriette', 'basselouisehenriette@gmail.com', '778471358', '$2y$10$CF1Lh8Z6O.JJ/fqQwEMPtuRW6FORtXhPmhDG/Dde2eWPaOVAQ11BO', '2026-06-15 13:49:51', 'actif', 1),
+(29, 'Diop', 'Sweet', 'diopk4029@gmail.com', '705057697', '$2y$10$1Tut0X7hmFVVAY33Fyohi.m46SkwlqaQCG14rPkcZTyc5P7EiX2hK', '2026-06-20 04:33:50', 'actif', 1),
+(30, 'Roux', 'Tiffany', 'larouxette1@gmail.com', '0759385963', '$2y$10$FdS9rERYaIm/FZGH5zm9He.upSzeuT8xki0DGPGIbJRVR0855xY5y', '2026-06-22 17:24:51', 'actif', 1),
+(31, 'Diallo', 'Izatou', 'idjatoujallow@gmail.com', '771914305', '$2y$10$ConUd6bgXdbHCTCAXjhUgOmiKiYthTxoY/y/XoQ7aSnBkpHz1Fy/O', '2026-06-30 16:14:38', 'actif', 1),
+(32, 'Fall', 'Onika', 'bintafall1808@gmail.com', '+221769284663', '$2y$10$XC6x6cr2goJ7bCBZZX2Sie5PGDp1dLkWPnxXts3hPDuGCt7ytErBm', '2026-07-02 07:01:57', 'actif', 1),
+(33, 'AIZAN', 'Maggie-Angela', 'aizanmaggie@gmail.com', '+221774456848', '$2y$10$nco/8pZWR4JoB1lRaelYyOQ0yacW40gnX8nRXZTgl1o5LnINmU8fe', '2026-07-03 07:03:53', 'actif', 1),
+(34, 'testeur', 'testeur', 'testeur@yopmail.com', '+123456789', '$2y$10$LzoC7BMzORmwBDzv2rjSKutagOi9YSxuzbhUUrrKj0EWjTnOM9H4K', '2026-07-03 10:58:10', 'actif', 1),
+(35, 'KALACH', 'Nadine', 'youssam@arc.sn', '773215678', '$2y$10$8ozP24tLUJNNMQP/7NAPV.oZKJsGrUUkjMd40txANskz7VHhCMgFa', '2026-07-06 12:53:55', 'actif', 1),
+(36, 'Ngom', 'Adjaratou', 'adjafatoungom00@gmail.com', '+221785425448', '$2y$10$fKLMlOH7zoLdetspbzWKQe6f1Bo2l1KawhdvCDuwMiDzNFSur7H32', '2026-07-06 21:03:01', 'actif', 1),
+(37, 'TESTE', 'TESTE', 'TESTE@gmail.com', '770000000', '$2y$10$v9NZlbYcE8JMVIe437fF/ekLEZKwnlwMMXvIoykgn2m.yb5xCrSua', '2026-07-07 06:55:15', 'actif', 1),
+(38, 'Hachem', 'Nour', 'nourmahmoudh@hotmail.com', '777376160', '$2y$10$Aplv97mNrMZTavKQg2iz0OIDA/UMYJPSMmW64DT.DUjdmASGnK02q', '2026-07-07 10:12:04', 'actif', 1),
+(39, 'Ndene', 'Cherif', 'cherifndene75@gmail.com', '704087072', '$2y$10$/mL9.FJwBKLbtwkpQh554uSlEbs88iQAqwfJDigqZu6ME9KkGjAzS', '2026-07-07 16:21:55', 'actif', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `user_password_reset`
+--
+
+CREATE TABLE `user_password_reset` (
+  `id` int(11) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `user_password_reset`
+--
+
+INSERT INTO `user_password_reset` (`id`, `email`, `token`, `expires_at`, `used`, `date_creation`) VALUES
+(1, 'Leinadianko@gmail.com', '6275cc01f1a892c5ed3a6e126ba04834cde197b079fca47501c37aad3444beac', '2026-04-24 12:50:22', 1, '2026-04-24 06:50:22');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `videos`
+--
+
+CREATE TABLE `videos` (
+  `id` int(11) NOT NULL,
+  `titre` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `fichier_video` varchar(255) DEFAULT NULL COMMENT 'Nom du fichier vidéo uploadé',
+  `image_preview` varchar(255) DEFAULT NULL COMMENT 'Image de prévisualisation de la vidéo',
+  `overlay_texte` varchar(100) DEFAULT NULL COMMENT 'Texte overlay (Prix, Détails, Avis, etc.)',
+  `ordre` int(11) NOT NULL DEFAULT 0 COMMENT 'Ordre d''affichage dans le carrousel',
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif',
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `videos`
+--
+
+INSERT INTO `videos` (`id`, `titre`, `description`, `fichier_video`, `image_preview`, `overlay_texte`, `ordre`, `statut`, `date_creation`, `date_modification`) VALUES
+(2, 'Cake Topper Stitch', NULL, 'video_1772207831_69a1bed7824b0.mov', NULL, NULL, 0, 'actif', '2026-02-27 10:57:11', NULL),
+(3, 'Cake Topper Skin Care', NULL, 'video_1772209078_69a1c3b652400.mov', NULL, NULL, 0, 'actif', '2026-02-27 11:17:58', NULL),
+(4, 'Cake Topper Barbie 💖', NULL, 'video_1772274625_69a2c3c155623.mov', NULL, NULL, 0, 'actif', '2026-02-28 05:30:25', NULL),
+(5, 'Cake Topper Ronaldo', NULL, 'video_1772275629_69a2c7ad06236.mov', NULL, NULL, 0, 'actif', '2026-02-28 05:47:09', NULL),
+(6, 'Cake Topper Baby Boss😎', NULL, 'video_1772275748_69a2c824e8d40.mp4', NULL, NULL, 0, 'actif', '2026-02-28 05:49:08', NULL),
+(7, 'Cake Topper Spiderman', NULL, 'video_1772276272_69a2ca307f803.mov', NULL, NULL, 0, 'actif', '2026-02-28 05:57:52', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `zones_livraison`
+--
+
+CREATE TABLE `zones_livraison` (
+  `id` int(11) NOT NULL,
+  `ville` varchar(100) NOT NULL,
+  `quartier` varchar(150) NOT NULL,
+  `prix_livraison` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `description` varchar(255) DEFAULT NULL,
+  `date_creation` datetime NOT NULL DEFAULT current_timestamp(),
+  `date_modification` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `statut` enum('actif','inactif') NOT NULL DEFAULT 'actif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `zones_livraison`
+--
+
+INSERT INTO `zones_livraison` (`id`, `ville`, `quartier`, `prix_livraison`, `description`, `date_creation`, `date_modification`, `statut`) VALUES
+(2, 'Maristes', 'Plateau', 2500.00, NULL, '2026-02-26 17:29:31', '2026-03-13 12:51:48', 'actif'),
+(4, 'Maristes', 'Maristes', 1000.00, NULL, '2026-02-27 11:20:17', '2026-03-14 06:01:39', 'actif'),
+(5, 'Maristes', 'Dalifort', 1000.00, NULL, '2026-02-27 11:20:49', '2026-03-13 12:48:39', 'actif'),
+(6, 'Maristes', 'Parcelle', 2000.00, NULL, '2026-02-27 11:21:09', '2026-03-13 12:51:58', 'actif'),
+(7, 'Maristes', 'Hann Marinas', 2000.00, NULL, '2026-02-27 11:21:41', '2026-03-14 06:09:18', 'actif'),
+(8, 'Maristes', 'Case ba', 1500.00, NULL, '2026-02-27 11:24:22', '2026-03-13 12:48:13', 'actif'),
+(11, 'Récupérer sur place', '( Sugar Paper )', 0.00, NULL, '2026-03-11 12:07:13', '2026-03-12 06:47:27', 'actif'),
+(12, 'Maristes', 'Rufisque', 10000.00, NULL, '2026-03-13 08:10:14', '2026-03-13 12:51:25', 'actif'),
+(13, 'Maristes', 'Sacré Cœur', 2000.00, NULL, '2026-03-13 12:43:16', '2026-03-13 12:50:57', 'actif'),
+(14, 'Maristes', 'Almadie', 3000.00, NULL, '2026-03-13 12:46:20', '2026-03-13 12:47:52', 'actif'),
+(15, 'Maristes', 'Mermoz', 2500.00, NULL, '2026-03-13 12:52:44', NULL, 'actif'),
+(16, 'Maristes', 'Bourguiba', 2000.00, NULL, '2026-03-13 12:59:01', NULL, 'actif'),
+(17, 'Maristes', 'Cité keur Gorgui', 2000.00, NULL, '2026-03-13 12:59:31', NULL, 'actif'),
+(18, 'Maristes', 'Ouest foire', 2000.00, NULL, '2026-03-14 06:00:04', NULL, 'actif'),
+(19, 'Maristes', 'Nord foire', 2000.00, NULL, '2026-03-14 06:00:33', NULL, 'actif'),
+(20, 'Maristes', 'Ouakam', 2500.00, NULL, '2026-03-14 06:01:07', NULL, 'actif'),
+(21, 'Maristes', 'Ville', 2500.00, NULL, '2026-03-14 06:06:31', NULL, 'actif'),
+(22, 'Maristes', 'Mamelles', 3000.00, NULL, '2026-03-14 06:07:40', NULL, 'actif'),
+(23, 'Maristes', 'Guédiawaye', 3000.00, NULL, '2026-03-14 06:08:01', NULL, 'actif'),
+(24, 'Maristes', 'Ngor', 2500.00, NULL, '2026-03-14 06:08:29', NULL, 'actif'),
+(25, 'Maristes', 'HLM', 2000.00, NULL, '2026-03-14 06:10:55', NULL, 'actif'),
+(26, 'Maristes', 'Castor', 2000.00, NULL, '2026-03-14 06:11:20', NULL, 'actif'),
+(27, 'Maristes', 'Pikine', 2000.00, NULL, '2026-03-14 06:11:44', NULL, 'actif'),
+(28, 'Maristes', 'Liberté 6', 2000.00, NULL, '2026-03-27 09:23:27', NULL, 'actif'),
+(29, 'Maristes', 'Keur Massar', 5000.00, NULL, '2026-03-31 09:46:20', NULL, 'actif'),
+(30, 'Maristes', 'YARAKH', 1500.00, NULL, '2026-04-01 07:43:05', NULL, 'actif'),
+(31, 'Maristes', 'Medina', 2500.00, NULL, '2026-07-02 06:13:25', NULL, 'actif'),
+(32, 'Mariste', 'Fass', 2000.00, NULL, '2026-07-03 07:05:39', NULL, 'actif'),
+(33, 'Mariste', 'Autres', 2000.00, NULL, '2026-07-03 09:59:13', NULL, 'actif');
+
+--
+-- Index pour les tables déchargées
+--
+
+--
+-- Index pour la table `admin`
+--
+ALTER TABLE `admin`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Index pour la table `admin_password_reset`
+--
+ALTER TABLE `admin_password_reset`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_token` (`token`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `idx_expires` (`expires_at`);
+
+--
+-- Index pour la table `categories`
+--
+ALTER TABLE `categories`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nom` (`nom`),
+  ADD UNIQUE KEY `idx_nom` (`nom`);
+
+--
+-- Index pour la table `commandes`
+--
+ALTER TABLE `commandes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `numero_commande` (`numero_commande`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_date_commande` (`date_commande`);
+
+--
+-- Index pour la table `commandes_personnalisees`
+--
+ALTER TABLE `commandes_personnalisees`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_date_creation` (`date_creation`),
+  ADD KEY `idx_zone_livraison` (`zone_livraison_id`);
+
+--
+-- Index pour la table `commande_produits`
+--
+ALTER TABLE `commande_produits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_commande_id` (`commande_id`),
+  ADD KEY `idx_produit_id` (`produit_id`);
+
+--
+-- Index pour la table `contacts`
+--
+ALTER TABLE `contacts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_telephone` (`telephone`),
+  ADD KEY `idx_nom` (`nom`);
+
+--
+-- Index pour la table `devis`
+--
+ALTER TABLE `devis`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_numero_devis` (`numero_devis`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_zone_livraison_id` (`zone_livraison_id`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_date_creation` (`date_creation`);
+
+--
+-- Index pour la table `devis_produits`
+--
+ALTER TABLE `devis_produits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_devis_id` (`devis_id`),
+  ADD KEY `idx_produit_id` (`produit_id`);
+
+--
+-- Index pour la table `factures`
+--
+ALTER TABLE `factures`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_commande` (`commande_id`),
+  ADD UNIQUE KEY `token` (`token`),
+  ADD KEY `idx_numero` (`numero_facture`);
+
+--
+-- Index pour la table `factures_devis`
+--
+ALTER TABLE `factures_devis`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_numero_facture` (`numero_facture`),
+  ADD UNIQUE KEY `idx_devis_id` (`devis_id`),
+  ADD KEY `idx_token` (`token`);
+
+--
+-- Index pour la table `factures_personnalisees`
+--
+ALTER TABLE `factures_personnalisees`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_cp` (`commande_personnalisee_id`),
+  ADD UNIQUE KEY `token` (`token`),
+  ADD KEY `idx_numero` (`numero_facture`);
+
+--
+-- Index pour la table `favoris`
+--
+ALTER TABLE `favoris`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_user_produit` (`user_id`,`produit_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_produit_id` (`produit_id`);
+
+--
+-- Index pour la table `fcm_tokens`
+--
+ALTER TABLE `fcm_tokens`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_token` (`token`(191)),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_admin_id` (`admin_id`);
+
+--
+-- Index pour la table `panier`
+--
+ALTER TABLE `panier`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_user_produit` (`user_id`,`produit_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_produit_id` (`produit_id`),
+  ADD KEY `idx_date_ajout` (`date_ajout`);
+
+--
+-- Index pour la table `produits`
+--
+ALTER TABLE `produits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_categorie` (`categorie_id`),
+  ADD KEY `idx_statut` (`statut`);
+
+--
+-- Index pour la table `produits_variantes`
+--
+ALTER TABLE `produits_variantes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_produit_id` (`produit_id`);
+
+--
+-- Index pour la table `produits_visites`
+--
+ALTER TABLE `produits_visites`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_user_produit` (`user_id`,`produit_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_produit_id` (`produit_id`),
+  ADD KEY `idx_date_visite` (`date_visite`);
+
+--
+-- Index pour la table `section4_config`
+--
+ALTER TABLE `section4_config`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Index pour la table `slider`
+--
+ALTER TABLE `slider`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_ordre` (`ordre`);
+
+--
+-- Index pour la table `stock_mouvements`
+--
+ALTER TABLE `stock_mouvements`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_produit` (`produit_id`),
+  ADD KEY `idx_type` (`type`),
+  ADD KEY `idx_date` (`date_mouvement`);
+
+--
+-- Index pour la table `trending_config`
+--
+ALTER TABLE `trending_config`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Index pour la table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `idx_email` (`email`);
+
+--
+-- Index pour la table `user_password_reset`
+--
+ALTER TABLE `user_password_reset`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_token` (`token`),
+  ADD KEY `idx_email` (`email`),
+  ADD KEY `idx_expires` (`expires_at`);
+
+--
+-- Index pour la table `videos`
+--
+ALTER TABLE `videos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_statut` (`statut`),
+  ADD KEY `idx_ordre` (`ordre`);
+
+--
+-- Index pour la table `zones_livraison`
+--
+ALTER TABLE `zones_livraison`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ville` (`ville`),
+  ADD KEY `idx_statut` (`statut`);
+
+--
+-- AUTO_INCREMENT pour les tables déchargées
+--
+
+--
+-- AUTO_INCREMENT pour la table `admin`
+--
+ALTER TABLE `admin`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT pour la table `admin_password_reset`
+--
+ALTER TABLE `admin_password_reset`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `categories`
+--
+ALTER TABLE `categories`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+
+--
+-- AUTO_INCREMENT pour la table `commandes`
+--
+ALTER TABLE `commandes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=257;
+
+--
+-- AUTO_INCREMENT pour la table `commandes_personnalisees`
+--
+ALTER TABLE `commandes_personnalisees`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT pour la table `commande_produits`
+--
+ALTER TABLE `commande_produits`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=496;
+
+--
+-- AUTO_INCREMENT pour la table `contacts`
+--
+ALTER TABLE `contacts`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=272;
+
+--
+-- AUTO_INCREMENT pour la table `devis`
+--
+ALTER TABLE `devis`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+
+--
+-- AUTO_INCREMENT pour la table `devis_produits`
+--
+ALTER TABLE `devis_produits`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+
+--
+-- AUTO_INCREMENT pour la table `factures`
+--
+ALTER TABLE `factures`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=227;
+
+--
+-- AUTO_INCREMENT pour la table `factures_devis`
+--
+ALTER TABLE `factures_devis`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+
+--
+-- AUTO_INCREMENT pour la table `factures_personnalisees`
+--
+ALTER TABLE `factures_personnalisees`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT pour la table `favoris`
+--
+ALTER TABLE `favoris`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pour la table `fcm_tokens`
+--
+ALTER TABLE `fcm_tokens`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT pour la table `panier`
+--
+ALTER TABLE `panier`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
+
+--
+-- AUTO_INCREMENT pour la table `produits`
+--
+ALTER TABLE `produits`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=159;
+
+--
+-- AUTO_INCREMENT pour la table `produits_variantes`
+--
+ALTER TABLE `produits_variantes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+
+--
+-- AUTO_INCREMENT pour la table `produits_visites`
+--
+ALTER TABLE `produits_visites`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=315;
+
+--
+-- AUTO_INCREMENT pour la table `section4_config`
+--
+ALTER TABLE `section4_config`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT pour la table `slider`
+--
+ALTER TABLE `slider`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+--
+-- AUTO_INCREMENT pour la table `stock_mouvements`
+--
+ALTER TABLE `stock_mouvements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=454;
+
+--
+-- AUTO_INCREMENT pour la table `trending_config`
+--
+ALTER TABLE `trending_config`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT pour la table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+
+--
+-- AUTO_INCREMENT pour la table `user_password_reset`
+--
+ALTER TABLE `user_password_reset`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT pour la table `videos`
+--
+ALTER TABLE `videos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT pour la table `zones_livraison`
+--
+ALTER TABLE `zones_livraison`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+
+--
+-- Contraintes pour les tables déchargées
+--
+
+--
+-- Contraintes pour la table `commandes`
+--
+ALTER TABLE `commandes`
+  ADD CONSTRAINT `fk_commandes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `commandes_personnalisees`
+--
+ALTER TABLE `commandes_personnalisees`
+  ADD CONSTRAINT `fk_cp_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_cp_zone_livraison` FOREIGN KEY (`zone_livraison_id`) REFERENCES `zones_livraison` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `commande_produits`
+--
+ALTER TABLE `commande_produits`
+  ADD CONSTRAINT `fk_commande_produits_commande` FOREIGN KEY (`commande_id`) REFERENCES `commandes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_commande_produits_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `devis`
+--
+ALTER TABLE `devis`
+  ADD CONSTRAINT `fk_devis_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_devis_zone` FOREIGN KEY (`zone_livraison_id`) REFERENCES `zones_livraison` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `devis_produits`
+--
+ALTER TABLE `devis_produits`
+  ADD CONSTRAINT `fk_devis_produits_devis` FOREIGN KEY (`devis_id`) REFERENCES `devis` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_devis_produits_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `factures_devis`
+--
+ALTER TABLE `factures_devis`
+  ADD CONSTRAINT `fk_factures_devis_devis` FOREIGN KEY (`devis_id`) REFERENCES `devis` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `favoris`
+--
+ALTER TABLE `favoris`
+  ADD CONSTRAINT `fk_favoris_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_favoris_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `panier`
+--
+ALTER TABLE `panier`
+  ADD CONSTRAINT `fk_panier_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_panier_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `produits`
+--
+ALTER TABLE `produits`
+  ADD CONSTRAINT `fk_produits_categorie` FOREIGN KEY (`categorie_id`) REFERENCES `categories` (`id`) ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `produits_variantes`
+--
+ALTER TABLE `produits_variantes`
+  ADD CONSTRAINT `fk_variantes_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `produits_visites`
+--
+ALTER TABLE `produits_visites`
+  ADD CONSTRAINT `fk_visites_produit` FOREIGN KEY (`produit_id`) REFERENCES `produits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_visites_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

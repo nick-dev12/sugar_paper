@@ -48,6 +48,8 @@
         "statut",
         "date_bl",
         "total_ht",
+        "tva_incluse",
+        "taux_tva_pourcent",
         "remise_globale_pct",
         "notes",
         "livreur_id",
@@ -58,9 +60,7 @@
         "tracking_started_at",
         "adresse_client",
         "date_creation",
-        "date_modification",
-        "tva_incluse",
-        "taux_tva_pourcent"
+        "date_modification"
     ],
     "bulletin_paie_parametres": [
         "id",
@@ -103,8 +103,7 @@
         "monnaie_rendue",
         "notes",
         "statut",
-        "date_vente",
-        "date_encaissement"
+        "date_vente"
     ],
     "categories": [
         "id",
@@ -114,12 +113,6 @@
         "date_creation",
         "admin_createur_id",
         "admin_dernier_modificateur_id"
-    ],
-    "categories_depenses": [
-        "id",
-        "nom",
-        "type_tva",
-        "date_creation"
     ],
     "clients_b2b": [
         "id",
@@ -205,20 +198,6 @@
         "plafond_bl_cumul_ht",
         "date_creation",
         "type_client_bl"
-    ],
-    "depenses": [
-        "id",
-        "categorie_id",
-        "type_depense",
-        "libelle",
-        "montant_ht",
-        "taux_tva",
-        "montant_tva",
-        "montant_ttc",
-        "date_depense",
-        "notes",
-        "admin_createur_id",
-        "date_creation"
     ],
     "devis": [
         "id",
@@ -376,12 +355,12 @@
         "type_contrat",
         "contrat_pdf_chemin",
         "admin_id",
-        "date_creation",
-        "date_modification",
         "qr_chemin",
         "qr_payload",
         "photo_chemin",
         "matricule",
+        "date_creation",
+        "date_modification",
         "salaire_base",
         "montant_irpp_mensuel",
         "montant_trimf_mensuel",
@@ -413,13 +392,13 @@
         "numero_facture",
         "date_facture",
         "montant_total",
-        "token",
-        "admin_createur_id",
-        "date_creation",
         "tva_incluse",
         "montant_ht",
         "montant_tva",
-        "taux_tva_pourcent"
+        "taux_tva_pourcent",
+        "token",
+        "admin_createur_id",
+        "date_creation"
     ],
     "factures_mensuelles": [
         "id",
