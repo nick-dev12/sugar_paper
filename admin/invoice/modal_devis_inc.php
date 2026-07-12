@@ -45,6 +45,13 @@
                                     <span class="lignes-count" id="lignes-count">0 article(s)</span>
                                 </div>
                                 <div id="lignes-commande" class="lignes-commande lignes-commande-devis-wrap">
+                                    <div class="ligne-commande-head ligne-commande-head-devis ligne-commande-head-invoice" id="lignes-head-devis" hidden>
+                                        <span class="lch-head-cell">Produit</span>
+                                        <span class="lch-head-cell">Quantité</span>
+                                        <span class="lch-head-cell">Montant</span>
+                                        <span class="lch-head-cell">Total</span>
+                                        <span class="lch-head-cell lch-head-actions" aria-hidden="true"></span>
+                                    </div>
                                     <div class="lignes-empty" id="lignes-empty">
                                         <i class="fas fa-inbox"></i>
                                         <p>Aucun produit ajouté. Utilisez la recherche ci-dessus.</p>

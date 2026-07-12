@@ -15,13 +15,13 @@
   box-sizing: border-box;
 }
 
-/* Tablette : 3 colonnes */
-@media (min-width: 768px) and (max-width: 1024px) {
+@media (min-width: 800px) and (max-width: 1024px) {
   .produit_vedete .articles.carousel1-flex-mode,
   .produit_vedete .articles.carousel11,
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {
     display: grid !important;
@@ -47,8 +47,8 @@
   }
 }
 
-/* Mobile : 2 colonnes, 4px des bords */
-@media (max-width: 767px) {
+/* Mobile et petite tablette : 2 colonnes, 4px des bords */
+@media (max-width: 799px) {
   .produit_vedete,
   .produit_vedetes,
   .section00,
@@ -84,6 +84,7 @@
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {
     display: grid !important;
@@ -199,6 +200,7 @@
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {
     gap: 6px !important;

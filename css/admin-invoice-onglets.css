@@ -947,9 +947,27 @@
     z-index: 10050;
 }
 
-.lignes-commande-modal-wrap .ligne-commande-head-bl {
+/* Grille formulaire : produits 70 % · client 30 % */
+.invoice-form-modal .form-commande-manuelle-grid {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+    gap: 20px;
+    align-items: start;
+}
+
+.invoice-form-modal .form-col-articles {
+    order: 1;
+}
+
+.invoice-form-modal .form-col-client {
+    order: 2;
+}
+
+/* Tableau produits : Produit · Quantité · Montant · Total (sans promo) */
+.invoice-form-modal .ligne-commande-head-invoice,
+.lignes-commande-modal-wrap .ligne-commande-head-bl,
+.lignes-commande-devis-wrap .ligne-commande-head-devis {
     display: grid;
-    grid-template-columns: minmax(90px, 1fr) minmax(46px, 64px) minmax(88px, 1fr) minmax(88px, 1fr) 40px;
+    grid-template-columns: minmax(100px, 2fr) minmax(52px, 72px) minmax(80px, 1fr) minmax(72px, 1fr) 36px;
     gap: 8px;
     align-items: end;
     padding: 4px 0 6px;
@@ -960,6 +978,38 @@
     color: #6b2f20;
     text-transform: uppercase;
     letter-spacing: 0.02em;
+}
+
+.invoice-form-modal .ligne-commande-item-bl,
+.invoice-form-modal .ligne-commande-item-devis {
+    display: grid;
+    grid-template-columns: minmax(100px, 2fr) minmax(52px, 72px) minmax(80px, 1fr) minmax(72px, 1fr) 36px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.invoice-form-modal .ligne-commande-item-bl:last-child,
+.invoice-form-modal .ligne-commande-item-devis:last-child {
+    border-bottom: none;
+}
+
+.invoice-form-modal .ligne-bl-label {
+    display: none;
+}
+
+.invoice-form-modal .lignes-commande {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 993px) {
+    .invoice-form-modal .ligne-commande-head-invoice,
+    .invoice-form-modal .ligne-commande-item-bl,
+    .invoice-form-modal .ligne-commande-item-devis {
+        min-width: 420px;
+    }
 }
 
 .lch-head-cell {
@@ -973,14 +1023,14 @@
 
 .ligne-commande-item-bl {
     display: grid;
-    grid-template-columns: minmax(90px, 1fr) minmax(46px, 64px) minmax(88px, 1fr) minmax(88px, 1fr) 40px;
+    grid-template-columns: minmax(100px, 2fr) minmax(52px, 72px) minmax(80px, 1fr) minmax(72px, 1fr) 36px;
     gap: 8px;
     align-items: start;
 }
 
 .ligne-commande-item-devis {
     display: grid;
-    grid-template-columns: minmax(90px, 1fr) minmax(46px, 64px) minmax(88px, 1fr) minmax(88px, 1fr) 40px;
+    grid-template-columns: minmax(100px, 2fr) minmax(52px, 72px) minmax(80px, 1fr) minmax(72px, 1fr) 36px;
     gap: 8px;
     align-items: start;
 }
@@ -1031,11 +1081,19 @@
     flex-shrink: 0;
 }
 
-.ligne-bl-cell-total .ligne-bl-total-value {
+.ligne-bl-cell-total .ligne-bl-total-value,
+.ligne-bl-cell-total .ligne-total-value {
     font-size: 0.82rem;
     font-weight: 700;
     color: #6b2f20;
     padding: 8px 0;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .invoice-form-modal .form-commande-manuelle-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 992px) {
@@ -1157,9 +1215,36 @@
 
     .invoice-form-modal .lignes-commande {
         min-height: 56px;
-        padding: 6px;
+        padding: 4px;
         border-radius: 7px;
         border-width: 1px;
+        overflow-x: visible;
+    }
+
+    .invoice-form-modal .ligne-commande-head-invoice,
+    .invoice-form-modal .lignes-commande-modal-wrap .ligne-commande-head-bl,
+    .invoice-form-modal .lignes-commande-devis-wrap .ligne-commande-head-devis,
+    .invoice-form-modal .ligne-commande-item-bl,
+    .invoice-form-modal .ligne-commande-item-devis {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        grid-template-columns: minmax(0, 1.55fr) 38px minmax(0, 0.95fr) minmax(0, 0.8fr) 28px;
+        gap: 4px;
+    }
+
+    .invoice-form-modal .lignes-commande-modal-wrap .ligne-commande-head-bl,
+    .invoice-form-modal .lignes-commande-devis-wrap .ligne-commande-head-devis {
+        display: grid;
+        font-size: 0.58rem;
+        padding: 2px 0 4px;
+        letter-spacing: 0;
+    }
+
+    .invoice-form-modal .lch-head-cell {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .invoice-form-modal .lignes-empty {
@@ -1181,16 +1266,38 @@
     .invoice-form-modal .ligne-qte,
     .invoice-form-modal .ligne-prix,
     .invoice-form-modal .ligne-prix-promo {
-        font-size: 0.78rem;
-        padding: 6px 7px;
+        font-size: 0.72rem;
+        padding: 4px 5px;
         border-width: 1px;
-        min-height: 32px;
+        min-height: 28px;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .invoice-form-modal .ligne-bl-prix-row {
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .invoice-form-modal .ligne-unit-fcfa {
+        display: none;
+    }
+
+    .invoice-form-modal .ligne-bl-cell-total .ligne-total-value {
+        font-size: 0.72rem;
+        padding: 4px 0;
     }
 
     .invoice-form-modal .ligne-remove {
-        padding: 6px 8px;
-        font-size: 0.75rem;
-        min-height: 32px;
+        padding: 4px 5px;
+        font-size: 0.68rem;
+        min-height: 28px;
+        width: 28px;
+        min-width: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .invoice-form-modal .form-hint {
@@ -1255,23 +1362,18 @@
         font-size: 0.78rem;
     }
 
-    .invoice-form-modal .lignes-commande-modal-wrap .ligne-commande-head-bl {
-        display: none;
-    }
-
     .invoice-form-modal .ligne-commande-item,
     .invoice-form-modal .ligne-commande-item-bl,
     .invoice-form-modal .ligne-commande-item-devis {
-        display: flex;
-        flex-direction: column;
-        flex-wrap: nowrap;
-        gap: 6px;
-        align-items: stretch;
-        padding: 8px;
-        margin-bottom: 6px;
-        background: rgba(255, 255, 255, 0.72);
-        border-radius: 7px;
-        border: 1px solid rgba(229, 72, 138, 0.14);
+        display: grid;
+        gap: 4px;
+        align-items: center;
+        padding: 5px 0;
+        margin-bottom: 0;
+        background: transparent;
+        border-radius: 0;
+        border: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     }
 
     .invoice-form-modal .ligne-commande-item:last-child,
@@ -1289,21 +1391,50 @@
     .invoice-form-modal .ligne-commande-item .ligne-remove,
     .invoice-form-modal .ligne-commande-item-bl .ligne-remove,
     .invoice-form-modal .ligne-commande-item-devis .ligne-remove {
-        align-self: flex-end;
-        width: auto;
-        min-width: 36px;
+        align-self: center;
+        justify-self: end;
+        width: 28px;
+        min-width: 28px;
     }
 
     .invoice-form-modal .ligne-bl-label {
         font-size: 0.68rem;
     }
-
-    .invoice-form-modal .ligne-unit-fcfa {
-        font-size: 0.65rem;
-    }
 }
 
 @media (max-width: 480px) {
+    .invoice-form-modal .ligne-commande-head-invoice,
+    .invoice-form-modal .lignes-commande-modal-wrap .ligne-commande-head-bl,
+    .invoice-form-modal .lignes-commande-devis-wrap .ligne-commande-head-devis,
+    .invoice-form-modal .ligne-commande-item-bl,
+    .invoice-form-modal .ligne-commande-item-devis {
+        grid-template-columns: minmax(0, 1.35fr) 34px minmax(0, 0.9fr) minmax(0, 0.75fr) 26px;
+        gap: 3px;
+    }
+
+    .invoice-form-modal .lignes-commande-modal-wrap .ligne-commande-head-bl,
+    .invoice-form-modal .lignes-commande-devis-wrap .ligne-commande-head-devis {
+        font-size: 0.54rem;
+    }
+
+    .invoice-form-modal .lch-head-cell {
+        white-space: normal;
+        line-height: 1.1;
+        word-break: break-word;
+        hyphens: auto;
+    }
+
+    .invoice-form-modal .ligne-nom-input,
+    .invoice-form-modal .ligne-qte,
+    .invoice-form-modal .ligne-prix {
+        font-size: 0.68rem;
+        padding: 3px 4px;
+        min-height: 26px;
+    }
+
+    .invoice-form-modal .ligne-bl-cell-total .ligne-total-value {
+        font-size: 0.68rem;
+    }
     .invoice-form-modal .modal-commande-manuelle-header {
         padding: 7px 8px;
     }
@@ -1343,7 +1474,7 @@
     .invoice-form-modal .ligne-commande-item,
     .invoice-form-modal .ligne-commande-item-bl,
     .invoice-form-modal .ligne-commande-item-devis {
-        padding: 6px;
+        padding: 5px 0;
         gap: 5px;
     }
 }

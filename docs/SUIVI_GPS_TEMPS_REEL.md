@@ -1,6 +1,6 @@
 # Suivi GPS livreurs en temps réel — Documentation complète
 
-Documentation de référence pour le module de **géolocalisation en temps réel** des livreurs, déployé sur **sugar-paper.com** (VPS Webuzo) et développé dans le projet PHP `site_gateau`.
+**Documentation** de référence pour le module de **géolocalisation en temps réel** des livreurs, déployé sur **sugar-paper.com** (VPS Webuzo) et développé dans le projet PHP `site_gateau`.
 
 **Date de validation en production :** juillet 2026  
 **Statut :** fonctionnel — suivi GPS + Socket.io temps réel confirmé en prod

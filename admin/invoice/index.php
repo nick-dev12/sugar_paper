@@ -683,11 +683,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                     <span class="lignes-count" id="lignes-count-bl">0 article(s)</span>
                                 </div>
                                 <div id="lignes-commande-bl" class="lignes-commande lignes-commande-modal-wrap">
-                                    <div class="ligne-commande-head ligne-commande-head-bl" id="lignes-head-bl" hidden>
+                                    <div class="ligne-commande-head ligne-commande-head-bl ligne-commande-head-invoice" id="lignes-head-bl" hidden>
                                         <span class="lch-head-cell">Produit</span>
                                         <span class="lch-head-cell">Quantité</span>
-                                        <span class="lch-head-cell">prix FCFA</span>
-                                        <span class="lch-head-cell">promo FCFA</span>
+                                        <span class="lch-head-cell">Montant</span>
                                         <span class="lch-head-cell">Total</span>
                                         <span class="lch-head-cell lch-head-actions" aria-hidden="true"></span>
                                     </div>
@@ -1036,7 +1035,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             div.className = 'ligne-commande-item ligne-commande-item-bl';
             div.dataset.produitId = produit.id;
             div.innerHTML = U && U.buildLigneCommandeItemHtml
-                ? U.buildLigneCommandeItemHtml(produit, idx, 'lignes')
+                ? U.buildLigneCommandeItemHtml(produit, idx, 'lignes', { hidePromo: true })
                 : '';
             if (lignesEmptyBl) lignesEmptyBl.style.display = 'none';
             div.querySelector('.ligne-remove').addEventListener('click', function() {
@@ -1373,49 +1372,40 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             var n = items.length;
             if (lignesEmptyDevis) lignesEmptyDevis.style.display = n === 0 ? 'flex' : 'none';
             if (lignesCountDevis) lignesCountDevis.textContent = n + ' article(s)';
+            var headDevis = document.getElementById('lignes-head-devis');
+            if (headDevis) {
+                if (n > 0) {
+                    headDevis.removeAttribute('hidden');
+                } else {
+                    headDevis.setAttribute('hidden', 'hidden');
+                }
+            }
         }
         function addLigneDevis(produit) {
-            var prix = parseFloat(produit.prix) || 0;
-            var prixPromo = produit.prix_promotion && parseFloat(produit.prix_promotion) > 0 ? parseFloat(produit.prix_promotion) : '';
-            var nom = (produit.nom || '');
+            var U = window.FoutaAdminProduitSearchUi;
             var idx = ligneIndexDevis++;
             var div = document.createElement('div');
             div.className = 'ligne-commande-item ligne-commande-item-devis';
             div.dataset.produitId = produit.id;
-            var nomEsc = (nom.replace(/"/g, '&quot;'));
-            var qteInit = produit.quantite != null && produit.quantite !== '' ? produit.quantite : 1;
-            var puInit = prixPromo || prix;
-            div.innerHTML =
-                '<div class="ligne-bl-cell ligne-bl-cell--designation">' +
-                '<input type="hidden" name="lignes[' + idx + '][produit_id]" value="' + produit.id + '">' +
-                '<span class="ligne-bl-label">Désignation</span>' +
-                '<input type="text" name="lignes[' + idx + '][nom_produit]" value="' + nomEsc + '" placeholder="Nom du produit" class="ligne-nom-input" aria-label="Désignation du produit">' +
-                '</div>' +
-                '<div class="ligne-bl-cell">' +
-                '<span class="ligne-bl-label">Quantité</span>' +
-                '<input type="number" name="lignes[' + idx + '][quantite]" value="' + qteInit + '" min="1" class="ligne-qte" aria-label="Quantité" inputmode="numeric">' +
-                '</div>' +
-                '<div class="ligne-bl-cell ligne-bl-cell-prix">' +
-                '<span class="ligne-bl-label">Prix unitaire</span>' +
-                '<div class="ligne-bl-prix-row">' +
-                '<input type="number" name="lignes[' + idx + '][prix_unitaire]" value="' + puInit + '" min="0" step="0.01" class="ligne-prix" aria-label="Prix unitaire en FCFA" inputmode="decimal">' +
-                '<span class="ligne-unit-fcfa">FCFA</span>' +
-                '</div>' +
-                '</div>' +
-                '<div class="ligne-bl-cell ligne-bl-cell-prix">' +
-                '<span class="ligne-bl-label">Prix promo</span>' +
-                '<div class="ligne-bl-prix-row">' +
-                '<input type="number" name="lignes[' + idx + '][prix_promotion]" value="' + (prixPromo || '') + '" min="0" step="0.01" class="ligne-prix-promo" aria-label="Prix promotion en FCFA" inputmode="decimal" placeholder="—">' +
-                '<span class="ligne-unit-fcfa">FCFA</span>' +
-                '</div>' +
-                '</div>' +
-                '<div class="ligne-bl-cell ligne-bl-cell-actions">' +
-                '<span class="ligne-bl-label">Supprimer</span>' +
-                '<button type="button" class="ligne-remove" aria-label="Retirer ce produit"><i class="fas fa-trash"></i></button>' +
-                '</div>';
+            div.innerHTML = U && U.buildLigneCommandeItemHtml
+                ? U.buildLigneCommandeItemHtml(produit, idx, 'lignes', { hidePromo: true })
+                : '';
             if (lignesEmptyDevis) lignesEmptyDevis.style.display = 'none';
-            div.querySelector('.ligne-remove').addEventListener('click', function() { div.remove(); updateLignesUIDevis(); updateRecapDevis(); });
+            div.querySelector('.ligne-remove').addEventListener('click', function() {
+                div.remove();
+                updateLignesUIDevis();
+                updateRecapDevis();
+            });
             lignesContainerDevis.appendChild(div);
+            if (produit.quantite != null && produit.quantite !== '') {
+                var qEl = div.querySelector('.ligne-qte');
+                if (qEl) qEl.value = produit.quantite;
+            }
+            if (produit.prix != null && produit.prix !== '') {
+                var pEl = div.querySelector('.ligne-prix');
+                if (pEl) pEl.value = produit.prix;
+            }
+            if (U && U.updateLigneRowTotal) U.updateLigneRowTotal(div);
             updateLignesUIDevis();
             updateRecapDevis();
         }
@@ -1467,13 +1457,11 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             return remiseInputDevis ? Math.min(100, Math.max(0, parseFloat(remiseInputDevis.value) || 0)) : 0;
         }
         function getSousTotalDevis() {
-            var total = 0;
-            (lignesContainerDevis ? lignesContainerDevis.querySelectorAll('.ligne-commande-item') : []).forEach(function(row) {
-                var qte = parseFloat(row.querySelector('.ligne-qte').value) || 0;
-                var prix = parseFloat(row.querySelector('.ligne-prix').value) || 0;
-                total += qte * prix;
-            });
-            return total;
+            var U = window.FoutaAdminProduitSearchUi;
+            if (U && U.getLignesSousTotal) {
+                return U.getLignesSousTotal(lignesContainerDevis);
+            }
+            return 0;
         }
         function getFraisDevis() {
             if (!zoneSelectDevis || zoneSelectDevis.value === '' || zoneSelectDevis.value === 'custom') return 0;
@@ -1524,9 +1512,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             updateRecapDevis();
         });
         if (remiseInputDevis) remiseInputDevis.addEventListener('input', updateRecapDevis);
-        if (lignesContainerDevis) lignesContainerDevis.addEventListener('input', function(ev) {
-            if (ev.target.classList.contains('ligne-qte') || ev.target.classList.contains('ligne-prix')) updateRecapDevis();
-        });
+        var UDevis = window.FoutaAdminProduitSearchUi;
+        if (UDevis && UDevis.bindLignesLiveRecap) {
+            UDevis.bindLignesLiveRecap(lignesContainerDevis, updateRecapDevis);
+        }
         var searchTimeoutDevis;
         if (searchInputDevis) {
             searchInputDevis.addEventListener('input', function() {

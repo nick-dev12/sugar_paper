@@ -163,3 +163,65 @@ function delete_video($id)
         return false;
     }
 }
+
+/**
+ * Garantit une miniature pour l'affichage (génère si absente, position pseudo-aléatoire dans la vidéo).
+ * @param array $video Ligne vidéo (id, fichier_video, image_preview)
+ * @return string|null Nom du fichier thumbnail ou null
+ */
+function video_ensure_preview_image(array $video)
+{
+    global $db;
+
+    if (!empty($video['image_preview'])) {
+        $existing = __DIR__ . '/../upload/videos/thumbnails/' . $video['image_preview'];
+        if (is_file($existing) && filesize($existing) > 0) {
+            return $video['image_preview'];
+        }
+    }
+
+    if (empty($video['fichier_video'])) {
+        return null;
+    }
+
+    $video_path = __DIR__ . '/../upload/videos/' . $video['fichier_video'];
+    if (!is_file($video_path)) {
+        return null;
+    }
+
+    $thumbnails_dir = __DIR__ . '/../upload/videos/thumbnails/';
+    if (!is_dir($thumbnails_dir)) {
+        mkdir($thumbnails_dir, 0755, true);
+    }
+
+    require_once __DIR__ . '/../controllers/controller_videos.php';
+
+    $thumb_name = 'thumb_' . pathinfo($video['fichier_video'], PATHINFO_FILENAME) . '.jpg';
+    $thumb_path = $thumbnails_dir . $thumb_name;
+
+    $video_id = (int) ($video['id'] ?? 0);
+    $offset = $video_id > 0 ? (($video_id * 13 + 7) % 12) + 1 : 2;
+
+    if (!generate_video_thumbnail($video_path, $thumb_path, $offset)) {
+        for ($try = 1; $try <= 4; $try++) {
+            if (generate_video_thumbnail($video_path, $thumb_path, $try)) {
+                break;
+            }
+        }
+    }
+
+    if (!is_file($thumb_path) || filesize($thumb_path) <= 0) {
+        return null;
+    }
+
+    if ($video_id > 0) {
+        try {
+            $stmt = $db->prepare('UPDATE videos SET image_preview = :preview WHERE id = :id');
+            $stmt->execute(['preview' => $thumb_name, 'id' => $video_id]);
+        } catch (PDOException $e) {
+            // Affichage possible même si la BDD n'est pas mise à jour
+        }
+    }
+
+    return $thumb_name;
+}

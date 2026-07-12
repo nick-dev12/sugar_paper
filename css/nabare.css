@@ -79,6 +79,13 @@ nav:not(.bottom-nav) {
   overflow: hidden;
 }
 
+nav.nav-planete-gateau {
+  overflow: visible;
+  min-height: auto;
+  height: auto;
+  flex-wrap: nowrap;
+}
+
 /* Styles legacy - masqués si nav-planete-gateau */
 nav:not(.nav-planete-gateau) {
   padding: 0 40px;
@@ -105,6 +112,10 @@ nav .logo {
   justify-content: center;
   font-family: "Lobster", cursive;
   text-decoration: none;
+}
+
+nav.nav-planete-gateau .logo {
+  justify-content: flex-start;
 }
 
 nav:not(.nav-planete-gateau) .logo {
@@ -588,7 +599,7 @@ nav .containernav .users img {
     width: 280px;
   }
 
-  nav:not(.bottom-nav) {
+  nav:not(.bottom-nav):not(.nav-planete-gateau) {
     padding: 0 10px;
     flex-direction: column;
     align-items: center;
@@ -596,14 +607,14 @@ nav .containernav .users img {
     height: auto;
   }
 
-  nav:not(.bottom-nav) .logo img {
+  nav:not(.bottom-nav):not(.nav-planete-gateau) .logo img {
     display: block;
     height: 60px;
     width: 140px;
     object-fit: cover;
   }
 
-  nav:not(.bottom-nav) .logo {
+  nav:not(.bottom-nav):not(.nav-planete-gateau) .logo {
     display: flex;
     align-items: center;
     justify-content: center;

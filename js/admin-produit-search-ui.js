@@ -139,33 +139,36 @@
             '][produit_id]" value="' +
             produit.id +
             '">' +
-            '<span class="ligne-bl-label">Désignation</span>' +
+            '<span class="ligne-bl-label">Produit</span>' +
             '<input type="text" name="' +
             lignesKey +
             '[' +
             idx +
             '][nom_produit]" value="' +
             nom +
-            '" placeholder="Nom du produit" class="ligne-nom-input" aria-label="Désignation du produit">' +
+            '" placeholder="Nom du produit" class="ligne-nom-input" aria-label="Nom du produit">' +
             '</div>'
         );
     }
 
     /**
-     * Ligne complète devis / BL (qty, prix, promo, total live, supprimer).
+     * Ligne complète devis / BL (qty, prix, total live, supprimer).
+     * options.hidePromo : masque la colonne promo (modales Invoice).
      */
-    function buildLigneCommandeItemHtml(produit, idx, lignesKey) {
+    function buildLigneCommandeItemHtml(produit, idx, lignesKey, options) {
         lignesKey = lignesKey || 'lignes';
+        options = options || {};
+        var hidePromo = options.hidePromo === true;
         var prix = parseFloat(produit.prix) || 0;
         var prixPromo =
             produit.prix_promotion && parseFloat(produit.prix_promotion) > 0
                 ? parseFloat(produit.prix_promotion)
                 : '';
-        var unit = prixPromo || prix;
+        var unit = hidePromo ? prix : (prixPromo || prix);
         var stockMax = produit.stock_dispo || produit.stock || 999;
         var cellDes = buildLigneBlDesignationCellHtml(produit, idx, lignesKey);
 
-        return (
+        var html =
             cellDes +
             '<div class="ligne-bl-cell">' +
             '<span class="ligne-bl-label">Quantité</span>' +
@@ -178,7 +181,7 @@
             '" class="ligne-qte" aria-label="Quantité" inputmode="numeric">' +
             '</div>' +
             '<div class="ligne-bl-cell ligne-bl-cell-prix">' +
-            '<span class="ligne-bl-label">Prix unitaire</span>' +
+            '<span class="ligne-bl-label">Montant</span>' +
             '<div class="ligne-bl-prix-row">' +
             '<input type="number" name="' +
             lignesKey +
@@ -186,31 +189,45 @@
             idx +
             '][prix_unitaire]" value="' +
             unit +
-            '" min="0" step="0.01" class="ligne-prix" aria-label="Prix unitaire en FCFA" inputmode="decimal">' +
+            '" min="0" step="0.01" class="ligne-prix" aria-label="Montant en FCFA" inputmode="decimal">' +
             '<span class="ligne-unit-fcfa">FCFA</span>' +
+            (hidePromo
+                ? '<input type="hidden" name="' +
+                  lignesKey +
+                  '[' +
+                  idx +
+                  '][prix_promotion]" value="">'
+                : '') +
             '</div>' +
-            '</div>' +
-            '<div class="ligne-bl-cell ligne-bl-cell-prix">' +
-            '<span class="ligne-bl-label">Prix promo</span>' +
-            '<div class="ligne-bl-prix-row">' +
-            '<input type="number" name="' +
-            lignesKey +
-            '[' +
-            idx +
-            '][prix_promotion]" value="' +
-            (prixPromo || '') +
-            '" min="0" step="0.01" placeholder="Optionnel" class="ligne-prix-promo" aria-label="Prix promotionnel en FCFA" inputmode="decimal">' +
-            '<span class="ligne-unit-fcfa">FCFA</span>' +
-            '</div>' +
-            '</div>' +
+            '</div>';
+
+        if (!hidePromo) {
+            html +=
+                '<div class="ligne-bl-cell ligne-bl-cell-prix">' +
+                '<span class="ligne-bl-label">Prix promo</span>' +
+                '<div class="ligne-bl-prix-row">' +
+                '<input type="number" name="' +
+                lignesKey +
+                '[' +
+                idx +
+                '][prix_promotion]" value="' +
+                (prixPromo || '') +
+                '" min="0" step="0.01" placeholder="Optionnel" class="ligne-prix-promo" aria-label="Prix promotionnel en FCFA" inputmode="decimal">' +
+                '<span class="ligne-unit-fcfa">FCFA</span>' +
+                '</div>' +
+                '</div>';
+        }
+
+        html +=
             '<div class="ligne-bl-cell ligne-bl-cell-total">' +
             '<span class="ligne-bl-label">Total</span>' +
             '<strong class="ligne-total-value" aria-live="polite">' +
             formatFcfa(unit) +
             '</strong>' +
             '</div>' +
-            '<button type="button" class="ligne-remove" aria-label="Retirer la ligne"><i class="fas fa-trash"></i></button>'
-        );
+            '<button type="button" class="ligne-remove" aria-label="Retirer la ligne"><i class="fas fa-trash"></i></button>';
+
+        return html;
     }
 
     global.FoutaAdminProduitSearchUi = {

@@ -53,6 +53,7 @@ $seo_canonical = $base . '/produits.php';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <style>
         .produits-page-header {
@@ -173,9 +174,8 @@ $seo_canonical = $base . '/produits.php';
         <h1><i class="fas fa-box"></i>
             <?php echo !empty($recherche_actuelle) ? 'Résultats pour "' . htmlspecialchars($recherche_actuelle) . '"' : 'Tous nos produits'; ?>
         </h1>
-        <p><?php echo $has_filters ? $total_produits . ' produit(s) trouvé(s)' : 'Découvrez notre sélection complète de produits naturels'; ?>
-        </p>
         <?php if ($has_filters): ?>
+        <p><?php echo $total_produits . ' produit(s) trouvé(s)'; ?></p>
             <p class="filtres-actifs">
                 <?php if (!empty($recherche_actuelle)): ?><span><i class="fas fa-search"></i>
                         <?php echo htmlspecialchars($recherche_actuelle); ?></span><?php endif; ?>

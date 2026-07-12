@@ -22,7 +22,7 @@ $seo_canonical = $base . '/';
 
 
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="aos-not-ready">
 
 <head>
     <meta charset="UTF-8">
@@ -36,6 +36,15 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <style>
+    /* AOS masque [data-aos] avant init JS — affichage immédiat au chargement */
+    html.aos-not-ready [data-aos] {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+        pointer-events: auto !important;
+    }
+    </style>
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
@@ -614,19 +623,39 @@ $seo_canonical = $base . '/';
 
             <div class="galerie-grid" id="videosSlider">
                 <?php foreach ($videos as $index => $video): ?>
+                <?php
+                    $preview_file = video_ensure_preview_image($video);
+                    $poster_url = $preview_file
+                        ? '/upload/videos/thumbnails/' . rawurlencode($preview_file)
+                        : '';
+                    $video_src = '/upload/videos/' . rawurlencode($video['fichier_video']);
+                ?>
                 <article class="galerie-item">
                     <div class="galerie-card">
-                        <div class="galerie-video-wrapper">
-                            <video class="galerie-video" controls preload="metadata" playsinline
-                                <?php if (!empty($video['image_preview'])): ?>
-                                poster="/upload/videos/thumbnails/<?php echo htmlspecialchars($video['image_preview']); ?>"
-                                <?php endif; ?>>
-                                <source src="/upload/videos/<?php echo htmlspecialchars($video['fichier_video']); ?>">
+                        <div class="galerie-video-wrapper" data-video-loaded="0">
+                            <?php if ($poster_url !== ''): ?>
+                            <img class="galerie-poster"
+                                src="<?php echo htmlspecialchars($poster_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                alt="<?php echo htmlspecialchars($video['titre'] ?? 'Vidéo création', ENT_QUOTES, 'UTF-8'); ?>"
+                                loading="lazy"
+                                decoding="async">
+                            <?php else: ?>
+                            <div class="galerie-poster galerie-poster--placeholder" aria-hidden="true">
+                                <i class="fa-solid fa-film"></i>
+                            </div>
+                            <?php endif; ?>
+                            <video class="galerie-video" controls preload="none" playsinline
+                                <?php if ($poster_url !== ''): ?>
+                                poster="<?php echo htmlspecialchars($poster_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                <?php endif; ?>
+                                data-src="<?php echo htmlspecialchars($video_src, ENT_QUOTES, 'UTF-8'); ?>">
+                                <source data-src="<?php echo htmlspecialchars($video_src, ENT_QUOTES, 'UTF-8'); ?>" type="video/mp4">
                                 Votre navigateur ne supporte pas la lecture de vidéos.
                             </video>
-                            <div class="galerie-play-overlay">
-                                <i class="fa-solid fa-play"></i>
-                            </div>
+                            <button type="button" class="galerie-play-overlay" aria-label="Lire la vidéo">
+                                <span class="galerie-play-ring" aria-hidden="true"></span>
+                                <i class="fa-solid fa-play" aria-hidden="true"></i>
+                            </button>
                         </div>
                         <?php if (!empty($video['titre'])): ?>
                         <div class="galerie-caption">
@@ -643,18 +672,59 @@ $seo_canonical = $base . '/';
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.galerie-video').forEach(function(video) {
-            var overlay = video.nextElementSibling;
-            if (overlay && overlay.classList.contains('galerie-play-overlay')) {
-                video.addEventListener('play', function() {
-                    video.classList.add('playing');
-                    overlay.style.opacity = '0';
-                });
-                video.addEventListener('pause', function() {
-                    video.classList.remove('playing');
-                    overlay.style.opacity = '1';
-                });
+        document.querySelectorAll('.galerie-video-wrapper').forEach(function(wrapper) {
+            var poster = wrapper.querySelector('.galerie-poster');
+            var video = wrapper.querySelector('.galerie-video');
+            var playBtn = wrapper.querySelector('.galerie-play-overlay');
+            if (!video || !playBtn) {
+                return;
             }
+
+            function loadVideoSource() {
+                if (video.dataset.loaded === '1') {
+                    return;
+                }
+                var src = video.getAttribute('data-src');
+                var source = video.querySelector('source');
+                if (src && source && !source.getAttribute('src')) {
+                    source.setAttribute('src', src);
+                    video.load();
+                }
+                video.dataset.loaded = '1';
+                wrapper.setAttribute('data-video-loaded', '1');
+            }
+
+            function hidePoster() {
+                if (poster) {
+                    poster.style.display = 'none';
+                }
+                video.classList.add('is-active');
+                playBtn.style.opacity = '0';
+                playBtn.style.pointerEvents = 'none';
+            }
+
+            function showPoster() {
+                if (poster) {
+                    poster.style.display = '';
+                }
+                video.classList.remove('is-active');
+                playBtn.style.opacity = '';
+                playBtn.style.pointerEvents = '';
+            }
+
+            playBtn.addEventListener('click', function() {
+                loadVideoSource();
+                hidePoster();
+                video.play().catch(function() {});
+            });
+
+            video.addEventListener('play', hidePoster);
+            video.addEventListener('pause', function() {
+                if (video.currentTime === 0 || video.ended) {
+                    showPoster();
+                }
+            });
+            video.addEventListener('ended', showPoster);
         });
     });
     </script>
@@ -879,7 +949,7 @@ $seo_canonical = $base . '/';
 
     <?php include('footer.php') ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js" defer></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
     <script src="/js/owl.animate.js"></script>
@@ -1013,8 +1083,36 @@ $seo_canonical = $base . '/';
     </script>
 
     <script>
-    // ..
-    AOS.init();
+    (function () {
+        function finishAos() {
+            document.documentElement.classList.remove('aos-not-ready');
+        }
+
+        function runAos() {
+            if (typeof AOS === 'undefined') {
+                finishAos();
+                return;
+            }
+            AOS.init({
+                duration: 650,
+                once: true,
+                offset: 20,
+                easing: 'ease-out-cubic',
+                disable: function () {
+                    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                }
+            });
+            requestAnimationFrame(function () {
+                requestAnimationFrame(finishAos);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runAos);
+        } else {
+            runAos();
+        }
+    })();
     </script>
 
     <script>

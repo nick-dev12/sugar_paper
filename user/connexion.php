@@ -398,12 +398,6 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
         .forgot-password-link a:hover {
             text-decoration: underline;
         }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 30px 20px;
-            }
-        }
     </style>
 </head>
 

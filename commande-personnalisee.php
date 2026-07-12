@@ -20,13 +20,11 @@ if ($result['success']) {
 
 $prefill = [
     'nom' => $_SESSION['user_nom'] ?? '',
-    'prenom' => $_SESSION['user_prenom'] ?? '',
     'telephone' => $_SESSION['user_telephone'] ?? ''
 ];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prefill = [
         'nom' => $_POST['nom'] ?? '',
-        'prenom' => $_POST['prenom'] ?? '',
         'telephone' => $_POST['telephone'] ?? ''
     ];
 }
@@ -67,35 +65,13 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         <?php endif; ?>
 
         <div class="cp-layout">
-            <aside class="cp-aside" aria-label="Étapes du processus">
-                <div class="cp-step-card">
-                    <i class="fas fa-pen-fancy" aria-hidden="true"></i>
-                    <h3>1. Décrivez</h3>
-                </div>
-                <div class="cp-step-card">
-                    <i class="fas fa-images" aria-hidden="true"></i>
-                    <h3>2. Inspirez</h3>
-                </div>
-                <div class="cp-step-card">
-                    <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
-                    <h3>3. Recevez votre devis</h3>
-                </div>
-            </aside>
-
             <form method="POST" action="" class="form-commande-perso" enctype="multipart/form-data">
                 <section class="cp-form-section">
                     <h2 class="cp-form-section-title"><i class="fas fa-user-circle" aria-hidden="true"></i> Vos coordonnées</h2>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nom">Nom *</label>
-                            <input type="text" id="nom" name="nom" required
-                                value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
-                        </div>
-                        <div class="form-group">
-                            <label for="prenom">Prénom *</label>
-                            <input type="text" id="prenom" name="prenom" required
-                                value="<?php echo htmlspecialchars($prefill['prenom']); ?>" placeholder="Votre prénom">
-                        </div>
+                    <div class="form-group">
+                        <label for="nom">Nom *</label>
+                        <input type="text" id="nom" name="nom" required
+                            value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
                     </div>
                     <div class="form-group">
                         <label for="telephone">Téléphone *</label>

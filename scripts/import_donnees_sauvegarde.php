@@ -5,16 +5,42 @@
  *
  * Usage :
  *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql"
+ *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql" --vider-avant
  *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql" --export-only
  */
 require_once __DIR__ . '/../conn/conn.php';
 
 $source = $argv[1] ?? (__DIR__ . '/../ariaqqrw_sugar (4).sql');
 $exportOnly = in_array('--export-only', $argv, true);
+$viderAvant = in_array('--vider-avant', $argv, true);
 
 if (!is_file($source)) {
     fwrite(STDERR, "Fichier introuvable : $source\n");
     exit(1);
+}
+
+function import_is_duplicate_error(PDOException $e) {
+    $m = strtolower($e->getMessage());
+    return (string) $e->getCode() === '23000'
+        || strpos($m, 'duplicate') !== false
+        || strpos($m, 'duplicata') !== false
+        || strpos($m, 'déjà') !== false
+        || strpos($m, 'deja') !== false
+        || strpos($m, '1062') !== false;
+}
+
+function import_truncate_tables(PDO $db, array $tables) {
+    $db->exec('SET FOREIGN_KEY_CHECKS=0');
+    $reversed = array_reverse($tables);
+    foreach ($reversed as $table) {
+        try {
+            $db->exec('TRUNCATE TABLE `' . str_replace('`', '``', $table) . '`');
+            echo "  vidé : $table\n";
+        } catch (PDOException $e) {
+            echo "  ! $table : " . $e->getMessage() . "\n";
+        }
+    }
+    $db->exec('SET FOREIGN_KEY_CHECKS=1');
 }
 
 /** Ordre respectant les clés étrangères */
@@ -155,6 +181,15 @@ $dbName = (string) $db->query('SELECT DATABASE()')->fetchColumn();
 echo "=== Import en base : $dbName ===\n\n";
 
 $db->exec('SET NAMES utf8mb4');
+
+if ($viderAvant) {
+    echo "→ Vidage des tables concernées (--vider-avant)…\n";
+    import_truncate_tables($db, $ordered_tables);
+    echo "\n";
+} else {
+    echo "Astuce : si des doublons apparaissent, relancez avec --vider-avant\n\n";
+}
+
 $db->exec('SET FOREIGN_KEY_CHECKS=0');
 
 $ok = 0;
@@ -170,9 +205,8 @@ foreach ($ordered_tables as $table) {
             $db->exec($sql);
             $ok++;
         } catch (PDOException $e) {
-            $m = strtolower($e->getMessage());
-            if (strpos($m, 'duplicate') !== false || strpos($m, 'déjà') !== false || strpos($m, 'exists') !== false) {
-                echo "  — ignoré (doublon)\n";
+            if (import_is_duplicate_error($e)) {
+                echo "  — ignoré (doublon — relancez avec --vider-avant)\n";
                 $skipped++;
                 continue;
             }
@@ -201,6 +235,13 @@ echo "\n=== Terminé ===\n";
 echo "OK : $ok | Ignorés : $skipped | Erreurs : $errors\n";
 
 if ($errors > 0) {
+    exit(1);
+}
+
+if ($ok === 0 && $skipped > 0) {
+    echo "\nAucune ligne importée : les données sont déjà présentes.\n";
+    echo "Relancez avec --vider-avant pour remplacer par la sauvegarde :\n";
+    echo "  php scripts/import_donnees_sauvegarde.php " . escapeshellarg(basename($source)) . " --vider-avant\n";
     exit(1);
 }
 

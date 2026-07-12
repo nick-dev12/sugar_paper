@@ -219,7 +219,7 @@ function process_commande_personnalisee() {
 
     $user_id = isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     $nom = isset($_POST['nom']) ? trim($_POST['nom']) : '';
-    $prenom = isset($_POST['prenom']) ? trim($_POST['prenom']) : '';
+    $prenom = '';
     $email = '';
     $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
@@ -235,12 +235,6 @@ function process_commande_personnalisee() {
         $errors[] = 'Le nom est obligatoire.';
     } elseif (strlen($nom) < 2) {
         $errors[] = 'Le nom doit contenir au moins 2 caractères.';
-    }
-
-    if (empty($prenom)) {
-        $errors[] = 'Le prénom est obligatoire.';
-    } elseif (strlen($prenom) < 2) {
-        $errors[] = 'Le prénom doit contenir au moins 2 caractères.';
     }
 
     if (empty($telephone)) {
