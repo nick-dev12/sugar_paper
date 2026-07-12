@@ -8,6 +8,7 @@
  */
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/lib/migration_helpers.php';
 
 global $db;
 
@@ -95,8 +96,20 @@ foreach ($alter_columns as $sql) {
     run_sql($sql);
 }
 
-// Modifier statut commandes
-run_sql("ALTER TABLE `commandes` MODIFY COLUMN `statut` ENUM('en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'expediee', 'livree', 'annulee') NOT NULL DEFAULT 'en_attente'");
+// Élargir l'ENUM statut sans retirer les valeurs déjà utilisées (ex. paye)
+if ($db instanceof PDO) {
+    mig_expand_enum_column($db, 'commandes', 'statut', [
+        'en_attente',
+        'confirmee',
+        'prise_en_charge',
+        'en_preparation',
+        'livraison_en_cours',
+        'expediee',
+        'livree',
+        'paye',
+        'annulee',
+    ], 'en_attente');
+}
 
 echo "\n=== Terminé ===\n";
 echo "OK: $ok | Ignorés (existe déjà): $skip | Erreurs: $err\n";

@@ -2,13 +2,24 @@
 /**
  * Exécute la migration: ajout du statut 'paye' à la table commandes
  */
-require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/lib/migration_helpers.php';
+
+$db = mig_connect();
 
 try {
-    $sql = file_get_contents(__DIR__ . '/add_statut_paye_commandes.sql');
-    $db->exec($sql);
-    echo "Migration réussie: statut 'paye' ajouté à la table commandes.\n";
+    mig_expand_enum_column($db, 'commandes', 'statut', [
+        'en_attente',
+        'confirmee',
+        'prise_en_charge',
+        'en_preparation',
+        'livraison_en_cours',
+        'expediee',
+        'livree',
+        'paye',
+        'annulee',
+    ], 'en_attente');
+    echo "Migration réussie: statut 'paye' disponible sur commandes.\n";
 } catch (PDOException $e) {
-    echo "Erreur: " . $e->getMessage() . "\n";
+    fwrite(STDERR, 'Erreur : ' . $e->getMessage() . "\n");
     exit(1);
 }

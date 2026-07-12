@@ -185,6 +185,93 @@ if (!function_exists('mig_run_php_script')) {
     }
 }
 
+if (!function_exists('mig_enum_values')) {
+    function mig_enum_values(PDO $db, $table, $column) {
+        if (!mig_column_exists($db, $table, $column)) {
+            return [];
+        }
+        $q = $db->prepare('SHOW COLUMNS FROM `' . str_replace('`', '``', $table) . '` LIKE ?');
+        $q->execute([(string) $column]);
+        $row = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['Type']) || !preg_match("/^enum\\('(.+)'\\)$/i", $row['Type'], $m)) {
+            return [];
+        }
+        $parts = explode("','", $m[1]);
+        return array_map(static function ($v) {
+            return str_replace("''", "'", $v);
+        }, $parts);
+    }
+}
+
+if (!function_exists('mig_distinct_column_values')) {
+    function mig_distinct_column_values(PDO $db, $table, $column) {
+        if (!mig_table_exists($db, $table) || !mig_column_exists($db, $table, $column)) {
+            return [];
+        }
+        $sql = 'SELECT DISTINCT `' . str_replace('`', '``', $column) . '` FROM `' . str_replace('`', '``', $table) . '` WHERE `' . str_replace('`', '``', $column) . '` IS NOT NULL';
+        $rows = $db->query($sql)->fetchAll(PDO::FETCH_COLUMN);
+        return is_array($rows) ? $rows : [];
+    }
+}
+
+if (!function_exists('mig_expand_enum_column')) {
+    /**
+     * Élargit un ENUM sans supprimer les valeurs déjà utilisées en base.
+     */
+    function mig_expand_enum_column(PDO $db, $table, $column, array $required_values, $default = null) {
+        if (!mig_column_exists($db, $table, $column)) {
+            echo "  ! $table.$column introuvable\n";
+            return false;
+        }
+
+        $q = $db->prepare('SHOW COLUMNS FROM `' . str_replace('`', '``', $table) . '` LIKE ?');
+        $q->execute([(string) $column]);
+        $row = $q->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['Type']) || stripos($row['Type'], 'enum(') !== 0) {
+            echo "  ! $table.$column n'est pas un ENUM\n";
+            return false;
+        }
+
+        $current = mig_enum_values($db, $table, $column);
+        $in_use = mig_distinct_column_values($db, $table, $column);
+        $ordered = [];
+        foreach ($required_values as $value) {
+            if (!in_array($value, $ordered, true)) {
+                $ordered[] = $value;
+            }
+        }
+        foreach (array_merge($current, $in_use) as $value) {
+            if ($value !== null && $value !== '' && !in_array($value, $ordered, true)) {
+                $ordered[] = $value;
+            }
+        }
+
+        $missing = array_diff($required_values, $current);
+        if (empty($missing) && count($ordered) === count($current)) {
+            echo "  — $table.$column ENUM déjà à jour\n";
+            return true;
+        }
+
+        if ($default === null) {
+            $default = isset($row['Default']) && $row['Default'] !== '' ? $row['Default'] : ($ordered[0] ?? '');
+        }
+        if (!in_array($default, $ordered, true)) {
+            $default = $ordered[0] ?? 'admin';
+        }
+
+        $enum_sql = "'" . implode("','", array_map(static function ($v) {
+            return str_replace("'", "''", $v);
+        }, $ordered)) . "'";
+        $default_sql = str_replace("'", "''", (string) $default);
+        $nullable = isset($row['Null']) && strtoupper((string) $row['Null']) === 'YES';
+        $null_sql = $nullable ? 'NULL' : 'NOT NULL';
+
+        $sql = "ALTER TABLE `$table` MODIFY COLUMN `$column` ENUM($enum_sql) $null_sql DEFAULT '$default_sql'";
+        mig_safe_exec($db, $sql, "$table.$column ENUM élargi");
+        return true;
+    }
+}
+
 if (!function_exists('mig_parse_cli_args')) {
     function mig_parse_cli_args($argv) {
         $opts = [

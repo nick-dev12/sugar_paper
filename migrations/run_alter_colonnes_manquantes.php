@@ -5,6 +5,7 @@
  * Ignore les colonnes qui existent déjà
  */
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/lib/migration_helpers.php';
 
 function colonne_existe($table, $colonne) {
     global $db;
@@ -27,10 +28,20 @@ function alter_si_manquant($table, $colonne, $def) {
 function modifier_statut_commandes() {
     global $db;
     try {
-        $db->exec("ALTER TABLE `commandes` MODIFY COLUMN `statut` ENUM('en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'expediee', 'livree', 'paye', 'annulee') NOT NULL DEFAULT 'en_attente'");
-        echo "  ~ commandes.statut (paye ajouté)\n";
+        mig_expand_enum_column($db, 'commandes', 'statut', [
+            'en_attente',
+            'confirmee',
+            'prise_en_charge',
+            'en_preparation',
+            'livraison_en_cours',
+            'expediee',
+            'livree',
+            'paye',
+            'annulee',
+        ], 'en_attente');
+        echo "  ~ commandes.statut (paye inclus)\n";
     } catch (PDOException $e) {
-        if (strpos($e->getMessage(), 'paye') === false) echo "  ! " . $e->getMessage() . "\n";
+        echo "  ! commandes.statut : " . $e->getMessage() . "\n";
     }
 }
 
