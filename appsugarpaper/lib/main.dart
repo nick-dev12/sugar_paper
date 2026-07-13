@@ -624,6 +624,13 @@ class _WebViewScreenState extends State<WebViewScreen>
         return await _handlePickContacts();
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'getDeviceContacts',
+      callback: (args) async {
+        return await _handleGetDeviceContacts();
+      },
+    );
   }
 
   Future<Map<String, dynamic>> _handlePickContacts() async {
@@ -635,6 +642,17 @@ class _WebViewScreenState extends State<WebViewScreen>
       };
     }
     return ContactPickerService.pickContacts(context);
+  }
+
+  Future<Map<String, dynamic>> _handleGetDeviceContacts() async {
+    if (!mounted) {
+      return {
+        'success': false,
+        'error': 'Application non prête',
+        'contacts': <Map<String, dynamic>>[],
+      };
+    }
+    return ContactPickerService.getDeviceContacts(context);
   }
 
   Future<Map<String, dynamic>> _handleOpenExternalUrl(String url) async {
@@ -1083,7 +1101,26 @@ class _WebViewScreenState extends State<WebViewScreen>
             });
           },
 
+          // Lecture carnet pour suggestions live (BL / devis) — sans UI import
+          getDeviceContacts: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('getDeviceContacts')
+                .then(result => {
+                  if (result && result.success && Array.isArray(result.contacts)) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Contacts téléphone indisponibles'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
           supportsPickContacts: function() {
+            return true;
+          },
+
+          supportsGetDeviceContacts: function() {
             return true;
           },
 

@@ -210,8 +210,16 @@
                 <button type="button" class="invoice-import-option" id="btn-import-phone-contacts">
                     <span class="invoice-import-option__ic" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
                     <span class="invoice-import-option__txt">
-                        <strong>Depuis le téléphone</strong>
-                        <small id="import-phone-hint">Ouvre le carnet d’adresses du téléphone</small>
+                        <strong>Choisir des contacts</strong>
+                        <small id="import-phone-hint">Sélection dans le carnet du téléphone</small>
+                    </span>
+                </button>
+
+                <button type="button" class="invoice-import-option" id="btn-import-all-phone-contacts" hidden>
+                    <span class="invoice-import-option__ic" aria-hidden="true"><i class="fas fa-check-double"></i></span>
+                    <span class="invoice-import-option__txt">
+                        <strong>Importer tous les contacts</strong>
+                        <small id="import-all-phone-hint">Tous les contacts avec numéro (app Sugar Paper)</small>
                     </span>
                 </button>
 

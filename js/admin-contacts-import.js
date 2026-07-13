@@ -13,6 +13,14 @@
         );
     }
 
+    function supportsNativeGetAllContacts() {
+        return !!(
+            window.__SUGARPAPER_NATIVE_APP &&
+            window.SugarPaperNative &&
+            typeof window.SugarPaperNative.getDeviceContacts === 'function'
+        );
+    }
+
     function supportsContactPicker() {
         if (supportsNativePickContacts()) {
             return true;
@@ -31,6 +39,15 @@
                 return result.contacts;
             }
             throw new Error((result && result.error) ? result.error : 'Import natif impossible');
+        });
+    }
+
+    function importAllFromNativeApp() {
+        return window.SugarPaperNative.getDeviceContacts().then(function (result) {
+            if (result && result.success && Array.isArray(result.contacts)) {
+                return result.contacts;
+            }
+            throw new Error((result && result.error) ? result.error : 'Lecture des contacts impossible');
         });
     }
 
@@ -283,11 +300,13 @@
         var btnClose = document.getElementById('modal-import-contacts-invoice-close');
         var btnCancel = document.getElementById('modal-import-contacts-invoice-cancel');
         var btnPhone = document.getElementById('btn-import-phone-contacts');
+        var btnImportAll = document.getElementById('btn-import-all-phone-contacts');
         var fileInput = document.getElementById('import-contacts-file-invoice');
         var form = document.getElementById('form-import-contacts-invoice');
         var hiddenInput = document.getElementById('import_contacts_data_invoice');
         var statusEl = document.getElementById('import-contacts-status');
         var phoneHint = document.getElementById('import-phone-hint');
+        var allHint = document.getElementById('import-all-phone-hint');
 
         if (!btnOpen || !modal || !form || !hiddenInput) {
             return;
@@ -295,6 +314,19 @@
 
         var pickerOk = supportsContactPicker();
         var nativeOk = supportsNativePickContacts();
+        var nativeAllOk = supportsNativeGetAllContacts();
+
+        if (btnImportAll) {
+            if (nativeAllOk) {
+                btnImportAll.hidden = false;
+                if (allHint) {
+                    allHint.textContent = 'Tous les contacts avec numéro, sans sélection un par un';
+                }
+            } else {
+                btnImportAll.hidden = true;
+            }
+        }
+
         if (btnPhone) {
             if (!pickerOk) {
                 btnPhone.disabled = true;
@@ -303,9 +335,9 @@
                     phoneHint.textContent = 'App Sugar Paper (iOS/Android) ou Chrome Android — sinon fichier .vcf';
                 }
             } else if (nativeOk && phoneHint) {
-                phoneHint.textContent = 'Ouvre le répertoire de l’appareil (iOS / Android)';
+                phoneHint.textContent = 'Liste app avec « Tout sélectionner » (iOS / Android)';
             } else if (phoneHint) {
-                phoneHint.textContent = 'Chrome Android uniquement (pas Safari iPhone)';
+                phoneHint.textContent = 'Sélecteur Android (pas de tout sélectionner) — Chrome uniquement';
             }
         }
 
@@ -321,6 +353,15 @@
         function closeModal() {
             modal.classList.remove('show');
             document.body.style.overflow = '';
+        }
+
+        function handlePickerError(err) {
+            var msg = (err && err.message) ? err.message : 'Accès aux contacts annulé ou refusé.';
+            if (/annul/i.test(msg)) {
+                setStatus(statusEl, 'Import annulé.', true);
+            } else {
+                setStatus(statusEl, msg, true);
+            }
         }
 
         btnOpen.addEventListener('click', openModal);
@@ -348,13 +389,32 @@
                         }
                         submitImport(form, hiddenInput, rows, statusEl);
                     })
-                    .catch(function (err) {
-                        var msg = (err && err.message) ? err.message : 'Accès aux contacts annulé ou refusé.';
-                        if (/annul/i.test(msg)) {
-                            setStatus(statusEl, 'Import annulé.', true);
-                        } else {
-                            setStatus(statusEl, msg, true);
+                    .catch(handlePickerError);
+            });
+        }
+
+        if (btnImportAll && nativeAllOk) {
+            btnImportAll.addEventListener('click', function () {
+                var ok = window.confirm(
+                    'Importer tous les contacts du téléphone qui ont un numéro ?\n\n' +
+                    'Les doublons (même numéro déjà en carnet) seront ignorés.'
+                );
+                if (!ok) {
+                    return;
+                }
+                setStatus(statusEl, 'Lecture de tous les contacts…', false);
+                btnImportAll.disabled = true;
+                importAllFromNativeApp()
+                    .then(function (rows) {
+                        if (!rows || !rows.length) {
+                            setStatus(statusEl, 'Aucun contact avec numéro trouvé.', true);
+                            return;
                         }
+                        submitImport(form, hiddenInput, rows, statusEl);
+                    })
+                    .catch(handlePickerError)
+                    .finally(function () {
+                        btnImportAll.disabled = false;
                     });
             });
         }

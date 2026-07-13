@@ -723,24 +723,23 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                     <h3>Informations client</h3>
                                 </div>
                                 <div class="form-group search-group" style="position:relative;">
-                                    <label for="search-client-bl">Rechercher un client</label>
+                                    <label for="search-client-bl">Client <span class="required">*</span></label>
                                     <div class="search-input-wrapper">
                                         <i class="fas fa-search search-icon"></i>
                                         <span class="search-loading" id="search-client-loading-bl" style="visibility:hidden;"><i class="fas fa-spinner fa-spin"></i></span>
-                                        <input type="text" id="search-client-bl" placeholder="Nom ou téléphone..." autocomplete="off">
+                                        <input type="text" id="search-client-bl" placeholder="Nom ou téléphone (carnet + téléphone)…" autocomplete="off">
                                     </div>
                                     <div id="search-client-results-bl" class="search-produit-results" role="listbox" aria-hidden="true" style="position:absolute; left:0; right:0; top:100%; z-index:100;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="client_nom_bl">Nom <span class="required">*</span></label>
-                                    <input type="text" id="client_nom_bl" name="client_nom" required
-                                        value="<?php echo htmlspecialchars($bp['client_nom'] ?? ''); ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="client_telephone_bl">Téléphone <span class="required">*</span></label>
-                                    <input type="tel" id="client_telephone_bl" name="client_telephone" required
-                                        placeholder="Ex: 07 12 34 56 78"
-                                        value="<?php echo htmlspecialchars($bp['client_telephone'] ?? ''); ?>">
+                                    <div id="client-selected-bl" class="client-selected-chip" style="display:none;" aria-hidden="true">
+                                        <div class="client-selected-info">
+                                            <strong id="client-selected-nom-bl"></strong>
+                                            <span id="client-selected-tel-bl"></span>
+                                        </div>
+                                        <button type="button" id="client-selected-clear-bl" class="client-selected-clear" title="Changer de client" aria-label="Changer de client">&times;</button>
+                                    </div>
+                                    <input type="hidden" id="client_nom_bl" name="client_nom" value="<?php echo htmlspecialchars($bp['client_nom'] ?? ''); ?>">
+                                    <input type="hidden" id="client_telephone_bl" name="client_telephone" value="<?php echo htmlspecialchars($bp['client_telephone'] ?? ''); ?>">
+                                    <p class="form-hint">Suggestions : clients enregistrés + contacts du téléphone (dans l’app). Nouveau : « Nom 07… ».</p>
                                 </div>
                                 <div class="form-group">
                                     <label for="zone_livraison_id_bl"><i class="fas fa-map-marker-alt"></i> Adresse de livraison <span class="optional">(optionnel)</span></label>
@@ -840,6 +839,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
     <script src="/js/admin-produit-search-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-contacts-import.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/admin-client-search-sync.js<?php echo asset_version_query(); ?>"></script>
     <script>
     window.INVOICE_BL_EDIT_LIGNES = <?php echo $bl_edit_lignes_json; ?>;
     window.INVOICE_DEVIS_EDIT_LIGNES = <?php echo $devis_edit_lignes_json; ?>;
@@ -975,6 +975,9 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             if (modalBl) {
                 modalBl.classList.add('modal-open');
                 document.body.style.overflow = 'hidden';
+            }
+            if (window.AdminClientSearchSync && AdminClientSearchSync.preloadDeviceContacts) {
+                AdminClientSearchSync.preloadDeviceContacts();
             }
         }
         function closeModalBl() {
@@ -1253,73 +1256,20 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             searchResultsBl.addEventListener('mousedown', function(ev) { ev.preventDefault(); });
         }
 
-        var searchClientInputBl = document.getElementById('search-client-bl');
-        var searchClientResultsBl = document.getElementById('search-client-results-bl');
-        var searchClientLoadingBl = document.getElementById('search-client-loading-bl');
-        var clientNomInputBl = document.getElementById('client_nom_bl');
-        var clientTelInputBl = document.getElementById('client_telephone_bl');
-        var userIdInputBl = document.getElementById('user_id_bl');
-        var clientSearchTimeoutBl;
-        if (searchClientInputBl && searchClientResultsBl && clientNomInputBl && clientTelInputBl) {
-            function doClientSearchBl(q) {
-                if (q.length < 1) {
-                    searchClientResultsBl.innerHTML = '';
-                    searchClientResultsBl.setAttribute('aria-hidden', 'true');
-                    return;
-                }
-                if (searchClientLoadingBl) searchClientLoadingBl.style.visibility = 'visible';
-                fetch('../devis/ajax_search_clients.php?q=' + encodeURIComponent(q) + '&limit=15')
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        searchClientResultsBl.innerHTML = '';
-                        if (data.length === 0) {
-                            searchClientResultsBl.innerHTML = '<div class="search-no-results">Aucun client trouvé.</div>';
-                        } else {
-                            data.forEach(function(c) {
-                                var el = document.createElement('div');
-                                el.className = 'search-result-item';
-                                el.setAttribute('role', 'option');
-                                el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') + '</span>' +
-                                    '<span class="sr-meta">' + (c.telephone || '') + '</span>';
-                                el.addEventListener('mousedown', function(ev) {
-                                    ev.preventDefault();
-                                    clientNomInputBl.value = c.nom_complet || [c.prenom, c.nom].filter(Boolean).join(' ') || c.nom || '';
-                                    clientTelInputBl.value = c.telephone || '';
-                                    if (userIdInputBl) userIdInputBl.value = (c.source === 'user') ? c.id : '';
-                                    searchClientInputBl.value = '';
-                                    searchClientResultsBl.innerHTML = '';
-                                    searchClientResultsBl.setAttribute('aria-hidden', 'true');
-                                });
-                                searchClientResultsBl.appendChild(el);
-                            });
-                        }
-                        searchClientResultsBl.setAttribute('aria-hidden', 'false');
-                    })
-                    .catch(function() {
-                        searchClientResultsBl.innerHTML = '<div class="search-no-results">Erreur de recherche.</div>';
-                    })
-                    .finally(function() {
-                        if (searchClientLoadingBl) searchClientLoadingBl.style.visibility = 'hidden';
-                    });
-            }
-            searchClientInputBl.addEventListener('input', function() {
-                clearTimeout(clientSearchTimeoutBl);
-                var q = searchClientInputBl.value.trim();
-                clientSearchTimeoutBl = setTimeout(function() { doClientSearchBl(q); }, 300);
+        if (window.AdminClientSearchSync) {
+            AdminClientSearchSync.init({
+                searchInput: document.getElementById('search-client-bl'),
+                resultsEl: document.getElementById('search-client-results-bl'),
+                loadingEl: document.getElementById('search-client-loading-bl'),
+                nomInput: document.getElementById('client_nom_bl'),
+                telInput: document.getElementById('client_telephone_bl'),
+                userIdInput: document.getElementById('user_id_bl'),
+                selectedWrap: document.getElementById('client-selected-bl'),
+                selectedNomEl: document.getElementById('client-selected-nom-bl'),
+                selectedTelEl: document.getElementById('client-selected-tel-bl'),
+                clearBtn: document.getElementById('client-selected-clear-bl'),
+                ajaxUrl: '../devis/ajax_search_clients.php'
             });
-            searchClientInputBl.addEventListener('focus', function() {
-                var q = searchClientInputBl.value.trim();
-                if (q.length >= 1) doClientSearchBl(q);
-            });
-            searchClientInputBl.addEventListener('blur', function() {
-                setTimeout(function() {
-                    if (!searchClientResultsBl.contains(document.activeElement)) {
-                        searchClientResultsBl.innerHTML = '';
-                        searchClientResultsBl.setAttribute('aria-hidden', 'true');
-                    }
-                }, 150);
-            });
-            searchClientResultsBl.addEventListener('mousedown', function(ev) { ev.preventDefault(); });
         }
 
         /* ——— Modal devis ——— */
@@ -1331,6 +1281,9 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         function openModalDevis() {
             showTab('devis');
             if (modalDevis) { modalDevis.classList.add('modal-open'); document.body.style.overflow = 'hidden'; }
+            if (window.AdminClientSearchSync && AdminClientSearchSync.preloadDeviceContacts) {
+                AdminClientSearchSync.preloadDeviceContacts();
+            }
         }
         function closeModalDevis() {
             if (modalDevis) { modalDevis.classList.remove('modal-open'); document.body.style.overflow = ''; }
@@ -1521,73 +1474,20 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             if (searchResultsDevis) searchResultsDevis.addEventListener('mousedown', function(ev) { ev.preventDefault(); });
         }
 
-        var searchClientInputDevis = document.getElementById('search-client');
-        var searchClientResultsDevis = document.getElementById('search-client-results');
-        var searchClientLoadingDevis = document.getElementById('search-client-loading');
-        var clientNomInputDevis = document.getElementById('client_nom');
-        var clientTelInputDevis = document.getElementById('client_telephone');
-        var userIdInputDevis = document.getElementById('user_id');
-        var clientSearchTimeoutDevis;
-        if (searchClientInputDevis && searchClientResultsDevis && clientNomInputDevis && clientTelInputDevis) {
-            function doClientSearchDevis(q) {
-                if (q.length < 1) {
-                    searchClientResultsDevis.innerHTML = '';
-                    searchClientResultsDevis.setAttribute('aria-hidden', 'true');
-                    return;
-                }
-                if (searchClientLoadingDevis) searchClientLoadingDevis.style.visibility = 'visible';
-                fetch('../devis/ajax_search_clients.php?q=' + encodeURIComponent(q) + '&limit=15')
-                    .then(function(r) { return r.json(); })
-                    .then(function(data) {
-                        searchClientResultsDevis.innerHTML = '';
-                        if (!data || data.length === 0) {
-                            searchClientResultsDevis.innerHTML = '<div class="search-no-results">Aucun client trouvé.</div>';
-                        } else {
-                            data.forEach(function(c) {
-                                var el = document.createElement('div');
-                                el.className = 'search-result-item';
-                                el.setAttribute('role', 'option');
-                                el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') + '</span>' +
-                                    '<span class="sr-meta">' + (c.telephone || '') + '</span>';
-                                el.addEventListener('mousedown', function(ev) {
-                                    ev.preventDefault();
-                                    clientNomInputDevis.value = c.nom_complet || [c.prenom, c.nom].filter(Boolean).join(' ') || c.nom || '';
-                                    clientTelInputDevis.value = c.telephone || '';
-                                    if (userIdInputDevis) userIdInputDevis.value = (c.source === 'user') ? c.id : '';
-                                    searchClientInputDevis.value = '';
-                                    searchClientResultsDevis.innerHTML = '';
-                                    searchClientResultsDevis.setAttribute('aria-hidden', 'true');
-                                });
-                                searchClientResultsDevis.appendChild(el);
-                            });
-                        }
-                        searchClientResultsDevis.setAttribute('aria-hidden', 'false');
-                    })
-                    .catch(function() {
-                        searchClientResultsDevis.innerHTML = '<div class="search-no-results">Erreur de recherche.</div>';
-                    })
-                    .finally(function() {
-                        if (searchClientLoadingDevis) searchClientLoadingDevis.style.visibility = 'hidden';
-                    });
-            }
-            searchClientInputDevis.addEventListener('input', function() {
-                clearTimeout(clientSearchTimeoutDevis);
-                var q = searchClientInputDevis.value.trim();
-                clientSearchTimeoutDevis = setTimeout(function() { doClientSearchDevis(q); }, 300);
+        if (window.AdminClientSearchSync) {
+            AdminClientSearchSync.init({
+                searchInput: document.getElementById('search-client'),
+                resultsEl: document.getElementById('search-client-results'),
+                loadingEl: document.getElementById('search-client-loading'),
+                nomInput: document.getElementById('client_nom'),
+                telInput: document.getElementById('client_telephone'),
+                userIdInput: document.getElementById('user_id'),
+                selectedWrap: document.getElementById('client-selected'),
+                selectedNomEl: document.getElementById('client-selected-nom'),
+                selectedTelEl: document.getElementById('client-selected-tel'),
+                clearBtn: document.getElementById('client-selected-clear'),
+                ajaxUrl: '../devis/ajax_search_clients.php'
             });
-            searchClientInputDevis.addEventListener('focus', function() {
-                var q = searchClientInputDevis.value.trim();
-                if (q.length >= 1) doClientSearchDevis(q);
-            });
-            searchClientInputDevis.addEventListener('blur', function() {
-                setTimeout(function() {
-                    if (!searchClientResultsDevis.contains(document.activeElement)) {
-                        searchClientResultsDevis.innerHTML = '';
-                        searchClientResultsDevis.setAttribute('aria-hidden', 'true');
-                    }
-                }, 150);
-            });
-            searchClientResultsDevis.addEventListener('mousedown', function(ev) { ev.preventDefault(); });
         }
 
         var formDevis = document.getElementById('form-devis');

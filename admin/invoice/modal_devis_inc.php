@@ -66,21 +66,23 @@
                                     <h3>Informations client</h3>
                                 </div>
                                 <div class="form-group search-group" style="position:relative;">
-                                    <label for="search-client">Rechercher un client</label>
+                                    <label for="search-client">Client <span class="required">*</span></label>
                                     <div class="search-input-wrapper">
                                         <i class="fas fa-search search-icon"></i>
                                         <span class="search-loading" id="search-client-loading" style="visibility:hidden;"><i class="fas fa-spinner fa-spin"></i></span>
-                                        <input type="text" id="search-client" placeholder="Nom ou téléphone..." autocomplete="off">
+                                        <input type="text" id="search-client" placeholder="Nom ou téléphone (carnet + téléphone)…" autocomplete="off">
                                     </div>
                                     <div id="search-client-results" class="search-produit-results" role="listbox" aria-hidden="true" style="position:absolute; left:0; right:0; top:100%; z-index:100;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="client_nom">Nom <span class="required">*</span></label>
-                                    <input type="text" id="client_nom" name="client_nom" required value="<?php echo htmlspecialchars($devis_post['client_nom'] ?? ''); ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="client_telephone">Téléphone <span class="required">*</span></label>
-                                    <input type="tel" id="client_telephone" name="client_telephone" required value="<?php echo htmlspecialchars($devis_post['client_telephone'] ?? ''); ?>">
+                                    <div id="client-selected" class="client-selected-chip" style="display:none;" aria-hidden="true">
+                                        <div class="client-selected-info">
+                                            <strong id="client-selected-nom"></strong>
+                                            <span id="client-selected-tel"></span>
+                                        </div>
+                                        <button type="button" id="client-selected-clear" class="client-selected-clear" title="Changer de client" aria-label="Changer de client">&times;</button>
+                                    </div>
+                                    <input type="hidden" id="client_nom" name="client_nom" value="<?php echo htmlspecialchars($devis_post['client_nom'] ?? ''); ?>">
+                                    <input type="hidden" id="client_telephone" name="client_telephone" value="<?php echo htmlspecialchars($devis_post['client_telephone'] ?? ''); ?>">
+                                    <p class="form-hint">Suggestions : clients enregistrés + contacts du téléphone (dans l’app). Nouveau : « Nom 07… ».</p>
                                 </div>
                                 <div class="form-group">
                                     <label for="zone_livraison_id">Adresse de livraison <span class="required">*</span></label>

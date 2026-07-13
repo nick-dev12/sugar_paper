@@ -156,6 +156,75 @@ class ContactPickerService {
       };
     }
   }
+
+  /// Charge le carnet (permission + lecture) sans UI de sélection —
+  /// pour suggestions live dans la recherche client (BL / devis).
+  static Future<Map<String, dynamic>> getDeviceContacts(
+    BuildContext context,
+  ) async {
+    try {
+      final allowed =
+          await NativePermissionService.requestContactsWithRationale(context);
+      if (!allowed) {
+        return {
+          'success': false,
+          'error': 'Permission contacts refusée',
+          'contacts': <Map<String, dynamic>>[],
+        };
+      }
+
+      final pluginOk = await FlutterContacts.requestPermission(readonly: true);
+      if (!pluginOk) {
+        return {
+          'success': false,
+          'error': 'Permission contacts refusée',
+          'contacts': <Map<String, dynamic>>[],
+        };
+      }
+
+      final all = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
+
+      final rows = <Map<String, dynamic>>[];
+      for (final c in all) {
+        final phone = _firstPhone(c);
+        if (phone.isEmpty) continue;
+        final row = _toImportRow(c);
+        final display = c.displayName.trim();
+        final nomComplet = display.isNotEmpty
+            ? display
+            : '${row['prenom']} ${row['nom']}'.trim();
+        rows.add({
+          'nom': row['nom'],
+          'prenom': row['prenom'],
+          'nom_complet': nomComplet.isNotEmpty ? nomComplet : 'Sans nom',
+          'telephone': phone,
+          'email': row['email'],
+          'source': 'device',
+        });
+      }
+
+      rows.sort(
+        (a, b) => (a['nom_complet'] as String)
+            .toLowerCase()
+            .compareTo((b['nom_complet'] as String).toLowerCase()),
+      );
+
+      return {
+        'success': true,
+        'contacts': rows,
+        'count': rows.length,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'error': e.toString(),
+        'contacts': <Map<String, dynamic>>[],
+      };
+    }
+  }
 }
 
 class _ContactMultiSelectSheet extends StatefulWidget {
