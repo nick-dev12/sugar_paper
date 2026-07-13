@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Page de demande de commande personnalisée
  * Accessible à tous (connectés ou non)
  */
 
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/controllers/controller_commandes_personnalisees.php';
 require_once __DIR__ . '/models/model_zones_livraison.php';

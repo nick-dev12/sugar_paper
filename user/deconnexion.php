@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de déconnexion utilisateur
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 
 // Supprimer les tokens FCM du client avant déconnexion
 if (isset($_SESSION['user_id'])) {
@@ -15,14 +16,17 @@ if (isset($_SESSION['user_id'])) {
 // Détruire toutes les variables de session
 $_SESSION = array();
 
-// Si vous voulez détruire complètement la session, effacez également
-// le cookie de session.
-if (ini_get("session.use_cookies")) {
+// Effacer le cookie de session (mêmes attributs que la session persistante)
+if (ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
+    setcookie(session_name(), '', [
+        'expires' => time() - 42000,
+        'path' => $params['path'] !== '' ? $params['path'] : '/',
+        'domain' => $params['domain'] ?? '',
+        'secure' => (bool) ($params['secure'] ?? false),
+        'httponly' => (bool) ($params['httponly'] ?? true),
+        'samesite' => $params['samesite'] ?? 'Lax',
+    ]);
 }
 
 // Finalement, détruire la session

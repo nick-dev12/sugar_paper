@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Script de migration : ajoute les colonnes couleurs et taille à la table produits
  * À exécuter une seule fois : /admin/run_migration_produits.php
  */
-session_start();
+session_start_persistent();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;

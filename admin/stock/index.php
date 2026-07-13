@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Gestion du stock - Catégories et produits
  * Contenu déplacé depuis categories/index.php
  * Utilise la table produits et la colonne stock (plus de table stock_articles)
  */
 
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

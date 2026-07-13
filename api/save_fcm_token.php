@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * API pour enregistrer le token FCM (notifications push)
  * POST: token, type (user|admin)
  * Accepte FormData ou JSON (application/json)
  */
 
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 $response = ['success' => false, 'message' => ''];

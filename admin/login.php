@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de connexion administrateur
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/../models/model_admin.php';
 
@@ -28,6 +29,7 @@ $result = process_admin_login();
 
 // Si la connexion est réussie, créer la session et rediriger
 if (isset($result['success']) && $result['success'] && $result['admin']) {
+    session_regenerate_persistent();
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];

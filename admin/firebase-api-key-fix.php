@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page d'aide pour corriger l'erreur "API key not valid"
  */
-session_start();
+session_start_persistent();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;

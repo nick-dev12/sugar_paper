@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../../includes/session_user.php';
 /**
  * Impression carte employé — même rendu et même structure DOM que la fiche détail (#adminContent … .er-detail-card--carte-rh .er-carte-rh).
  */
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../../login.php');

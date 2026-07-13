@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * API pour récupérer les produits avec pagination et filtres
  * Utilisé pour le chargement progressif via JavaScript
  */
 
 header('Content-Type: application/json');
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../models/model_produits.php';

@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Prise en charge d'une commande ou facture (livreur admin connecté)
  * POST JSON : action = prendre_commande | prendre_facture, commande_id ou bl_id
  */
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['admin_id'])) {

@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Migration web : ajout de la colonne image_reference sur commandes_personnalisees
  * À exécuter une fois via : https://sugar-paper.com/run_migration_image_cp.php
  * Supprimer ce fichier après exécution pour des raisons de sécurité.
  */
-session_start();
+session_start_persistent();
 require_once __DIR__ . '/conn/conn.php';
 
 $done = false;

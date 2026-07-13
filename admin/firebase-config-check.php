@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de vérification de la configuration Firebase
  * Affiche la config actuelle et les instructions pour la corriger
  */
-session_start();
+session_start_persistent();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;

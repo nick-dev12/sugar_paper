@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Génère un lien public de suivi livraison (token client).
  * POST JSON : bl_id ou commande_id
  */
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['admin_id'])) {

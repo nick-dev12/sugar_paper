@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Page d'ajustement du stock d'un produit
  * Affiche: stock total, quantité vendue, stock restant (total - vendu), comptabilité, formulaire d'ajustement, historique
  */
 
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

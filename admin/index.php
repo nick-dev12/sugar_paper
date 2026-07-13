@@ -1,11 +1,12 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page d'accueil du dossier admin
  * Redirige vers login.php ou dashboard.php selon la session
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 
 // Si l'admin est connecté, rediriger vers le dashboard
 if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_email'])) {

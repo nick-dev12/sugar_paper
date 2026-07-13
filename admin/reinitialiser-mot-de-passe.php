@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de réinitialisation du mot de passe - Administrateur
  */
 
-session_start();
+session_start_persistent();
 
 if (isset($_SESSION['admin_id'])) {
     header('Location: dashboard.php');

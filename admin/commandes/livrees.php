@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Page de liste des commandes livrées (Admin)
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 
 // Vérifier si l'admin est connecté
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {

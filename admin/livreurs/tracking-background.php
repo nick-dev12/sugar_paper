@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Iframe suivi GPS en arrière-plan (session admin livreur)
  */
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id'])) {
     http_response_code(401);

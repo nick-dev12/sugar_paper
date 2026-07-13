@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 require_once __DIR__ . '/conn/conn.php';
 global $db;
 if (!$db) { echo "DB null!\n"; exit; }

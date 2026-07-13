@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page mot de passe oublié - Administrateur
  * Utilise PHPMailer pour l'envoi d'emails côté serveur
  */
 
-session_start();
+session_start_persistent();
 
 if (isset($_SESSION['admin_id'])) {
     header('Location: dashboard.php');

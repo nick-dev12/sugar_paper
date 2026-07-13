@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/includes/session_user.php';
 /**
  * Traitement de l'ajout direct au panier depuis les cartes produits
  * Redirige vers la page d'origine ou le panier avec un message
  */
-session_start();
+session_start_persistent();
 
 require_once __DIR__ . '/controllers/controller_panier.php';
 

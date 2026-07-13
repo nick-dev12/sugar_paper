@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Page d'ajout de produit
  * Formulaire direct - stock géré via la colonne produits.stock (plus de lien stock_articles)
  */
 
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de réinitialisation du mot de passe - Clients
  */
 
-session_start();
+session_start_persistent();
 
 if (isset($_SESSION['user_id'])) {
     header('Location: /index.php');

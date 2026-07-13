@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Recherche produits en stock pour commande manuelle (retourne JSON)
  */
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {

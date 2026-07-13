@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Réajustement des lignes et de l'en-tête d'un BL — même ergonomie que le formulaire de création (index modal BL)
  */
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

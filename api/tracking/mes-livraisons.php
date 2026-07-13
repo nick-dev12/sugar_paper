@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Liste des livraisons en cours assignées au livreur connecté (non terminées)
  * GET JSON
  */
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['admin_id'])) {

@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Détails et traitement d'une commande personnalisée (Admin)
  * Design élégant, ergonomique et responsive
  */
 
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

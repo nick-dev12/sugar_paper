@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Dernière position livreur — observateurs (admin ou lien public token).
  * GET : bl_id ou commande_id + token (optionnel pour public)
@@ -35,7 +36,7 @@ if ($token !== '') {
         $tracking_active = (int) ($row['tracking_active'] ?? 0);
     }
 } else {
-    session_start();
+    session_start_persistent();
     if (isset($_SESSION['admin_id'])) {
         if ($bl_id > 0) {
             $facture = livreur_get_facture_tracking($bl_id);

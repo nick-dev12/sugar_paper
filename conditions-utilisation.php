@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/includes/session_user.php';
+session_start_persistent();
 
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/asset_version.php';

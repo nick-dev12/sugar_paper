@@ -1,8 +1,9 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Comptes d'accès internes (administration) — réservé au rôle administrateur
  */
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');

@@ -1,9 +1,10 @@
 <?php
+require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Itinéraire livreur — évite les autoroutes à péage.
  * GET : from_lat, from_lng, to_lat, to_lng
  */
-session_start();
+session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
 
 if (!isset($_SESSION['admin_id'])) {

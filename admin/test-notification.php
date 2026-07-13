@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page de test des notifications push (Admin)
  * Envoie une notification de test à l'admin connecté puis redirige vers le dashboard
  */
 
-session_start();
+session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: login.php');

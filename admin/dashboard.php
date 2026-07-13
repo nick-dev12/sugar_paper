@@ -1,10 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/session_user.php';
 /**
  * Page d'accueil du tableau de bord administrateur
  * Programmation procédurale uniquement
  */
 
-session_start();
+session_start_persistent();
 
 // Vérifier si l'admin est connecté, sinon rediriger vers la page de connexion
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {

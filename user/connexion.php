@@ -33,6 +33,7 @@ $result = process_unified_login();
 
 // Connexion admin : session + redirection vers l'espace admin
 if (isset($result['success']) && $result['success'] && $result['type'] === 'admin' && $result['admin']) {
+    session_regenerate_persistent();
     $_SESSION['admin_id'] = $result['admin']['id'];
     $_SESSION['admin_nom'] = $result['admin']['nom'];
     $_SESSION['admin_prenom'] = $result['admin']['prenom'];
@@ -47,6 +48,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'admi
 
 // Connexion utilisateur : session + redirection
 if (isset($result['success']) && $result['success'] && $result['type'] === 'user' && $result['user']) {
+    session_regenerate_persistent();
     $_SESSION['user_id'] = $result['user']['id'];
     $_SESSION['user_nom'] = $result['user']['nom'];
     $_SESSION['user_prenom'] = $result['user']['prenom'];
