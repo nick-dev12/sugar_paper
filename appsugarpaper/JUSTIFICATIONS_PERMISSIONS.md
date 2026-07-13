@@ -22,12 +22,13 @@ Chaque clé `NS*UsageDescription` décrit **comment**, **pourquoi** et un **exem
 | `NSLocationWhenInUseUsageDescription` | Adresse de livraison (« Localiser ») ; position livreur pendant une course |
 | `NSLocationAlwaysAndWhenInUseUsageDescription` | Suivi livreur en arrière-plan pendant une livraison active uniquement |
 | `NSLocationAlwaysUsageDescription` | Même finalité (compatibilité iOS) |
+| `NSContactsUsageDescription` | Import clients depuis le répertoire (espace commercial) — sélection explicite |
 
 **Arrière-plan iOS** : `UIBackgroundModes` → `location`, `remote-notification`.
 
-**Dialogue in-app** (avant la boîte système) : `NativePermissionService` — caméra, localisation client, suivi livraison livreur (`requestDeliveryTrackingPermissions`).
+**Dialogue in-app** (avant la boîte système) : `NativePermissionService` — caméra, localisation client, suivi livraison livreur (`requestDeliveryTrackingPermissions`), contacts (`requestContactsWithRationale`).
 
-**Notifications push** : pas de clé `NS*UsageDescription` (dialogue système iOS via `FCMService.**requestNotificationPermission****()`).
+**Notifications push** : pas de clé `NS*UsageDescription` (dialogue système iOS via `FCMService.requestNotificationPermission()`).
 
 **Non utilisé** : microphone (absent d'Info.plist et refusé dans la WebView).
 
@@ -35,6 +36,7 @@ Chaque clé `NS*UsageDescription` décrit **comment**, **pourquoi** et un **exem
 
 - **Localisation précise** : Oui — adresse commande (action utilisateur) ; suivi livraison (livreurs, course active, arrêt en fin de course)
 - **Photos** : Oui — contenu fourni par l'utilisateur
+- **Contacts** : Oui — import manuel de clients (espace commercial), sélection utilisateur
 - **Identifiants** : jeton push FCM/APNs
 - **Données d'utilisation** : selon Firebase Analytics (si activé en console)
 
@@ -71,6 +73,11 @@ Alertes de statut de commande et messages liés au compte (ex. : commande expéd
 Accès aux images uniquement lorsque l'utilisateur importe une photo depuis la galerie ou enregistre une image depuis la plateforme.
 ```
 
+**READ_CONTACTS**
+```
+Sugar Paper accède au répertoire uniquement lorsque l'utilisateur (espace commercial) importe des clients. L'utilisateur sélectionne explicitement les contacts ; seuls nom, téléphone et e-mail sont enregistrés dans le carnet clients. Aucune lecture automatique en arrière-plan.
+```
+
 Chaînes Android (référence Play + cohérence) : `android/app/src/main/res/values/strings.xml`  
 Dialogues in-app : `lib/services/native_permission_service.dart` (source principale des textes affichés).
 
@@ -88,6 +95,7 @@ Dialogues in-app : `lib/services/native_permission_service.dart` (source princip
 |------------|------------------|----------------|----------------|----------|
 | Caméra | ✅ | ✅ | ✅ | Profil / commande |
 | Galerie / photos | ✅ storage* | ✅ | ⚠️ système / WebView | Import utilisateur |
+| Contacts | ✅ READ_CONTACTS | ✅ NSContactsUsageDescription | ✅ | Import clients admin |
 | Localisation (usage) | ✅ | ✅ | ✅ | Adresse, carte |
 | Localisation arrière-plan | ✅ | ✅ + UIBackgroundModes | ✅ livreur | Course active |
 | Notifications | ✅ POST_NOTIFICATIONS | UIBackgroundModes | ⚠️ au démarrage FCM | Commandes |

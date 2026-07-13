@@ -46,6 +46,9 @@ dependencies:
   
   # Accès à la caméra
   image_picker: ^1.0.7
+
+  # Carnet d'adresses (import contacts admin — iOS / Android)
+  flutter_contacts: ^1.1.9+2
   
   # Localisation GPS
   geolocator: ^12.0.0

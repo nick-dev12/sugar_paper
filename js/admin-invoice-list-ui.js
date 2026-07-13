@@ -434,11 +434,12 @@
 
         var filterQuery = '';
 
-        var dateFrom = todayYmd();
-
-        var dateTo = todayYmd();
-
+        // Filtre période uniquement pour devis/factures (pas pour contacts, sans data-date)
         var hasPeriodFilter = !!config.periodToggle;
+
+        var dateFrom = hasPeriodFilter ? todayYmd() : null;
+
+        var dateTo = hasPeriodFilter ? todayYmd() : null;
 
 
 

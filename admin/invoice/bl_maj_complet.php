@@ -43,10 +43,10 @@ if ($bl_id <= 0) {
 }
 
 $client_nom = trim($_POST['client_nom'] ?? '');
-$client_prenom = trim($_POST['client_prenom'] ?? '');
+$client_prenom = '';
 $client_telephone = trim($_POST['client_telephone'] ?? '');
-$client_email = trim($_POST['client_email'] ?? '');
-$adresse_client = trim($_POST['adresse_client'] ?? '');
+$client_email = '';
+$adresse_client = '';
 $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
 $notes = trim($_POST['notes'] ?? '');
 $frais_livraison = (float) ($_POST['frais_livraison'] ?? 0);

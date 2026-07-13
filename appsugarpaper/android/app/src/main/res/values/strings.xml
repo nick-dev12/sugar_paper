@@ -8,4 +8,6 @@
     <string name="permission_delivery_tracking_message">Pendant une livraison, Sugar Paper partage votre position avec le client même si l\'application est en arrière-plan. Autorisez « Toujours » pour un suivi fiable.</string>
     <string name="permission_camera_rationale_title">Autoriser l\'appareil photo</string>
     <string name="permission_camera_rationale_message">Sugar Paper utilise l\'appareil photo lorsque vous appuyez sur « Prendre une photo » pour votre profil ou une commande personnalisée. Exemple : photographier un gâteau.</string>
+    <string name="permission_contacts_rationale_title">Autoriser l\'accès aux contacts</string>
+    <string name="permission_contacts_rationale_message">Sugar Paper utilise vos contacts uniquement lorsque vous appuyez sur « Importer » dans l\'espace commercial pour ajouter des clients à votre carnet. Vous choisissez quels contacts importer ; seuls nom, téléphone et e-mail sont enregistrés. Aucune lecture automatique du répertoire.</string>
 </resources>

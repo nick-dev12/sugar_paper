@@ -120,6 +120,58 @@ function create_contact($nom, $prenom, $telephone, $email = null) {
 }
 
 /**
+ * Importe une liste de contacts (téléphone ou fichier).
+ * Ignore les doublons de téléphone déjà présents.
+ *
+ * @param list<array<string, mixed>> $rows
+ * @return array{imported:int,skipped:int,invalid:int}
+ */
+function import_contacts_from_array(array $rows)
+{
+    $imported = 0;
+    $skipped = 0;
+    $invalid = 0;
+
+    foreach ($rows as $c) {
+        if (!is_array($c)) {
+            $invalid++;
+            continue;
+        }
+        $nom = trim((string) ($c['nom'] ?? $c['name'] ?? ''));
+        $prenom = trim((string) ($c['prenom'] ?? ''));
+        $tel = trim((string) ($c['telephone'] ?? $c['tel'] ?? $c['phone'] ?? ''));
+        $email_raw = trim((string) ($c['email'] ?? ''));
+        $email = $email_raw !== '' ? $email_raw : null;
+
+        if ($tel === '') {
+            $invalid++;
+            continue;
+        }
+        if (get_contact_by_telephone($tel)) {
+            $skipped++;
+            continue;
+        }
+        if ($nom === '') {
+            $nom = $prenom !== '' ? $prenom : 'Sans nom';
+            if ($prenom !== '' && $nom === $prenom) {
+                $prenom = '';
+            }
+        }
+        if (create_contact($nom, $prenom, $tel, $email)) {
+            $imported++;
+        } else {
+            $invalid++;
+        }
+    }
+
+    return [
+        'imported' => $imported,
+        'skipped' => $skipped,
+        'invalid' => $invalid,
+    ];
+}
+
+/**
  * Carnet contacts : crée le contact si le numéro n'existe pas (devis / BL).
  */
 /**

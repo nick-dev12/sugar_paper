@@ -37,6 +37,17 @@ await window.SugarPaperNative.signInWithApple();
 await window.SugarPaperNative.shareContent({ title: '...', url: '...' });
 ```
 
+### Import contacts (carnet clients)
+
+```javascript
+// iOS + Android (app native uniquement)
+const result = await window.SugarPaperNative.pickContacts();
+// result.contacts = [{ nom, prenom, telephone, email }, ...]
+```
+
+Disponible si `window.SugarPaperNative.supportsPickContacts()` est vrai.
+Sur le web navigateur : Contact Picker (Android Chrome) ou fichier `.vcf` / `.csv`.
+
 ### Suivi livreur (GPS natif)
 
 ```javascript

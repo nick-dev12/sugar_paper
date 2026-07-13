@@ -22,6 +22,7 @@ import 'services/fcm_service.dart';
 import 'services/social_auth_service.dart';
 import 'services/native_permission_service.dart';
 import 'services/livreur_tracking_service.dart';
+import 'services/contact_picker_service.dart';
 import 'widgets/app_version_gate.dart';
 import 'theme/app_colors.dart';
 
@@ -616,6 +617,24 @@ class _WebViewScreenState extends State<WebViewScreen>
         return await _handleDeliveryTrackingStatus(null);
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'pickContacts',
+      callback: (args) async {
+        return await _handlePickContacts();
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _handlePickContacts() async {
+    if (!mounted) {
+      return {
+        'success': false,
+        'error': 'Application non prête',
+        'contacts': <Map<String, dynamic>>[],
+      };
+    }
+    return ContactPickerService.pickContacts(context);
   }
 
   Future<Map<String, dynamic>> _handleOpenExternalUrl(String url) async {
@@ -1045,6 +1064,27 @@ class _WebViewScreenState extends State<WebViewScreen>
                 .then(result => resolve(result || { success: false }))
                 .catch(error => reject(error));
             });
+          },
+
+          // Import contacts natifs (iOS / Android) — carnet clients admin
+          pickContacts: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('pickContacts')
+                .then(result => {
+                  if (result && result.success && Array.isArray(result.contacts)) {
+                    resolve(result);
+                  } else if (result && result.cancelled) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Import contacts impossible'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          supportsPickContacts: function() {
+            return true;
           },
 
           isNativeApp: function() {

@@ -1024,9 +1024,7 @@
             paddingBottomRight: pad.bottomRight
         });
         setTimeout(function () { suppressMapInteractionEvents = false; }, shouldAnimate ? 400 : 50);
-        if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
-            smoothSetMapBearing(driverHeadingDeg);
-        }
+        scheduleDriverMapBearingAfterView(true);
     }
 
     function makeDriverArrowIcon() {
@@ -1241,32 +1239,58 @@
         }
     }
 
+    function applyDriverMapBearing(force) {
+        if (!shouldRotateMapWithHeading()) {
+            return false;
+        }
+        if (driverMarker) {
+            var ll = driverMarker.getLatLng();
+            if (refreshHeadingFromRoute(ll.lat, ll.lng)) {
+                return true;
+            }
+        } else if (activeRouteCoords && activeRouteCoords.length >= 2) {
+            var routeHeading = bearingBetween(
+                activeRouteCoords[0][0], activeRouteCoords[0][1],
+                activeRouteCoords[1][0], activeRouteCoords[1][1]
+            );
+            applyDriverHeading(routeHeading, !!force);
+            return true;
+        }
+        if (isFinite(driverHeadingDeg)) {
+            applyDriverHeading(driverHeadingDeg, !!force);
+            return true;
+        }
+        return false;
+    }
+
+    function scheduleDriverMapBearingAfterView(force) {
+        if (!shouldRotateMapWithHeading()) {
+            return;
+        }
+        setTimeout(function () {
+            applyDriverMapBearing(force);
+        }, 60);
+    }
+
     function enableNavigationMode() {
         if (isObserverMode()) {
             ensureNorthUpMap();
             return;
         }
+        if (!cfg.canManage) {
+            return;
+        }
         if (navigationMode) {
+            applyDriverMapBearing(true);
             followDriverNavigation(true);
-            if (driverMarker) {
-                var ll = driverMarker.getLatLng();
-                refreshHeadingFromRoute(ll.lat, ll.lng);
-            }
             return;
         }
         setNavigationMode(true);
         resetNavZoomState();
         refreshDriverMarkerIcon();
-        if (driverMarker) {
-            var driverLatLng = driverMarker.getLatLng();
-            if (!refreshHeadingFromRoute(driverLatLng.lat, driverLatLng.lng) &&
-                driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
-                smoothSetMapBearing(driverHeadingDeg);
-            }
-        } else if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
-            smoothSetMapBearing(driverHeadingDeg);
-        }
+        applyDriverMapBearing(true);
         followDriverNavigation(false);
+        scheduleDriverMapBearingAfterView(true);
     }
 
     function updateDriverMarker(lat, lng, coords, skipFollow) {
@@ -1436,6 +1460,9 @@
                 var durationSec = data.duration_s || 0;
                 setEtaFromDuration(durationSec);
                 emitRouteToSocket(data);
+                if (!isObserverMode() && cfg.canManage) {
+                    enableNavigationMode();
+                }
                 var range = durationToRangeMinutes(durationSec);
                 if (!silent) {
                     setStatus('Itinéraire sans péage — ' + km + ' km, ' + formatEtaRange(range.min, range.max), 'route');
@@ -1566,7 +1593,7 @@
         }
 
         return routePromise.then(function () {
-            if (driverMarker && !isObserverMode() && (cfg.trackingActive || deliveryActive)) {
+            if (driverMarker && !isObserverMode() && cfg.canManage) {
                 enableNavigationMode();
             } else if (isObserverMode()) {
                 ensureNorthUpMap();
@@ -1670,8 +1697,12 @@
             enableNavigationMode();
             requestWakeLock();
         } else {
-            setNavigationMode(false);
             releaseWakeLock();
+            if (cfg.canManage && !isObserverMode() && activeRouteCoords && activeRouteCoords.length >= 2) {
+                enableNavigationMode();
+            } else {
+                setNavigationMode(false);
+            }
         }
     }
 
@@ -1708,6 +1739,9 @@
         if (statusEl) {
             statusEl.textContent = subMessage || 'Suivi en temps réel inactif';
             statusEl.className = 'livreur-suivi-status livreur-suivi-status--off';
+        }
+        if (cfg.canManage && !isObserverMode() && activeRouteCoords && activeRouteCoords.length >= 2) {
+            setTimeout(enableNavigationMode, 120);
         }
     }
 
@@ -2197,9 +2231,7 @@
                 paddingBottomRight: pad.bottomRight
             });
             lastAppliedNavZoom = zoom;
-            if (driverHeadingDeg > 0 && shouldRotateMapWithHeading()) {
-                smoothSetMapBearing(driverHeadingDeg);
-            }
+            scheduleDriverMapBearingAfterView(true);
         } else {
             map.setView(driverLatLng, getDriverNavZoom(), { animate: animateOpt });
             if (mapHasRotation()) {

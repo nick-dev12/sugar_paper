@@ -225,34 +225,14 @@ function bl_modifier_esc_attr($v): string
                                 <span class="bl-modifier-client-label">Raison sociale / contact</span>
                                 <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['raison_sociale'] ?? '—'); ?></p>
                             </div>
-                            <div class="form-row-2 bl-modifier-client-row2">
-                                <div class="bl-modifier-client-field">
-                                    <span class="bl-modifier-client-label">Nom</span>
-                                    <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['nom_contact'] ?? '—'); ?></p>
-                                </div>
-                                <div class="bl-modifier-client-field">
-                                    <span class="bl-modifier-client-label">Prénom</span>
-                                    <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['prenom_contact'] ?? '—'); ?></p>
-                                </div>
+                            <div class="bl-modifier-client-field">
+                                <span class="bl-modifier-client-label">Nom</span>
+                                <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['nom_contact'] ?? '—'); ?></p>
                             </div>
                             <div class="bl-modifier-client-field">
                                 <span class="bl-modifier-client-label">Téléphone</span>
                                 <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['client_telephone'] ?? '—'); ?></p>
                             </div>
-                            <div class="bl-modifier-client-field">
-                                <span class="bl-modifier-client-label">Email</span>
-                                <p class="bl-modifier-client-val"><?php echo bl_modifier_esc_attr($bl['client_email'] ?? '—'); ?></p>
-                            </div>
-                            <div class="form-group">
-                                <label for="adresse_client">Adresse du client (facturation) <span class="optional">(optionnel)</span></label>
-                                <textarea id="adresse_client" name="adresse_client" rows="2" placeholder="Siège social, rue, complément d’adresse affiché sur la facture…"><?php echo bl_modifier_esc_attr($bl['adresse_client'] ?? ''); ?></textarea>
-                            </div>
-                            <?php if (!empty($bl['client_adresse'])): ?>
-                            <div class="bl-modifier-client-field">
-                                <span class="bl-modifier-client-label">Adresse</span>
-                                <p class="bl-modifier-client-val"><?php echo nl2br(htmlspecialchars((string) ($bl['client_adresse'] ?? ''), ENT_QUOTES, 'UTF-8')); ?></p>
-                            </div>
-                            <?php endif; ?>
                         </div>
                         <div class="form-group">
                             <label for="notes">Notes</label>

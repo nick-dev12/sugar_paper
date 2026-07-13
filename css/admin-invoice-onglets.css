@@ -46,6 +46,83 @@
     gap: 10px;
 }
 
+.invoice-contacts-modal .invoice-import-options {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.invoice-contacts-modal .invoice-import-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.invoice-contacts-modal .invoice-import-option:hover:not(.is-disabled):not(:disabled) {
+    border-color: #c26638;
+    box-shadow: 0 4px 16px rgba(194, 102, 56, 0.12);
+}
+
+.invoice-contacts-modal .invoice-import-option.is-disabled,
+.invoice-contacts-modal .invoice-import-option:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.invoice-contacts-modal .invoice-import-option__ic {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(145, 138, 68, 0.14);
+    color: #6b2f20;
+    font-size: 1.1rem;
+}
+
+.invoice-contacts-modal .invoice-import-option__txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.invoice-contacts-modal .invoice-import-option__txt strong {
+    font-size: 0.98rem;
+    color: #111;
+}
+
+.invoice-contacts-modal .invoice-import-option__txt small {
+    color: #666;
+    line-height: 1.35;
+}
+
+.invoice-contacts-modal .invoice-import-status {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(32, 197, 199, 0.12);
+    color: #145c5d;
+    font-size: 0.92rem;
+}
+
+.invoice-contacts-modal .invoice-import-status.is-error {
+    background: rgba(194, 102, 56, 0.12);
+    color: #6b2f20;
+}
+
 .invoice-contacts-panel .contacts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -168,6 +245,204 @@
     display: flex;
     gap: 12px;
     margin-top: 20px;
+}
+
+/* Modal import contacts — compact tablette / mobile */
+#modal-import-contacts-invoice.invoice-contacts-modal.modal-fullscreen {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+}
+
+#modal-import-contacts-invoice .modal-fullscreen-content {
+    max-width: 440px;
+    margin: 0 auto;
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+}
+
+#modal-import-contacts-invoice .modal-fullscreen-header {
+    padding: 14px 16px;
+    gap: 10px;
+}
+
+#modal-import-contacts-invoice .modal-fullscreen-header h2 {
+    font-size: 1.05rem;
+    line-height: 1.25;
+}
+
+#modal-import-contacts-invoice .modal-fullscreen-body {
+    padding: 14px 16px 16px;
+}
+
+#modal-import-contacts-invoice .invoice-import-options {
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+#modal-import-contacts-invoice .invoice-import-option {
+    padding: 12px 14px;
+    gap: 12px;
+    border-radius: 12px;
+}
+
+#modal-import-contacts-invoice .invoice-import-option__ic {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+    border-radius: 10px;
+}
+
+#modal-import-contacts-invoice .invoice-import-option__txt strong {
+    font-size: 0.92rem;
+}
+
+#modal-import-contacts-invoice .invoice-import-option__txt small {
+    font-size: 0.78rem;
+}
+
+#modal-import-contacts-invoice .modal-actions {
+    margin-top: 12px;
+    gap: 8px;
+}
+
+#modal-import-contacts-invoice .modal-close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    #modal-import-contacts-invoice.invoice-contacts-modal.modal-fullscreen {
+        padding: 12px;
+        padding-top: max(12px, env(safe-area-inset-top, 0px));
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-content {
+        max-width: 380px;
+        border-radius: 10px;
+        max-height: calc(100dvh - 24px);
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-header {
+        padding: 12px 14px;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-header h2 {
+        font-size: 0.98rem;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-body {
+        padding: 12px 14px 14px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__ic {
+        flex-basis: 34px;
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__txt strong {
+        font-size: 0.88rem;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__txt small {
+        font-size: 0.72rem;
+        line-height: 1.3;
+    }
+
+    #modal-import-contacts-invoice .modal-actions .btn-cancel {
+        padding: 8px 14px;
+        font-size: 0.88rem;
+    }
+}
+
+@media (max-width: 600px) {
+    #modal-import-contacts-invoice.invoice-contacts-modal.modal-fullscreen {
+        padding: 8px;
+        padding-top: max(8px, env(safe-area-inset-top, 0px));
+        align-items: flex-end;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-content {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 14px 14px 10px 10px;
+        max-height: min(78dvh, 520px);
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-header {
+        padding: 10px 12px;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-header h2 {
+        font-size: 0.92rem;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-header h2 i {
+        font-size: 0.85em;
+    }
+
+    #modal-import-contacts-invoice .modal-fullscreen-body {
+        padding: 10px 12px 12px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-options {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option {
+        padding: 9px 10px;
+        gap: 8px;
+        border-radius: 10px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__ic {
+        flex-basis: 30px;
+        width: 30px;
+        height: 30px;
+        font-size: 0.82rem;
+        border-radius: 8px;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__txt strong {
+        font-size: 0.84rem;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-option__txt small {
+        font-size: 0.68rem;
+    }
+
+    #modal-import-contacts-invoice .invoice-import-status {
+        margin: 0 0 8px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+    }
+
+    #modal-import-contacts-invoice .modal-actions {
+        margin-top: 8px;
+    }
+
+    #modal-import-contacts-invoice .modal-actions .btn-cancel {
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 0.86rem;
+    }
+
+    #modal-import-contacts-invoice .modal-close-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
 }
 
 /* ——— Rapports ——— */

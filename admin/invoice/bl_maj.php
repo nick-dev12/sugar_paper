@@ -34,7 +34,6 @@ if ($token === '' || !hash_equals((string) $expected, (string) $token)) {
 $bl_id = (int) ($_POST['bl_id'] ?? 0);
 $date_bl = trim($_POST['date_bl'] ?? '');
 $notes = trim($_POST['notes'] ?? '');
-$adresse_client = trim($_POST['adresse_client'] ?? '');
 
 $lignes = [];
 if (!empty($_POST['lignes']) && is_array($_POST['lignes'])) {
@@ -83,6 +82,8 @@ if (bl_est_statut_verrouille($bl['statut'] ?? '')) {
     exit;
 }
 
+// Champ adresse client retiré du formulaire : conserver la valeur existante
+$adresse_client = trim((string) ($bl['adresse_client'] ?? ''));
 update_bl_entete($bl_id, $date_bl, $notes, $adresse_client);
 $res = replace_bl_lignes($bl_id, $lignes);
 

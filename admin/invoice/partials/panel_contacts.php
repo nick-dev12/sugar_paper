@@ -27,7 +27,7 @@
             </div>
         </div>
         <div class="invoice-contacts-actions">
-            <button type="button" class="btn-primary" id="btn-import-contacts-invoice">
+            <button type="button" class="btn-primary" id="btn-import-contacts-invoice" title="Importer depuis le téléphone ou un fichier">
                 <i class="fas fa-mobile-alt"></i> Importer
             </button>
             <button type="button" class="btn-primary" id="btn-add-contact-invoice">
@@ -198,3 +198,38 @@
     <input type="hidden" name="import_contacts" value="1">
     <input type="hidden" name="import_contacts_data" id="import_contacts_data_invoice">
 </form>
+
+<div class="invoice-contacts-modal modal-fullscreen" id="modal-import-contacts-invoice">
+    <div class="modal-fullscreen-content">
+        <div class="modal-fullscreen-header">
+            <h2><i class="fas fa-address-book"></i> Importer des contacts</h2>
+            <button type="button" class="modal-close-btn" id="modal-import-contacts-invoice-close">&times;</button>
+        </div>
+        <div class="modal-fullscreen-body">
+            <div class="invoice-import-options">
+                <button type="button" class="invoice-import-option" id="btn-import-phone-contacts">
+                    <span class="invoice-import-option__ic" aria-hidden="true"><i class="fas fa-mobile-alt"></i></span>
+                    <span class="invoice-import-option__txt">
+                        <strong>Depuis le téléphone</strong>
+                        <small id="import-phone-hint">Ouvre le carnet d’adresses du téléphone</small>
+                    </span>
+                </button>
+
+                <label class="invoice-import-option" for="import-contacts-file-invoice">
+                    <span class="invoice-import-option__ic" aria-hidden="true"><i class="fas fa-file-import"></i></span>
+                    <span class="invoice-import-option__txt">
+                        <strong>Depuis un fichier</strong>
+                        <small>Fichier .vcf (export téléphone) ou .csv</small>
+                    </span>
+                    <input type="file" id="import-contacts-file-invoice" accept=".vcf,.csv,text/vcard,text/x-vcard,text/csv,text/plain" hidden>
+                </label>
+            </div>
+
+            <p class="invoice-import-status" id="import-contacts-status" hidden></p>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="modal-import-contacts-invoice-cancel">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>

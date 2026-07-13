@@ -50,6 +50,24 @@ class NativePermissionCopy {
   static const cameraDeniedForeverBody =
       'L\'accès à la caméra est refusé pour Sugar Paper. '
       'Activez-la dans les paramètres de votre appareil si vous souhaitez prendre une photo.';
+
+  static const contactsTitle = 'Autoriser l\'accès aux contacts';
+  static const contactsBody =
+      'Sugar Paper utilise vos contacts uniquement lorsque vous '
+      'appuyez sur « Importer » dans l\'espace commercial '
+      'pour ajouter des clients à votre carnet.\n\n'
+      '• Vous choisissez explicitement quels contacts importer.\n'
+      '• Seuls le nom, le prénom, le téléphone et l\'e-mail '
+      'sont enregistrés dans votre carnet clients.\n'
+      '• Aucune lecture automatique du répertoire en arrière-plan.\n'
+      '• Vous pouvez refuser et importer un fichier .vcf / .csv à la place.\n\n'
+      'En continuant, iOS ou Android vous demandera l\'autorisation système.';
+
+  static const contactsDeniedForeverTitle = 'Contacts désactivés';
+  static const contactsDeniedForeverBody =
+      'L\'accès aux contacts est refusé pour Sugar Paper. '
+      'Activez-le dans les paramètres (Sugar Paper > Contacts) '
+      'ou importez un fichier .vcf / .csv.';
 }
 
 /// Boîtes de dialogue explicatives avant les autorisations système (Apple 5.1.1 / Google Play).
@@ -262,6 +280,43 @@ class NativePermissionService {
         context,
         title: NativePermissionCopy.cameraDeniedForeverTitle,
         body: NativePermissionCopy.cameraDeniedForeverBody,
+      );
+      return false;
+    }
+    return status.isGranted;
+  }
+
+  /// Demande l'accès aux contacts avec explication préalable (import clients).
+  static Future<bool> requestContactsWithRationale(BuildContext context) async {
+    var status = await Permission.contacts.status;
+    if (status.isGranted) return true;
+
+    if (status.isPermanentlyDenied) {
+      if (context.mounted) {
+        await _showOpenSettingsDialog(
+          context,
+          title: NativePermissionCopy.contactsDeniedForeverTitle,
+          body: NativePermissionCopy.contactsDeniedForeverBody,
+        );
+      }
+      return false;
+    }
+
+    if (!context.mounted) return false;
+    final accepted = await _showRationaleDialog(
+      context,
+      title: NativePermissionCopy.contactsTitle,
+      body: NativePermissionCopy.contactsBody,
+      icon: Icons.contacts_outlined,
+    );
+    if (!accepted) return false;
+
+    status = await Permission.contacts.request();
+    if (status.isPermanentlyDenied && context.mounted) {
+      await _showOpenSettingsDialog(
+        context,
+        title: NativePermissionCopy.contactsDeniedForeverTitle,
+        body: NativePermissionCopy.contactsDeniedForeverBody,
       );
       return false;
     }

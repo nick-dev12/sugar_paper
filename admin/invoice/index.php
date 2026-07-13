@@ -63,24 +63,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_contacts'])) {
     $json = $_POST['import_contacts_data'] ?? '';
-    $imported = 0;
     $data = json_decode($json, true);
-    if (is_array($data)) {
-        foreach ($data as $c) {
-            $nom = trim($c['nom'] ?? $c['name'] ?? '');
-            $prenom = trim($c['prenom'] ?? '');
-            $tel = trim($c['telephone'] ?? $c['tel'] ?? $c['phone'] ?? '');
-            $email = trim($c['email'] ?? '') ?: null;
-            if (!empty($tel) && !get_contact_by_telephone($tel)) {
-                if (empty($nom)) {
-                    $nom = $prenom ?: 'Sans nom';
-                }
-                if (create_contact($nom, $prenom, $tel, $email)) {
-                    $imported++;
-                }
-            }
+    if (is_array($data) && count($data) > 0) {
+        $result = import_contacts_from_array($data);
+        $parts = [];
+        $parts[] = (int) $result['imported'] . ' importé(s)';
+        if ((int) $result['skipped'] > 0) {
+            $parts[] = (int) $result['skipped'] . ' déjà existant(s)';
         }
-        $_SESSION['contacts_success'] = $imported . ' contact(s) importé(s).';
+        if ((int) $result['invalid'] > 0) {
+            $parts[] = (int) $result['invalid'] . ' ignoré(s)';
+        }
+        if ((int) $result['imported'] > 0) {
+            $_SESSION['contacts_success'] = 'Import terminé : ' . implode(', ', $parts) . '.';
+        } elseif ((int) $result['skipped'] > 0) {
+            $_SESSION['contacts_success'] = 'Aucun nouveau contact : ' . implode(', ', $parts) . '.';
+        } else {
+            $_SESSION['contacts_error'] = 'Aucun contact valide à importer.';
+        }
     } else {
         $_SESSION['contacts_error'] = 'Aucun contact à importer.';
     }
@@ -725,38 +725,22 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 <div class="form-group search-group" style="position:relative;">
                                     <label for="search-client-bl">Rechercher un client</label>
                                     <div class="search-input-wrapper">
-                                        <input type="text" id="search-client-bl" placeholder="Nom, téléphone ou email..." autocomplete="off">
                                         <i class="fas fa-search search-icon"></i>
                                         <span class="search-loading" id="search-client-loading-bl" style="visibility:hidden;"><i class="fas fa-spinner fa-spin"></i></span>
+                                        <input type="text" id="search-client-bl" placeholder="Nom ou téléphone..." autocomplete="off">
                                     </div>
                                     <div id="search-client-results-bl" class="search-produit-results" role="listbox" aria-hidden="true" style="position:absolute; left:0; right:0; top:100%; z-index:100;"></div>
                                 </div>
-                                <div class="form-row-2">
-                                    <div class="form-group">
-                                        <label for="client_nom_bl">Nom <span class="required">*</span></label>
-                                        <input type="text" id="client_nom_bl" name="client_nom" required
-                                            value="<?php echo htmlspecialchars($bp['client_nom'] ?? ''); ?>">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="client_prenom_bl">Prénom <span class="optional">(optionnel)</span></label>
-                                        <input type="text" id="client_prenom_bl" name="client_prenom"
-                                            value="<?php echo htmlspecialchars($bp['client_prenom'] ?? ''); ?>">
-                                    </div>
+                                <div class="form-group">
+                                    <label for="client_nom_bl">Nom <span class="required">*</span></label>
+                                    <input type="text" id="client_nom_bl" name="client_nom" required
+                                        value="<?php echo htmlspecialchars($bp['client_nom'] ?? ''); ?>">
                                 </div>
                                 <div class="form-group">
                                     <label for="client_telephone_bl">Téléphone <span class="required">*</span></label>
                                     <input type="tel" id="client_telephone_bl" name="client_telephone" required
                                         placeholder="Ex: 07 12 34 56 78"
                                         value="<?php echo htmlspecialchars($bp['client_telephone'] ?? ''); ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="client_email_bl">Email <span class="optional">(optionnel)</span></label>
-                                    <input type="email" id="client_email_bl" name="client_email"
-                                        value="<?php echo htmlspecialchars($bp['client_email'] ?? ''); ?>">
-                                </div>
-                                <div class="form-group">
-                                    <label for="adresse_client_bl">Adresse du client <span class="optional">(optionnel)</span></label>
-                                    <textarea id="adresse_client_bl" name="adresse_client" rows="2" placeholder="Siège social, rue, complément d’adresse…"><?php echo htmlspecialchars($bp['adresse_client'] ?? ''); ?></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label for="zone_livraison_id_bl"><i class="fas fa-map-marker-alt"></i> Adresse de livraison <span class="optional">(optionnel)</span></label>
@@ -855,6 +839,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
 
     <script src="/js/admin-produit-search-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/admin-contacts-import.js<?php echo asset_version_query(); ?>"></script>
     <script>
     window.INVOICE_BL_EDIT_LIGNES = <?php echo $bl_edit_lignes_json; ?>;
     window.INVOICE_DEVIS_EDIT_LIGNES = <?php echo $devis_edit_lignes_json; ?>;
@@ -1272,12 +1257,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         var searchClientResultsBl = document.getElementById('search-client-results-bl');
         var searchClientLoadingBl = document.getElementById('search-client-loading-bl');
         var clientNomInputBl = document.getElementById('client_nom_bl');
-        var clientPrenomInputBl = document.getElementById('client_prenom_bl');
         var clientTelInputBl = document.getElementById('client_telephone_bl');
-        var clientEmailInputBl = document.getElementById('client_email_bl');
         var userIdInputBl = document.getElementById('user_id_bl');
         var clientSearchTimeoutBl;
-        if (searchClientInputBl && searchClientResultsBl && clientNomInputBl && clientPrenomInputBl && clientTelInputBl) {
+        if (searchClientInputBl && searchClientResultsBl && clientNomInputBl && clientTelInputBl) {
             function doClientSearchBl(q) {
                 if (q.length < 1) {
                     searchClientResultsBl.innerHTML = '';
@@ -1297,13 +1280,11 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 el.className = 'search-result-item';
                                 el.setAttribute('role', 'option');
                                 el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') + '</span>' +
-                                    '<span class="sr-meta">' + (c.telephone || '') + (c.email ? ' &bull; ' + c.email : '') + '</span>';
+                                    '<span class="sr-meta">' + (c.telephone || '') + '</span>';
                                 el.addEventListener('mousedown', function(ev) {
                                     ev.preventDefault();
-                                    clientNomInputBl.value = c.nom || '';
-                                    clientPrenomInputBl.value = c.prenom || '';
+                                    clientNomInputBl.value = c.nom_complet || [c.prenom, c.nom].filter(Boolean).join(' ') || c.nom || '';
                                     clientTelInputBl.value = c.telephone || '';
-                                    if (clientEmailInputBl) clientEmailInputBl.value = c.email || '';
                                     if (userIdInputBl) userIdInputBl.value = (c.source === 'user') ? c.id : '';
                                     searchClientInputBl.value = '';
                                     searchClientResultsBl.innerHTML = '';
@@ -1545,7 +1526,6 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         var searchClientLoadingDevis = document.getElementById('search-client-loading');
         var clientNomInputDevis = document.getElementById('client_nom');
         var clientTelInputDevis = document.getElementById('client_telephone');
-        var clientEmailInputDevis = document.getElementById('client_email');
         var userIdInputDevis = document.getElementById('user_id');
         var clientSearchTimeoutDevis;
         if (searchClientInputDevis && searchClientResultsDevis && clientNomInputDevis && clientTelInputDevis) {
@@ -1568,12 +1548,11 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 el.className = 'search-result-item';
                                 el.setAttribute('role', 'option');
                                 el.innerHTML = '<span class="sr-nom">' + (c.nom_complet || '') + '</span>' +
-                                    '<span class="sr-meta">' + (c.telephone || '') + (c.email ? ' &bull; ' + c.email : '') + '</span>';
+                                    '<span class="sr-meta">' + (c.telephone || '') + '</span>';
                                 el.addEventListener('mousedown', function(ev) {
                                     ev.preventDefault();
-                                    clientNomInputDevis.value = c.nom_complet || c.nom || '';
+                                    clientNomInputDevis.value = c.nom_complet || [c.prenom, c.nom].filter(Boolean).join(' ') || c.nom || '';
                                     clientTelInputDevis.value = c.telephone || '';
-                                    if (clientEmailInputDevis) clientEmailInputDevis.value = c.email || '';
                                     if (userIdInputDevis) userIdInputDevis.value = (c.source === 'user') ? c.id : '';
                                     searchClientInputDevis.value = '';
                                     searchClientResultsDevis.innerHTML = '';
@@ -1696,32 +1675,6 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         if (btnEditClose) btnEditClose.addEventListener('click', closeEdit);
         if (btnEditCancel) btnEditCancel.addEventListener('click', closeEdit);
         if (modalEdit) modalEdit.addEventListener('click', function(e) { if (e.target === modalEdit) closeEdit(); });
-
-        var btnImport = document.getElementById('btn-import-contacts-invoice');
-        if (btnImport && 'contacts' in navigator && 'ContactsManager' in window) {
-            btnImport.addEventListener('click', function() {
-                navigator.contacts.select(['name', 'tel', 'email'], { multiple: true }).then(function(contacts) {
-                    var data = [];
-                    contacts.forEach(function(c) {
-                        var nom = (c.name && c.name[0]) ? c.name[0].split(' ').pop() || '' : '';
-                        var prenom = (c.name && c.name[0]) ? c.name[0].split(' ').slice(0, -1).join(' ') || '' : '';
-                        var tel = (c.tel && c.tel[0]) ? c.tel[0] : '';
-                        var email = (c.email && c.email[0]) ? c.email[0] : '';
-                        if (tel) data.push({ nom: nom, prenom: prenom, telephone: tel, email: email });
-                    });
-                    if (data.length > 0) {
-                        document.getElementById('import_contacts_data_invoice').value = JSON.stringify(data);
-                        document.getElementById('form-import-contacts-invoice').submit();
-                    } else {
-                        alert('Aucun contact avec numéro de téléphone trouvé.');
-                    }
-                }).catch(function() {
-                    alert('Impossible d\'accéder aux contacts. Vérifiez les permissions du navigateur.');
-                });
-            });
-        } else if (btnImport) {
-            btnImport.style.display = 'none';
-        }
     })();
     </script>
 </body>

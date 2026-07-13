@@ -44,9 +44,9 @@ if ($devis_id <= 0) {
 require_once __DIR__ . '/../../models/model_devis.php';
 
 $client_nom = trim($_POST['client_nom'] ?? '');
-$client_prenom = trim($_POST['client_prenom'] ?? '');
+$client_prenom = '';
 $client_telephone = trim($_POST['client_telephone'] ?? '');
-$client_email = trim($_POST['client_email'] ?? '');
+$client_email = '';
 $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
 $notes = trim($_POST['notes'] ?? '');
 $zone_livraison_id = isset($_POST['zone_livraison_id']) && $_POST['zone_livraison_id'] !== '' && $_POST['zone_livraison_id'] !== 'custom'

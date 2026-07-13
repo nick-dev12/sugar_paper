@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/asset_version.php';
 
 $base = get_site_base_url();
 $seo_title = 'Politique de confidentialité — Sugar Paper';
-$seo_description = 'Politique de confidentialité Sugar Paper : protection des données, application mobile, suivi de livraison, localisation GPS, droits des utilisateurs et conformité App Store / Google Play.';
+$seo_description = 'Politique de confidentialité Sugar Paper : protection des données, application mobile, suivi de livraison, localisation GPS, import contacts, droits des utilisateurs et conformité App Store / Google Play.';
 $seo_canonical = $base . '/politique-confidentialite.php';
 
 $privacy_email = 'sugarpaper26@gmail.com';
@@ -69,6 +69,7 @@ $last_update = '11/07/2026';
                 <li><a href="#priv-8">Sécurité des données</a></li>
                 <li><a href="#priv-9">Application mobile et permissions</a></li>
                 <li><a href="#priv-9-gps">Localisation GPS et suivi livraison</a></li>
+                <li><a href="#priv-9-contacts">Import contacts (carnet clients)</a></li>
                 <li><a href="#priv-10">Cookies et stockage local</a></li>
                 <li><a href="#priv-11">Communications et notifications</a></li>
                 <li><a href="#priv-12">Mineurs</a></li>
@@ -124,7 +125,7 @@ $last_update = '11/07/2026';
 
         <h3>2 bis.3 Vos choix et contrôle</h3>
         <p>
-            Vous pouvez modifier vos données, refuser certaines autorisations (caméra, localisation, notifications) dans les réglages de votre appareil,
+            Vous pouvez modifier vos données, refuser certaines autorisations (caméra, localisation, contacts, notifications) dans les réglages de votre appareil,
             vous opposer au marketing direct et demander la suppression de votre compte (sections <a href="#priv-13">13</a> et <a href="#priv-suppression">14</a>).
             L'accès au catalogue ne dépend pas de l'acceptation de traitements non essentiels.
         </p>
@@ -166,6 +167,15 @@ $last_update = '11/07/2026';
         <h3>3.5 Connexion via comptes tiers</h3>
         <p>
             Si vous utilisez la connexion Google ou Apple, nous recevons les informations que <strong>vous autorisez</strong> via ce service (identifiant technique, e-mail, nom) pour créer ou associer votre compte Sugar Paper.
+        </p>
+
+        <h3>3.6 Contacts importés (espace commercial)</h3>
+        <p>
+            Lorsque un utilisateur habilité (administrateur / commercial) utilise la fonction «&nbsp;Importer&nbsp;» dans l'application mobile ou via un fichier,
+            nous pouvons enregistrer dans le <strong>carnet clients</strong> de l'entreprise&nbsp;:
+            nom, prénom, numéro de téléphone et, le cas échéant, adresse e-mail des contacts <strong>explicitement sélectionnés</strong>.
+            Le répertoire du téléphone n'est pas lu en continu ni en arrière-plan&nbsp;; seuls les contacts choisis lors de l'import sont transmis au serveur.
+            Voir section&nbsp;<a href="#priv-9-contacts">9.5</a>.
         </p>
 
         <h2 id="priv-4">4. Finalités et bases légales du traitement</h2>
@@ -223,6 +233,11 @@ $last_update = '11/07/2026';
                         <td>Notifications push (application)</td>
                         <td>Jeton FCM/APNs, préférences</td>
                         <td>Consentement (autorisation système et/ou in-app)</td>
+                    </tr>
+                    <tr>
+                        <td>Import contacts (carnet clients)</td>
+                        <td>Nom, prénom, téléphone, e-mail des contacts sélectionnés</td>
+                        <td>Consentement via écran explicatif in-app puis autorisation système ; intérêt légitime de l'entreprise à gérer son carnet clients B2B / commercial</td>
                     </tr>
                     <tr>
                         <td>Prospection commerciale</td>
@@ -311,6 +326,10 @@ $last_update = '11/07/2026';
                         <td>Jetons notification push</td>
                         <td>Tant que l'application est installée et les notifications activées, ou jusqu'à désinstallation / révocation</td>
                     </tr>
+                    <tr>
+                        <td>Contacts importés (carnet clients)</td>
+                        <td>Tant que le compte administrateur / l'entreprise conserve le carnet clients, ou jusqu'à suppression manuelle du contact ; les doublons de numéro ne sont pas réimportés</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -336,11 +355,12 @@ $last_update = '11/07/2026';
         <p>
             L'application mobile officielle <strong>Sugar Paper</strong> (identifiant iOS&nbsp;: <strong>com.sugarpaper.app</strong>, package Android&nbsp;: <strong>com.sugarpaper.app</strong>)
             charge notre site e-commerce dans une interface sécurisée (WebView) et expose, sur demande explicite ou dans des cas décrits ci-dessous, des fonctions natives&nbsp;:
-            prise de photo, localisation GPS, notifications push, partage système et connexion Google / Apple.
+            prise de photo, localisation GPS, notifications push, partage système, connexion Google / Apple et, pour l'espace commercial, <strong>import de contacts</strong>.
         </p>
         <p>
-            L'application <strong>ne collecte pas</strong> de données via la caméra, la galerie ou le GPS sans action de votre part (bouton «&nbsp;Localiser&nbsp;», «&nbsp;Prendre une photo&nbsp;», démarrage d'une livraison par un livreur habilité, etc.)
-            ni sans l'autorisation affichée par iOS ou Android.
+            L'application <strong>ne collecte pas</strong> de données via la caméra, la galerie, le GPS ou le répertoire de contacts sans action de votre part
+            (bouton «&nbsp;Localiser&nbsp;», «&nbsp;Prendre une photo&nbsp;», «&nbsp;Importer&nbsp;» dans l'espace commercial, démarrage d'une livraison par un livreur habilité, etc.)
+            ni sans l'autorisation affichée par iOS ou Android. Avant la demande système, un <strong>écran explicatif</strong> rappelle la finalité de l'autorisation.
         </p>
 
         <h3>9.2 Notifications push (Firebase Cloud Messaging)</h3>
@@ -393,6 +413,12 @@ $last_update = '11/07/2026';
                         <td>«&nbsp;Votre commande est en route&nbsp;»</td>
                         <td>Non</td>
                     </tr>
+                    <tr>
+                        <td><strong>Contacts (répertoire)</strong></td>
+                        <td><strong>Espace commercial / admin uniquement</strong>&nbsp;: importer des clients dans le carnet (nom, téléphone, e-mail)</td>
+                        <td>Appuyer sur «&nbsp;Importer&nbsp;» puis sélectionner les contacts à enregistrer</td>
+                        <td>Non — import fichier .vcf / .csv possible ; refus limite uniquement l'import depuis le répertoire</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -435,10 +461,42 @@ $last_update = '11/07/2026';
             Pour les livreurs, la révocation empêche le suivi en direct mais n'affecte pas les autres fonctions du site accessibles sans GPS.
         </p>
 
-        <h3>9.5 Site web et PWA</h3>
+        <h2 id="priv-9-contacts">9.5 Import de contacts (carnet clients)</h2>
+        <p>
+            La fonction d'import de contacts est destinée aux <strong>utilisateurs habilités de l'espace commercial / administrateur</strong>
+            (gestion de devis, factures et carnet clients). Elle n'est pas utilisée pour la navigation catalogue client grand public.
+        </p>
+        <h3>9.5.1 Quand l'accès est demandé</h3>
+        <p>
+            Uniquement lorsque vous appuyez sur «&nbsp;Importer&nbsp;» puis «&nbsp;Depuis le téléphone&nbsp;».
+            Avant la boîte de dialogue système iOS / Android, l'application affiche un <strong>écran explicatif</strong> précisant la finalité
+            (comme pour la localisation ou la caméra). Vous pouvez refuser («&nbsp;Plus tard&nbsp;») et utiliser un fichier <strong>.vcf</strong> ou <strong>.csv</strong> à la place.
+        </p>
+        <h3>9.5.2 Données concernées</h3>
+        <ul>
+            <li>Nom et prénom (ou nom d'affichage du contact) ;</li>
+            <li>Numéro de téléphone (obligatoire pour l'enregistrement) ;</li>
+            <li>Adresse e-mail si présente sur le contact sélectionné.</li>
+        </ul>
+        <p>
+            Les contacts <strong>non sélectionnés</strong> ne sont pas transmis au serveur.
+            Les numéros déjà présents dans le carnet clients sont ignorés (pas de doublon).
+            Aucune synchronisation continue du répertoire n'est effectuée.
+        </p>
+        <h3>9.5.3 Révocation</h3>
+        <p>
+            Vous pouvez révoquer l'accès aux contacts à tout moment&nbsp;:
+            <strong>iOS</strong> — Réglages &gt; Confidentialité et sécurité &gt; Contacts &gt; Sugar Paper ;
+            <strong>Android</strong> — Paramètres &gt; Applications &gt; Sugar Paper &gt; Autorisations &gt; Contacts.
+            La révocation n'efface pas les contacts déjà importés dans le carnet clients (suppression manuelle possible dans l'interface).
+        </p>
+
+        <h3 id="priv-9-pwa">9.6 Site web et PWA</h3>
         <p>
             Le site peut être utilisé via navigateur ou en mode installable (PWA). Des cookies et stockages locaux assurent le panier, la session et les préférences.
             Aucune donnée bancaire complète n'est stockée en clair côté navigateur.
+            Sur navigateur mobile (hors application), l'import depuis le répertoire peut reposer sur l'API Contact Picker (souvent limitée à Android Chrome en HTTPS)
+            ou sur un fichier exporté.
         </p>
 
         <h2 id="priv-10">10. Cookies et technologies similaires</h2>
@@ -532,6 +590,8 @@ $last_update = '11/07/2026';
             <a href="#priv-suppression">Suppression de compte</a>
             ·
             <a href="#priv-9-gps">Suivi GPS livraison</a>
+            ·
+            <a href="#priv-9-contacts">Import contacts</a>
         </div>
 
         <a href="javascript:history.back()" class="back-link">

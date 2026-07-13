@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/asset_version.php';
 
 $base = get_site_base_url();
 $seo_title = "Conditions générales d'utilisation — Sugar Paper";
-$seo_description = "CGU Sugar Paper : boutique en ligne, produits naturels et décoration pâtissière, commandes, livraison, suivi GPS, application mobile iOS/Android.";
+$seo_description = "CGU Sugar Paper : boutique en ligne, produits naturels et décoration pâtissière, commandes, livraison, suivi GPS, import contacts, application mobile iOS/Android.";
 $seo_canonical = $base . '/conditions-utilisation.php';
 
 $contact_email = 'sugarpaper26@gmail.com';
@@ -172,17 +172,19 @@ $last_update = '11/07/2026';
             <li><strong>Caméra et photothèque</strong> — pour prendre ou choisir une photo (profil, commande personnalisée). Exemple&nbsp;: joindre une image d'inspiration à une commande sur mesure.</li>
             <li><strong>Localisation (pendant l'utilisation)</strong> — lorsque vous appuyez sur «&nbsp;Localiser&nbsp;» ou «&nbsp;Mettre à jour ma position&nbsp;» pour confirmer une adresse de livraison ou d'inscription. Vous pouvez refuser et saisir l'adresse manuellement.</li>
             <li><strong>Localisation (arrière-plan / Toujours)</strong> — <strong>réservée aux livreurs habilités</strong>, uniquement pendant une livraison active qu'ils démarrent explicitement, afin de permettre au client de suivre la course en direct. Voir section&nbsp;9.2.</li>
+            <li><strong>Contacts (répertoire)</strong> — <strong>espace commercial / administrateur uniquement</strong>, lorsque vous appuyez sur «&nbsp;Importer&nbsp;» pour ajouter des clients à votre carnet (nom, téléphone, e-mail des contacts que vous sélectionnez). Aucune lecture automatique du répertoire. Vous pouvez refuser et importer un fichier .vcf / .csv.</li>
             <li><strong>Notifications</strong> — pour vous informer du statut de vos commandes ou de messages liés à votre compte (avec votre consentement via l'application ou les réglages système).</li>
         </ul>
         <p>
-            Avant la demande système, l'application peut afficher un <strong>écran explicatif</strong> rappelant la finalité de l'autorisation.
+            Avant la demande système, l'application affiche un <strong>écran explicatif</strong> rappelant la finalité de l'autorisation (caméra, localisation, contacts, etc.).
             L'application <strong>ne demande pas l'accès au microphone</strong>.
             Le refus d'une autorisation limite la fonction concernée sans empêcher la navigation générale sur le catalogue.
         </p>
         <p>
             Le détail des traitements de données figure dans la
-            <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a> et la
-            <a href="/politique-confidentialite.php#priv-9-gps">section suivi GPS livraison</a>.
+            <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a>,
+            la <a href="/politique-confidentialite.php#priv-9-gps">section suivi GPS livraison</a>
+            et la <a href="/politique-confidentialite.php#priv-9-contacts">section import contacts</a>.
         </p>
         <p>
             En installant l'application depuis l'App Store ou Google Play, vous acceptez également les conditions propres à ces plateformes (Apple, Google) pour les téléchargements et mises à jour.
@@ -334,7 +336,7 @@ $last_update = '11/07/2026';
         <p>
             Le traitement de vos données personnelles est décrit dans notre
             <a href="/politique-confidentialite.php">Politique de confidentialité</a>, incluant&nbsp;:
-            collecte, finalités, durées de conservation, droits des personnes, cookies, application mobile, localisation GPS et suivi livraison.
+            collecte, finalités, durées de conservation, droits des personnes, cookies, application mobile, localisation GPS, suivi livraison et import de contacts.
         </p>
         <p>
             En utilisant le Service, vous reconnaissez en avoir pris connaissance. Pour exercer vos droits ou demander la suppression de compte, contactez
@@ -394,6 +396,8 @@ $last_update = '11/07/2026';
             <a href="/politique-confidentialite.php">Politique de confidentialité</a>
             ·
             <a href="/politique-confidentialite.php#priv-9-gps">Suivi GPS livraison</a>
+            ·
+            <a href="/politique-confidentialite.php#priv-9-contacts">Import contacts</a>
             ·
             <a href="/politique-confidentialite.php#priv-suppression">Suppression de compte</a>
         </div>

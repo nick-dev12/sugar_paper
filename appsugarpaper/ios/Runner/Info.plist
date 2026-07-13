@@ -59,6 +59,8 @@
 		<string>Pendant une livraison en cours, Sugar Paper continue de transmettre votre position au client même si vous quittez l'application, jusqu'à la fin de la course ou le changement de livraison.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
 		<string>Pendant une livraison en cours, Sugar Paper transmet votre position au client en direct, y compris en arrière-plan, jusqu'à la fin de la course.</string>
+		<key>NSContactsUsageDescription</key>
+		<string>Sugar Paper accède à vos contacts uniquement lorsque vous appuyez sur « Importer » dans l'espace commercial, pour enregistrer dans votre carnet clients le nom, le téléphone et l'e-mail des contacts que vous sélectionnez. Aucune lecture automatique du répertoire.</string>
 		<!-- Production : HTTPS uniquement (développement local possible via exceptions ciblées si besoin) -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
