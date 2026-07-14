@@ -57,8 +57,13 @@ $date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int) date('n', $d_factu
 // Lien public de la facture
 $base_url = get_site_base_url();
 $facture_url = $base_url . '/facture.php?token=' . ($token ?? '');
+$facture_share_url = $facture_url;
+$facture_share_title = 'Facture ' . ($facture['numero_facture'] ?? '');
+$facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . ($facture['numero_facture'] ?? '')
+    . ' pour la commande #' . ($commande['numero_commande'] ?? '')
+    . ' — ' . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA.';
 
-// Message WhatsApp enrichi : produits, adresse livraison, montant total, lien facture
+// Message WhatsApp enrichi (secours si partage indisponible)
 $lignes_produits = [];
 foreach ($produits as $p) {
     $nom = $p['produit_nom'] ?? $p['nom'] ?? '';

@@ -168,4 +168,15 @@ $facture_document_type_label = 'FACTURE';
 $facture_numero_affichage = bl_numero_document_affichage($bl);
 $facture_recap_label_total = $tva_incl ? 'TOTAL TTC' : 'TOTAL';
 
+require_once __DIR__ . '/../../includes/site_url.php';
+$bl_facture_token = ensure_bl_facture_token($bl_id);
+$base_url = get_site_base_url();
+if ($bl_facture_token) {
+    $facture_url = $base_url . '/facture-bl.php?token=' . rawurlencode($bl_facture_token);
+    $facture_share_url = $facture_url;
+    $facture_share_title = 'Facture ' . $facture_numero_affichage;
+    $facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . $facture_numero_affichage
+        . ' — ' . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA.';
+}
+
 require __DIR__ . '/../../includes/facture_content.php';

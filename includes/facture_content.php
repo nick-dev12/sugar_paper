@@ -10,7 +10,14 @@
  * $facture_back_label (string, optionnel): Libellé du lien Retour (défaut: "Retour à la commande")
  * $commande['remise_globale_pct'] (float, optionnel): pourcentage de réduction globale
  */
+$client_nom = isset($client_nom) ? (string) $client_nom : '';
+$client_telephone = isset($client_telephone) ? (string) $client_telephone : '';
 $adresse_livraison = $adresse_livraison ?? '';
+$produits = isset($produits) && is_array($produits) ? $produits : [];
+$commande = isset($commande) && is_array($commande) ? $commande : [];
+$facture = isset($facture) && is_array($facture) ? $facture : [];
+$date_facture_aff = isset($date_facture_aff) ? (string) $date_facture_aff : '';
+$is_public = !empty($is_public);
 require_once __DIR__ . '/site_url.php';
 require_once __DIR__ . '/fiscal_tva.php';
 $facture_est_payee = isset($facture_est_payee) ? (bool) $facture_est_payee : (!empty($facture['payee']));
@@ -35,6 +42,36 @@ $facture_recap_label_total = isset($facture_recap_label_total) && (string) $fact
 $facture_og_title = 'Facture ' . htmlspecialchars($facture['numero_facture'] ?? '') . ' - Sugar Paper';
 $facture_og_desc = 'Facture Sugar Paper - ' . ($entreprise_nom ?? 'Sugar Paper') . ' - Montant : ' . number_format($facture['montant_total'] ?? 0, 0, ',', ' ') . ' CFA';
 $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
+
+if (!isset($facture_share_url)) {
+    $facture_share_url = isset($facture_url) ? (string) $facture_url : '';
+} else {
+    $facture_share_url = (string) $facture_share_url;
+}
+if (!isset($facture_share_title)) {
+    $facture_share_title = 'Facture ' . (string) ($facture_numero_affichage ?? $facture['numero_facture'] ?? '');
+} else {
+    $facture_share_title = (string) $facture_share_title;
+}
+if (!isset($facture_share_message)) {
+    $facture_share_message = 'Bonjour'
+        . ($client_nom !== '' ? ' ' . $client_nom : '')
+        . ', voici votre facture n°'
+        . ($facture_numero_affichage ?? $facture['numero_facture'] ?? '')
+        . ' — '
+        . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ')
+        . ' CFA.';
+} else {
+    $facture_share_message = (string) $facture_share_message;
+}
+$facture_share_hint = isset($facture_share_hint) && (string) $facture_share_hint !== ''
+    ? (string) $facture_share_hint
+    : 'Le client pourra consulter la facture en ligne sans compte administrateur.';
+$facture_can_share = empty($is_public) && $facture_share_url !== '';
+
+if ($facture_can_share && !function_exists('asset_version_query')) {
+    require_once __DIR__ . '/asset_version.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -50,6 +87,9 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Sugar Paper">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?php if ($facture_can_share): ?>
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
     <style>
         * {
             margin: 0;
@@ -436,6 +476,26 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
             background: #1da851;
         }
 
+        .facture-actions .btn-facture-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            cursor: pointer;
+            color: #fff;
+            background: linear-gradient(135deg, #e5488a 0%, #c26638 100%);
+            box-shadow: 0 4px 14px rgba(229, 72, 138, 0.28);
+        }
+
+        .facture-actions .btn-facture-share:hover {
+            background: linear-gradient(135deg, #d63d7d 0%, #b85a30 100%);
+        }
+
         @media print {
             * {
                 -webkit-print-color-adjust: exact !important;
@@ -565,7 +625,19 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
                     </button>
                 </form>
             <?php endif; ?>
-            <?php if (!empty($whatsapp_url)): ?>
+            <?php if ($facture_can_share): ?>
+                <button type="button"
+                    class="btn-facture-share js-platform-share"
+                    aria-haspopup="dialog"
+                    aria-controls="platformShareModal"
+                    data-share-modal-title="Envoyer la facture"
+                    data-share-title="<?php echo htmlspecialchars($facture_share_title, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-url="<?php echo htmlspecialchars($facture_share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-text="<?php echo htmlspecialchars($facture_share_message, ENT_QUOTES, 'UTF-8'); ?>"
+                    data-share-hint="<?php echo htmlspecialchars($facture_share_hint, ENT_QUOTES, 'UTF-8'); ?>">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i> Envoyer la facture
+                </button>
+            <?php elseif (!empty($whatsapp_url)): ?>
                 <a href="<?php echo htmlspecialchars($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer"
                     class="btn-whatsapp">
                     <i class="fab fa-whatsapp"></i> Envoyer la facture sur WhatsApp
@@ -778,6 +850,10 @@ $facture_og_image = get_site_base_url() . '/image/sugar_paper.jpg';
         }
     })();
     </script>
+    <?php if ($facture_can_share): ?>
+    <?php include __DIR__ . '/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 </body>
 
 </html>

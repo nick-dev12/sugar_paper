@@ -262,6 +262,89 @@ function bl_col_facture_payee_ok()
 }
 
 /**
+ * Colonne token public facture sur bons_livraison.
+ */
+function bl_col_facture_token_ok()
+{
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    $ok = false;
+    if (!bl_tables_available() || !$db) {
+        return false;
+    }
+    try {
+        $db->query('SELECT facture_token FROM bons_livraison LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * @return string|null
+ */
+function ensure_bl_facture_token($bl_id)
+{
+    global $db;
+    $bl_id = (int) $bl_id;
+    if ($bl_id <= 0 || !bl_col_facture_token_ok()) {
+        return null;
+    }
+    try {
+        $stmt = $db->prepare('SELECT facture_token FROM bons_livraison WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $bl_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return null;
+        }
+        if (!empty($row['facture_token'])) {
+            return (string) $row['facture_token'];
+        }
+        $token = bin2hex(random_bytes(32));
+        $upd = $db->prepare('UPDATE bons_livraison SET facture_token = :token WHERE id = :id');
+        $upd->execute(['token' => $token, 'id' => $bl_id]);
+        return $token;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * @return array<string, mixed>|false
+ */
+function get_bl_by_facture_token($token)
+{
+    global $db;
+    $token = trim((string) $token);
+    if ($token === '' || !bl_col_facture_token_ok() || !bl_tables_available()) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT b.*, c.raison_sociale, c.nom_contact, c.prenom_contact,
+                   c.email AS client_email, c.telephone AS client_telephone,
+                   c.adresse AS client_adresse, b.statut AS bl_statut
+            FROM bons_livraison b
+            INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
+            WHERE b.facture_token = :token
+            LIMIT 1
+        ');
+        $stmt->execute(['token' => $token]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return false;
+        }
+        return bl_row_apply_statut_bl($row);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * @param array|string|int $bl Ligne BL ou id
  */
 function bl_est_facture_payee($bl)

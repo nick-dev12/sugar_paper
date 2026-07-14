@@ -70,8 +70,13 @@ $date_facture_aff = date('j', $d_facture) . ' ' . $mois[(int) date('n', $d_factu
 // Lien public de la facture (page facture devis publique)
 $base_url = get_site_base_url();
 $facture_url = $base_url . '/facture-devis.php?token=' . ($token ?? '');
+$facture_share_url = $facture_url;
+$facture_share_title = 'Facture ' . ($facture['numero_facture'] ?? '');
+$facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . ($facture['numero_facture'] ?? '')
+    . ' pour le devis #' . ($devis['numero_devis'] ?? '')
+    . ' — ' . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA.';
 
-// Message WhatsApp
+// Message WhatsApp (secours)
 $lignes_produits = [];
 foreach ($produits as $p) {
     $nom = $p['produit_nom'] ?? $p['nom_produit'] ?? '';
