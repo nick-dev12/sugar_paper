@@ -26,6 +26,7 @@ return [
         ['admin', 'role'],
         ['admin', 'firebase_uid'],
         ['admin', 'auth_provider'],
+        ['admin', 'photo_profil'],
         ['commandes', 'zone_livraison_id'],
         ['commandes', 'frais_livraison'],
         ['commandes', 'client_nom'],

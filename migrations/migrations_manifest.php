@@ -151,4 +151,9 @@ return [
         'label' => 'Correction FK positions livreur',
         'script' => 'run_fix_livreur_positions_fk.php',
     ],
+    [
+        'id' => 'admin_photo_profil',
+        'label' => 'Photo de profil comptes admin',
+        'script' => 'run_add_admin_photo_profil.php',
+    ],
 ];

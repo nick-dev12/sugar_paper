@@ -1,0 +1,228 @@
+/* Carte multi-livreurs — admin */
+.page-livreurs-carte .admin-content {
+    max-width: none;
+    padding: 0 !important;
+    background: #f0f0f0;
+}
+
+.livreurs-carte-app {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 0px);
+    min-height: 100dvh;
+    background: #f4f4f4;
+}
+
+.livreurs-carte-topbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #c26638;
+    color: #fff;
+}
+
+.livreurs-carte-topbar__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.livreurs-carte-topbar__sub {
+    margin: 0.15rem 0 0;
+    font-size: 0.82rem;
+    opacity: 0.92;
+}
+
+.livreurs-carte-topbar__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.livreurs-carte-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.livreurs-carte-link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.livreurs-carte-link:hover {
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.livreurs-carte-layout {
+    display: grid;
+    grid-template-columns: 1fr minmax(260px, 320px);
+    flex: 1;
+    min-height: 0;
+}
+
+.livreurs-carte-map-wrap {
+    position: relative;
+    min-height: 420px;
+}
+
+.livreurs-carte-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.livreurs-carte-map-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 500;
+}
+
+.livreurs-carte-map-btn {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: #c26638;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+}
+
+.livreurs-carte-panel {
+    background: #fff;
+    border-left: 1px solid #e5e5e5;
+    overflow: auto;
+    max-height: calc(100vh - 70px);
+}
+
+.livreurs-carte-panel__title {
+    margin: 0;
+    padding: 0.85rem 1rem;
+    font-size: 0.95rem;
+    border-bottom: 1px solid #eee;
+    color: #6b2f20;
+}
+
+.livreurs-carte-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+}
+
+.livreurs-carte-list__empty {
+    padding: 1.25rem 0.75rem;
+    color: #666;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.livreurs-carte-list__item {
+    padding: 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #eee;
+    margin-bottom: 0.5rem;
+    background: #fafafa;
+}
+
+.livreurs-carte-list__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: baseline;
+    margin-bottom: 0.25rem;
+}
+
+.livreurs-carte-list__head strong {
+    color: #000;
+    font-size: 0.92rem;
+}
+
+.livreurs-carte-list__type {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #c26638;
+}
+
+.livreurs-carte-list__num,
+.livreurs-carte-list__addr {
+    margin: 0.15rem 0;
+    font-size: 0.8rem;
+    color: #444;
+}
+
+.livreurs-carte-list__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #c26638;
+    text-decoration: none;
+}
+
+.livreurs-carte-marker__pin {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    border: 2px solid #fff;
+}
+
+.livreurs-carte-marker__pin i {
+    font-size: 0.85rem;
+}
+
+.livreurs-carte-dest__dot {
+    color: #6b2f20;
+    font-size: 1.25rem;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.livreurs-carte-empty {
+    padding: 1.5rem;
+}
+
+@media (max-width: 900px) {
+    .livreurs-carte-layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(48vh, 1fr) auto;
+    }
+
+    .livreurs-carte-panel {
+        border-left: 0;
+        border-top: 1px solid #e5e5e5;
+        max-height: 38vh;
+    }
+
+    .livreurs-carte-map-wrap {
+        min-height: 48vh;
+    }
+}

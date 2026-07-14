@@ -5,9 +5,9 @@ const String kFirebaseWebClientId =
     '409713248489-7kd73hm2550joi8v7fjfd0rg820qnl18.apps.googleusercontent.com';
 
 const String kFirebaseIosClientId =
-    'REMPLACEZ_APRES_TELECHARGEMENT_GOOGLESERVICE_INFO';
+    '409713248489-jbj63nudjj42acep9a5aj57jp81tgutf.apps.googleusercontent.com';
 
-const String kAppleServicesClientId = 'com.sugarpaper.app';
+const String kAppleServicesClientId = 'com.goobridge.sugarpaper.signin';
 
 const String kAppleAndroidRedirectUri =
     'https://sugar-paper.com/auth/apple-callback';

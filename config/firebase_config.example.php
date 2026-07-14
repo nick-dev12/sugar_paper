@@ -21,12 +21,14 @@ return [
     'auth' => [
         'webClientId' => 'VOTRE_WEB_CLIENT_ID.apps.googleusercontent.com',
         'iosClientId' => 'VOTRE_IOS_CLIENT_ID.apps.googleusercontent.com',
-        'appleServicesId' => 'com.sugarpaper.app',
+        // Services ID Apple (Sign In with Apple → Web / Android), PAS le Bundle ID app
+        'appleServicesId' => 'com.goobridge.sugarpaper.signin',
         'appleOAuthRedirectUri' => 'https://votre-projet.firebaseapp.com/__/auth/handler',
         'appleAndroidRedirectUri' => 'https://votre-domaine.com/auth/apple-callback',
-        'appleTeamId' => 'VOTRE_TEAM_ID',
-        'appleKeyId' => 'VOTRE_KEY_ID',
-        'iosBundleId' => 'com.sugarpaper.app',
+        'appleTeamId' => 'XA8994VJC6',
+        'appleKeyId' => 'GDH9F8THP9',
+        'applePrimaryAppId' => 'com.goobridge.sugarpaper',
+        'iosBundleId' => 'com.goobridge.sugarpaper',
         'androidPackage' => 'com.sugarpaper.app',
     ],
 ];

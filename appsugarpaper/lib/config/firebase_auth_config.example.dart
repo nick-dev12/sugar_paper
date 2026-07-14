@@ -6,7 +6,7 @@ const String kFirebaseWebClientId =
 const String kFirebaseIosClientId =
     'VOTRE_IOS_CLIENT_ID.apps.googleusercontent.com';
 
-const String kAppleServicesClientId = 'com.sugarpaper.app';
+const String kAppleServicesClientId = 'com.goobridge.sugarpaper.signin';
 
 /// App Android (pas l'URL Firebase handler)
 const String kAppleAndroidRedirectUri =

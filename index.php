@@ -365,6 +365,12 @@ $seo_canonical = $base . '/';
         <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
     </div>
     <?php endif; ?>
+    <?php if (isset($_GET['compte_supprime']) && $_GET['compte_supprime'] == '1'): ?>
+    <div class="commande-perso-success"
+        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(145, 138, 68, 0.15); border-left: 4px solid #918a44; border-radius: 8px; color: var(--titres);">
+        <i class="fas fa-check-circle"></i> Votre compte a été supprimé définitivement. Merci d'avoir utilisé Sugar Paper.
+    </div>
+    <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
     <div class="commande-perso-success"
         style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">

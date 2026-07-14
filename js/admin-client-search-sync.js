@@ -20,12 +20,29 @@
         return String(s || '').replace(/\D/g, '');
     }
 
-    function supportsDeviceContacts() {
+    function isNativeApp() {
         return !!(
-            window.__SUGARPAPER_NATIVE_APP &&
-            window.SugarPaperNative &&
-            typeof window.SugarPaperNative.getDeviceContacts === 'function'
+            window.__SUGARPAPER_NATIVE_APP ||
+            /SugarPaperApp/i.test(navigator.userAgent || '') ||
+            window.flutter_inappwebview
         );
+    }
+
+    function supportsDeviceContacts() {
+        return isNativeApp() && !!(
+            window.flutter_inappwebview ||
+            (window.SugarPaperNative && typeof window.SugarPaperNative.getDeviceContacts === 'function')
+        );
+    }
+
+    function callGetDeviceContacts() {
+        if (window.SugarPaperNative && typeof window.SugarPaperNative.getDeviceContacts === 'function') {
+            return window.SugarPaperNative.getDeviceContacts();
+        }
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            return window.flutter_inappwebview.callHandler('getDeviceContacts');
+        }
+        return Promise.reject(new Error('Pont natif indisponible'));
     }
 
     function loadDeviceContacts() {
@@ -36,7 +53,7 @@
             return Promise.resolve([]);
         }
         if (!deviceContactsPromise) {
-            deviceContactsPromise = window.SugarPaperNative.getDeviceContacts()
+            deviceContactsPromise = callGetDeviceContacts()
                 .then(function (result) {
                     var list = (result && result.contacts) ? result.contacts : [];
                     deviceContactsCache = list.map(function (c) {

@@ -447,6 +447,27 @@
   font-weight: 700;
 }
 
+/* Map livreurs — terre / doré */
+.bottom-nav-item--map .bottom-nav-icon {
+  background: rgba(194, 102, 56, 0.14);
+  color: #c26638;
+}
+
+.bottom-nav-item--map.is-active {
+  background: rgba(194, 102, 56, 0.12);
+}
+
+.bottom-nav-item--map.is-active .bottom-nav-icon {
+  background: linear-gradient(135deg, #c26638, #6b2f20);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(107, 47, 32, 0.22);
+}
+
+.bottom-nav-item--map.is-active .bottom-nav-label {
+  color: #6b2f20;
+  font-weight: 700;
+}
+
 /* Paramètres admin — turquoise */
 .bottom-nav-item--parametres .bottom-nav-icon {
   background: rgba(32, 197, 199, 0.14);

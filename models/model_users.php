@@ -435,3 +435,165 @@ function mark_user_reset_token_used($token) {
     }
 }
 
+/**
+ * Indique si l'utilisateur a des commandes ou demandes encore en cours.
+ */
+function user_has_pending_orders($user_id) {
+    global $db;
+
+    $user_id = (int) $user_id;
+    if ($user_id < 1) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM commandes
+            WHERE user_id = :user_id
+              AND statut IN ('en_attente', 'confirmee', 'en_preparation', 'expediee')
+        ");
+        $stmt->execute(['user_id' => $user_id]);
+        if ((int) $stmt->fetchColumn() > 0) {
+            return true;
+        }
+    } catch (PDOException $e) {
+        return true;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM commandes_personnalisees
+            WHERE user_id = :user_id
+              AND statut IN ('en_attente', 'confirmee', 'en_preparation', 'devis_envoye', 'acceptee')
+        ");
+        $stmt->execute(['user_id' => $user_id]);
+        return (int) $stmt->fetchColumn() > 0;
+    } catch (PDOException $e) {
+        return true;
+    }
+}
+
+/**
+ * Supprime définitivement un compte client et les données associées.
+ * Les commandes passées sont conservées (anonymisation du lien user_id).
+ *
+ * @return array ['ok' => bool, 'error' => string]
+ */
+function delete_user_account($user_id) {
+    global $db;
+
+    $user_id = (int) $user_id;
+    if ($user_id < 1) {
+        return ['ok' => false, 'error' => 'Compte invalide.'];
+    }
+
+    $user = get_user_by_id($user_id);
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Compte introuvable.'];
+    }
+
+    if (user_has_pending_orders($user_id)) {
+        return [
+            'ok' => false,
+            'error' => 'Impossible de supprimer votre compte tant que des commandes sont en cours. Finalisez-les ou contactez le support.',
+        ];
+    }
+
+    try {
+        $db->beginTransaction();
+
+        $db->prepare('DELETE FROM panier WHERE user_id = :user_id')->execute(['user_id' => $user_id]);
+
+        try {
+            $db->prepare('DELETE FROM favoris WHERE user_id = :user_id')->execute(['user_id' => $user_id]);
+        } catch (PDOException $e) {
+            // Table optionnelle
+        }
+
+        try {
+            $db->prepare('DELETE FROM produits_visites WHERE user_id = :user_id')->execute(['user_id' => $user_id]);
+        } catch (PDOException $e) {
+            // Table optionnelle
+        }
+
+        try {
+            $db->prepare("UPDATE fcm_tokens SET user_id = NULL WHERE user_id = :user_id AND type = 'user'")
+                ->execute(['user_id' => $user_id]);
+        } catch (PDOException $e) {
+            // Table optionnelle
+        }
+
+        if (!empty($user['email'])) {
+            try {
+                $db->prepare('DELETE FROM user_password_reset WHERE email = :email')
+                    ->execute(['email' => $user['email']]);
+            } catch (PDOException $e) {
+                // Table optionnelle
+            }
+        }
+
+        $client_nom = trim((string) ($user['nom'] ?? ''));
+        $client_prenom = trim((string) ($user['prenom'] ?? ''));
+        $client_email = trim((string) ($user['email'] ?? ''));
+        $client_telephone = users_normalize_phone_digits($user['telephone'] ?? '');
+
+        $db->prepare("
+            UPDATE commandes SET
+                user_id = NULL,
+                client_nom = COALESCE(NULLIF(client_nom, ''), :client_nom),
+                client_prenom = COALESCE(NULLIF(client_prenom, ''), :client_prenom),
+                client_email = COALESCE(NULLIF(client_email, ''), :client_email),
+                client_telephone = COALESCE(NULLIF(client_telephone, ''), :client_telephone)
+            WHERE user_id = :user_id
+        ")->execute([
+            'user_id' => $user_id,
+            'client_nom' => $client_nom,
+            'client_prenom' => $client_prenom,
+            'client_email' => $client_email,
+            'client_telephone' => $client_telephone,
+        ]);
+
+        try {
+            $db->prepare("
+                UPDATE commandes_personnalisees SET
+                    user_id = NULL,
+                    nom = COALESCE(NULLIF(nom, ''), :nom),
+                    prenom = COALESCE(NULLIF(prenom, ''), :prenom),
+                    email = COALESCE(NULLIF(email, ''), :email),
+                    telephone = COALESCE(NULLIF(telephone, ''), :telephone)
+                WHERE user_id = :user_id
+            ")->execute([
+                'user_id' => $user_id,
+                'nom' => $client_nom,
+                'prenom' => $client_prenom,
+                'email' => $client_email,
+                'telephone' => $client_telephone,
+            ]);
+        } catch (PDOException $e) {
+            // Table optionnelle
+        }
+
+        try {
+            $db->prepare('UPDATE tracking_watch_tokens SET user_id = NULL WHERE user_id = :user_id')
+                ->execute(['user_id' => $user_id]);
+        } catch (PDOException $e) {
+            // Table optionnelle
+        }
+
+        $deleted = $db->prepare('DELETE FROM users WHERE id = :user_id')->execute(['user_id' => $user_id]);
+        if (!$deleted) {
+            $db->rollBack();
+            return ['ok' => false, 'error' => 'La suppression du compte a échoué.'];
+        }
+
+        $db->commit();
+        return ['ok' => true, 'error' => ''];
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('[delete_user_account] ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Une erreur technique est survenue. Veuillez réessayer ou contacter le support.'];
+    }
+}
+

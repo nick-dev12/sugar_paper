@@ -1,97 +1,69 @@
 # Authentification Google / Apple — app Sugar Paper (Flutter)
 
-Configuration alignée sur le projet Firebase **sugar-paper** et le domaine **sugar-paper.com**.
-
-## Identifiants Apple (configurés)
+## Identifiants Apple (juillet 2026)
 
 | Élément | Valeur |
-|---------|--------|
+|--------|--------|
 | Team ID | `XA8994VJC6` |
-| Key ID | `DL3564HLZ4` |
-| Services ID | `com.sugarpaper.app` |
-| Bundle iOS / package Android | `com.sugarpaper.app` |
+| Key ID | `GDH9F8THP9` (fichier `AuthKey_GDH9F8THP9.p8` — **Firebase Console uniquement**, jamais committer) |
+| App ID (Primary) | `com.goobridge.sugarpaper` |
+| Services ID | `com.goobridge.sugarpaper.signin` |
+| Bundle iOS (App Store) | `com.goobridge.sugarpaper` |
+| Package Android (Play Store) | `com.sugarpaper.app` |
+| Domaine | `sugar-paper.com` |
 | Return URL site web | `https://sugar-paper.firebaseapp.com/__/auth/handler` |
 | Return URL app Android | `https://sugar-paper.com/auth/apple-callback` |
 
-Synchroniser l'app Flutter après toute modification de `config/firebase_config.php` :
+> La clé `.p8` se colle dans **Firebase → Authentication → Sign-in method → Apple**.  
+> Elle n’est **pas** utilisée par le PHP ni par Flutter.
 
-```bash
-php scripts/sync_sugarpaper_auth_config.php
-```
+## Firebase Console (déjà aligné)
 
----
+- **Enable** Apple : ON  
+- **Services ID** : `com.goobridge.sugarpaper.signin`  
+- **Team ID** : `XA8994VJC6`  
+- **Key ID** : `GDH9F8THP9`  
+- **Private Key** : contenu de `AuthKey_GDH9F8THP9.p8`
 
-## Apple Sign-In
+## Apple Developer — checklist obligatoire
 
-### iOS — natif (app iPhone / iPad)
+### 1. App ID `com.goobridge.sugarpaper`
+- Capability **Sign In with Apple** activée
+- **Identique** au Bundle ID Xcode et App Store Connect
 
-- Capability **Sign in with Apple** : `ios/Runner/Runner.entitlements`
-- Bundle ID attendu : `com.sugarpaper.app`
-- **Firebase Console** → Authentication → Apple : clé `.p8`, Key ID `DL3564HLZ4`, Team ID `XA8994VJC6`
+### 2. Services ID `com.goobridge.sugarpaper.signin`
+1. Identifiers → **Services IDs** → `com.goobridge.sugarpaper.signin`
+2. **Sign In with Apple** → **Configure**
+3. **Primary App ID** : `sugar paper (…com.goobridge.sugarpaper)`
+4. **Domains** : `sugar-paper.com` (vérifié)
+5. **Return URLs** — **les deux** lignes exactes :
+   - `https://sugar-paper.firebaseapp.com/__/auth/handler` (site web / Firebase)
+   - `https://sugar-paper.com/auth/apple-callback` (app Android)
 
-> **Important** : l'App ID Apple doit correspondre au bundle Flutter (`com.sugarpaper.app`).
-> Si vous avez créé `com.sugar-paper.app` (avec tiret), créez aussi un App ID `com.sugarpaper.app`
-> avec Sign in with Apple activé, ou alignez le bundle Xcode sur l'App ID existant.
+Sans la 2ᵉ URL → erreur `invalid_client` / `Invalid web redirect url` sur Android.
 
-### Android — flux web obligatoire
+## Apple Sign-In dans l’app
 
-Sur Android, Apple exige `webAuthenticationOptions` (Services ID + URL de retour HTTPS).
+- Capability iOS : `ios/Runner/Runner.entitlements`
+- Config Flutter (générée) : `lib/config/firebase_auth_config.dart`
+- Regénérer après changement PHP :
+  ```bash
+  php scripts/sync_sugarpaper_auth_config.php
+  ```
+- Android : `webAuthenticationOptions` avec Services ID + `kAppleAndroidRedirectUri`
+- Callback serveur : `auth/apple-callback.php` → intent `signinwithapple` / package `com.sugarpaper.app`
 
-**Configuration code** (générée depuis `config/firebase_config.php`) :
+## Site web
 
-- `kAppleServicesClientId` : `com.sugarpaper.app`
-- `kAppleAndroidRedirectUri` : `https://sugar-paper.com/auth/apple-callback` (**app Android uniquement**)
-- `kAppleWebOAuthRedirectUri` : `https://sugar-paper.firebaseapp.com/__/auth/handler` (**site web uniquement**)
+- Boutons : `includes/google_auth_button.php`
+- JS Firebase : `js/firebase-social-auth.js` → `OAuthProvider('apple.com')`
+- Config publique : `config/firebase_config.php` (section `auth`)
+- Le site s’appuie sur la config **Apple dans Firebase** (Services ID + clé `.p8`)
 
-**Apple Developer** (Services ID `com.sugarpaper.app`) — **2 Return URLs** obligatoires :
+## Après modification
 
-| Usage | Return URL |
-|-------|------------|
-| Site web (Firebase JS) | `https://sugar-paper.firebaseapp.com/__/auth/handler` |
-| App Android | `https://sugar-paper.com/auth/apple-callback` |
-
-1. Identifiers → **Services IDs** → `com.sugarpaper.app`
-2. **Domains** : `sugar-paper.com`
-3. Ajoutez **les deux** Return URLs ci-dessus
-4. Firebase → Authentication → Apple : Services ID + Team ID + clé `.p8`
-
-> **Ne pas** utiliser l'URL Firebase handler sur Android : erreur « absence d'état initial ».
-
-Erreur **`invalid_client`** = Return URL absente dans Apple Developer.
-
-### Vérification domaine (obligatoire pour Android)
-
-1. Apple Developer → Services ID → domaine `sugar-paper.com` → **Verify** → télécharger le fichier
-2. Déployer sur le VPS : `.well-known/apple-developer-domain-association.txt`
-3. Tester : `https://sugar-paper.com/.well-known/apple-developer-domain-association.txt` → doit répondre **200**
-4. Voir : `.well-known/README-apple-domain-verification.md`
-
-### Android — callback serveur
-
-Apple envoie un **POST** vers `auth/apple-callback.php`. Cette page redirige vers l'app via :
-
-`intent://callback?code=…#Intent;package=com.sugarpaper.app;scheme=signinwithapple;end`
-
-Prérequis :
-
-- `auth/apple-callback.php` déployé sur le VPS
-- Activité `SignInWithAppleCallback` dans `AndroidManifest.xml`
-- Règle `.htaccess` : `RewriteRule ^auth/apple-callback$ auth/apple-callback.php [L]`
-
----
-
-## Site web (connexion / inscription)
-
-- Boutons Google + Apple : `includes/google_auth_button.php`
-- Scripts Firebase Auth : `includes/google_auth_scripts.php`
-- Logique JS : `js/firebase-social-auth.js`
-- Endpoint PHP : `auth-firebase-callback.php`
-
----
-
-## Fonctionnement dans l'app
-
-- La WebView appelle le code **natif Flutter** (`signInWithGoogle` / `signInWithApple`)
-- Le token Firebase est renvoyé au site PHP (`/auth-firebase-callback.php`)
-
-Après toute modification Firebase ou Apple Developer, **republiez** une nouvelle version de l'app.
+1. Vérifier les 2 Return URLs dans Apple Developer  
+2. Sauver Firebase Authentication → Apple  
+3. `php scripts/sync_sugarpaper_auth_config.php`  
+4. **Republier** l’app (Android + iOS)  
+5. Tester : web Safari, app iOS, app Android

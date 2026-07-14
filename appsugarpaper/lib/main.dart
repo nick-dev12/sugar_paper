@@ -631,6 +631,26 @@ class _WebViewScreenState extends State<WebViewScreen>
         return await _handleGetDeviceContacts();
       },
     );
+
+    webViewController?.addJavaScriptHandler(
+      handlerName: 'requestContactsPermission',
+      callback: (args) async {
+        return await _handleRequestContactsPermission();
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> _handleRequestContactsPermission() async {
+    if (!mounted) {
+      return {'success': false, 'granted': false, 'error': 'Application non prête'};
+    }
+    final allowed =
+        await NativePermissionService.requestContactsWithRationale(context);
+    return {
+      'success': allowed,
+      'granted': allowed,
+      if (!allowed) 'error': 'Permission contacts refusée',
+    };
   }
 
   Future<Map<String, dynamic>> _handlePickContacts() async {
@@ -1116,6 +1136,20 @@ class _WebViewScreenState extends State<WebViewScreen>
             });
           },
 
+          requestContactsPermission: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('requestContactsPermission')
+                .then(result => {
+                  if (result && (result.success || result.granted)) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Permission contacts refusée'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
           supportsPickContacts: function() {
             return true;
           },
@@ -1329,6 +1363,47 @@ class _WebViewScreenState extends State<WebViewScreen>
 (function(){
   window.__SUGARPAPER_NATIVE_APP = true;
   document.documentElement.classList.add('is-native-app');
+
+  function callNativeWhenReady(handlerName, timeoutMs) {
+    timeoutMs = timeoutMs || 12000;
+    return new Promise(function(resolve, reject) {
+      var start = Date.now();
+      function attempt() {
+        if (window.flutter_inappwebview &&
+            typeof window.flutter_inappwebview.callHandler === 'function') {
+          window.flutter_inappwebview.callHandler(handlerName)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+        if (Date.now() - start >= timeoutMs) {
+          reject(new Error('Pont natif indisponible'));
+          return;
+        }
+        setTimeout(attempt, 120);
+      }
+      attempt();
+    });
+  }
+
+  if (!window.SugarPaperNative) {
+    window.SugarPaperNative = {};
+  }
+  if (typeof window.SugarPaperNative.pickContacts !== 'function') {
+    window.SugarPaperNative.pickContacts = function() {
+      return callNativeWhenReady('pickContacts');
+    };
+  }
+  if (typeof window.SugarPaperNative.getDeviceContacts !== 'function') {
+    window.SugarPaperNative.getDeviceContacts = function() {
+      return callNativeWhenReady('getDeviceContacts');
+    };
+  }
+  if (typeof window.SugarPaperNative.requestContactsPermission !== 'function') {
+    window.SugarPaperNative.requestContactsPermission = function() {
+      return callNativeWhenReady('requestContactsPermission');
+    };
+  }
 })();
 ''',
                       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,

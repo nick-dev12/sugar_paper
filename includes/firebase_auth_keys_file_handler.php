@@ -17,8 +17,11 @@ final class SugarPaperFirebaseGoogleKeysFileHandler implements Handler
 {
     private const CACHE_FILE = __DIR__ . '/../config/firebase_google_public_keys_cache.json';
 
-    /** Utiliser le cache disque même expiré si le réseau est coupé (rotation Google ~ quelques jours). */
+    /** Utiliser le cache disque si le réseau est coupé (rotation Google ~ quelques jours). */
     private const STALE_GRACE_SECONDS = 604800;
+
+    /** Après ce délai, tenter un rafraîchissement réseau même si le cache n’est pas expiré. */
+    private const REFRESH_INTERVAL_SECONDS = 3600;
 
     /** @var Handler */
     private $networkHandler;
@@ -32,6 +35,17 @@ final class SugarPaperFirebaseGoogleKeysFileHandler implements Handler
         $this->clock = $clock;
     }
 
+    /**
+     * Force le téléchargement réseau et met à jour le cache (ignore l’expiration locale).
+     */
+    public function forceRefreshFromNetwork(): Keys
+    {
+        $keys = $this->networkHandler->handle(FetchGooglePublicKeys::fromGoogle());
+        $this->persistKeys($keys);
+
+        return $keys;
+    }
+
     public function handle(FetchGooglePublicKeys $action): Keys
     {
         $now = $this->clock->now();
@@ -39,7 +53,22 @@ final class SugarPaperFirebaseGoogleKeysFileHandler implements Handler
         $cached = $this->loadCacheFile();
 
         if ($cached !== null && $cached['expires_at'] > $nowTs) {
-            return $this->keysFromCache($cached, $cached['expires_at']);
+            $updatedAt = (int) ($cached['updated_at_ts'] ?? 0);
+            $shouldTryNetwork = $updatedAt <= 0
+                || ($nowTs - $updatedAt) >= self::REFRESH_INTERVAL_SECONDS;
+
+            if (!$shouldTryNetwork) {
+                return $this->keysFromCache($cached, $cached['expires_at']);
+            }
+
+            try {
+                $keys = $this->networkHandler->handle($action);
+                $this->persistKeys($keys);
+
+                return $keys;
+            } catch (FetchingGooglePublicKeysFailed $e) {
+                return $this->keysFromCache($cached, $cached['expires_at']);
+            }
         }
 
         // Cache expiré mais encore utilisable : pas d'appel réseau pendant la connexion (cron : sync_firebase_google_keys_cache.php).
@@ -103,6 +132,7 @@ final class SugarPaperFirebaseGoogleKeysFileHandler implements Handler
         return [
             'keys' => $keys,
             'expires_at' => (int) ($data['expires_at'] ?? 0),
+            'updated_at_ts' => (int) ($data['updated_at_ts'] ?? strtotime((string) ($data['updated_at'] ?? '')) ?: 0),
         ];
     }
 
@@ -122,6 +152,7 @@ final class SugarPaperFirebaseGoogleKeysFileHandler implements Handler
             'keys' => $all,
             'expires_at' => $expiresAt,
             'updated_at' => date('c'),
+            'updated_at_ts' => time(),
         ];
 
         $dir = dirname(self::CACHE_FILE);

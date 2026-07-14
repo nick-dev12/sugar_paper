@@ -71,8 +71,7 @@ $can_manage_comptes_bottom = ($admin_bottom_role === 'admin');
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 
 $is_livreurs = strpos($current_dir, '/livreurs') !== false;
-
-
+$is_livreurs_carte = $is_livreurs && ($current_page === 'carte.php');
 
 $is_produits = strpos($current_dir, '/produits') !== false;
 
@@ -131,6 +130,10 @@ if ($is_contable_bottom) {
         $admin_bottom_active = 'profil';
 
     }
+
+} elseif ($is_livreurs_carte) {
+
+    $admin_bottom_active = 'map';
 
 } elseif ($is_produits || $is_categories || $is_stock) {
 
@@ -289,6 +292,17 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     </a>
 
+    <?php if (admin_can_manage_livreurs()): ?>
+    <a href="<?php echo htmlspecialchars($nav_href('livreurs/carte.php')); ?>"
+
+        class="bottom-nav-item bottom-nav-item--map<?php echo $admin_bottom_active === 'map' ? ' is-active' : ''; ?>">
+
+        <span class="bottom-nav-icon"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
+
+        <span class="bottom-nav-label">Map</span>
+
+    </a>
+    <?php else: ?>
     <a href="<?php echo htmlspecialchars($nav_href('produits/index.php')); ?>"
 
         class="bottom-nav-item bottom-nav-item--produits<?php echo $admin_bottom_active === 'produits' ? ' is-active' : ''; ?>">
@@ -298,6 +312,7 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         <span class="bottom-nav-label">Produits</span>
 
     </a>
+    <?php endif; ?>
 
     <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
 

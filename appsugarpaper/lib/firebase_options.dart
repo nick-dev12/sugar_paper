@@ -44,14 +44,16 @@ class DefaultFirebaseOptions {
     storageBucket: 'sugar-paper.firebasestorage.app',
   );
 
-  /// App iOS sugar-paper — com.sugarpaper.app
+  /// App iOS sugar-paper — com.goobridge.sugarpaper (App Store)
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDUZK9mKCkwfMnjUofnlCMlPJLpYnps_2w',
-    appId: '1:409713248489:ios:9cdae54c43721760a04878',
+    appId: '1:409713248489:ios:02ffccd5df0cc5d6a04878',
     messagingSenderId: messagingSenderId,
     projectId: projectId,
     authDomain: 'sugar-paper.firebaseapp.com',
     storageBucket: 'sugar-paper.firebasestorage.app',
-    iosBundleId: 'com.sugarpaper.app',
+    iosBundleId: 'com.goobridge.sugarpaper',
+    iosClientId:
+        '409713248489-jbj63nudjj42acep9a5aj57jp81tgutf.apps.googleusercontent.com',
   );
 }

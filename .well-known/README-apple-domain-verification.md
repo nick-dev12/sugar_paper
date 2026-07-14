@@ -6,21 +6,22 @@ le domaine `sugar-paper.com` doit être **vérifié** chez Apple et l'URL de ret
 ## Étapes (Apple Developer)
 
 1. [developer.apple.com](https://developer.apple.com) → **Certificates, Identifiers & Profiles** → **Identifiers**
-2. Ouvrir le **Services ID** : `com.sugarpaper.app`
+2. Ouvrir le **Services ID** : `com.goobridge.sugarpaper.signin`
 3. **Sign In with Apple** → **Configure**
-4. **Domains and Subdomains** : `sugar-paper.com`
-5. Cliquer **Verify** (ou **Download**) → Apple fournit un fichier
-6. Enregistrer ce fichier **tel quel** (sans modification) sous :
+4. **Primary App ID** : `com.goobridge.sugarpaper`
+5. **Domains and Subdomains** : `sugar-paper.com`
+6. Cliquer **Verify** (ou **Download**) → Apple fournit un fichier
+7. Enregistrer ce fichier **tel quel** (sans modification) sous :
    ```
    .well-known/apple-developer-domain-association.txt
    ```
-7. Déployer sur le VPS (https://sugar-paper.com)
-8. Vérifier que l'URL répond **200** :
+8. Déployer sur le VPS (https://sugar-paper.com)
+9. Vérifier que l'URL répond **200** :
    ```
    https://sugar-paper.com/.well-known/apple-developer-domain-association.txt
    ```
-9. Dans Apple Developer, cliquer **Verify** jusqu'à validation du domaine
-10. **Return URLs** — les **deux** lignes exactes :
+10. Dans Apple Developer, cliquer **Verify** jusqu'à validation du domaine
+11. **Return URLs** — les **deux** lignes exactes :
     - `https://sugar-paper.firebaseapp.com/__/auth/handler` (site web)
     - `https://sugar-paper.com/auth/apple-callback` (app Android)
 

@@ -126,7 +126,7 @@ $last_update = '11/07/2026';
         <h3>2 bis.3 Vos choix et contrôle</h3>
         <p>
             Vous pouvez modifier vos données, refuser certaines autorisations (caméra, localisation, contacts, notifications) dans les réglages de votre appareil,
-            vous opposer au marketing direct et demander la suppression de votre compte (sections <a href="#priv-13">13</a> et <a href="#priv-suppression">14</a>).
+            vous opposer au marketing direct et demander la suppression de votre compte (sections <a href="#priv-13">13</a>, <a href="#priv-suppression">14</a> et <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>).
             L'accès au catalogue ne dépend pas de l'acceptation de traitements non essentiels.
         </p>
 
@@ -550,11 +550,27 @@ $last_update = '11/07/2026';
 
         <h2 id="priv-suppression">14. Suppression de compte</h2>
         <p>
-            Vous pouvez demander la <strong>fermeture de votre compte client</strong> et la suppression des données associées en envoyant un e-mail à
+            Conformément à votre <strong>droit à l'effacement</strong>, vous pouvez demander à tout moment la <strong>fermeture de votre compte client</strong>
+            et la suppression des données qui ne sont plus nécessaires, sous réserve des obligations légales de conservation (facturation, comptabilité, litiges).
+        </p>
+        <h3>14.1 Suppression en ligne (compte connecté)</h3>
+        <p>
+            Vous pouvez supprimer votre compte directement depuis notre
+            <a href="/politique-suppression-compte.php"><strong>Politique de suppression de compte</strong></a>,
+            via le formulaire sécurisé accessible après <strong>connexion</strong> à votre espace client.
+            Pour des raisons de sécurité, <strong>aucune suppression automatique n'est possible sans authentification préalable</strong>&nbsp;:
+            si vous n'êtes pas connecté, vous serez invité à vous identifier avant toute action de suppression.
+        </p>
+        <h3>14.2 Demande par e-mail</h3>
+        <p>
+            Vous pouvez également envoyer une demande à
             <a href="mailto:<?php echo htmlspecialchars($privacy_email, ENT_QUOTES, 'UTF-8'); ?>?subject=<?php echo rawurlencode('Suppression de compte — Sugar Paper'); ?>"><?php echo htmlspecialchars($privacy_email, ENT_QUOTES, 'UTF-8'); ?></a>
             depuis l'adresse e-mail liée à votre compte, avec l'objet «&nbsp;Suppression de compte&nbsp;».
         </p>
-        <p>Nous vous informerons des données supprimées et de celles que nous devons conserver pour des obligations légales (facturation, comptabilité, litiges), ainsi que de leur durée de conservation.</p>
+        <p>
+            Le détail des données supprimées, conservées et des délais de traitement figure dans la
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>.
+        </p>
         <p>
             La suppression du compte n'annule pas les commandes en cours ni les obligations contractuelles déjà nées.
             Les données de suivi GPS liées à une livraison terminée peuvent être conservées temporairement à des fins de preuve et support, puis purgées selon la section&nbsp;7.
@@ -587,7 +603,7 @@ $last_update = '11/07/2026';
             <strong>Documents associés :</strong>
             <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>
             ·
-            <a href="#priv-suppression">Suppression de compte</a>
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
             ·
             <a href="#priv-9-gps">Suivi GPS livraison</a>
             ·

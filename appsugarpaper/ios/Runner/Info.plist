@@ -22,7 +22,18 @@
 		<string>????</string>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<!-- Google Sign-In (iOS) : à renseigner après activation Auth Google dans Firebase sugar-paper -->
+		<!-- Google Sign-In (iOS) — REVERSED_CLIENT_ID du GoogleService-Info.plist -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.409713248489-jbj63nudjj42acep9a5aj57jp81tgutf</string>
+				</array>
+			</dict>
+		</array>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>

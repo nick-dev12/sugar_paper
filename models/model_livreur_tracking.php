@@ -1688,3 +1688,105 @@ function livreur_statut_label($statut) {
     ];
     return $labels[$statut] ?? $statut;
 }
+
+/**
+ * Livreurs actuellement en livraison GPS (tracking_active=1), avec dernière position.
+ * Un livreur peut avoir plusieurs livraisons : on agrège par livreur_id.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function livreur_get_actifs_sur_carte() {
+    global $db;
+    if (!livreur_tracking_tables_ready()) {
+        return [];
+    }
+
+    $by_livreur = [];
+
+    try {
+        $stmt = $db->query("
+            SELECT c.id AS livraison_id, 'commande' AS livraison_type,
+                   c.numero_commande AS numero, c.adresse_livraison,
+                   c.livreur_id, c.tracking_active,
+                   c.delivery_latitude, c.delivery_longitude,
+                   a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+            FROM commandes c
+            INNER JOIN admin a ON a.id = c.livreur_id
+            WHERE c.tracking_active = 1
+              AND c.livreur_id IS NOT NULL
+              AND c.livreur_id > 0
+            ORDER BY c.date_commande DESC
+        ");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        foreach ($rows as $row) {
+            $lid = (int) $row['livreur_id'];
+            if ($lid < 1 || isset($by_livreur[$lid])) {
+                continue;
+            }
+            $by_livreur[$lid] = $row;
+        }
+    } catch (PDOException $e) {
+        /* silencieux */
+    }
+
+    if (livreur_bl_livraison_columns_ok()) {
+        try {
+            $stmt = $db->query("
+                SELECT b.id AS livraison_id, 'facture' AS livraison_type,
+                       b.numero_bl AS numero, b.adresse_livraison,
+                       b.livreur_id, b.tracking_active,
+                       b.delivery_latitude, b.delivery_longitude,
+                       a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+                FROM bons_livraison b
+                INNER JOIN admin a ON a.id = b.livreur_id
+                WHERE b.tracking_active = 1
+                  AND b.livreur_id IS NOT NULL
+                  AND b.livreur_id > 0
+                ORDER BY b.date_creation DESC
+            ");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $row) {
+                $lid = (int) $row['livreur_id'];
+                if ($lid < 1 || isset($by_livreur[$lid])) {
+                    continue;
+                }
+                $by_livreur[$lid] = $row;
+            }
+        } catch (PDOException $e) {
+            /* silencieux */
+        }
+    }
+
+    $out = [];
+    foreach ($by_livreur as $lid => $row) {
+        $commande_id = ($row['livraison_type'] === 'commande') ? (int) $row['livraison_id'] : null;
+        $bl_id = ($row['livraison_type'] === 'facture') ? (int) $row['livraison_id'] : null;
+        $pos = livreur_get_last_position($lid, $commande_id, $bl_id);
+
+        $out[] = [
+            'livreur_id' => $lid,
+            'livreur_nom' => trim(($row['livreur_prenom'] ?? '') . ' ' . ($row['livreur_nom'] ?? '')),
+            'livreur_email' => $row['livreur_email'] ?? '',
+            'livraison_type' => $row['livraison_type'],
+            'livraison_id' => (int) $row['livraison_id'],
+            'numero' => $row['numero'] ?? '',
+            'adresse_livraison' => $row['adresse_livraison'] ?? '',
+            'delivery_latitude' => livreur_parse_coord($row['delivery_latitude'] ?? null),
+            'delivery_longitude' => livreur_parse_coord($row['delivery_longitude'] ?? null),
+            'latitude' => $pos ? livreur_parse_coord($pos['latitude'] ?? null) : null,
+            'longitude' => $pos ? livreur_parse_coord($pos['longitude'] ?? null) : null,
+            'heading' => $pos && isset($pos['heading']) ? (float) $pos['heading'] : null,
+            'speed' => $pos && isset($pos['speed']) ? (float) $pos['speed'] : null,
+            'recorded_at' => $pos['recorded_at'] ?? null,
+            'suivi_url' => $row['livraison_type'] === 'facture'
+                ? ('suivi.php?bl_id=' . (int) $row['livraison_id'] . '&regarder=1')
+                : ('suivi.php?commande_id=' . (int) $row['livraison_id'] . '&regarder=1'),
+        ];
+    }
+
+    usort($out, function ($a, $b) {
+        return strcasecmp($a['livreur_nom'], $b['livreur_nom']);
+    });
+
+    return $out;
+}

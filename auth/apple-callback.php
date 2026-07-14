@@ -6,6 +6,9 @@
  * Le plugin sign_in_with_apple attend une redirection vers :
  *   intent://callback?…#Intent;package=com.sugarpaper.app;scheme=signinwithapple;end
  *
+ * Services ID Apple (web/Android) : com.goobridge.sugarpaper.signin
+ * Package lu depuis config/firebase_config.php → auth.androidPackage
+ *
  * @see https://pub.dev/packages/sign_in_with_apple
  */
 declare(strict_types=1);

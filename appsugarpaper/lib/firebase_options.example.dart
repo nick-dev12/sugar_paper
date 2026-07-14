@@ -49,7 +49,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: messagingSenderId,
     projectId: projectId,
     storageBucket: 'VOTRE_PROJECT_ID.firebasestorage.app',
-    iosBundleId: 'com.sugarpaper.app',
+    iosBundleId: 'com.goobridge.sugarpaper',
     iosClientId: 'VOTRE_IOS_CLIENT_ID.apps.googleusercontent.com',
   );
 }

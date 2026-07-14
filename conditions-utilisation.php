@@ -131,7 +131,8 @@ $last_update = '11/07/2026';
             Sugar Paper peut suspendre ou clôturer un compte en cas de manquement aux CGU, fraude, impayé ou injonction légale.
             La clôture n'efface pas les obligations nées avant la clôture (commandes en cours, factures, litiges).
             Vous pouvez demander la suppression de votre compte conformément à la
-            <a href="/politique-confidentialite.php#priv-suppression">Politique de confidentialité</a>.
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
+            (connexion requise pour le formulaire en ligne).
         </p>
 
         <h2 id="cgu-4">4. Description des services</h2>
@@ -339,7 +340,9 @@ $last_update = '11/07/2026';
             collecte, finalités, durées de conservation, droits des personnes, cookies, application mobile, localisation GPS, suivi livraison et import de contacts.
         </p>
         <p>
-            En utilisant le Service, vous reconnaissez en avoir pris connaissance. Pour exercer vos droits ou demander la suppression de compte, contactez
+            En utilisant le Service, vous reconnaissez en avoir pris connaissance. Pour exercer vos droits ou supprimer votre compte, consultez la
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
+            ou contactez
             <a href="mailto:<?php echo htmlspecialchars($contact_email, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($contact_email, ENT_QUOTES, 'UTF-8'); ?></a>.
         </p>
 
@@ -399,7 +402,7 @@ $last_update = '11/07/2026';
             ·
             <a href="/politique-confidentialite.php#priv-9-contacts">Import contacts</a>
             ·
-            <a href="/politique-confidentialite.php#priv-suppression">Suppression de compte</a>
+            <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
         </div>
 
         <a href="javascript:history.back()" class="back-link">

@@ -385,3 +385,64 @@ function process_user_reset_password() {
     return ['success' => $success, 'message' => $message];
 }
 
+/**
+ * Traite la demande de suppression de compte client (utilisateur connecté).
+ *
+ * @param int $user_id
+ * @return array ['success' => bool, 'message' => string]
+ */
+function process_account_deletion($user_id) {
+    $user_id = (int) $user_id;
+    if ($user_id < 1) {
+        return ['success' => false, 'message' => 'Vous devez être connecté pour supprimer votre compte.'];
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => ''];
+    }
+
+    $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
+    if ($csrf === '' || !isset($_SESSION['user_csrf']) || !hash_equals((string) $_SESSION['user_csrf'], $csrf)) {
+        return ['success' => false, 'message' => 'Session expirée. Veuillez réessayer.'];
+    }
+
+    $password = isset($_POST['password']) ? (string) $_POST['password'] : '';
+    $confirm_text = isset($_POST['confirm_text']) ? trim((string) $_POST['confirm_text']) : '';
+    $accepte = isset($_POST['accepte_suppression']) && (string) $_POST['accepte_suppression'] === '1';
+
+    $errors = [];
+
+    if (!$accepte) {
+        $errors[] = 'Vous devez confirmer que vous comprenez les conséquences de la suppression.';
+    }
+
+    if ($confirm_text !== 'SUPPRIMER') {
+        $errors[] = 'Saisissez exactement SUPPRIMER pour confirmer la suppression.';
+    }
+
+    if ($password === '') {
+        $errors[] = 'Votre mot de passe est obligatoire pour confirmer la suppression.';
+    }
+
+    if (!empty($errors)) {
+        return ['success' => false, 'message' => implode('<br>', $errors)];
+    }
+
+    $user = get_user_by_id($user_id);
+    if (!$user) {
+        return ['success' => false, 'message' => 'Compte introuvable.'];
+    }
+
+    if (!password_verify($password, $user['password'])) {
+        return ['success' => false, 'message' => 'Mot de passe incorrect.'];
+    }
+
+    $result = delete_user_account($user_id);
+    if (empty($result['ok'])) {
+        return ['success' => false, 'message' => $result['error'] ?? 'Impossible de supprimer le compte.'];
+    }
+
+    unset($_SESSION['user_csrf']);
+    return ['success' => true, 'message' => 'Votre compte a été supprimé définitivement.'];
+}
+

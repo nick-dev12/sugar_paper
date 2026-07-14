@@ -110,9 +110,15 @@ function firebase_auth_get_server_config()
     return $config;
 }
 
-function firebase_auth_get_verifier($project_id, $cacert_real)
+function &firebase_auth_verifier_store()
 {
     static $verifiers = [];
+    return $verifiers;
+}
+
+function firebase_auth_get_verifier($project_id, $cacert_real)
+{
+    $verifiers = &firebase_auth_verifier_store();
 
     $cache_key = $project_id . '|' . $cacert_real;
     if (!isset($verifiers[$cache_key])) {
@@ -120,6 +126,82 @@ function firebase_auth_get_verifier($project_id, $cacert_real)
     }
 
     return $verifiers[$cache_key];
+}
+
+function firebase_auth_reset_verifier_cache()
+{
+    $verifiers = &firebase_auth_verifier_store();
+    $verifiers = [];
+}
+
+function firebase_auth_force_refresh_google_keys($cacert_real)
+{
+    static $autoloaded = false;
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+    if (!file_exists($autoload)) {
+        return false;
+    }
+    if (!$autoloaded) {
+        require_once $autoload;
+        $autoloaded = true;
+    }
+
+    require_once __DIR__ . '/firebase_auth_keys_file_handler.php';
+
+    $server_config = firebase_auth_get_server_config();
+    $cacert = is_array($server_config) ? ($server_config['cacert_path'] ?? __DIR__ . '/../config/cacert.pem') : __DIR__ . '/../config/cacert.pem';
+    if ($cacert_real === false && $cacert !== '' && file_exists($cacert)) {
+        $cacert_real = firebase_auth_configure_ssl($cacert);
+    }
+
+    $client = new \GuzzleHttp\Client([
+        'http_errors' => false,
+        'verify' => ($cacert_real !== false) ? $cacert_real : true,
+        'timeout' => 10,
+        'connect_timeout' => 5,
+    ]);
+
+    $clock = \Beste\Clock\SystemClock::create();
+    $network = new \Kreait\Firebase\JWT\Action\FetchGooglePublicKeys\WithGuzzle($client, $clock);
+    $handler = new SugarPaperFirebaseGoogleKeysFileHandler($network, $clock);
+
+    try {
+        $handler->forceRefreshFromNetwork();
+        firebase_auth_reset_verifier_cache();
+        return true;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function firebase_auth_verify_id_token_once($id_token, $expected_provider, $project_id, $cacert_real)
+{
+    $verifier = firebase_auth_get_verifier($project_id, $cacert_real);
+    $leeway_seconds = 300;
+    $verified_token = $verifier->verifyIdTokenWithLeeway($id_token, $leeway_seconds);
+    $claims = $verified_token->payload();
+
+    $provider = '';
+    if (!empty($claims['firebase']['sign_in_provider'])) {
+        $provider = (string) $claims['firebase']['sign_in_provider'];
+    }
+
+    $allowed = ['google.com', 'apple.com'];
+    if ($expected_provider !== null && $expected_provider !== '') {
+        $allowed = [(string) $expected_provider];
+    }
+
+    if (!in_array($provider, $allowed, true)) {
+        $label = firebase_auth_provider_label($expected_provider ?: $provider);
+        return firebase_auth_token_error('Ce token ne provient pas de ' . $label . '.');
+    }
+
+    return [
+        'success' => true,
+        'message' => '',
+        'claims' => $claims,
+        'provider' => $provider,
+    ];
 }
 
 function firebase_auth_verify_id_token($id_token, $expected_provider = null)
@@ -171,34 +253,19 @@ function firebase_auth_verify_id_token($id_token, $expected_provider = null)
     }
 
     try {
-        $verifier = firebase_auth_get_verifier($project_id, $cacert_real);
-        $leeway_seconds = 300;
-        $verified_token = $verifier->verifyIdTokenWithLeeway($id_token, $leeway_seconds);
-        $claims = $verified_token->payload();
-
-        $provider = '';
-        if (!empty($claims['firebase']['sign_in_provider'])) {
-            $provider = (string) $claims['firebase']['sign_in_provider'];
-        }
-
-        $allowed = ['google.com', 'apple.com'];
-        if ($expected_provider !== null && $expected_provider !== '') {
-            $allowed = [(string) $expected_provider];
-        }
-
-        if (!in_array($provider, $allowed, true)) {
-            $label = firebase_auth_provider_label($expected_provider ?: $provider);
-            return firebase_auth_token_error('Ce token ne provient pas de ' . $label . '.');
-        }
-
-        return [
-            'success' => true,
-            'message' => '',
-            'claims' => $claims,
-            'provider' => $provider,
-        ];
+        return firebase_auth_verify_id_token_once($id_token, $expected_provider, $project_id, $cacert_real);
     } catch (Throwable $e) {
         $msg = $e->getMessage();
+        if (stripos($msg, 'No public key matching the key ID') !== false) {
+            if (firebase_auth_force_refresh_google_keys($cacert_real)) {
+                try {
+                    return firebase_auth_verify_id_token_once($id_token, $expected_provider, $project_id, $cacert_real);
+                } catch (Throwable $retryError) {
+                    $msg = $retryError->getMessage();
+                }
+            }
+        }
+
         $label = firebase_auth_provider_label($expected_provider ?: '');
 
         if (stripos($msg, 'cURL error 60') !== false || stripos($msg, 'SSL certificate') !== false) {

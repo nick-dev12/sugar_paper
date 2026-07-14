@@ -437,9 +437,12 @@ function get_all_admins()
     global $db;
 
     try {
+        $cols = 'id, nom, prenom, email, date_creation, derniere_connexion, statut, COALESCE(role, \'admin\') as role';
+        if (admin_has_column('photo_profil')) {
+            $cols .= ', photo_profil';
+        }
         $stmt = $db->prepare("
-            SELECT id, nom, prenom, email, date_creation, derniere_connexion, statut, 
-                   COALESCE(role, 'admin') as role 
+            SELECT {$cols}
             FROM admin 
             ORDER BY date_creation DESC
         ");
@@ -449,6 +452,140 @@ function get_all_admins()
     } catch (PDOException $e) {
         return [];
     }
+}
+
+/**
+ * URL publique de la photo de profil admin (ou chaîne vide).
+ */
+function admin_photo_profil_url($photo_profil)
+{
+    $photo_profil = trim((string) $photo_profil);
+    if ($photo_profil === '') {
+        return '';
+    }
+    $photo_profil = ltrim(str_replace('\\', '/', $photo_profil), '/');
+    if (strpos($photo_profil, '..') !== false) {
+        return '';
+    }
+    $abs = dirname(__DIR__) . '/upload/' . $photo_profil;
+    if (!is_file($abs)) {
+        return '';
+    }
+    return '/upload/' . $photo_profil;
+}
+
+/**
+ * Met à jour le chemin photo_profil d'un compte admin.
+ */
+function update_admin_photo_profil($admin_id, $chemin)
+{
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1 || !admin_has_column('photo_profil')) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('UPDATE admin SET photo_profil = :photo WHERE id = :id');
+        return $stmt->execute([
+            'photo' => $chemin === null || $chemin === '' ? null : (string) $chemin,
+            'id' => $admin_id,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Traite l'upload d'une photo de profil pour un compte admin.
+ *
+ * @return array{ok:bool, msg:string, chemin?:string}
+ */
+function admin_photo_profil_process_upload($admin_id, $file)
+{
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1) {
+        return ['ok' => false, 'msg' => 'Identifiant compte invalide.'];
+    }
+    if (!admin_has_column('photo_profil')) {
+        return ['ok' => false, 'msg' => 'Colonne photo non installée. Exécutez la migration admin_photo_profil.'];
+    }
+    if (!$file || !is_array($file)) {
+        return ['ok' => false, 'msg' => 'Aucun fichier reçu.'];
+    }
+
+    $code = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+    if ($code === UPLOAD_ERR_NO_FILE) {
+        return ['ok' => false, 'msg' => 'Choisissez une photo à téléverser.'];
+    }
+    if ($code === UPLOAD_ERR_INI_SIZE || $code === UPLOAD_ERR_FORM_SIZE) {
+        return ['ok' => false, 'msg' => 'La photo est trop volumineuse.'];
+    }
+    if ($code !== UPLOAD_ERR_OK) {
+        return ['ok' => false, 'msg' => 'Le téléversement a échoué. Réessayez.'];
+    }
+
+    $max_bytes = 5 * 1024 * 1024;
+    $size = isset($file['size']) ? (int) $file['size'] : 0;
+    if ($size <= 0 || $size > $max_bytes) {
+        return ['ok' => false, 'msg' => 'La photo doit faire au plus 5 Mo.'];
+    }
+
+    $tmp = isset($file['tmp_name']) ? (string) $file['tmp_name'] : '';
+    if ($tmp === '' || !is_uploaded_file($tmp)) {
+        return ['ok' => false, 'msg' => 'Fichier téléversé invalide.'];
+    }
+
+    $mime = '';
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = (string) finfo_file($finfo, $tmp);
+            finfo_close($finfo);
+        }
+    }
+    if ($mime === '' && function_exists('mime_content_type')) {
+        $mime = (string) @mime_content_type($tmp);
+    }
+
+    $map = [
+        'image/jpeg' => 'jpg',
+        'image/jpg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+    ];
+    if (!isset($map[$mime])) {
+        return ['ok' => false, 'msg' => 'Format non autorisé (JPG, PNG, WEBP ou GIF).'];
+    }
+
+    $upload_dir = dirname(__DIR__) . '/upload/admin_photos/';
+    if (!is_dir($upload_dir) && !@mkdir($upload_dir, 0755, true) && !is_dir($upload_dir)) {
+        return ['ok' => false, 'msg' => 'Impossible de préparer le dossier des photos.'];
+    }
+
+    $new_base = 'admin_' . $admin_id . '_' . bin2hex(random_bytes(5)) . '.' . $map[$mime];
+    $abs_new = $upload_dir . $new_base;
+    if (!move_uploaded_file($tmp, $abs_new)) {
+        return ['ok' => false, 'msg' => 'Impossible d’enregistrer la photo sur le serveur.'];
+    }
+
+    foreach (glob($upload_dir . 'admin_' . $admin_id . '_*') ?: [] as $old_abs) {
+        if (!is_string($old_abs) || !is_file($old_abs)) {
+            continue;
+        }
+        if (basename($old_abs) === $new_base) {
+            continue;
+        }
+        @unlink($old_abs);
+    }
+
+    $relatif = 'admin_photos/' . $new_base;
+    if (!update_admin_photo_profil($admin_id, $relatif)) {
+        @unlink($abs_new);
+        return ['ok' => false, 'msg' => 'Erreur d’enregistrement en base de données.'];
+    }
+
+    return ['ok' => true, 'msg' => 'Photo de profil mise à jour.', 'chemin' => $relatif];
 }
 
 /**

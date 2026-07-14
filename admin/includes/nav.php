@@ -34,6 +34,7 @@ $is_livreur_nav = ($admin_role === 'livreur');
 $is_utilisateur_nav = ($admin_role === 'utilisateur');
 
 $current_page = basename($_SERVER['PHP_SELF']);
+$is_livreurs_carte = $is_livreurs && ($current_page === 'carte.php');
 $nav_href = function ($path) use ($admin_nav_base) {
     return $admin_nav_base . ltrim($path, '/');
 };
@@ -181,9 +182,16 @@ $nav_href = function ($path) use ($admin_nav_base) {
             </a>
             <?php if (admin_can_livreur_gps()): ?>
             <a href="<?php echo $nav_href('livreurs/index.php'); ?>"
-                class="menu-item <?php echo ($is_livreurs) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($is_livreurs && !$is_livreurs_carte) ? 'active' : ''; ?>">
                 <i class="fas fa-motorcycle"></i>
                 <span>Livreurs GPS</span>
+            </a>
+            <?php endif; ?>
+            <?php if (admin_can_manage_livreurs()): ?>
+            <a href="<?php echo $nav_href('livreurs/carte.php'); ?>"
+                class="menu-item <?php echo $is_livreurs_carte ? 'active' : ''; ?>">
+                <i class="fas fa-map-location-dot"></i>
+                <span>Map</span>
             </a>
             <?php endif; ?>
             <a href="<?php echo $nav_href('parametres.php'); ?>"

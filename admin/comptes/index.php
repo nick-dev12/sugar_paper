@@ -41,7 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['admin_id'])) {
     }
 
     if ($admin_id > 0) {
-        if ($admin_id === (int) $_SESSION['admin_id']) {
+        if (isset($_POST['upload_photo_profil'])) {
+            $file = $_FILES['photo_profil'] ?? null;
+            $result = admin_photo_profil_process_upload($admin_id, $file);
+            if ($result['ok']) {
+                $_SESSION['success_message'] = $result['msg'] ?: 'Photo de profil mise à jour.';
+            } else {
+                $_SESSION['error_message'] = $result['msg'] ?? 'Erreur lors de l\'upload de la photo.';
+            }
+        } elseif ($admin_id === (int) $_SESSION['admin_id']) {
             $_SESSION['error_message'] = 'Vous ne pouvez pas modifier ou supprimer votre propre compte depuis cette page.';
         } else {
             if (isset($_POST['toggle_statut'])) {
@@ -76,6 +84,7 @@ $admins = get_all_admins();
 $total = count($admins);
 $admins_actifs = count(array_filter($admins, function ($a) { return $a['statut'] === 'actif'; }));
 $comptes_csrf = (string) $_SESSION['admin_csrf'];
+$photo_profil_ready = admin_has_column('photo_profil');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -165,6 +174,8 @@ $comptes_csrf = (string) $_SESSION['admin_csrf'];
                 $is_self = ((int) $admin['id'] === (int) $_SESSION['admin_id']);
                 $admin_role_norm = normalize_admin_role($admin['role'] ?? 'utilisateur');
                 $esc_role = htmlspecialchars($admin_role_norm, ENT_QUOTES, 'UTF-8');
+                $photo_url = $photo_profil_ready ? admin_photo_profil_url($admin['photo_profil'] ?? '') : '';
+                $initial = strtoupper(substr($admin['prenom'], 0, 1));
                 ?>
                 <article class="comptes-acces-card<?php echo $admin['statut'] === 'inactif' ? ' comptes-acces-card--inactive' : ''; ?>"
                     data-statut="<?php echo htmlspecialchars($admin['statut'], ENT_QUOTES, 'UTF-8'); ?>">
@@ -178,8 +189,15 @@ $comptes_csrf = (string) $_SESSION['admin_csrf'];
                             </span>
                         </div>
                         <div class="comptes-acces-card__identity">
-                            <div class="comptes-acces-card__avatar" aria-hidden="true">
-                                <?php echo strtoupper(substr($admin['prenom'], 0, 1)); ?>
+                            <div class="comptes-acces-card__avatar<?php echo $photo_url !== '' ? ' comptes-acces-card__avatar--photo' : ''; ?>" aria-hidden="true">
+                                <?php if ($photo_url !== ''): ?>
+                                <img src="<?php echo htmlspecialchars($photo_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt=""
+                                    class="comptes-acces-card__avatar-img"
+                                    width="44" height="44">
+                                <?php else: ?>
+                                <?php echo htmlspecialchars($initial, ENT_QUOTES, 'UTF-8'); ?>
+                                <?php endif; ?>
                             </div>
                             <div class="comptes-acces-card__id-text">
                                 <h3 class="comptes-acces-card__name"><?php echo htmlspecialchars($admin['prenom'] . ' ' . $admin['nom']); ?></h3>
@@ -192,6 +210,26 @@ $comptes_csrf = (string) $_SESSION['admin_csrf'];
                     </header>
 
                     <div class="comptes-acces-card__body">
+                        <?php if ($comptes_can_manage && $photo_profil_ready): ?>
+                        <form method="post" action="" enctype="multipart/form-data" class="comptes-acces-card__photo-form">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($comptes_csrf, ENT_QUOTES, 'UTF-8'); ?>">
+                            <input type="hidden" name="admin_id" value="<?php echo (int) $admin['id']; ?>">
+                            <label class="comptes-acces-card__photo-label" for="photo-<?php echo (int) $admin['id']; ?>">
+                                <i class="fas fa-camera" aria-hidden="true"></i>
+                                <?php echo $photo_url !== '' ? 'Modifier la photo' : 'Ajouter une photo'; ?>
+                            </label>
+                            <input type="file"
+                                id="photo-<?php echo (int) $admin['id']; ?>"
+                                name="photo_profil"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                class="comptes-acces-card__photo-input"
+                                required>
+                            <button type="submit" name="upload_photo_profil" class="comptes-acces-card__btn comptes-acces-card__btn--photo">
+                                <i class="fas fa-upload" aria-hidden="true"></i> Enregistrer
+                            </button>
+                        </form>
+                        <?php endif; ?>
+
                         <div class="comptes-acces-card__meta" role="group" aria-label="Dates du compte">
                             <div class="comptes-acces-card__meta-tile">
                                 <span class="comptes-acces-card__meta-ic" aria-hidden="true"><i class="fas fa-calendar-plus"></i></span>
