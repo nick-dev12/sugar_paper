@@ -83,6 +83,8 @@ $is_commandes = strpos($current_dir, '/commandes') !== false;
 
 $is_commandes_perso = strpos($current_dir, '/commandes-personnalisees') !== false;
 
+$is_commandes_std = $is_commandes && !$is_commandes_perso;
+
 $is_devis = strpos($current_dir, '/devis') !== false;
 
 $is_invoice = strpos($current_dir, '/invoice') !== false;
@@ -137,17 +139,17 @@ if ($is_contable_bottom) {
 
         $admin_bottom_active = 'map';
 
+    } elseif ($is_invoice) {
+
+        $admin_bottom_active = 'invoice';
+
     } elseif ($is_produits || $is_categories || $is_stock) {
 
         $admin_bottom_active = 'produits';
 
-    } elseif ($is_commandes || $is_commandes_perso) {
+    } elseif ($is_commandes_std || $is_commandes_perso) {
 
         $admin_bottom_active = 'commandes';
-
-    } elseif ($is_invoice) {
-
-        $admin_bottom_active = 'invoice';
 
     }
 

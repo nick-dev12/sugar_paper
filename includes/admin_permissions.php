@@ -121,6 +121,11 @@ if (!function_exists('admin_current_role')) {
         return $r === 'caissier' || $r === 'informaticien' || $r === 'developpeur';
     }
 
+    function admin_can_commandes() {
+        $r = admin_current_role();
+        return $r === 'admin' || $r === 'utilisateur';
+    }
+
     function admin_can_gestion_boutique() {
         $r = admin_current_role();
         return $r === 'utilisateur' || $r === 'admin';

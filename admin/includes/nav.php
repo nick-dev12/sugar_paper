@@ -18,6 +18,7 @@ $is_slider = strpos($current_dir, '/slider') !== false;
 $is_parametres = strpos($current_dir, '/parametres') !== false;
 $is_commandes = strpos($current_dir, '/commandes') !== false;
 $is_commandes_perso = strpos($current_dir, '/commandes-personnalisees') !== false;
+$is_commandes_std = $is_commandes && !$is_commandes_perso;
 $is_devis = strpos($current_dir, '/devis') !== false;
 $is_invoice = strpos($current_dir, '/invoice') !== false;
 $is_users = strpos($current_dir, '/users') !== false;
@@ -124,10 +125,20 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <i class="fas fa-boxes-stacked"></i>
                 <span>Stock</span>
             </a>
+            <a href="<?php echo $nav_href('commandes/index.php'); ?>"
+                class="menu-item <?php echo ($is_commandes_std && in_array($current_page, ['index.php', 'livrees.php', 'annulees.php', 'details.php', 'historique-ventes.php'], true)) ? 'active' : ''; ?>">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Commandes</span>
+            </a>
             <a href="<?php echo $nav_href('commandes-personnalisees/index.php'); ?>"
                 class="menu-item <?php echo ($is_commandes_perso && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-palette"></i>
                 <span>Commandes personnalisées</span>
+            </a>
+            <a href="<?php echo $nav_href('invoice/index.php'); ?>"
+                class="menu-item <?php echo ($is_invoice || ($is_devis && in_array($current_page, ['index.php', 'details.php'], true))) ? 'active' : ''; ?>">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Invoice</span>
             </a>
             <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
                 class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
