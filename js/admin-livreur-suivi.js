@@ -414,9 +414,10 @@
     }
 
     function driverMarkerIconModifierClass() {
-        return hasDriverPhoto()
-            ? ' livreur-marker-icon--avatar'
-            : ' livreur-marker-icon--moto';
+        if (hasDriverPhoto() || cfg.livreurInitials) {
+            return ' livreur-marker-icon--avatar';
+        }
+        return ' livreur-marker-icon--moto';
     }
 
     function makeDriverMarkerInnerHtml() {

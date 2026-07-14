@@ -481,7 +481,7 @@ function livreur_get_commande_tracking($commande_id) {
                    " . livreur_admin_photo_profil_sql_select('a') . "
             FROM commandes c
             LEFT JOIN users u ON u.id = c.user_id
-            LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
+            LEFT JOIN admin a ON a.id = c.livreur_id
             WHERE c.id = :id
             LIMIT 1
         ");
@@ -617,7 +617,48 @@ function livreur_admin_photo_profil_sql_select($alias = 'a') {
  */
 function livreur_photo_url_from_row(array $row) {
     require_once __DIR__ . '/model_admin.php';
-    return admin_photo_profil_url((string) ($row['livreur_photo_profil'] ?? ''));
+    $url = admin_photo_profil_url((string) ($row['livreur_photo_profil'] ?? ''));
+    if ($url !== '') {
+        return $url;
+    }
+    $livreur_id = (int) ($row['livreur_id'] ?? 0);
+    if ($livreur_id > 0) {
+        $admin = get_admin_by_id($livreur_id);
+        if (is_array($admin)) {
+            return admin_photo_profil_url((string) ($admin['photo_profil'] ?? ''));
+        }
+    }
+    return '';
+}
+
+/**
+ * Photo + initiales pour une livraison (facture ou commande).
+ *
+ * @return array{photo_url: string, initials: string}
+ */
+function livreur_photo_profile_for_livraison(array $row) {
+    $photo_url = livreur_photo_url_from_row($row);
+    $initials = livreur_initials_from_row($row);
+    if (($row['livreur_prenom'] ?? '') === '' && ($row['livreur_nom'] ?? '') === '') {
+        $livreur_id = (int) ($row['livreur_id'] ?? 0);
+        if ($livreur_id > 0) {
+            require_once __DIR__ . '/model_admin.php';
+            $admin = get_admin_by_id($livreur_id);
+            if (is_array($admin)) {
+                if ($photo_url === '') {
+                    $photo_url = admin_photo_profil_url((string) ($admin['photo_profil'] ?? ''));
+                }
+                $initials = livreur_initials_from_row([
+                    'livreur_prenom' => $admin['prenom'] ?? '',
+                    'livreur_nom' => $admin['nom'] ?? '',
+                ]);
+            }
+        }
+    }
+    return [
+        'photo_url' => $photo_url,
+        'initials' => $initials,
+    ];
 }
 
 /**
@@ -656,7 +697,7 @@ function livreur_get_facture_tracking($bl_id) {
                    " . livreur_admin_photo_profil_sql_select('a') . "
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
-            LEFT JOIN admin a ON a.id = b.livreur_id AND a.role IN ('livreur', 'admin')
+            LEFT JOIN admin a ON a.id = b.livreur_id
             WHERE b.id = :id
             LIMIT 1
         ");

@@ -132,8 +132,9 @@ require_once __DIR__ . '/../../models/model_admin.php';
 $livreur_photo_url = '';
 $livreur_initials = 'L';
 if ($livraison) {
-    $livreur_photo_url = livreur_photo_url_from_row($livraison);
-    $livreur_initials = livreur_initials_from_row($livraison);
+    $livreur_profile = livreur_photo_profile_for_livraison($livraison);
+    $livreur_photo_url = $livreur_profile['photo_url'];
+    $livreur_initials = $livreur_profile['initials'];
 }
 if ($livreur_photo_url === '' && $can_start_livraison) {
     $current_admin = get_admin_by_id((int) $_SESSION['admin_id']);

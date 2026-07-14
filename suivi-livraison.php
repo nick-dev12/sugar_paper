@@ -106,8 +106,9 @@ $initial_payload = [
 ];
 
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
-$livreur_photo_url = livreur_photo_url_from_row($livraison);
-$livreur_initials = livreur_initials_from_row($livraison);
+$livreur_profile = livreur_photo_profile_for_livraison($livraison);
+$livreur_photo_url = $livreur_profile['photo_url'];
+$livreur_initials = $livreur_profile['initials'];
 $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : '');
 ?>
 <!DOCTYPE html>
