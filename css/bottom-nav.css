@@ -100,6 +100,19 @@
     flex: none;
     width: 100%;
   }
+
+  /* Admin utilisateur : 5 colonnes (Invoice, Produits, Commandes, Map, Menu) */
+  .bottom-nav--utilisateur {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .bottom-nav--utilisateur .bottom-nav-item {
+    flex: none;
+    width: 100%;
+  }
 }
 
 .bottom-nav-item {
@@ -153,6 +166,13 @@
   text-align: center;
   white-space: nowrap;
   color: var(--texte-fonce, #3d2800);
+}
+
+.bottom-nav-item--compte .bottom-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
 }
 
 .bottom-nav-badge {

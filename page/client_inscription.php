@@ -89,6 +89,6 @@
         <span>developper par @nick jomas</span>
     </footer>
 
-
+    <?php include __DIR__ . '/../includes/floating_back_button.php'; ?>
 </body>
 </html>

@@ -1,0 +1,82 @@
+/**
+ * Bouton flottant « Retour » — haut à gauche
+ * Mobile : sous nav.nav-planete-gateau
+ * Desktop (≥800px) : sous section.section1 (évite le bouton MENU)
+ * Palette Sugar Paper
+ */
+
+.floating-back-btn {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: calc(14px + env(safe-area-inset-left, 0px));
+    right: auto;
+    z-index: 10012;
+    width: 46px;
+    height: 46px;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #ffffff;
+    font-size: 18px;
+    background: linear-gradient(135deg, #E5488A 0%, #c26638 100%);
+    box-shadow: 0 4px 16px rgba(107, 47, 32, 0.28);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease, top 0.2s ease;
+}
+
+.floating-back-btn:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 22px rgba(107, 47, 32, 0.34);
+}
+
+.floating-back-btn:active {
+    transform: scale(0.96);
+}
+
+.floating-back-btn:focus-visible {
+    outline: 2px solid #918a44;
+    outline-offset: 2px;
+}
+
+/* Mobile / tablette : sous la barre nav (~100px) */
+html.has-store-nav:not(.has-store-nav-desktop) .floating-back-btn {
+    top: calc(108px + env(safe-area-inset-top, 0px));
+}
+
+/* Desktop : sous section1 (nav ~80px + section1 ~69px) */
+@media (min-width: 800px) {
+    html.has-store-nav.has-store-nav-desktop .floating-back-btn {
+        top: calc(180px + env(safe-area-inset-top, 0px));
+    }
+}
+
+@media (max-width: 992px) {
+    html.has-bottom-nav:not(.has-store-nav) .floating-back-btn {
+        top: calc(10px + env(safe-area-inset-top, 0px));
+        left: calc(10px + env(safe-area-inset-left, 0px));
+    }
+
+    html.has-store-nav .floating-back-btn {
+        left: calc(10px + env(safe-area-inset-left, 0px));
+    }
+}
+
+@media (max-width: 600px) {
+    .floating-back-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 16px;
+    }
+
+    html.has-store-nav:not(.has-store-nav-desktop) .floating-back-btn {
+        top: calc(104px + env(safe-area-inset-top, 0px));
+    }
+}
+
+@media (max-width: 480px) {
+    html.has-store-nav:not(.has-store-nav-desktop) .floating-back-btn {
+        top: calc(96px + env(safe-area-inset-top, 0px));
+    }
+}

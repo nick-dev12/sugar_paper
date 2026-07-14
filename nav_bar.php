@@ -2,6 +2,8 @@
 if (!function_exists('get_asset_version')) {
     require_once __DIR__ . '/includes/asset_version.php';
 }
+require_once __DIR__ . '/includes/store_nav_account.php';
+$store_nav_account = store_nav_account_info();
 $asset_version = isset($asset_version) ? $asset_version : get_asset_version();
 // Compter les articles du panier si l'utilisateur est connecté
 $panier_count = 0;
@@ -535,25 +537,10 @@ if (isset($_SESSION['user_id'])) {
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>
-        <a href="<?php
-        if (isset($_SESSION['commercant_id']))
-            echo '/view/profil_commercent.php';
-        elseif (isset($_SESSION['user_id']))
-            echo '/user/mon-compte.php';
-        else
-            echo '/user/connexion.php';
-        ?>" class="nav-compte-btn">
-            <span class="nav-compte-title">Mon compte</span>
-            <span class="nav-compte-subtitle"><?php
-            if (isset($_SESSION['commercant_id']) && isset($commercant) && !empty($commercant['nom'])) {
-                $explode_nom = explode(' ', $commercant['nom']);
-                echo htmlspecialchars($explode_nom[0] ?? $commercant['nom']);
-            } elseif (isset($_SESSION['user_id']) && !empty($_SESSION['user_prenom'])) {
-                echo htmlspecialchars($_SESSION['user_prenom']);
-            } else {
-                echo 'Identifiez-vous';
-            }
-            ?></span>
+        <a href="<?php echo htmlspecialchars($store_nav_account['url']); ?>"
+            class="<?php echo htmlspecialchars($store_nav_account['btn_class']); ?>">
+            <span class="nav-compte-title"><?php echo htmlspecialchars($store_nav_account['title']); ?></span>
+            <span class="nav-compte-subtitle"><?php echo htmlspecialchars($store_nav_account['subtitle']); ?></span>
             <i class="fa-solid fa-chevron-down nav-compte-chevron"></i>
         </a>
     </div>

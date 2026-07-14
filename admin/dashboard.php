@@ -80,6 +80,7 @@ if (!empty($produits)) {
         <div class="content-header">
             <h1><i class="fas fa-chart-line"></i> Tableau de Bord</h1>
             <div class="header-actions">
+                <?php include __DIR__ . '/includes/btn_retour_site.php'; ?>
                 <button type="button" id="btn-install-pwa" class="btn-primary btn-secondary-style"
                     title="Installer l'application Sugar Paper sur cet appareil" style="display: none;">
                     <i class="fas fa-download"></i> Installer l'application

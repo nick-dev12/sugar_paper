@@ -61,7 +61,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
       </div>
     </div>
   </section>
-  
+  <?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>
 
 </html>

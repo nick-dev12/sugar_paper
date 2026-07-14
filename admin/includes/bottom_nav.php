@@ -66,7 +66,7 @@ $is_contable_bottom = ($admin_bottom_role === 'contable');
 
 $is_livreur_bottom = ($admin_bottom_role === 'livreur');
 
-$can_manage_comptes_bottom = ($admin_bottom_role === 'admin');
+$is_utilisateur_bottom = ($admin_bottom_role === 'utilisateur');
 
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 
@@ -131,6 +131,26 @@ if ($is_contable_bottom) {
 
     }
 
+} elseif ($is_utilisateur_bottom) {
+
+    if ($is_livreurs_carte) {
+
+        $admin_bottom_active = 'map';
+
+    } elseif ($is_produits || $is_categories || $is_stock) {
+
+        $admin_bottom_active = 'produits';
+
+    } elseif ($is_commandes || $is_commandes_perso) {
+
+        $admin_bottom_active = 'commandes';
+
+    } elseif ($is_invoice) {
+
+        $admin_bottom_active = 'invoice';
+
+    }
+
 } elseif ($is_livreurs_carte) {
 
     $admin_bottom_active = 'map';
@@ -153,14 +173,14 @@ if ($is_contable_bottom) {
 
 }
 
-$is_invoice_hub = !empty($admin_invoice_hub_bottom_nav) && $is_invoice && $current_page === 'index.php';
+$is_invoice_hub = !empty($admin_invoice_hub_bottom_nav) && $is_invoice && $current_page === 'index.php' && !$is_utilisateur_bottom;
 $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoice_hub_active_tab : 'facture';
 
 ?>
 
 <link rel="stylesheet" href="/css/bottom-nav.css<?php echo asset_version_query(); ?>">
 
-<nav class="bottom-nav bottom-nav--admin<?php echo $is_contable_bottom ? ' bottom-nav--contable' : ''; ?><?php echo $is_livreur_bottom ? ' bottom-nav--livreur' : ''; ?>" id="adminBottomNav" aria-label="Navigation administration">
+<nav class="bottom-nav bottom-nav--admin<?php echo $is_contable_bottom ? ' bottom-nav--contable' : ''; ?><?php echo $is_livreur_bottom ? ' bottom-nav--livreur' : ''; ?><?php echo $is_utilisateur_bottom ? ' bottom-nav--utilisateur' : ''; ?>" id="adminBottomNav" aria-label="Navigation administration">
 
     <?php if ($is_livreur_bottom): ?>
 
@@ -181,6 +201,38 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
         <span class="bottom-nav-label">Profil</span>
     </a>
+
+    <?php elseif ($is_utilisateur_bottom): ?>
+
+    <a href="<?php echo htmlspecialchars($nav_href('invoice/index.php')); ?>"
+        class="bottom-nav-item bottom-nav-item--invoice<?php echo $admin_bottom_active === 'invoice' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Invoice</span>
+    </a>
+
+    <a href="<?php echo htmlspecialchars($nav_href('produits/index.php')); ?>"
+        class="bottom-nav-item bottom-nav-item--produits<?php echo $admin_bottom_active === 'produits' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-box" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Produits</span>
+    </a>
+
+    <a href="<?php echo htmlspecialchars($nav_href('commandes/index.php')); ?>"
+        class="bottom-nav-item bottom-nav-item--commandes<?php echo $admin_bottom_active === 'commandes' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-shopping-cart" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Commandes</span>
+    </a>
+
+    <a href="<?php echo htmlspecialchars($nav_href('livreurs/carte.php')); ?>"
+        class="bottom-nav-item bottom-nav-item--map<?php echo $admin_bottom_active === 'map' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Map</span>
+    </a>
+
+    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
+        aria-label="Ouvrir le menu admin">
+        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Menu</span>
+    </button>
 
     <?php elseif ($is_contable_bottom): ?>
 
@@ -270,17 +322,15 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     </a>
 
-    <?php if ($can_manage_comptes_bottom): ?>
-    <a href="<?php echo htmlspecialchars($nav_href('comptes/index.php')); ?>"
+    <a href="<?php echo htmlspecialchars($nav_href('produits/index.php')); ?>"
 
-        class="bottom-nav-item bottom-nav-item--comptes<?php echo $admin_bottom_active === 'comptes' ? ' is-active' : ''; ?>">
+        class="bottom-nav-item bottom-nav-item--produits<?php echo $admin_bottom_active === 'produits' ? ' is-active' : ''; ?>">
 
-        <span class="bottom-nav-icon"><i class="fas fa-user-shield" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon"><i class="fas fa-box" aria-hidden="true"></i></span>
 
-        <span class="bottom-nav-label">Comptes</span>
+        <span class="bottom-nav-label">Produits</span>
 
     </a>
-    <?php endif; ?>
 
     <a href="<?php echo htmlspecialchars($nav_href('commandes/index.php')); ?>"
 
@@ -300,16 +350,6 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         <span class="bottom-nav-icon"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
 
         <span class="bottom-nav-label">Map</span>
-
-    </a>
-    <?php else: ?>
-    <a href="<?php echo htmlspecialchars($nav_href('produits/index.php')); ?>"
-
-        class="bottom-nav-item bottom-nav-item--produits<?php echo $admin_bottom_active === 'produits' ? ' is-active' : ''; ?>">
-
-        <span class="bottom-nav-icon"><i class="fas fa-box" aria-hidden="true"></i></span>
-
-        <span class="bottom-nav-label">Produits</span>
 
     </a>
     <?php endif; ?>

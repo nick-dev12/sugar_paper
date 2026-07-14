@@ -40,6 +40,7 @@ if (!$is_bg_tracker_frame && !$is_livreur_suivi_page && isset($_SESSION['admin_i
 }
 ?>
 <?php include __DIR__ . '/../../includes/firebase_notifications_scripts.php'; ?>
+<?php include __DIR__ . '/../../includes/floating_back_button.php'; ?>
 </body>
 </html>
 

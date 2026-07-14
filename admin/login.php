@@ -429,6 +429,7 @@ if (isset($_SESSION['inscription_success'])) {
             }
         }
     </script>
+    <?php include __DIR__ . '/../includes/floating_back_button.php'; ?>
 </body>
 
 </html>

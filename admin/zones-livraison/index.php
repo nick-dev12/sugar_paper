@@ -8,7 +8,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../includes/admin_route_access.php';
 admin_route_enforce();
 require_once __DIR__ . '/../../includes/admin_permissions.php';
-if (!admin_can_livreur_gps()) {
+if (!admin_can_zones_livraison()) {
     header('Location: ../dashboard.php');
     exit;
 }

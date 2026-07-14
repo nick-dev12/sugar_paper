@@ -373,6 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
             }
         }
     </script>
+    <?php include __DIR__ . '/../includes/floating_back_button.php'; ?>
 </body>
 
 </html>

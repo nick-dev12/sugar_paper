@@ -164,6 +164,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     </div>
 
     <script src="/js/commande-personnalisee.js<?php echo asset_version_query(); ?>"></script>
+    <?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>
 
 </html>

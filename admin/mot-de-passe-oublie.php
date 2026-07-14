@@ -311,6 +311,7 @@ $result = process_forgot_password();
             <?php endif; ?>
         </div>
     </div>
+    <?php include __DIR__ . '/../includes/floating_back_button.php'; ?>
 </body>
 
 </html>

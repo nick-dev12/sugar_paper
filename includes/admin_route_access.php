@@ -209,8 +209,15 @@ if (!function_exists('admin_route_relative_path')) {
                     || $p === 'profil.php';
 
             case 'utilisateur':
+                if ($p === 'livreurs/carte.php') {
+                    return true;
+                }
                 return $starts('stock/')
                     || $starts('produits/')
+                    || $starts('commandes/')
+                    || $starts('commandes-personnalisees/')
+                    || $starts('zones-livraison/')
+                    || $starts('invoice/')
                     || $p === 'categories/produits.php'
                     || $p === 'categories/modifier.php'
                     || $p === 'categories/ajouter.php'

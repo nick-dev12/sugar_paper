@@ -13,7 +13,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../includes/require_access.php';
 
 require_once __DIR__ . '/../../includes/admin_permissions.php';
-if (!admin_can_devis() && !admin_can_bl_retours_b2b()) {
+if (!admin_can_invoice_hub()) {
     header('Location: ../dashboard.php');
     exit;
 }
@@ -317,6 +317,9 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                 <i class="fas <?php echo htmlspecialchars($invoice_hub_title['icon']); ?>" id="invoice-hub-hero-icon" aria-hidden="true"></i>
                 <span id="invoice-hub-hero-label"><?php echo htmlspecialchars($invoice_hub_title['label']); ?></span>
             </h1>
+        </div>
+        <div class="header-actions">
+            <?php include __DIR__ . '/../includes/btn_retour_site.php'; ?>
         </div>
     </div>
 

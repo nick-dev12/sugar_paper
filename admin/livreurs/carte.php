@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/tracking_config.php';
 
-if (!admin_can_manage_livreurs()) {
+if (!admin_can_view_livreurs_map()) {
     header('Location: index.php');
     exit;
 }

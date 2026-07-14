@@ -39,3 +39,4 @@ if (!empty($whatsapp)) {
     </a>
     <?php endif; ?>
 </div>
+<?php include __DIR__ . '/floating_back_button.php'; ?>

@@ -114,15 +114,25 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Mon profil</span>
             </a>
             <?php elseif ($is_utilisateur_nav): ?>
+            <a href="<?php echo $nav_href('produits/index.php'); ?>"
+                class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
+                <i class="fas fa-box"></i>
+                <span>Produits</span>
+            </a>
             <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
                 <i class="fas fa-boxes-stacked"></i>
                 <span>Stock</span>
             </a>
-            <a href="<?php echo $nav_href('produits/index.php'); ?>"
-                class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
-                <i class="fas fa-box"></i>
-                <span>Produits</span>
+            <a href="<?php echo $nav_href('commandes-personnalisees/index.php'); ?>"
+                class="menu-item <?php echo ($is_commandes_perso && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
+                <i class="fas fa-palette"></i>
+                <span>Commandes personnalisées</span>
+            </a>
+            <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
+                class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
+                <i class="fas fa-truck"></i>
+                <span>Zones de livraison</span>
             </a>
             <a href="<?php echo $nav_href('profil.php'); ?>"
                 class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">

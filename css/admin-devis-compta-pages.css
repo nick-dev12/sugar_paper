@@ -38,6 +38,11 @@
   min-width: 0;
 }
 
+.page-devis-admin .page-devis-hero .header-actions {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
 .page-devis-admin .page-devis-hero .dashboard-subtitle {
   max-width: none;
 }

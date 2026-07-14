@@ -8,6 +8,9 @@ if (!function_exists('get_asset_version')) {
     require_once __DIR__ . '/asset_version.php';
 }
 
+require_once __DIR__ . '/store_nav_account.php';
+$store_nav_account = store_nav_account_info();
+
 if (!isset($panier_count)) {
     $panier_count = 0;
     if (isset($_SESSION['user_id'])) {
@@ -43,13 +46,8 @@ if (!isset($bottom_nav_active)) {
 
 $panier_url = isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier';
 
-if (isset($_SESSION['commercant_id'])) {
-    $compte_url = '/view/profil_commercent.php';
-} elseif (isset($_SESSION['user_id'])) {
-    $compte_url = '/user/mon-compte.php';
-} else {
-    $compte_url = '/user/connexion.php';
-}
+$compte_url = $store_nav_account['url'];
+$compte_label = $store_nav_account['short_label'];
 
 $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
 ?>
@@ -78,7 +76,7 @@ $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
     <a href="<?php echo htmlspecialchars($compte_url); ?>"
         class="bottom-nav-item bottom-nav-item--compte<?php echo $bottom_nav_active === 'compte' ? ' is-active' : ''; ?>">
         <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Compte</span>
+        <span class="bottom-nav-label"><?php echo htmlspecialchars($compte_label); ?></span>
     </a>
     <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn"
         data-menu-target="<?php echo htmlspecialchars($bottom_nav_menu_target); ?>" aria-label="Ouvrir le menu">

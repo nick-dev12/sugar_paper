@@ -232,5 +232,6 @@ window.LIVREUR_TRACKING_CONFIG = {
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 <?php endif; ?>
 <script src="/js/admin-livreur-suivi.js?v=<?php echo (int) @filemtime(__DIR__ . '/js/admin-livreur-suivi.js'); ?>"></script>
+<?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>
 </html>

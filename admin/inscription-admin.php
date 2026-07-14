@@ -524,6 +524,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
             }
         }
     </script>
+    <?php include __DIR__ . '/../includes/floating_back_button.php'; ?>
 </body>
 
 </html>

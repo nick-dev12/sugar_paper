@@ -179,5 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     </script>
     <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>
 </html>

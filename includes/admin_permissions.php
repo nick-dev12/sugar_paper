@@ -22,8 +22,29 @@ if (!function_exists('admin_current_role')) {
         return false;
     }
 
+    function admin_is_utilisateur() {
+        return admin_current_role() === 'utilisateur';
+    }
+
     function admin_can_zones_livraison() {
-        return admin_can_livreur_gps();
+        $r = admin_current_role();
+        return $r === 'admin' || $r === 'livreur' || $r === 'utilisateur';
+    }
+
+    /**
+     * Carte GPS livreurs — admin et comptes utilisateur boutique.
+     */
+    function admin_can_view_livreurs_map() {
+        $r = admin_current_role();
+        return $r === 'admin' || $r === 'utilisateur';
+    }
+
+    /**
+     * Hub Invoice (contacts, rapports) — utilisateur boutique inclus.
+     */
+    function admin_can_invoice_hub() {
+        $r = admin_current_role();
+        return admin_can_devis() || admin_can_bl_retours_b2b() || $r === 'utilisateur';
     }
 
     /**

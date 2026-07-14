@@ -223,7 +223,36 @@ body::before {
 
 .content-header .header-actions {
   display: flex;
-  gap: 15px;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.content-header .header-actions .btn-primary,
+.content-header .header-actions .btn-secondary-style {
+  padding: 8px 14px;
+  font-size: 13px;
+  gap: 6px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.content-header .header-actions .btn-primary i {
+  font-size: 13px;
+}
+
+.btn-site-home {
+  background: rgba(145, 138, 68, 0.14) !important;
+  color: #6b2f20 !important;
+  border: 1px solid rgba(145, 138, 68, 0.35);
+}
+
+.btn-site-home:hover {
+  background: #918a44 !important;
+  color: #ffffff !important;
+  border-color: #918a44;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(145, 138, 68, 0.28);
 }
 
 .btn-primary {
@@ -4170,7 +4199,7 @@ body::before {
 @media (max-width: 768px) {
   .content-header .header-actions {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
     gap: 8px;
     width: 100%;
   }
@@ -4179,8 +4208,8 @@ body::before {
   .content-header .header-actions .btn-secondary-style {
     width: 100%;
     justify-content: center;
-    font-size: clamp(0.75rem, 2.2vw, 0.88rem);
-    padding: clamp(9px, 2vw, 11px) clamp(12px, 2.5vw, 18px);
+    font-size: clamp(0.7rem, 2vw, 0.82rem);
+    padding: clamp(7px, 1.8vw, 9px) clamp(10px, 2.2vw, 14px);
   }
 }
 
