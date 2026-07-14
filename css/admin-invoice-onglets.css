@@ -1845,20 +1845,15 @@
     word-break: break-word;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
     .invoice-facture-kpis {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .invoice-facture-kpis {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 8px;
         margin-bottom: 12px;
     }
 
     .invoice-facture-kpi {
-        padding: 10px;
+        padding: 10px 8px;
         gap: 8px;
         border-radius: 10px;
     }
@@ -1870,7 +1865,76 @@
         border-radius: 8px;
     }
 
+    .invoice-facture-kpi__label {
+        font-size: 0.68rem;
+    }
+
     .invoice-facture-kpi__value {
-        font-size: clamp(0.78rem, 2.8vw, 0.9rem);
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .invoice-facture-kpis {
+        gap: 6px;
+    }
+
+    .invoice-facture-kpi {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 8px 4px;
+        gap: 5px;
+    }
+
+    .invoice-facture-kpi__body {
+        align-items: center;
+        gap: 2px;
+    }
+
+    .invoice-facture-kpi__icon {
+        width: 26px;
+        height: 26px;
+        font-size: 0.75rem;
+    }
+
+    .invoice-facture-kpi__label {
+        font-size: 0.62rem;
+        line-height: 1.15;
+    }
+
+    .invoice-facture-kpi__value {
+        font-size: 0.72rem;
+        word-break: normal;
+    }
+}
+
+@media (max-width: 480px) {
+    .invoice-facture-kpis {
+        gap: 4px;
+        margin-bottom: 10px;
+    }
+
+    .invoice-facture-kpi {
+        padding: 6px 3px;
+        gap: 4px;
+        border-radius: 8px;
+    }
+
+    .invoice-facture-kpi__icon {
+        width: 22px;
+        height: 22px;
+        font-size: 0.65rem;
+        border-radius: 6px;
+    }
+
+    .invoice-facture-kpi__label {
+        font-size: 0.55rem;
+        line-height: 1.1;
+    }
+
+    .invoice-facture-kpi__value {
+        font-size: 0.62rem;
+        font-weight: 700;
     }
 }

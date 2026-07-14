@@ -209,7 +209,7 @@ if (!function_exists('admin_route_relative_path')) {
                     || $p === 'profil.php';
 
             case 'utilisateur':
-                if ($p === 'dashboard.php' || $p === 'livreurs/carte.php') {
+                if ($p === 'dashboard.php' || $p === 'livreurs/carte.php' || $p === 'livreurs/suivi.php') {
                     return true;
                 }
                 return $starts('stock/')

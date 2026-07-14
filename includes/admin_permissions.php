@@ -56,6 +56,14 @@ if (!function_exists('admin_current_role')) {
     }
 
     /**
+     * Suivi livraison en lecture seule (mode regarder=1) depuis commande ou facture B2B.
+     */
+    function admin_can_watch_livraison() {
+        $r = admin_current_role();
+        return in_array($r, ['admin', 'utilisateur', 'commercial', 'commercial_general', 'livreur'], true);
+    }
+
+    /**
      * Gestion des comptes et suivi global (admin uniquement).
      */
     function admin_can_manage_livreurs() {

@@ -23,6 +23,11 @@ $regarder_mode = ($bl_id > 0 || $commande_id > 0)
     && isset($_GET['regarder'])
     && (string) $_GET['regarder'] === '1';
 
+if ($regarder_mode && !admin_can_watch_livraison()) {
+    header('Location: ../dashboard.php');
+    exit;
+}
+
 if (!$regarder_mode && !admin_can_livreur_gps()) {
     header('Location: ../dashboard.php');
     exit;
