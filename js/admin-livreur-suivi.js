@@ -16,6 +16,7 @@
     var stopBtn = document.getElementById('livreur-suivi-stop-tracking');
     var etaBlock = document.getElementById('livreur-suivi-eta');
     var etaRangeEl = document.getElementById('livreur-suivi-eta-range');
+    var etaLabelEl = document.getElementById('livreur-suivi-eta-label');
     var alertEl = document.getElementById('livreur-suivi-alert');
     var alertTitleEl = document.getElementById('livreur-suivi-alert-title');
     var alertMessageEl = document.getElementById('livreur-suivi-alert-message');
@@ -239,6 +240,12 @@
     var positionPollTimer = null;
     var observerFollowActive = false;
     var observerStopped = false;
+    var countdownTickTimer = null;
+    var countdownSync = {
+        remainingSec: null,
+        status: null,
+        localAt: null
+    };
     var lastMapFollowAt = 0;
     var bearingTargetDeg = 0;
     var lastRouteSegIdx = 0;
@@ -360,11 +367,44 @@
         disconnectRealtime();
         clearAutoRecenterTimer();
         setNavigationMode(false);
+        hideCountdown();
         if (titleEl) {
             titleEl.textContent = 'Livraison terminée';
             titleEl.className = 'livreur-suivi-sheet__status-title livreur-suivi-sheet__status-title--off';
         }
         setStatus('Suivi en temps réel arrêté', 'off');
+    }
+
+    function handleTrackingPaused(countdown) {
+        cfg.trackingActive = false;
+        observerStopped = false;
+        if (countdown) {
+            applyCountdownFromServer(countdown);
+        } else if (countdownSync.remainingSec !== null) {
+            countdownSync.status = countdownSync.remainingSec <= 0 ? 'late_paused' : 'paused';
+            renderCountdownDisplay(countdownSync.status, getLocalRemainingSec());
+            startCountdownTicker();
+        }
+        if (isObserverMode() && titleEl) {
+            titleEl.textContent = 'Livraison en pause';
+            titleEl.className = 'livreur-suivi-sheet__status-title livreur-suivi-sheet__status-title--pending';
+        }
+        if (isObserverMode()) {
+            setStatus('Le livreur est momentanément sur une autre course', 'pending');
+        }
+    }
+
+    function restoreObserverLiveTitle() {
+        if (!isObserverMode() || !titleEl) {
+            return;
+        }
+        if (countdownSync.status === 'late' || countdownSync.status === 'late_paused') {
+            titleEl.textContent = 'Livraison en cours';
+            titleEl.className = 'livreur-suivi-sheet__status-title livreur-suivi-sheet__status-title--live';
+            return;
+        }
+        titleEl.textContent = 'Livraison en cours';
+        titleEl.className = 'livreur-suivi-sheet__status-title livreur-suivi-sheet__status-title--live';
     }
 
     function applyRemoteDriverPosition(pos) {
@@ -484,19 +524,190 @@
         return 'de ' + minMin + ' à ' + maxMin + ' min';
     }
 
-    function setEtaFromDuration(durationSeconds) {
-        if (cfg.regarderMode || cfg.publicMode) {
-            return;
-        }
-        if (!etaBlock || !etaRangeEl || !durationSeconds || durationSeconds <= 0) {
-            return;
-        }
+    function durationToCountdownSeconds(durationSeconds) {
         var range = durationToRangeMinutes(durationSeconds);
-        etaRangeEl.textContent = formatEtaRange(range.min, range.max);
+        return Math.max(60, range.max * 60);
+    }
+
+    function formatCountdownTime(totalSec) {
+        totalSec = Math.max(0, Math.floor(totalSec));
+        var minutes = Math.floor(totalSec / 60);
+        var seconds = totalSec % 60;
+        if (minutes >= 60) {
+            var hours = Math.floor(minutes / 60);
+            minutes = minutes % 60;
+            return hours + ' h ' + String(minutes).padStart(2, '0') + ' min';
+        }
+        return minutes + ' min ' + String(seconds).padStart(2, '0') + ' s';
+    }
+
+    function formatLateMinutes(lateSec) {
+        var lateSeconds = Math.abs(Math.floor(lateSec));
+        var minutes = Math.max(1, Math.ceil(lateSeconds / 60));
+        return minutes + ' min';
+    }
+
+    function setCountdownAppVisible(visible) {
+        var app = document.getElementById('livreur-suivi-app');
+        if (!app) {
+            return;
+        }
+        if (visible) {
+            app.classList.add('has-countdown');
+            if (cfg.publicMode) {
+                app.classList.add('has-live-eta');
+            }
+        } else {
+            app.classList.remove('has-countdown');
+        }
+    }
+
+    function applyCountdownVisualState(status) {
+        if (!etaBlock) {
+            return;
+        }
+        etaBlock.classList.remove(
+            'livreur-suivi-sheet__eta--running',
+            'livreur-suivi-sheet__eta--late',
+            'livreur-suivi-sheet__eta--paused'
+        );
+        if (status === 'running') {
+            etaBlock.classList.add('livreur-suivi-sheet__eta--running');
+        } else if (status === 'late' || status === 'late_paused') {
+            etaBlock.classList.add('livreur-suivi-sheet__eta--late');
+        } else if (status === 'paused') {
+            etaBlock.classList.add('livreur-suivi-sheet__eta--paused');
+        }
+    }
+
+    function renderCountdownDisplay(status, remainingSec) {
+        if (!etaBlock || !etaRangeEl) {
+            return;
+        }
+        applyCountdownVisualState(status);
+        if (status === 'running') {
+            if (etaLabelEl) {
+                etaLabelEl.textContent = 'Arrivée estimée dans';
+            }
+            etaRangeEl.textContent = formatCountdownTime(remainingSec);
+        } else if (status === 'late') {
+            if (etaLabelEl) {
+                etaLabelEl.textContent = 'Retard';
+            }
+            etaRangeEl.textContent = formatLateMinutes(remainingSec);
+        } else if (status === 'paused') {
+            if (etaLabelEl) {
+                etaLabelEl.textContent = 'En pause';
+            }
+            etaRangeEl.textContent = formatCountdownTime(remainingSec) + ' restantes';
+        } else if (status === 'late_paused') {
+            if (etaLabelEl) {
+                etaLabelEl.textContent = 'En pause — retard';
+            }
+            etaRangeEl.textContent = formatLateMinutes(remainingSec);
+        }
         etaBlock.hidden = false;
+        setCountdownAppVisible(true);
+    }
+
+    function getLocalRemainingSec() {
+        if (countdownSync.remainingSec === null) {
+            return null;
+        }
+        if (countdownSync.status === 'paused' || countdownSync.status === 'late_paused') {
+            return countdownSync.remainingSec;
+        }
+        if (countdownSync.localAt === null) {
+            return countdownSync.remainingSec;
+        }
+        var elapsed = (Date.now() - countdownSync.localAt) / 1000;
+        return Math.floor(countdownSync.remainingSec - elapsed);
+    }
+
+    function tickCountdownDisplay() {
+        if (countdownSync.remainingSec === null) {
+            return;
+        }
+        var remaining = getLocalRemainingSec();
+        if (remaining === null) {
+            return;
+        }
+        var status = countdownSync.status;
+        if (status === 'running' && remaining <= 0) {
+            status = 'late';
+            countdownSync.status = 'late';
+        }
+        renderCountdownDisplay(status, remaining);
+    }
+
+    function startCountdownTicker() {
+        stopCountdownTicker();
+        tickCountdownDisplay();
+        countdownTickTimer = setInterval(tickCountdownDisplay, 1000);
+    }
+
+    function stopCountdownTicker() {
+        if (countdownTickTimer) {
+            clearInterval(countdownTickTimer);
+            countdownTickTimer = null;
+        }
+    }
+
+    function applyCountdownFromServer(state) {
+        if (!state || state.remaining_sec === undefined || state.remaining_sec === null) {
+            return false;
+        }
+        countdownSync.remainingSec = parseInt(state.remaining_sec, 10);
+        countdownSync.status = state.status || (state.paused ? 'paused' : 'running');
+        countdownSync.localAt = Date.now();
+        renderCountdownDisplay(countdownSync.status, getLocalRemainingSec());
+        startCountdownTicker();
+        return true;
+    }
+
+    function pushCountdownToServer(durationSeconds) {
+        if (!cfg.canManage || !cfg.webApiUrl || !durationSeconds || durationSeconds <= 0) {
+            return Promise.resolve(false);
+        }
+        return callWebApi({
+            action: 'set_countdown',
+            duration_seconds: Math.round(durationSeconds)
+        }).then(function (data) {
+            if (data.countdown) {
+                applyCountdownFromServer(data.countdown);
+            }
+            return true;
+        }).catch(function () {
+            return false;
+        });
+    }
+
+    function hideCountdown() {
+        stopCountdownTicker();
+        countdownSync.remainingSec = null;
+        countdownSync.status = null;
+        countdownSync.localAt = null;
+        setCountdownAppVisible(false);
+        hideEta();
+    }
+
+    function setEtaFromDuration(durationSeconds) {
+        if (!durationSeconds || durationSeconds <= 0) {
+            return;
+        }
+        if (cfg.canManage && !isObserverMode()) {
+            pushCountdownToServer(durationSeconds);
+            return;
+        }
+        if (cfg.regarderMode || cfg.publicMode) {
+            setWatchEtaFromDuration(durationSeconds);
+        }
     }
 
     function hideEta() {
+        if (countdownSync.remainingSec !== null) {
+            return;
+        }
         if (etaBlock) etaBlock.hidden = true;
         if (etaRangeEl) etaRangeEl.textContent = '—';
     }
@@ -1449,10 +1660,16 @@
     }
 
     function setWatchEtaFromDuration(durationSeconds) {
+        if (countdownSync.remainingSec !== null) {
+            return;
+        }
         if (!etaBlock || !etaRangeEl || !durationSeconds || durationSeconds <= 0) {
             return;
         }
         var range = durationToRangeMinutes(durationSeconds);
+        if (etaLabelEl) {
+            etaLabelEl.textContent = 'Temps de trajet estimé';
+        }
         etaRangeEl.textContent = formatEtaRange(range.min, range.max);
         etaBlock.hidden = false;
         if (cfg.publicMode && document.getElementById('livreur-suivi-app')) {
@@ -1627,6 +1844,18 @@
 
     function setupItinerary(payload) {
         applyDeliveryFromPayload(payload);
+
+        if (payload && payload.countdown) {
+            applyCountdownFromServer(payload.countdown);
+            if (!cfg.trackingActive && isObserverMode() && payload.countdown.paused) {
+                handleTrackingPaused(payload.countdown);
+            }
+        } else if (cfg.initialCountdown) {
+            applyCountdownFromServer(cfg.initialCountdown);
+            if (!cfg.trackingActive && isObserverMode() && cfg.initialCountdown.paused) {
+                handleTrackingPaused(cfg.initialCountdown);
+            }
+        }
 
         var client = getClientCoords();
         if (client.lat !== null && client.lng !== null) {
@@ -1958,13 +2187,23 @@
                 if (data.tracking_active === true || data.tracking_active === 1) {
                     cfg.trackingActive = true;
                     observerStopped = false;
+                    restoreObserverLiveTitle();
                 } else if (isObserverMode()) {
-                    if (!cfg.trackingActive) {
+                    if (data.countdown) {
+                        handleTrackingPaused(data.countdown);
+                    } else if (!cfg.trackingActive) {
                         setStatus('En attente du démarrage livreur…', 'pending');
                     }
                 } else if ((data.tracking_active === false || data.tracking_active === 0) && cfg.trackingActive) {
-                    handleTrackingEnded();
+                    if (data.countdown) {
+                        handleTrackingPaused(data.countdown);
+                    } else {
+                        handleTrackingEnded();
+                    }
                     return;
+                }
+                if (data.countdown) {
+                    applyCountdownFromServer(data.countdown);
                 }
                 if (data.last_position) {
                     applyRemoteDriverPosition(data.last_position);
@@ -2220,8 +2459,11 @@
         var deferConfirm = cfg.autostart && !isManualStart;
 
         return callWebApi({ action: 'start' })
-            .then(function () {
+            .then(function (data) {
                 cfg.trackingActive = true;
+                if (data && data.countdown) {
+                    applyCountdownFromServer(data.countdown);
+                }
                 return waitForFirstPosition(15000);
             })
             .then(function (pos) {
@@ -2589,6 +2831,14 @@
                     return;
                 }
                 if (!data.tracking_active) {
+                    if (data.countdown) {
+                        if (cfg.trackingActive) {
+                            handleTrackingPaused(data.countdown);
+                        } else {
+                            applyCountdownFromServer(data.countdown);
+                        }
+                        return;
+                    }
                     if (cfg.trackingActive) {
                         handleTrackingEnded();
                     }
@@ -2598,7 +2848,11 @@
                 cfg.trackingActive = true;
                 observerStopped = false;
                 if (trackingJustStarted && isObserverMode()) {
+                    restoreObserverLiveTitle();
                     ensureObserverRealtimeConnection();
+                }
+                if (data.countdown) {
+                    applyCountdownFromServer(data.countdown);
                 }
                 if (data.last_position) {
                     applyRemoteDriverPosition(data.last_position);

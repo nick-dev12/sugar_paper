@@ -7,6 +7,11 @@ require_once __DIR__ . '/../includes/session_user.php';
 
 session_start_persistent();
 
+require_once __DIR__ . '/../includes/admin_route_access.php';
+admin_route_enforce();
+
+require_once __DIR__ . '/../includes/admin_permissions.php';
+
 // Vérifier si l'admin est connecté, sinon rediriger vers la page de connexion
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: login.php');
@@ -25,6 +30,7 @@ $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 $categories = get_all_categories();
 $produits = get_all_produits();
+$is_utilisateur_dashboard = admin_is_utilisateur();
 
 if (!empty($produits)) {
     $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
@@ -101,6 +107,49 @@ if (!empty($produits)) {
                 </a>
             </div>
         </div>
+
+        <?php if ($is_utilisateur_dashboard): ?>
+        <section class="dashboard-quick-links" aria-label="Accès rapides">
+            <h2 class="dashboard-quick-links__title"><i class="fas fa-th-large" aria-hidden="true"></i> Accès rapides</h2>
+            <div class="dashboard-quick-links__grid">
+                <a href="invoice/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></span>
+                    <span class="dashboard-quick-link__label">Invoice</span>
+                    <span class="dashboard-quick-link__sub">Factures, devis, clients, rapports</span>
+                </a>
+                <a href="livreurs/carte.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-map-location-dot"></i></span>
+                    <span class="dashboard-quick-link__label">Map livreurs</span>
+                    <span class="dashboard-quick-link__sub">Suivi GPS en temps réel</span>
+                </a>
+                <a href="produits/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-box"></i></span>
+                    <span class="dashboard-quick-link__label">Produits</span>
+                    <span class="dashboard-quick-link__sub">Catalogue boutique</span>
+                </a>
+                <a href="stock/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
+                    <span class="dashboard-quick-link__label">Stock</span>
+                    <span class="dashboard-quick-link__sub">Catégories et quantités</span>
+                </a>
+                <a href="commandes/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-shopping-cart"></i></span>
+                    <span class="dashboard-quick-link__label">Commandes</span>
+                    <span class="dashboard-quick-link__sub">Gestion des commandes</span>
+                </a>
+                <a href="commandes-personnalisees/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-palette"></i></span>
+                    <span class="dashboard-quick-link__label">Commandes perso</span>
+                    <span class="dashboard-quick-link__sub">Sur mesure client</span>
+                </a>
+                <a href="zones-livraison/index.php" class="dashboard-quick-link">
+                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-truck"></i></span>
+                    <span class="dashboard-quick-link__label">Zones livraison</span>
+                    <span class="dashboard-quick-link__sub">Tarifs et secteurs</span>
+                </a>
+            </div>
+        </section>
+        <?php endif; ?>
 
         <?php
         if (isset($_SESSION['notification_test_message'])) {

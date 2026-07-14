@@ -15,7 +15,7 @@ if (!isset($_SESSION['admin_id'])) {
 require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 
-if (!admin_can_manage_livreurs() && !admin_can_livreur_gps()) {
+if (!admin_can_manage_livreurs() && !admin_can_livreur_gps() && !admin_can_view_livreurs_map()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Accès refusé'], JSON_UNESCAPED_UNICODE);
     exit;

@@ -88,10 +88,10 @@
     width: 100%;
   }
 
-  /* Admin livreur : 3 colonnes */
+  /* Admin livreur : 4 colonnes */
   .bottom-nav--livreur {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding-left: 0;
     padding-right: 0;
   }

@@ -228,7 +228,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
-.livreur-marker-icon--driver {
+.livreur-marker-icon--driver:not(.livreur-marker-icon--avatar) {
     width: auto;
     height: auto;
     border-radius: 0;
@@ -272,25 +272,47 @@
 }
 
 .livreur-marker-icon--avatar,
-.livreur-marker-icon--avatar.livreur-marker-icon--moto {
+.livreur-marker-icon.livreur-marker-icon--driver.livreur-marker-icon--avatar,
+.livreur-marker-wrap--driver .livreur-marker-icon--avatar {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 44px;
+    max-height: 44px;
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     background: #e5488a;
     border: 2.5px solid #fff;
     box-shadow: 0 2px 10px rgba(229, 72, 138, 0.45);
     overflow: hidden;
     padding: 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.livreur-marker-wrap--nav .livreur-marker-icon--avatar {
+.livreur-marker-wrap--nav .livreur-marker-icon--avatar,
+.livreur-marker-wrap--nav .livreur-marker-icon.livreur-marker-icon--driver.livreur-marker-icon--avatar {
     width: 48px;
     height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
 }
 
-.livreur-marker-avatar {
+.livreur-marker-moto.livreur-marker-avatar {
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -302,19 +324,31 @@
 .livreur-marker-avatar__img {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: cover;
+    object-position: center center;
     display: block;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .livreur-marker-avatar--initial {
     background: linear-gradient(145deg, #918a44, #c26638);
     color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    transform: none !important;
 }
 
 .livreur-marker-avatar__initial {
     font-size: 1rem;
     font-weight: 800;
     line-height: 1;
+    display: block;
 }
 
 .livreur-marker-icon--avatar,
@@ -325,17 +359,30 @@
 .leaflet-marker-icon.livreur-marker-wrap--driver {
     cursor: pointer;
     overflow: visible !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
-.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--expanded .livreur-marker-icon--avatar {
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--expanded .livreur-marker-icon--avatar,
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--expanded .livreur-marker-icon.livreur-marker-icon--driver.livreur-marker-icon--avatar {
     width: 58px;
     height: 58px;
+    min-width: 58px;
+    min-height: 58px;
+    max-width: 58px;
+    max-height: 58px;
     box-shadow: 0 4px 16px rgba(229, 72, 138, 0.55);
 }
 
-.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--nav.livreur-marker-wrap--expanded .livreur-marker-icon--avatar {
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--nav.livreur-marker-wrap--expanded .livreur-marker-icon--avatar,
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--nav.livreur-marker-wrap--expanded .livreur-marker-icon.livreur-marker-icon--driver.livreur-marker-icon--avatar {
     width: 64px;
     height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    max-width: 64px;
+    max-height: 64px;
 }
 
 .livreur-nav-arrow {
@@ -1454,6 +1501,36 @@ body.livreur-demarrage-open {
 .page-livreur-suivi .admin-container {
     min-height: 100vh;
     min-height: 100dvh;
+    margin-left: 0 !important;
+    width: 100%;
+    max-width: 100%;
+}
+
+.page-livreur-suivi--regarder .admin-container,
+.page-livreur-suivi--regarder.admin-container--tracking-fullscreen {
+    margin-left: 0 !important;
+    width: 100%;
+    max-width: 100%;
+}
+
+.page-livreur-suivi--regarder .admin-content,
+.page-livreur-suivi--regarder .admin-content--tracking-fullscreen {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.page-livreur-suivi--regarder .livreur-suivi-app,
+.page-livreur-suivi--public .livreur-suivi-app {
+    width: 100%;
+    max-width: 100%;
+}
+
+.page-livreur-suivi--public {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .page-livreur-suivi .livreur-tracking-map--watch-mode .livreur-marker-moto {
@@ -2491,7 +2568,7 @@ body.livreur-demarrage-open {
     font-size: 15px;
 }
 
-.livreur-marker-icon--driver {
+.livreur-marker-icon--driver:not(.livreur-marker-icon--avatar) {
     width: auto;
     height: auto;
 }
@@ -2526,11 +2603,26 @@ body.livreur-demarrage-open {
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
     }
 
+    .page-livreur-suivi--regarder .admin-content,
+    .page-livreur-suivi--regarder .admin-content--tracking-fullscreen {
+        max-width: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+
     .page-livreur-suivi .livreur-suivi-topbar {
         max-width: 480px;
         left: 50%;
         right: auto;
         transform: translateX(-50%);
+    }
+
+    .page-livreur-suivi--regarder .livreur-suivi-topbar {
+        max-width: none !important;
+        left: 0 !important;
+        right: 0 !important;
+        transform: none !important;
     }
 }
 
@@ -2893,9 +2985,12 @@ body.livreur-demarrage-open {
     flex-direction: column;
     gap: 0.55rem;
     margin-top: 0.35rem;
+    align-items: center;
 }
 
 .livreur-suivi-sheet__cta--share {
+    max-width: 400px;
+    width: 100%;
     background: linear-gradient(135deg, #e5488a 0%, #c26638 100%);
     border: none;
     color: #fff;
@@ -2932,18 +3027,51 @@ body.livreur-demarrage-open {
 /* Mode observation (regarder=1 admin) et page publique partagée */
 .livreur-suivi-app.is-regarder-mode .livreur-suivi-sheet__adresse,
 .livreur-suivi-app.is-regarder-mode #livreur-suivi-status-sub,
-.livreur-suivi-app.is-regarder-mode #livreur-suivi-eta,
 .livreur-suivi-app.is-public-watch .livreur-suivi-sheet__adresse,
 .livreur-suivi-app.is-public-watch #livreur-suivi-status-sub {
     display: none !important;
 }
 
-.livreur-suivi-app.is-public-watch #livreur-suivi-eta {
+.livreur-suivi-app.is-regarder-mode:not(.has-countdown) #livreur-suivi-eta,
+.livreur-suivi-app.is-public-watch:not(.has-countdown):not(.has-live-eta) #livreur-suivi-eta {
     display: none !important;
 }
 
-.livreur-suivi-app.is-public-watch.has-live-eta #livreur-suivi-eta {
+.livreur-suivi-app.is-public-watch.has-live-eta #livreur-suivi-eta,
+.livreur-suivi-app.is-public-watch.has-countdown #livreur-suivi-eta,
+.livreur-suivi-app.is-regarder-mode.has-countdown #livreur-suivi-eta {
     display: flex !important;
+}
+
+.livreur-suivi-sheet__eta--running {
+    background: rgba(145, 138, 68, 0.12);
+    border-color: rgba(145, 138, 68, 0.28);
+}
+
+.livreur-suivi-sheet__eta--running .livreur-suivi-sheet__eta-icon {
+    background: #918a44;
+}
+
+.livreur-suivi-sheet__eta--late {
+    background: rgba(194, 102, 56, 0.14);
+    border-color: rgba(194, 102, 56, 0.35);
+}
+
+.livreur-suivi-sheet__eta--late .livreur-suivi-sheet__eta-icon {
+    background: #c26638;
+}
+
+.livreur-suivi-sheet__eta--late .livreur-suivi-sheet__eta-range {
+    color: #c26638;
+}
+
+.livreur-suivi-sheet__eta--paused {
+    background: rgba(107, 47, 32, 0.08);
+    border-color: rgba(107, 47, 32, 0.22);
+}
+
+.livreur-suivi-sheet__eta--paused .livreur-suivi-sheet__eta-icon {
+    background: #6b2f20;
 }
 
 .livreur-suivi-alert__icon {

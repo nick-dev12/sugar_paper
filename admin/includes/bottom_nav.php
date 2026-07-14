@@ -175,7 +175,7 @@ if ($is_contable_bottom) {
 
 }
 
-$is_invoice_hub = !empty($admin_invoice_hub_bottom_nav) && $is_invoice && $current_page === 'index.php' && !$is_utilisateur_bottom;
+$is_invoice_hub = !empty($admin_invoice_hub_bottom_nav) && $is_invoice && $current_page === 'index.php';
 $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoice_hub_active_tab : 'facture';
 
 ?>
@@ -203,6 +203,57 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
         <span class="bottom-nav-label">Profil</span>
     </a>
+
+    <a href="<?php echo htmlspecialchars($nav_href('logout.php')); ?>"
+        class="bottom-nav-item bottom-nav-item--logout"
+        aria-label="Déconnexion">
+        <span class="bottom-nav-icon"><i class="fas fa-sign-out-alt" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Déconnexion</span>
+    </a>
+
+    <?php elseif ($is_invoice_hub): ?>
+
+    <?php if (admin_can_bl_retours_b2b()): ?>
+    <button type="button"
+        class="bottom-nav-item bottom-nav-item--facture<?php echo $invoice_hub_tab === 'facture' ? ' is-active' : ''; ?>"
+        data-invoice-tab="facture"
+        aria-label="Onglet Facture">
+        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Facture</span>
+    </button>
+    <?php endif; ?>
+
+    <?php if (admin_can_devis()): ?>
+    <button type="button"
+        class="bottom-nav-item bottom-nav-item--devis<?php echo $invoice_hub_tab === 'devis' ? ' is-active' : ''; ?>"
+        data-invoice-tab="devis"
+        aria-label="Onglet Devis">
+        <span class="bottom-nav-icon"><i class="fas fa-file-invoice" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Devis</span>
+    </button>
+    <?php endif; ?>
+
+    <button type="button"
+        class="bottom-nav-item bottom-nav-item--contacts<?php echo $invoice_hub_tab === 'contacts' ? ' is-active' : ''; ?>"
+        data-invoice-tab="contacts"
+        aria-label="Onglet Clients">
+        <span class="bottom-nav-icon"><i class="fas fa-address-book" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Clients</span>
+    </button>
+
+    <button type="button"
+        class="bottom-nav-item bottom-nav-item--rapports<?php echo $invoice_hub_tab === 'rapports' ? ' is-active' : ''; ?>"
+        data-invoice-tab="rapports"
+        aria-label="Onglet Rapports">
+        <span class="bottom-nav-icon"><i class="fas fa-chart-bar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Rapports</span>
+    </button>
+
+    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
+        aria-label="Ouvrir le menu admin">
+        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Menu</span>
+    </button>
 
     <?php elseif ($is_utilisateur_bottom): ?>
 
@@ -267,50 +318,6 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         <span class="bottom-nav-label">Profil</span>
 
     </a>
-
-    <?php elseif ($is_invoice_hub): ?>
-
-    <?php if (admin_can_bl_retours_b2b()): ?>
-    <button type="button"
-        class="bottom-nav-item bottom-nav-item--facture<?php echo $invoice_hub_tab === 'facture' ? ' is-active' : ''; ?>"
-        data-invoice-tab="facture"
-        aria-label="Onglet Facture">
-        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Facture</span>
-    </button>
-    <?php endif; ?>
-
-    <?php if (admin_can_devis()): ?>
-    <button type="button"
-        class="bottom-nav-item bottom-nav-item--devis<?php echo $invoice_hub_tab === 'devis' ? ' is-active' : ''; ?>"
-        data-invoice-tab="devis"
-        aria-label="Onglet Devis">
-        <span class="bottom-nav-icon"><i class="fas fa-file-invoice" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Devis</span>
-    </button>
-    <?php endif; ?>
-
-    <button type="button"
-        class="bottom-nav-item bottom-nav-item--contacts<?php echo $invoice_hub_tab === 'contacts' ? ' is-active' : ''; ?>"
-        data-invoice-tab="contacts"
-        aria-label="Onglet Clients">
-        <span class="bottom-nav-icon"><i class="fas fa-address-book" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Clients</span>
-    </button>
-
-    <button type="button"
-        class="bottom-nav-item bottom-nav-item--rapports<?php echo $invoice_hub_tab === 'rapports' ? ' is-active' : ''; ?>"
-        data-invoice-tab="rapports"
-        aria-label="Onglet Rapports">
-        <span class="bottom-nav-icon"><i class="fas fa-chart-bar" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Rapports</span>
-    </button>
-
-    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
-        aria-label="Ouvrir le menu admin">
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Menu</span>
-    </button>
 
     <?php else: ?>
 

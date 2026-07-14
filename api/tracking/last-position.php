@@ -67,8 +67,14 @@ if ($livreur_id) {
     $last = livreur_get_last_position($livreur_id, $commande_id > 0 ? $commande_id : null, $bl_id > 0 ? $bl_id : null);
 }
 
+$countdown = livreur_countdown_state_for_livraison(
+    $commande_id > 0 ? $commande_id : null,
+    $bl_id > 0 ? $bl_id : null
+);
+
 echo json_encode([
     'success' => true,
     'tracking_active' => $tracking_active,
+    'countdown' => $countdown,
     'last_position' => $last,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

@@ -80,6 +80,14 @@ $nav_href = function ($path) use ($admin_nav_base) {
         <div class="sidebar-header">
             <i class="fas fa-store logo-icon"></i>
             <h2>Sugar Paper</h2>
+            <?php if ($is_livreur_nav): ?>
+            <a href="<?php echo htmlspecialchars($nav_href('logout.php')); ?>"
+                class="sidebar-header__logout"
+                aria-label="Déconnexion"
+                title="Déconnexion">
+                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+            </a>
+            <?php endif; ?>
         </div>
         <nav class="sidebar-menu">
             <?php if ($is_contable_nav): ?>
@@ -115,6 +123,11 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Mon profil</span>
             </a>
             <?php elseif ($is_utilisateur_nav): ?>
+            <a href="<?php echo $nav_href('dashboard.php'); ?>"
+                class="menu-item <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>">
+                <i class="fas fa-home"></i>
+                <span>Tableau de bord</span>
+            </a>
             <a href="<?php echo $nav_href('produits/index.php'); ?>"
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="fas fa-box"></i>
@@ -145,6 +158,13 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <i class="fas fa-truck"></i>
                 <span>Zones de livraison</span>
             </a>
+            <?php if (admin_can_view_livreurs_map()): ?>
+            <a href="<?php echo $nav_href('livreurs/carte.php'); ?>"
+                class="menu-item <?php echo $is_livreurs_carte ? 'active' : ''; ?>">
+                <i class="fas fa-map-location-dot"></i>
+                <span>Map</span>
+            </a>
+            <?php endif; ?>
             <a href="<?php echo $nav_href('profil.php'); ?>"
                 class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
                 <i class="fas fa-user"></i>

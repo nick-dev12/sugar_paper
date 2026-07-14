@@ -74,6 +74,7 @@ $socket_path = tracking_config_get('socket_path', '/socket.io');
 $realtime_configured = tracking_realtime_available();
 $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
 $tracking_active_initial = (int) ($livraison['tracking_active'] ?? 0);
+$initial_countdown = livreur_countdown_state_from_row($livraison);
 
 $last = null;
 if (!empty($livraison['livreur_id'])) {
@@ -102,6 +103,7 @@ $initial_payload = [
         'livreur_initials' => $livreur_initials,
     ],
     'last_position' => $last,
+    'countdown' => $initial_countdown,
     'socket_path' => $socket_path,
 ];
 
@@ -173,7 +175,7 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
             <div class="livreur-suivi-sheet__eta" id="livreur-suivi-eta" hidden aria-live="polite">
                 <span class="livreur-suivi-sheet__eta-icon"><i class="fas fa-clock"></i></span>
                 <div class="livreur-suivi-sheet__eta-body">
-                    <span class="livreur-suivi-sheet__eta-label">Temps de trajet estimé</span>
+                    <span class="livreur-suivi-sheet__eta-label" id="livreur-suivi-eta-label">Arrivée estimée dans</span>
                     <strong class="livreur-suivi-sheet__eta-range" id="livreur-suivi-eta-range">—</strong>
                 </div>
             </div>
@@ -214,6 +216,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     geoReady: <?php echo $geo_ready ? 'true' : 'false'; ?>,
     realtimeConfigured: <?php echo $realtime_configured ? 'true' : 'false'; ?>,
     trackingActive: <?php echo $tracking_active_initial ? 'true' : 'false'; ?>,
+    initialCountdown: <?php echo $initial_countdown !== null
+        ? json_encode($initial_countdown, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        : 'null'; ?>,
     autostart: true,
     lastPositionUrl: '/api/tracking/last-position.php',
     deliveryLat: <?php echo $delivery_lat !== null ? json_encode($delivery_lat) : 'null'; ?>,

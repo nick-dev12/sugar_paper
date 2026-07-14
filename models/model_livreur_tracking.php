@@ -459,6 +459,9 @@ function livreur_merge_watch_token_with_facture($token_hash, $bl_id) {
             'adresse_livraison' => $facture['adresse_livraison'] ?? '',
             'livreur_nom' => $facture['livreur_nom'] ?? '',
             'livreur_prenom' => $facture['livreur_prenom'] ?? '',
+            'delivery_countdown_initial_sec' => $facture['delivery_countdown_initial_sec'] ?? null,
+            'delivery_countdown_remaining_sec' => $facture['delivery_countdown_remaining_sec'] ?? null,
+            'delivery_countdown_running_at' => $facture['delivery_countdown_running_at'] ?? null,
             'livraison_type' => 'facture',
             'bl_id' => $bl_id,
         ]);
@@ -1348,7 +1351,325 @@ function livreur_web_can_manage_livraison($admin_id, $commande_id = null, $bl_id
 }
 
 /**
- * @return array{ok:bool,error?:string}
+ * Colonnes compte à rebours livraison (migration delivery_countdown).
+ */
+function livreur_countdown_columns_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $db->query('SELECT delivery_countdown_remaining_sec, delivery_countdown_running_at FROM commandes LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * @return array{table:string,id:int}|null
+ */
+function livreur_countdown_resolve_target($commande_id = null, $bl_id = null) {
+    if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
+        return ['table' => 'bons_livraison', 'id' => (int) $bl_id];
+    }
+    if ($commande_id !== null && (int) $commande_id > 0) {
+        return ['table' => 'commandes', 'id' => (int) $commande_id];
+    }
+    return null;
+}
+
+/**
+ * @return array<string, mixed>|false
+ */
+function livreur_countdown_fetch_row($commande_id = null, $bl_id = null) {
+    global $db;
+    if (!livreur_countdown_columns_ok()) {
+        return false;
+    }
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    if (!$target) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT tracking_active, delivery_countdown_initial_sec,
+                   delivery_countdown_remaining_sec, delivery_countdown_running_at
+            FROM `' . $target['table'] . '`
+            WHERE id = :id
+            LIMIT 1
+        ');
+        $stmt->execute(['id' => $target['id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * État public du compte à rebours (running | late | paused | late_paused).
+ *
+ * @param array<string, mixed>|false|null $row
+ * @return array<string, mixed>|null
+ */
+function livreur_countdown_state_from_row($row) {
+    if (!is_array($row) || !livreur_countdown_columns_ok()) {
+        return null;
+    }
+    if ($row['delivery_countdown_remaining_sec'] === null) {
+        return null;
+    }
+
+    $remaining_stored = (int) $row['delivery_countdown_remaining_sec'];
+    $initial = (int) ($row['delivery_countdown_initial_sec'] ?? $remaining_stored);
+    $tracking_active = (int) ($row['tracking_active'] ?? 0) === 1;
+    $running_at = $row['delivery_countdown_running_at'] ?? null;
+
+    if ($tracking_active && !empty($running_at)) {
+        $elapsed = max(0, time() - strtotime((string) $running_at));
+        $current = $remaining_stored - $elapsed;
+        return [
+            'status' => $current > 0 ? 'running' : 'late',
+            'remaining_sec' => $current,
+            'initial_sec' => $initial,
+            'paused' => false,
+            'server_time' => date('c'),
+        ];
+    }
+
+    return [
+        'status' => $remaining_stored <= 0 ? 'late_paused' : 'paused',
+        'remaining_sec' => $remaining_stored,
+        'initial_sec' => $initial,
+        'paused' => true,
+        'server_time' => date('c'),
+    ];
+}
+
+/**
+ * @return array<string, mixed>|null
+ */
+function livreur_countdown_state_for_livraison($commande_id = null, $bl_id = null) {
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+    if (!$row) {
+        return null;
+    }
+    return livreur_countdown_state_from_row($row);
+}
+
+/**
+ * Durée cible (s) à partir de la durée d'itinéraire — alignée sur la fourchette ETA max.
+ */
+function livreur_countdown_seconds_from_route_duration($duration_seconds) {
+    $duration_seconds = (int) $duration_seconds;
+    if ($duration_seconds < 1) {
+        return 0;
+    }
+    $base_min = max(1, $duration_seconds / 60);
+    $min_min = max(5, (int) floor(($base_min * 0.82) / 5) * 5);
+    $max_min = max($min_min + 10, (int) ceil(($base_min * 1.28) / 5) * 5);
+    if ($max_min - $min_min > 25) {
+        $max_min = $min_min + 25;
+    }
+    return max(60, $max_min * 60);
+}
+
+function livreur_countdown_pause_row($commande_id = null, $bl_id = null) {
+    global $db;
+    if (!livreur_countdown_columns_ok()) {
+        return false;
+    }
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+    if (!$row || $row['delivery_countdown_remaining_sec'] === null) {
+        return true;
+    }
+    $state = livreur_countdown_state_from_row($row);
+    if (!$state) {
+        return false;
+    }
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    if (!$target) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE `' . $target['table'] . '`
+            SET delivery_countdown_remaining_sec = :remaining,
+                delivery_countdown_running_at = NULL
+            WHERE id = :id
+        ');
+        return $stmt->execute([
+            'remaining' => (int) $state['remaining_sec'],
+            'id' => $target['id'],
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function livreur_countdown_resume($commande_id = null, $bl_id = null) {
+    global $db;
+    if (!livreur_countdown_columns_ok()) {
+        return false;
+    }
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+    if (!$row || $row['delivery_countdown_remaining_sec'] === null) {
+        return true;
+    }
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    if (!$target) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE `' . $target['table'] . '`
+            SET delivery_countdown_running_at = NOW()
+            WHERE id = :id
+        ');
+        return $stmt->execute(['id' => $target['id']]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function livreur_countdown_clear($commande_id = null, $bl_id = null) {
+    global $db;
+    if (!livreur_countdown_columns_ok()) {
+        return false;
+    }
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    if (!$target) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE `' . $target['table'] . '`
+            SET delivery_countdown_initial_sec = NULL,
+                delivery_countdown_remaining_sec = NULL,
+                delivery_countdown_running_at = NULL
+            WHERE id = :id
+        ');
+        return $stmt->execute(['id' => $target['id']]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Initialise le compte à rebours au premier calcul d'itinéraire.
+ *
+ * @return array{ok:bool,error?:string,countdown?:array<string,mixed>|null}
+ */
+function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $duration_seconds) {
+    global $db;
+    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
+        return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
+    }
+    if (!livreur_countdown_columns_ok()) {
+        return ['ok' => false, 'error' => 'Compte à rebours non disponible.'];
+    }
+    $seconds = livreur_countdown_seconds_from_route_duration($duration_seconds);
+    if ($seconds < 1) {
+        return ['ok' => false, 'error' => 'Durée invalide.'];
+    }
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    if (!$target) {
+        return ['ok' => false, 'error' => 'Livraison introuvable.'];
+    }
+    try {
+        $stmt = $db->prepare('
+            SELECT delivery_countdown_initial_sec, delivery_countdown_remaining_sec,
+                   tracking_active, delivery_countdown_running_at
+            FROM `' . $target['table'] . '`
+            WHERE id = :id
+            LIMIT 1
+        ');
+        $stmt->execute(['id' => $target['id']]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return ['ok' => false, 'error' => 'Livraison introuvable.'];
+        }
+        if ($row['delivery_countdown_initial_sec'] === null) {
+            $upd = $db->prepare('
+                UPDATE `' . $target['table'] . '`
+                SET delivery_countdown_initial_sec = :initial,
+                    delivery_countdown_remaining_sec = :remaining,
+                    delivery_countdown_running_at = NOW()
+                WHERE id = :id
+            ');
+            $upd->execute([
+                'initial' => $seconds,
+                'remaining' => $seconds,
+                'id' => $target['id'],
+            ]);
+            if ((int) ($row['tracking_active'] ?? 0) !== 1) {
+                livreur_countdown_pause_row($commande_id, $bl_id);
+            }
+        } elseif ((int) ($row['tracking_active'] ?? 0) === 1 && empty($row['delivery_countdown_running_at'])) {
+            livreur_countdown_resume($commande_id, $bl_id);
+        }
+        $fresh = livreur_countdown_fetch_row($commande_id, $bl_id);
+        return [
+            'ok' => true,
+            'countdown' => livreur_countdown_state_from_row($fresh),
+        ];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'error' => 'Erreur compte à rebours.'];
+    }
+}
+
+function livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id = null, $except_bl_id = null) {
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1 || !livreur_countdown_columns_ok()) {
+        return;
+    }
+    try {
+        if ($except_commande_id !== null && (int) $except_commande_id > 0) {
+            $stmt = $db->prepare('
+                SELECT id FROM commandes
+                WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+            ');
+            $stmt->execute(['livreur_id' => $admin_id, 'except_id' => (int) $except_commande_id]);
+        } else {
+            $stmt = $db->prepare('
+                SELECT id FROM commandes
+                WHERE livreur_id = :livreur_id AND tracking_active = 1
+            ');
+            $stmt->execute(['livreur_id' => $admin_id]);
+        }
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $cid) {
+            livreur_countdown_pause_row((int) $cid, null);
+        }
+
+        if (livreur_bl_livraison_columns_ok()) {
+            if ($except_bl_id !== null && (int) $except_bl_id > 0) {
+                $stmtBl = $db->prepare('
+                    SELECT id FROM bons_livraison
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+                ');
+                $stmtBl->execute(['livreur_id' => $admin_id, 'except_id' => (int) $except_bl_id]);
+            } else {
+                $stmtBl = $db->prepare('
+                    SELECT id FROM bons_livraison
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1
+                ');
+                $stmtBl->execute(['livreur_id' => $admin_id]);
+            }
+            foreach ($stmtBl->fetchAll(PDO::FETCH_COLUMN) as $bid) {
+                livreur_countdown_pause_row(null, (int) $bid);
+            }
+        }
+    } catch (PDOException $e) {
+        /* silencieux */
+    }
+}
+
+/**
+ * @return array{ok:bool,error?:string,countdown?:array<string,mixed>|null}
  */
 function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = null) {
     global $db;
@@ -1360,22 +1681,32 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
         if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
             $row = livreur_get_facture_tracking((int) $bl_id);
             if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
-                return ['ok' => true];
+                livreur_countdown_resume(null, (int) $bl_id);
+                return [
+                    'ok' => true,
+                    'countdown' => livreur_countdown_state_for_livraison(null, (int) $bl_id),
+                ];
             }
             $stmt = $db->prepare('
                 UPDATE bons_livraison
-                SET tracking_active = 1, tracking_started_at = NOW()
+                SET tracking_active = 1,
+                    tracking_started_at = COALESCE(tracking_started_at, NOW())
                 WHERE id = :id AND livreur_id = :livreur_id
             ');
             $stmt->execute(['id' => (int) $bl_id, 'livreur_id' => (int) $admin_id]);
         } else {
             $row = livreur_get_commande_tracking((int) $commande_id);
             if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
-                return ['ok' => true];
+                livreur_countdown_resume((int) $commande_id, null);
+                return [
+                    'ok' => true,
+                    'countdown' => livreur_countdown_state_for_livraison((int) $commande_id, null),
+                ];
             }
             $stmt = $db->prepare('
                 UPDATE commandes
-                SET tracking_active = 1, tracking_started_at = NOW()
+                SET tracking_active = 1,
+                    tracking_started_at = COALESCE(tracking_started_at, NOW())
                 WHERE id = :id AND livreur_id = :livreur_id
             ');
             $stmt->execute(['id' => (int) $commande_id, 'livreur_id' => (int) $admin_id]);
@@ -1383,7 +1714,11 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
         if ($stmt->rowCount() < 1) {
             return ['ok' => false, 'error' => 'Impossible d\'activer le suivi GPS.'];
         }
-        return ['ok' => true];
+        livreur_countdown_resume($commande_id, $bl_id);
+        return [
+            'ok' => true,
+            'countdown' => livreur_countdown_state_for_livraison($commande_id, $bl_id),
+        ];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de l\'activation du suivi.'];
     }
@@ -1398,6 +1733,7 @@ function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id 
     if ($admin_id < 1) {
         return false;
     }
+    livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id, $except_bl_id);
     try {
         if ($except_commande_id !== null && (int) $except_commande_id > 0) {
             $stmt = $db->prepare('
@@ -1468,6 +1804,7 @@ function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null
             ');
             $stmt->execute(['id' => (int) $commande_id, 'livreur_id' => (int) $admin_id]);
         }
+        livreur_countdown_clear($commande_id, $bl_id);
         return ['ok' => true];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de l\'arrêt du suivi.'];

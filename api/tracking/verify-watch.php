@@ -79,6 +79,10 @@ tracking_json_response([
     'livreur_nom' => trim((string) ($row['livreur_prenom'] ?? '') . ' ' . (string) ($row['livreur_nom'] ?? '')),
     'can_emit_position' => $can_emit_position,
     'tracking_active' => (int) ($row['tracking_active'] ?? 0) === 1,
+    'countdown' => livreur_countdown_state_for_livraison(
+        $ctx_commande_id > 0 ? $ctx_commande_id : null,
+        $ctx_bl_id > 0 ? $ctx_bl_id : null
+    ),
     'delivery_latitude' => livreur_parse_coord($row['delivery_latitude'] ?? null),
     'delivery_longitude' => livreur_parse_coord($row['delivery_longitude'] ?? null),
     'adresse_livraison' => $row['adresse_livraison'] ?? '',

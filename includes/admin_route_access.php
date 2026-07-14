@@ -77,7 +77,7 @@ if (!function_exists('admin_route_relative_path')) {
             case 'admin':
                 return 'dashboard.php';
             case 'utilisateur':
-                return 'stock/index.php';
+                return 'dashboard.php';
             case 'livreur':
                 return 'livreurs/index.php';
             case 'informaticien':
@@ -209,7 +209,7 @@ if (!function_exists('admin_route_relative_path')) {
                     || $p === 'profil.php';
 
             case 'utilisateur':
-                if ($p === 'livreurs/carte.php') {
+                if ($p === 'dashboard.php' || $p === 'livreurs/carte.php') {
                     return true;
                 }
                 return $starts('stock/')
@@ -218,6 +218,7 @@ if (!function_exists('admin_route_relative_path')) {
                     || $starts('commandes-personnalisees/')
                     || $starts('zones-livraison/')
                     || $starts('invoice/')
+                    || $starts('devis/')
                     || $p === 'categories/produits.php'
                     || $p === 'categories/modifier.php'
                     || $p === 'categories/ajouter.php'

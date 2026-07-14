@@ -75,6 +75,9 @@ $can_manage_livraison = $livraison && livreur_web_can_manage_livraison((int) $_S
 $can_start_livraison = $can_manage_livraison && !$regarder_mode;
 $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
 $tracking_active_initial = $livraison ? (int) ($livraison['tracking_active'] ?? 0) : 0;
+$initial_countdown = $livraison
+    ? livreur_countdown_state_from_row($livraison)
+    : null;
 $autostart_tracking = isset($_GET['autostart']) && (string) $_GET['autostart'] === '1';
 $watch_only = $regarder_mode || !$can_manage_livraison;
 $index_back_url = $regarder_mode
@@ -115,6 +118,7 @@ if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
                 'livreur_nom' => trim(($livraison['livreur_prenom'] ?? '') . ' ' . ($livraison['livreur_nom'] ?? '')),
             ],
             'last_position' => $last_pos ?: null,
+            'countdown' => $initial_countdown,
             'socket_path' => $socket_path,
         ];
     }
@@ -167,8 +171,13 @@ if ($initial_watch_payload !== null) {
     <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
 </head>
-<body class="page-livreur-suivi">
+<body class="page-livreur-suivi<?php echo $regarder_mode ? ' page-livreur-suivi--regarder' : ''; ?>">
+<?php if ($regarder_mode): ?>
+<div class="admin-container admin-container--tracking-fullscreen">
+<main class="admin-content admin-content--tracking-fullscreen" id="adminContent">
+<?php else: ?>
 <?php include __DIR__ . '/../includes/nav.php'; ?>
+<?php endif; ?>
 
 <?php if (!$tables_ready): ?>
 <div class="livreur-suivi-fallback">
@@ -301,7 +310,7 @@ if ($initial_watch_payload !== null) {
         <div class="livreur-suivi-sheet__eta" id="livreur-suivi-eta" hidden aria-live="polite">
             <span class="livreur-suivi-sheet__eta-icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
             <div class="livreur-suivi-sheet__eta-body">
-                <span class="livreur-suivi-sheet__eta-label">Temps de trajet estimé</span>
+                <span class="livreur-suivi-sheet__eta-label" id="livreur-suivi-eta-label">Temps de trajet estimé</span>
                 <strong class="livreur-suivi-sheet__eta-range" id="livreur-suivi-eta-range">—</strong>
             </div>
         </div>
@@ -404,6 +413,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     geoReady: <?php echo $geo_ready ? 'true' : 'false'; ?>,
     realtimeConfigured: <?php echo $realtime_configured ? 'true' : 'false'; ?>,
     trackingActive: <?php echo $tracking_active_initial ? 'true' : 'false'; ?>,
+    initialCountdown: <?php echo $initial_countdown !== null
+        ? json_encode($initial_countdown, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        : 'null'; ?>,
     autostart: <?php echo ($autostart_tracking && $can_start_livraison) ? 'true' : 'false'; ?>,
     watchOnly: <?php echo $watch_only ? 'true' : 'false'; ?>,
     regarderMode: <?php echo $regarder_mode ? 'true' : 'false'; ?>,

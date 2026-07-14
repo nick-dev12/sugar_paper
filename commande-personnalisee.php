@@ -69,15 +69,17 @@ $seo_canonical = $base . '/commande-personnalisee.php';
             <form method="POST" action="" class="form-commande-perso" enctype="multipart/form-data">
                 <section class="cp-form-section">
                     <h2 class="cp-form-section-title"><i class="fas fa-user-circle" aria-hidden="true"></i> Vos coordonnées</h2>
-                    <div class="form-group">
-                        <label for="nom">Nom *</label>
-                        <input type="text" id="nom" name="nom" required
-                            value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
-                    </div>
-                    <div class="form-group">
-                        <label for="telephone">Téléphone *</label>
-                        <input type="tel" id="telephone" name="telephone" required
-                            value="<?php echo htmlspecialchars($prefill['telephone']); ?>" placeholder="+237 6XX XXX XXX">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nom">Nom *</label>
+                            <input type="text" id="nom" name="nom" required
+                                value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
+                        </div>
+                        <div class="form-group">
+                            <label for="telephone">Téléphone *</label>
+                            <input type="tel" id="telephone" name="telephone" required
+                                value="<?php echo htmlspecialchars($prefill['telephone']); ?>" placeholder="+237 6XX XXX XXX">
+                        </div>
                     </div>
                 </section>
 

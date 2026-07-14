@@ -72,15 +72,15 @@ if (!function_exists('admin_current_role')) {
      */
     function admin_can_devis() {
         $r = admin_current_role();
-        return in_array($r, ['admin', 'commercial', 'commercial_general', 'informaticien', 'developpeur'], true);
+        return in_array($r, ['admin', 'commercial', 'commercial_general', 'informaticien', 'developpeur', 'utilisateur'], true);
     }
 
     /**
-     * Bons de livraison B2B — admin, commercial général, informaticien / développeur.
+     * Bons de livraison B2B — admin, commercial général, informaticien / développeur, utilisateur boutique.
      */
     function admin_can_bl_retours_b2b() {
         $r = admin_current_role();
-        return in_array($r, ['admin', 'commercial_general', 'informaticien', 'developpeur'], true);
+        return in_array($r, ['admin', 'commercial_general', 'informaticien', 'developpeur', 'utilisateur'], true);
     }
 
     function admin_can_comptabilite() {

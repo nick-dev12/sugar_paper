@@ -203,14 +203,27 @@
 .livreurs-carte-marker__pin--avatar {
     overflow: hidden;
     padding: 0;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
     transition: width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease;
 }
 
 .livreurs-carte-marker__photo {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: cover;
+    object-position: center center;
     display: block;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .livreurs-carte-marker__initial {
@@ -227,6 +240,10 @@
 .leaflet-marker-icon.livreurs-carte-marker--expanded .livreurs-carte-marker__pin {
     width: 52px;
     height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    max-width: 52px;
+    max-height: 52px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 

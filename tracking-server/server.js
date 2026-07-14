@@ -248,6 +248,7 @@ io.on('connection', (socket) => {
       bl_id: blId,
       numero_commande: meta.numero_commande || null,
       tracking_active: !!meta.tracking_active,
+      countdown: meta.countdown || null,
       delivery_latitude: meta.delivery_latitude,
       delivery_longitude: meta.delivery_longitude,
       adresse_livraison: meta.adresse_livraison || '',

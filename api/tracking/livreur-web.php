@@ -53,7 +53,26 @@ if ($action === 'start') {
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
         exit;
     }
-    echo json_encode(['success' => true, 'tracking_active' => true], JSON_UNESCAPED_UNICODE);
+    echo json_encode([
+        'success' => true,
+        'tracking_active' => true,
+        'countdown' => $result['countdown'] ?? null,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'set_countdown') {
+    $duration_seconds = (int) ($input['duration_seconds'] ?? 0);
+    $result = livreur_countdown_init_from_duration($admin_id, $cmd_param, $bl_param, $duration_seconds);
+    if (empty($result['ok'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
+        exit;
+    }
+    echo json_encode([
+        'success' => true,
+        'countdown' => $result['countdown'] ?? null,
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
