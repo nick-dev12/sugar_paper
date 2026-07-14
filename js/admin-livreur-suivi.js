@@ -395,9 +395,72 @@
         ensureNorthUpMap();
     }
 
+    function escapeHtmlAttr(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function hasDriverPhoto() {
+        return !!(cfg.livreurPhotoUrl && String(cfg.livreurPhotoUrl).trim());
+    }
+
+    function driverMarkerInnerClassName() {
+        return hasDriverPhoto()
+            ? 'livreur-marker-moto livreur-marker-avatar'
+            : 'livreur-marker-moto';
+    }
+
+    function driverMarkerIconModifierClass() {
+        return hasDriverPhoto()
+            ? ' livreur-marker-icon--avatar'
+            : ' livreur-marker-icon--moto';
+    }
+
+    function makeDriverMarkerInnerHtml() {
+        if (hasDriverPhoto()) {
+            return '<div class="' + driverMarkerInnerClassName() + '">' +
+                '<img src="' + escapeHtmlAttr(cfg.livreurPhotoUrl) + '" alt="" class="livreur-marker-avatar__img" decoding="async" loading="lazy">' +
+                '</div>';
+        }
+        var initial = String(cfg.livreurInitials || 'L').charAt(0).toUpperCase();
+        return '<div class="livreur-marker-moto livreur-marker-avatar livreur-marker-avatar--initial">' +
+            '<span class="livreur-marker-avatar__initial" aria-hidden="true">' + escapeHtmlAttr(initial) + '</span>' +
+            '</div>';
+    }
+
     function makeDriverMotoHtml() {
+        if (hasDriverPhoto() || cfg.livreurInitials) {
+            return makeDriverMarkerInnerHtml();
+        }
         return '<div class="livreur-marker-moto" style="transform:rotate(' + driverHeadingDeg + 'deg)">' +
             '<i class="fas fa-motorcycle" aria-hidden="true"></i></div>';
+    }
+
+    function bindDriverMarkerExpand() {
+        if (!driverMarker) {
+            return;
+        }
+        var markerEl = driverMarker.getElement();
+        if (!markerEl || markerEl._livreurExpandBound) {
+            return;
+        }
+        markerEl._livreurExpandBound = true;
+        markerEl.setAttribute('role', 'button');
+        markerEl.setAttribute('tabindex', '0');
+        markerEl.setAttribute('aria-label', 'Photo du livreur — appuyer pour agrandir');
+        markerEl.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            markerEl.classList.toggle('livreur-marker-wrap--expanded');
+        });
+        markerEl.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+                ev.preventDefault();
+                markerEl.classList.toggle('livreur-marker-wrap--expanded');
+            }
+        });
     }
 
     function durationToRangeMinutes(durationSeconds) {
@@ -525,6 +588,9 @@
     }
 
     function setMotoScreenRotation(screenDeg) {
+        if (hasDriverPhoto() || cfg.livreurInitials) {
+            return;
+        }
         var moto = getDriverMotoElement();
         if (moto) {
             moto.style.transform = 'rotate(' + screenDeg + 'deg)';
@@ -1028,20 +1094,21 @@
     }
 
     function makeDriverArrowIcon() {
-        var motoHtml = makeDriverMotoHtml();
+        var innerHtml = makeDriverMotoHtml();
+        var modifierClass = driverMarkerIconModifierClass();
         if (shouldShowNavMarker()) {
             return L.divIcon({
                 className: 'livreur-marker-wrap livreur-marker-wrap--driver livreur-marker-wrap--nav',
-                html: '<div class="livreur-marker-icon livreur-marker-icon--driver livreur-marker-icon--moto">' +
-                    motoHtml + '</div>',
+                html: '<div class="livreur-marker-icon livreur-marker-icon--driver' + modifierClass + '">' +
+                    innerHtml + '</div>',
                 iconSize: [48, 48],
                 iconAnchor: [24, 24],
             });
         }
         return L.divIcon({
             className: 'livreur-marker-wrap livreur-marker-wrap--driver',
-            html: '<div class="livreur-marker-icon livreur-marker-icon--driver livreur-marker-icon--moto">' +
-                motoHtml + '</div>',
+            html: '<div class="livreur-marker-icon livreur-marker-icon--driver' + modifierClass + '">' +
+                innerHtml + '</div>',
             iconSize: [44, 44],
             iconAnchor: [22, 22],
         });
@@ -1232,8 +1299,18 @@
         if (!driverMarker) return;
         var latlng = driverMarker.getLatLng();
         var heading = driverHeadingDeg;
+        var wasExpanded = false;
+        var markerEl = driverMarker.getElement();
+        if (markerEl) {
+            wasExpanded = markerEl.classList.contains('livreur-marker-wrap--expanded');
+        }
         driverMarker.setIcon(makeDriverArrowIcon());
         driverMarker.setLatLng(latlng);
+        bindDriverMarkerExpand();
+        markerEl = driverMarker.getElement();
+        if (markerEl && wasExpanded) {
+            markerEl.classList.add('livreur-marker-wrap--expanded');
+        }
         if (isFinite(heading)) {
             applyDriverHeading(heading, true);
         }
@@ -1312,7 +1389,11 @@
         } else {
             driverMarker = L.marker([lat, lng], {
                 icon: makeDriverArrowIcon(),
-            }).addTo(map).bindPopup(driverMarkerLabel());
+            }).addTo(map);
+            if (!hasDriverPhoto() && !cfg.livreurInitials) {
+                driverMarker.bindPopup(driverMarkerLabel());
+            }
+            bindDriverMarkerExpand();
         }
         resolveHeadingFromPosition(coords || null, lat, lng);
         lastDriverLat = lat;

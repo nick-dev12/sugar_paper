@@ -3552,6 +3552,13 @@ body::before {
   font-weight: 500;
   color: #333;
   min-width: 0;
+  font-family: inherit;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  resize: vertical;
+  field-sizing: content;
 }
 .ligne-nom-input:focus {
   outline: none;

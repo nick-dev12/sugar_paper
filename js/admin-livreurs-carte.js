@@ -30,14 +30,40 @@
         return COLORS[Math.abs(parseInt(id, 10) || 0) % COLORS.length];
     }
 
-    function makeIcon(color, label) {
-        var initial = (label || 'L').charAt(0).toUpperCase();
+    function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, function (c) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
+    }
+
+    function escapeHtmlAttr(value) {
+        return escapeHtml(value).replace(/"/g, '&quot;');
+    }
+
+    function makeIcon(color, label, photoUrl, initials) {
+        var initial = (initials || label || 'L').charAt(0).toUpperCase();
+        var inner = photoUrl
+            ? '<img src="' + escapeHtmlAttr(photoUrl) + '" alt="" class="livreurs-carte-marker__photo" decoding="async" loading="lazy">'
+            : '<span class="livreurs-carte-marker__initial" aria-hidden="true">' + escapeHtml(initial) + '</span>';
         return L.divIcon({
             className: 'livreurs-carte-marker',
-            html: '<div class="livreurs-carte-marker__pin" style="background:' + color + '">' +
-                '<i class="fas fa-motorcycle"></i><span>' + initial + '</span></div>',
+            html: '<div class="livreurs-carte-marker__pin livreurs-carte-marker__pin--avatar" style="background:' + color + '">' +
+                inner + '</div>',
             iconSize: [40, 40],
             iconAnchor: [20, 20]
+        });
+    }
+
+    function bindMarkerExpand(marker) {
+        if (!marker || marker._expandBound) {
+            return;
+        }
+        marker._expandBound = true;
+        marker.on('click', function () {
+            var el = marker.getElement();
+            if (el) {
+                el.classList.toggle('livreurs-carte-marker--expanded');
+            }
         });
     }
 
@@ -47,12 +73,6 @@
             html: '<div class="livreurs-carte-dest__dot"><i class="fas fa-location-dot"></i></div>',
             iconSize: [28, 28],
             iconAnchor: [14, 28]
-        });
-    }
-
-    function escapeHtml(s) {
-        return String(s || '').replace(/[&<>"']/g, function (c) {
-            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
         });
     }
 
@@ -100,12 +120,13 @@
                     markers[id].setLatLng(latlng);
                 } else {
                     markers[id] = L.marker(latlng, {
-                        icon: makeIcon(color, lv.livreur_nom)
+                        icon: makeIcon(color, lv.livreur_nom, lv.livreur_photo_url, lv.livreur_initials)
                     }).addTo(map).bindPopup(
                         '<strong>' + escapeHtml(lv.livreur_nom) + '</strong><br>' +
                         escapeHtml(lv.numero) + '<br>' +
                         '<a href="' + escapeHtml(lv.suivi_url) + '">Suivre</a>'
                     );
+                    bindMarkerExpand(markers[id]);
                 }
             }
 

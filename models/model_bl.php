@@ -486,6 +486,94 @@ function bl_montant_facture_affichage(array $bl) {
     return $tva_incl ? (float) $decomp['montant_ttc'] : $total_ht;
 }
 
+/**
+ * Indique si une ligne BL correspond aux frais de livraison enregistrés à l'enregistrement.
+ */
+function bl_ligne_est_frais_livraison(array $ligne) {
+    $designation = strtolower(trim((string) ($ligne['designation'] ?? '')));
+    return $designation === 'frais de livraison';
+}
+
+/**
+ * Totaux HT des lignes BL (produits + livraison) par facture, en une requête.
+ *
+ * @param list<int> $bl_ids
+ * @return array<int, array{total_lignes_ht: float, livraison_ht: float}>
+ */
+function bl_prefetch_totaux_lignes_par_bl_ids(array $bl_ids) {
+    global $db;
+    $bl_ids = array_values(array_unique(array_filter(array_map('intval', $bl_ids))));
+    if (!$bl_ids || !bl_tables_available()) {
+        return [];
+    }
+    $placeholders = implode(',', array_fill(0, count($bl_ids), '?'));
+    try {
+        $stmt = $db->prepare('
+            SELECT bl_id,
+                   COALESCE(SUM(total_ligne_ht), 0) AS total_lignes_ht,
+                   COALESCE(SUM(CASE WHEN LOWER(TRIM(designation)) = \'frais de livraison\' THEN total_ligne_ht ELSE 0 END), 0) AS livraison_ht
+            FROM bl_lignes
+            WHERE bl_id IN (' . $placeholders . ')
+            GROUP BY bl_id
+        ');
+        $stmt->execute($bl_ids);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $map = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row['bl_id'] ?? 0);
+            if ($id <= 0) {
+                continue;
+            }
+            $map[$id] = [
+                'total_lignes_ht' => (float) ($row['total_lignes_ht'] ?? 0),
+                'livraison_ht' => (float) ($row['livraison_ht'] ?? 0),
+            ];
+        }
+        return $map;
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Répartit le montant affiché d'une facture entre livraison et hors livraison
+ * (proportionnel aux lignes HT avant remise globale).
+ *
+ * @param array<string, mixed> $bl
+ * @param array{total_lignes_ht?: float, livraison_ht?: float}|null $lignes_totaux
+ * @return array{total: float, livraison: float, hors_livraison: float}
+ */
+function bl_decomposer_montant_facture(array $bl, $lignes_totaux = null) {
+    $total_aff = bl_montant_facture_affichage($bl);
+    $bl_id = (int) ($bl['id'] ?? 0);
+
+    if ($lignes_totaux === null && $bl_id > 0) {
+        $map = bl_prefetch_totaux_lignes_par_bl_ids([$bl_id]);
+        $lignes_totaux = $map[$bl_id] ?? null;
+    }
+
+    $total_lignes_ht = (float) ($lignes_totaux['total_lignes_ht'] ?? 0);
+    $livraison_ht = (float) ($lignes_totaux['livraison_ht'] ?? 0);
+
+    if ($total_lignes_ht <= 0 || $livraison_ht <= 0) {
+        return [
+            'total' => $total_aff,
+            'livraison' => 0.0,
+            'hors_livraison' => $total_aff,
+        ];
+    }
+
+    $ratio = min(1.0, max(0.0, $livraison_ht / $total_lignes_ht));
+    $livraison_aff = round($total_aff * $ratio);
+    $hors_livraison_aff = round($total_aff - $livraison_aff);
+
+    return [
+        'total' => $total_aff,
+        'livraison' => $livraison_aff,
+        'hors_livraison' => $hors_livraison_aff,
+    ];
+}
+
 function get_clients_b2b_avec_bl() {
     global $db;
     if (!bl_tables_available()) {

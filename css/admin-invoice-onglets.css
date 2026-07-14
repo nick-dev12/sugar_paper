@@ -1292,6 +1292,10 @@
     line-height: 1.2;
 }
 
+.lch-head-short {
+    display: none;
+}
+
 .lch-head-actions {
     visibility: hidden;
 }
@@ -1520,6 +1524,25 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .invoice-form-modal .lch-head-cell--qte .lch-head-full {
+        display: none;
+    }
+
+    .invoice-form-modal .lch-head-cell--qte .lch-head-short {
+        display: inline;
+    }
+
+    .invoice-form-modal .ligne-nom-input {
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        height: auto;
+        min-height: 28px;
+        resize: vertical;
+        line-height: 1.25;
+        field-sizing: content;
     }
 
     .invoice-form-modal .lignes-empty {
@@ -1754,10 +1777,10 @@
     }
 }
 
-/* ——— Mini-cartes totaux factures (payées / impayées) ——— */
+/* ——— Mini-cartes totaux factures (payées / impayées / livraison) ——— */
 .invoice-facture-kpis {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
     margin: 0 0 14px;
 }
@@ -1795,6 +1818,11 @@
     color: #c26638;
 }
 
+.invoice-facture-kpi--livraison .invoice-facture-kpi__icon {
+    background: rgba(145, 138, 68, 0.16);
+    color: #918a44;
+}
+
 .invoice-facture-kpi__body {
     min-width: 0;
     display: flex;
@@ -1815,6 +1843,12 @@
     font-weight: 700;
     line-height: 1.2;
     word-break: break-word;
+}
+
+@media (max-width: 720px) {
+    .invoice-facture-kpis {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 480px) {

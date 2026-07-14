@@ -367,27 +367,34 @@
     }
 
     function updateFactureKpis(matching, config) {
-        if (!config.kpiPayeEl && !config.kpiImpayeEl) {
+        if (!config.kpiPayeEl && !config.kpiImpayeEl && !config.kpiLivraisonEl) {
             return;
         }
         var paye = 0;
         var impaye = 0;
+        var livraison = 0;
         for (var i = 0; i < matching.length; i++) {
             var el = matching[i];
-            var montant = parseInt(el.getAttribute('data-montant') || '0', 10);
+            var montantHorsLivraison = parseInt(el.getAttribute('data-montant-hors-livraison') || el.getAttribute('data-montant') || '0', 10);
+            var montantLivraison = parseInt(el.getAttribute('data-montant-livraison') || '0', 10);
+            livraison += montantLivraison;
             if (el.getAttribute('data-payee') === '1') {
-                paye += montant;
+                paye += montantHorsLivraison;
             } else {
-                impaye += montant;
+                impaye += montantHorsLivraison;
             }
         }
         var payeEl = config.kpiPayeEl ? document.querySelector(config.kpiPayeEl) : null;
         var impayeEl = config.kpiImpayeEl ? document.querySelector(config.kpiImpayeEl) : null;
+        var livraisonEl = config.kpiLivraisonEl ? document.querySelector(config.kpiLivraisonEl) : null;
         if (payeEl) {
             payeEl.textContent = formatFcfa(paye);
         }
         if (impayeEl) {
             impayeEl.textContent = formatFcfa(impaye);
+        }
+        if (livraisonEl) {
+            livraisonEl.textContent = formatFcfa(livraison);
         }
     }
 
@@ -757,7 +764,8 @@
 
             emptySearchPeriodText: 'Aucune facture ne correspond à votre recherche pour cette période.',
             kpiPayeEl: '#facture-kpi-paye',
-            kpiImpayeEl: '#facture-kpi-impaye'
+            kpiImpayeEl: '#facture-kpi-impaye',
+            kpiLivraisonEl: '#facture-kpi-livraison'
 
         });
 

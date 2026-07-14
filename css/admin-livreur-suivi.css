@@ -271,6 +271,73 @@
     line-height: 1;
 }
 
+.livreur-marker-icon--avatar,
+.livreur-marker-icon--avatar.livreur-marker-icon--moto {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e5488a;
+    border: 2.5px solid #fff;
+    box-shadow: 0 2px 10px rgba(229, 72, 138, 0.45);
+    overflow: hidden;
+    padding: 0;
+}
+
+.livreur-marker-wrap--nav .livreur-marker-icon--avatar {
+    width: 48px;
+    height: 48px;
+}
+
+.livreur-marker-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
+    transform: none !important;
+}
+
+.livreur-marker-avatar__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.livreur-marker-avatar--initial {
+    background: linear-gradient(145deg, #918a44, #c26638);
+    color: #fff;
+}
+
+.livreur-marker-avatar__initial {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.livreur-marker-icon--avatar,
+.livreur-marker-wrap--driver .livreur-marker-icon--avatar {
+    transition: width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaflet-marker-icon.livreur-marker-wrap--driver {
+    cursor: pointer;
+    overflow: visible !important;
+}
+
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--expanded .livreur-marker-icon--avatar {
+    width: 58px;
+    height: 58px;
+    box-shadow: 0 4px 16px rgba(229, 72, 138, 0.55);
+}
+
+.leaflet-marker-icon.livreur-marker-wrap--driver.livreur-marker-wrap--nav.livreur-marker-wrap--expanded .livreur-marker-icon--avatar {
+    width: 64px;
+    height: 64px;
+}
+
 .livreur-nav-arrow {
     width: 52px;
     height: 52px;

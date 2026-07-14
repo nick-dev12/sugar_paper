@@ -98,12 +98,16 @@ $initial_payload = [
         'delivery_latitude' => $delivery_lat,
         'delivery_longitude' => $delivery_lng,
         'livreur_nom' => trim(($livraison['livreur_prenom'] ?? '') . ' ' . ($livraison['livreur_nom'] ?? '')),
+        'livreur_photo_url' => $livreur_photo_url,
+        'livreur_initials' => $livreur_initials,
     ],
     'last_position' => $last,
     'socket_path' => $socket_path,
 ];
 
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
+$livreur_photo_url = livreur_photo_url_from_row($livraison);
+$livreur_initials = livreur_initials_from_row($livraison);
 $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : '');
 ?>
 <!DOCTYPE html>
@@ -222,7 +226,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     currentDeliveryKey: <?php echo json_encode(
         $livraison_type === 'facture' ? 'facture-' . (int) $bl_id : 'commande-' . (int) $commande_id,
         JSON_UNESCAPED_UNICODE
-    ); ?>
+    ); ?>,
+    livreurPhotoUrl: <?php echo json_encode($livreur_photo_url, JSON_UNESCAPED_SLASHES); ?>,
+    livreurInitials: <?php echo json_encode($livreur_initials, JSON_UNESCAPED_UNICODE); ?>
 };
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>

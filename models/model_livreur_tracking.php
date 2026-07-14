@@ -478,6 +478,7 @@ function livreur_get_commande_tracking($commande_id) {
                    a.nom AS livreur_nom,
                    a.prenom AS livreur_prenom,
                    a.email AS livreur_email
+                   " . livreur_admin_photo_profil_sql_select('a') . "
             FROM commandes c
             LEFT JOIN users u ON u.id = c.user_id
             LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
@@ -601,6 +602,40 @@ function livreur_get_factures_livraison_list($only_today = false) {
 }
 
 /**
+ * Fragment SQL photo profil livreur (table admin).
+ */
+function livreur_admin_photo_profil_sql_select($alias = 'a') {
+    require_once __DIR__ . '/model_admin.php';
+    if (admin_has_column('photo_profil')) {
+        return ', ' . $alias . '.photo_profil AS livreur_photo_profil';
+    }
+    return ', NULL AS livreur_photo_profil';
+}
+
+/**
+ * URL publique photo profil livreur depuis une ligne tracking.
+ */
+function livreur_photo_url_from_row(array $row) {
+    require_once __DIR__ . '/model_admin.php';
+    return admin_photo_profil_url((string) ($row['livreur_photo_profil'] ?? ''));
+}
+
+/**
+ * Initiales affichées si pas de photo profil.
+ */
+function livreur_initials_from_row(array $row) {
+    $prenom = trim((string) ($row['livreur_prenom'] ?? $row['prenom'] ?? ''));
+    $nom = trim((string) ($row['livreur_nom'] ?? $row['nom'] ?? ''));
+    if ($prenom !== '') {
+        return mb_strtoupper(mb_substr($prenom, 0, 1, 'UTF-8'), 'UTF-8');
+    }
+    if ($nom !== '') {
+        return mb_strtoupper(mb_substr($nom, 0, 1, 'UTF-8'), 'UTF-8');
+    }
+    return 'L';
+}
+
+/**
  * Détail facture B2B pour suivi GPS.
  */
 function livreur_get_facture_tracking($bl_id) {
@@ -618,6 +653,7 @@ function livreur_get_facture_tracking($bl_id) {
                    c.adresse AS client_adresse,
                    COALESCE(b.adresse_livraison, b.adresse_client, c.adresse) AS adresse_livraison,
                    a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+                   " . livreur_admin_photo_profil_sql_select('a') . "
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
             LEFT JOIN admin a ON a.id = b.livreur_id AND a.role IN ('livreur', 'admin')
@@ -1710,6 +1746,7 @@ function livreur_get_actifs_sur_carte() {
                    c.livreur_id, c.tracking_active,
                    c.delivery_latitude, c.delivery_longitude,
                    a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+                   " . livreur_admin_photo_profil_sql_select('a') . "
             FROM commandes c
             INNER JOIN admin a ON a.id = c.livreur_id
             WHERE c.tracking_active = 1
@@ -1737,6 +1774,7 @@ function livreur_get_actifs_sur_carte() {
                        b.livreur_id, b.tracking_active,
                        b.delivery_latitude, b.delivery_longitude,
                        a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+                       " . livreur_admin_photo_profil_sql_select('a') . "
                 FROM bons_livraison b
                 INNER JOIN admin a ON a.id = b.livreur_id
                 WHERE b.tracking_active = 1
@@ -1766,6 +1804,8 @@ function livreur_get_actifs_sur_carte() {
         $out[] = [
             'livreur_id' => $lid,
             'livreur_nom' => trim(($row['livreur_prenom'] ?? '') . ' ' . ($row['livreur_nom'] ?? '')),
+            'livreur_photo_url' => livreur_photo_url_from_row($row),
+            'livreur_initials' => livreur_initials_from_row($row),
             'livreur_email' => $row['livreur_email'] ?? '',
             'livraison_type' => $row['livraison_type'],
             'livraison_id' => (int) $row['livraison_id'],

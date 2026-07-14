@@ -136,7 +136,7 @@ $bl_edit_lignes_json = '[]';
 $bl_form_is_edit = false;
 $bl_form_action = 'bl_enregistrer.php';
 $bl_form_title = 'Nouvelle facture';
-$bl_form_submit_label = 'Enregistrer le BL';
+$bl_form_submit_label = 'Enregistrer la facture';
 
 $devis_edit_id = 0;
 $devis_edit_lignes_json = '[]';
@@ -282,13 +282,22 @@ $invoice_hub_title = $invoice_hub_titles[$active_tab] ?? $invoice_hub_titles['fa
 
 $facture_montant_paye = 0.0;
 $facture_montant_impaye = 0.0;
+$facture_montant_livraison = 0.0;
+$facture_lignes_totaux_map = [];
 if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
+    $facture_bl_ids = array_map(function ($f_row) {
+        return (int) ($f_row['id'] ?? 0);
+    }, $facture_list);
+    $facture_lignes_totaux_map = bl_prefetch_totaux_lignes_par_bl_ids($facture_bl_ids);
     foreach ($facture_list as $f_row) {
-        $montant_row = bl_montant_facture_affichage($f_row);
+        $bl_id_row = (int) ($f_row['id'] ?? 0);
+        $lignes_totaux_row = $facture_lignes_totaux_map[$bl_id_row] ?? null;
+        $decomp_row = bl_decomposer_montant_facture($f_row, $lignes_totaux_row);
+        $facture_montant_livraison += (float) $decomp_row['livraison'];
         if (bl_est_facture_payee($f_row)) {
-            $facture_montant_paye += $montant_row;
+            $facture_montant_paye += (float) $decomp_row['hors_livraison'];
         } else {
-            $facture_montant_impaye += $montant_row;
+            $facture_montant_impaye += (float) $decomp_row['hors_livraison'];
         }
     }
 }
@@ -512,6 +521,13 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                     <strong class="invoice-facture-kpi__value" id="facture-kpi-impaye"><?php echo number_format($facture_montant_impaye, 0, ',', ' '); ?> FCFA</strong>
                 </div>
             </div>
+            <div class="invoice-facture-kpi invoice-facture-kpi--livraison">
+                <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-truck"></i></span>
+                <div class="invoice-facture-kpi__body">
+                    <span class="invoice-facture-kpi__label">Livraison</span>
+                    <strong class="invoice-facture-kpi__value" id="facture-kpi-livraison"><?php echo number_format($facture_montant_livraison, 0, ',', ' '); ?> FCFA</strong>
+                </div>
+            </div>
         </div>
         <?php if (empty($facture_list)): ?>
             <div class="bl-empty-state" role="status">
@@ -584,7 +600,11 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             $date_aff = !empty($f['date_bl'])
                                 ? date('d/m/Y', strtotime($f['date_bl']))
                                 : date('d/m/Y', strtotime($f['date_creation'] ?? 'now'));
-                            $montant_aff = bl_montant_facture_affichage($f);
+                            $lignes_totaux_f = $facture_lignes_totaux_map[$fid] ?? null;
+                            $decomp_montant_f = bl_decomposer_montant_facture($f, $lignes_totaux_f);
+                            $montant_aff = (float) $decomp_montant_f['total'];
+                            $montant_hors_livraison = (int) round((float) $decomp_montant_f['hors_livraison']);
+                            $montant_livraison = (int) round((float) $decomp_montant_f['livraison']);
                             $montant_txt = number_format($montant_aff, 0, ',', ' ');
                             $est_payee = bl_est_facture_payee($f);
                             $statut_facture = $est_payee ? 'Payée' : 'Impayée';
@@ -595,7 +615,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             $date_source = !empty($f['date_bl']) ? $f['date_bl'] : ($f['date_creation'] ?? 'now');
                             $date_iso = date('Y-m-d', strtotime($date_source));
                             ?>
-                            <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($facture_href); ?>" data-montant="<?php echo (int) round($montant_aff); ?>" data-payee="<?php echo $est_payee ? '1' : '0'; ?>" role="link" tabindex="0" aria-label="Voir la facture <?php echo htmlspecialchars($numero_facture); ?>">
+                            <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($facture_href); ?>" data-montant="<?php echo (int) round($montant_aff); ?>" data-montant-hors-livraison="<?php echo $montant_hors_livraison; ?>" data-montant-livraison="<?php echo $montant_livraison; ?>" data-payee="<?php echo $est_payee ? '1' : '0'; ?>" role="link" tabindex="0" aria-label="Voir la facture <?php echo htmlspecialchars($numero_facture); ?>">
                                 <td data-label="Client">
                                     <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_label); ?></strong>
                                     <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_facture); ?></span>
@@ -689,7 +709,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 <div id="lignes-commande-bl" class="lignes-commande lignes-commande-modal-wrap">
                                     <div class="ligne-commande-head ligne-commande-head-bl ligne-commande-head-invoice" id="lignes-head-bl" hidden>
                                         <span class="lch-head-cell">Produit</span>
-                                        <span class="lch-head-cell">Quantité</span>
+                                        <span class="lch-head-cell lch-head-cell--qte">
+                                            <span class="lch-head-full">Quantité</span>
+                                            <span class="lch-head-short" aria-hidden="true">Qté</span>
+                                        </span>
                                         <span class="lch-head-cell">Montant</span>
                                         <span class="lch-head-cell">Total</span>
                                         <span class="lch-head-cell lch-head-actions" aria-hidden="true"></span>
@@ -767,10 +790,6 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                     <input type="hidden" name="frais_livraison" id="frais_livraison_bl" value="0">
                                 </div>
                                 <div class="form-group">
-                                    <label for="notes_bl">Notes</label>
-                                    <textarea id="notes_bl" name="notes" rows="2" placeholder="Instructions supplémentaires..."><?php echo htmlspecialchars($bp['notes'] ?? ''); ?></textarea>
-                                </div>
-                                <div class="form-group">
                                     <label for="remise_globale_pct_bl"><i class="fas fa-percent"></i> Réduction globale (%)</label>
                                     <input type="number" name="remise_globale_pct" id="remise_globale_pct_bl" min="0" max="100" step="0.01" placeholder="0"
                                         value="<?php echo htmlspecialchars($bp['remise_globale_pct'] ?? '0'); ?>">
@@ -778,11 +797,11 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 </div>
                                 <div class="form-row-2">
                                     <div class="form-group">
-                                        <label for="date_bl">Date du BL</label>
+                                        <label for="date_bl">Date de la facture</label>
                                         <input type="date" name="date_bl" id="date_bl" value="<?php echo htmlspecialchars($bp['date_bl'] ?? date('Y-m-d')); ?>">
                                     </div>
                                     <div class="form-group">
-                                        <label for="statut_bl_sel">Statut du BL</label>
+                                        <label for="statut_bl_sel">Statut de la facture</label>
                                         <select name="statut" id="statut_bl_sel">
                                             <?php
                                             $sb = $bp['statut'] ?? 'brouillon';

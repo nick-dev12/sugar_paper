@@ -129,7 +129,10 @@
 
     function buildLigneBlDesignationCellHtml(produit, idx, lignesKey) {
         lignesKey = lignesKey || 'lignes';
-        var nom = (produit.nom || '').replace(/"/g, '&quot;');
+        var nom = (produit.nom || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
         return (
             '<div class="ligne-bl-cell ligne-bl-cell--designation">' +
             '<input type="hidden" name="' +
@@ -140,13 +143,13 @@
             produit.id +
             '">' +
             '<span class="ligne-bl-label">Produit</span>' +
-            '<input type="text" name="' +
+            '<textarea name="' +
             lignesKey +
             '[' +
             idx +
-            '][nom_produit]" value="' +
+            '][nom_produit]" rows="1" placeholder="Nom du produit" class="ligne-nom-input" aria-label="Nom du produit">' +
             nom +
-            '" placeholder="Nom du produit" class="ligne-nom-input" aria-label="Nom du produit">' +
+            '</textarea>' +
             '</div>'
         );
     }

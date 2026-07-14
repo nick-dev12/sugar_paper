@@ -200,6 +200,36 @@
     font-size: 0.85rem;
 }
 
+.livreurs-carte-marker__pin--avatar {
+    overflow: hidden;
+    padding: 0;
+    transition: width 0.2s ease, height 0.2s ease, box-shadow 0.2s ease;
+}
+
+.livreurs-carte-marker__photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.livreurs-carte-marker__initial {
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.leaflet-marker-icon.livreurs-carte-marker {
+    cursor: pointer;
+    overflow: visible !important;
+}
+
+.leaflet-marker-icon.livreurs-carte-marker--expanded .livreurs-carte-marker__pin {
+    width: 52px;
+    height: 52px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
 .livreurs-carte-dest__dot {
     color: #6b2f20;
     font-size: 1.25rem;

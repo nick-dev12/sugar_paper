@@ -127,6 +127,28 @@ if ($tables_ready) {
 }
 $mes_livraisons_count = count($mes_livraisons);
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
+
+require_once __DIR__ . '/../../models/model_admin.php';
+$livreur_photo_url = '';
+$livreur_initials = 'L';
+if ($livraison) {
+    $livreur_photo_url = livreur_photo_url_from_row($livraison);
+    $livreur_initials = livreur_initials_from_row($livraison);
+}
+if ($livreur_photo_url === '' && $can_start_livraison) {
+    $current_admin = get_admin_by_id((int) $_SESSION['admin_id']);
+    if (is_array($current_admin)) {
+        $livreur_photo_url = admin_photo_profil_url((string) ($current_admin['photo_profil'] ?? ''));
+        $livreur_initials = livreur_initials_from_row([
+            'livreur_prenom' => $current_admin['prenom'] ?? '',
+            'livreur_nom' => $current_admin['nom'] ?? '',
+        ]);
+    }
+}
+if ($initial_watch_payload !== null) {
+    $initial_watch_payload['commande']['livreur_photo_url'] = $livreur_photo_url;
+    $initial_watch_payload['commande']['livreur_initials'] = $livreur_initials;
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -398,7 +420,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     currentDeliveryKey: <?php echo json_encode(
         $livraison_type === 'facture' ? 'facture-' . (int) $bl_id : 'commande-' . (int) $commande_id,
         JSON_UNESCAPED_UNICODE
-    ); ?>
+    ); ?>,
+    livreurPhotoUrl: <?php echo json_encode($livreur_photo_url, JSON_UNESCAPED_SLASHES); ?>,
+    livreurInitials: <?php echo json_encode($livreur_initials, JSON_UNESCAPED_UNICODE); ?>
 };
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
