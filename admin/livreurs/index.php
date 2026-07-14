@@ -29,6 +29,9 @@ $admin_session_id = (int) $_SESSION['admin_id'];
 
 $tables_ready = livreur_tracking_tables_ready();
 $message = '';
+if (!empty($_GET['terminee'])) {
+    $message = 'Livraison terminée avec succès.';
+}
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $is_admin)) {
@@ -82,6 +85,9 @@ $tab_facture_active = $active_tab === 'facture';
 $today_ymd = date('Y-m-d');
 $commandes_count = 0;
 foreach ($commandes_liste as $cmd_row) {
+    if (livreur_livraison_est_terminee($cmd_row, 'commande')) {
+        continue;
+    }
     if (empty($cmd_row['date_commande'])) {
         continue;
     }
@@ -91,6 +97,9 @@ foreach ($commandes_liste as $cmd_row) {
 }
 $factures_count = 0;
 foreach ($factures_liste as $facture_row) {
+    if (livreur_livraison_est_terminee($facture_row, 'facture')) {
+        continue;
+    }
     $date_source = !empty($facture_row['date_bl']) ? $facture_row['date_bl'] : ($facture_row['date_creation'] ?? '');
     if ($date_source === '') {
         continue;
@@ -242,9 +251,10 @@ foreach ($factures_liste as $facture_row) {
                 <?php foreach ($commandes_liste as $cmd): ?>
                     <?php
                     $cmd_livreur_id = !empty($cmd['livreur_id']) ? (int) $cmd['livreur_id'] : null;
-                    $prise_par_moi = $cmd_livreur_id === $admin_session_id;
-                    $prise_par_autre = $cmd_livreur_id !== null && !$prise_par_moi;
-                    $disponible = $cmd_livreur_id === null;
+                    $est_terminee = livreur_livraison_est_terminee($cmd, 'commande');
+                    $prise_par_moi = !$est_terminee && $cmd_livreur_id === $admin_session_id;
+                    $prise_par_autre = !$est_terminee && $cmd_livreur_id !== null && !$prise_par_moi;
+                    $disponible = !$est_terminee && $cmd_livreur_id === null;
                     $client_nom = trim((string) ($cmd['user_prenom'] ?? $cmd['client_prenom'] ?? '') . ' ' . (string) ($cmd['user_nom'] ?? $cmd['client_nom'] ?? ''));
                     $client_tel = trim((string) ($cmd['user_telephone'] ?? $cmd['client_telephone'] ?? $cmd['telephone_livraison'] ?? ''));
                     $date_iso = !empty($cmd['date_commande']) ? date('Y-m-d', strtotime($cmd['date_commande'])) : '';
@@ -252,7 +262,7 @@ foreach ($factures_liste as $facture_row) {
                     $delivery_lat = livreur_parse_coord($cmd['delivery_latitude'] ?? null);
                     $delivery_lng = livreur_parse_coord($cmd['delivery_longitude'] ?? null);
                     ?>
-                    <tr class="livreur-cmd-row" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>">
+                    <tr class="livreur-cmd-row<?php echo $est_terminee ? ' livreur-cmd-row--terminee' : ''; ?>" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $est_terminee ? ' data-terminee="1"' : ''; ?>>
                         <td data-label="Client">
                             <?php if ($client_nom !== ''): ?>
                                 <span class="livreur-cmd-client"><i class="fas fa-user" aria-hidden="true"></i> <?php echo htmlspecialchars($client_nom); ?></span>
@@ -263,7 +273,11 @@ foreach ($factures_liste as $facture_row) {
                         </td>
                         <td class="livreur-actions" data-label="Action">
                             <div class="livreur-actions__btns">
-                            <?php if (($is_livreur || $is_admin) && $disponible): ?>
+                            <?php if ($est_terminee): ?>
+                                <span class="btn-sm livreur-btn-terminee" aria-disabled="true">
+                                    <i class="fas fa-check-circle" aria-hidden="true"></i> Terminée
+                                </span>
+                            <?php elseif (($is_livreur || $is_admin) && $disponible): ?>
                             <button type="button"
                                 class="btn-primary btn-sm livreur-btn-prendre"
                                 data-livraison-type="commande"
@@ -295,8 +309,10 @@ foreach ($factures_liste as $facture_row) {
                             <?php endif; ?>
                             </div>
                             <div class="livreur-actions__status">
-                                <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars(livreur_statut_label($cmd['statut'] ?? '')); ?></span>
-                                <?php if ($prise_par_autre): ?>
+                                <span class="livreur-badge livreur-badge--statut<?php echo $est_terminee ? ' livreur-badge--terminee' : ''; ?>"><?php echo htmlspecialchars($est_terminee ? 'Terminée' : livreur_statut_label($cmd['statut'] ?? '')); ?></span>
+                                <?php if ($est_terminee && $cmd_livreur_id): ?>
+                                    <small class="livreur-cmd-taken">Livrée par <?php echo htmlspecialchars(trim(($cmd['livreur_prenom'] ?? '') . ' ' . ($cmd['livreur_nom'] ?? ''))); ?></small>
+                                <?php elseif ($prise_par_autre): ?>
                                     <small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($cmd['livreur_prenom'] ?? '') . ' ' . ($cmd['livreur_nom'] ?? ''))); ?></small>
                                 <?php endif; ?>
                             </div>
@@ -341,14 +357,15 @@ foreach ($factures_liste as $facture_row) {
                     $date_iso = date('Y-m-d', strtotime($date_source));
                     $search_blob = htmlspecialchars(livreur_facture_search_blob($f), ENT_QUOTES, 'UTF-8');
                     $bl_livreur_id = !empty($f['livreur_id']) ? (int) $f['livreur_id'] : null;
-                    $prise_par_moi = $bl_livreur_id === $admin_session_id;
-                    $prise_par_autre = $bl_livreur_id !== null && !$prise_par_moi;
-                    $disponible = $bl_livreur_id === null;
+                    $est_terminee = livreur_livraison_est_terminee($f, 'facture');
+                    $prise_par_moi = !$est_terminee && $bl_livreur_id === $admin_session_id;
+                    $prise_par_autre = !$est_terminee && $bl_livreur_id !== null && !$prise_par_moi;
+                    $disponible = !$est_terminee && $bl_livreur_id === null;
                     $delivery_lat = livreur_parse_coord($f['delivery_latitude'] ?? null);
                     $delivery_lng = livreur_parse_coord($f['delivery_longitude'] ?? null);
                     $statut_livraison = livreur_facture_statut_livraison($f);
                     ?>
-                    <tr class="livreur-cmd-row livreur-facture-row" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>">
+                    <tr class="livreur-cmd-row livreur-facture-row<?php echo $est_terminee ? ' livreur-cmd-row--terminee' : ''; ?>" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $est_terminee ? ' data-terminee="1"' : ''; ?>>
                         <td data-label="Client">
                             <?php if ($client_label !== '' && $client_label !== '—'): ?>
                                 <span class="livreur-cmd-client"><i class="fas fa-building" aria-hidden="true"></i> <?php echo htmlspecialchars($client_label); ?></span>
@@ -359,7 +376,11 @@ foreach ($factures_liste as $facture_row) {
                         </td>
                         <td class="livreur-actions" data-label="Action">
                             <div class="livreur-actions__btns">
-                            <?php if (($is_livreur || $is_admin) && $disponible): ?>
+                            <?php if ($est_terminee): ?>
+                                <span class="btn-sm livreur-btn-terminee" aria-disabled="true">
+                                    <i class="fas fa-check-circle" aria-hidden="true"></i> Terminée
+                                </span>
+                            <?php elseif (($is_livreur || $is_admin) && $disponible): ?>
                                 <button type="button"
                                     class="btn-primary btn-sm livreur-btn-prendre"
                                     data-livraison-type="facture"
@@ -389,8 +410,10 @@ foreach ($factures_liste as $facture_row) {
                             <?php endif; ?>
                             </div>
                             <div class="livreur-actions__status">
-                                <span class="livreur-badge livreur-badge--statut"><?php echo htmlspecialchars($statut_livraison); ?></span>
-                                <?php if ($prise_par_autre): ?>
+                                <span class="livreur-badge livreur-badge--statut<?php echo $est_terminee ? ' livreur-badge--terminee' : ''; ?>"><?php echo htmlspecialchars($statut_livraison); ?></span>
+                                <?php if ($est_terminee && $bl_livreur_id): ?>
+                                    <small class="livreur-cmd-taken">Livrée par <?php echo htmlspecialchars(trim(($f['livreur_prenom'] ?? '') . ' ' . ($f['livreur_nom'] ?? ''))); ?></small>
+                                <?php elseif ($prise_par_autre): ?>
                                     <small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($f['livreur_prenom'] ?? '') . ' ' . ($f['livreur_nom'] ?? ''))); ?></small>
                                 <?php endif; ?>
                             </div>

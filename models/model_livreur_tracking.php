@@ -523,7 +523,11 @@ function livreur_get_commandes_livraison_list($only_today = false) {
             FROM commandes c
             LEFT JOIN users u ON u.id = c.user_id
             LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
-            WHERE c.statut NOT IN ('livree', 'paye', 'annulee')
+            WHERE c.statut NOT IN ('paye', 'annulee')
+              AND (
+                  c.statut NOT IN ('livree')
+                  OR c.livreur_id IS NOT NULL
+              )
         ";
         if ($only_today) {
             $sql .= " AND DATE(c.date_commande) = CURDATE()";
@@ -553,6 +557,40 @@ function livreur_bl_livraison_columns_ok() {
         $ok = false;
     }
     return $ok;
+}
+
+/**
+ * Colonne livraison_terminee_at (migration run_add_livraison_terminee.php).
+ */
+function livreur_livraison_terminee_column_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $db->query('SELECT livraison_terminee_at FROM commandes LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * Indique si une livraison a été terminée par le livreur (plus de reprise GPS).
+ *
+ * @param 'commande'|'facture' $type
+ */
+function livreur_livraison_est_terminee(array $row, $type = 'commande') {
+    if (livreur_livraison_terminee_column_ok() && !empty($row['livraison_terminee_at'])) {
+        return true;
+    }
+    if ($type === 'commande') {
+        $statut = strtolower(trim((string) ($row['statut'] ?? '')));
+        return in_array($statut, ['livree', 'paye'], true);
+    }
+    return false;
 }
 
 /**
@@ -723,6 +761,9 @@ function livreur_get_facture_tracking($bl_id) {
  * Libellé statut livraison facture (aligné commandes).
  */
 function livreur_facture_statut_livraison($facture) {
+    if (livreur_livraison_est_terminee($facture, 'facture')) {
+        return 'Terminée';
+    }
     if (!empty($facture['tracking_active'])) {
         return 'En livraison';
     }
@@ -780,6 +821,10 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
         $facture = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$facture) {
             return ['ok' => false, 'error' => 'Facture introuvable' . ($require_today ? ' ou pas du jour' : '') . '.'];
+        }
+
+        if (livreur_livraison_est_terminee($facture, 'facture')) {
+            return ['ok' => false, 'error' => 'Cette facture a déjà été livrée.'];
         }
 
         $current_livreur = $facture['livreur_id'] !== null ? (int) $facture['livreur_id'] : null;
@@ -925,6 +970,9 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id, $require_toda
         if (in_array($commande['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
             return ['ok' => false, 'error' => 'Cette commande n\'est plus disponible.'];
         }
+        if (livreur_livraison_est_terminee($commande, 'commande')) {
+            return ['ok' => false, 'error' => 'Cette commande a déjà été livrée.'];
+        }
 
         $current_livreur = $commande['livreur_id'] !== null ? (int) $commande['livreur_id'] : null;
         if ($current_livreur !== null && $current_livreur !== $admin_livreur_id) {
@@ -1013,6 +1061,10 @@ function livreur_prendre_facture($bl_id, $admin_livreur_id, $require_today = tru
         $facture = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$facture) {
             return ['ok' => false, 'error' => $require_today ? 'Facture introuvable ou pas du jour.' : 'Facture introuvable.'];
+        }
+
+        if (livreur_livraison_est_terminee($facture, 'facture')) {
+            return ['ok' => false, 'error' => 'Cette facture a déjà été livrée.'];
         }
 
         $current_livreur = $facture['livreur_id'] !== null ? (int) $facture['livreur_id'] : null;
@@ -1234,6 +1286,9 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
         if (in_array($commande['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
             return ['ok' => false, 'error' => 'Cette commande n\'est plus disponible.'];
         }
+        if (livreur_livraison_est_terminee($commande, 'commande')) {
+            return ['ok' => false, 'error' => 'Cette commande a déjà été livrée.'];
+        }
 
         $current_livreur = $commande['livreur_id'] !== null ? (int) $commande['livreur_id'] : null;
         if ($current_livreur !== null && $current_livreur !== $admin_livreur_id) {
@@ -1341,11 +1396,17 @@ function livreur_web_can_manage_livraison($admin_id, $commande_id = null, $bl_id
     }
     if ($commande_id !== null && (int) $commande_id > 0) {
         $row = livreur_get_commande_tracking((int) $commande_id);
-        return $row && (int) ($row['livreur_id'] ?? 0) === $admin_id;
+        if (!$row || (int) ($row['livreur_id'] ?? 0) !== $admin_id) {
+            return false;
+        }
+        return !livreur_livraison_est_terminee($row, 'commande');
     }
     if ($bl_id !== null && (int) $bl_id > 0) {
         $row = livreur_get_facture_tracking((int) $bl_id);
-        return $row && (int) ($row['livreur_id'] ?? 0) === $admin_id;
+        if (!$row || (int) ($row['livreur_id'] ?? 0) !== $admin_id) {
+            return false;
+        }
+        return !livreur_livraison_est_terminee($row, 'facture');
     }
     return false;
 }
@@ -1812,6 +1873,75 @@ function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null
 }
 
 /**
+ * Termine une livraison : arrêt GPS + marquage terminé (statut livrée / horodatage).
+ *
+ * @return array{ok:bool,error?:string}
+ */
+function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = null) {
+    global $db;
+
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1) {
+        return ['ok' => false, 'error' => 'Compte invalide.'];
+    }
+
+    if ($bl_id !== null && (int) $bl_id > 0) {
+        $row = livreur_get_facture_tracking((int) $bl_id);
+        $type = 'facture';
+    } elseif ($commande_id !== null && (int) $commande_id > 0) {
+        $row = livreur_get_commande_tracking((int) $commande_id);
+        $type = 'commande';
+    } else {
+        return ['ok' => false, 'error' => 'Livraison introuvable.'];
+    }
+
+    if (!$row || (int) ($row['livreur_id'] ?? 0) !== $admin_id) {
+        return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
+    }
+    if (livreur_livraison_est_terminee($row, $type)) {
+        return ['ok' => true, 'already' => true];
+    }
+
+    try {
+        if ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
+            $sql = '
+                UPDATE bons_livraison
+                SET tracking_active = 0,
+                    tracking_started_at = NULL
+            ';
+            if (livreur_livraison_terminee_column_ok()) {
+                $sql .= ', livraison_terminee_at = NOW()';
+            }
+            $sql .= ' WHERE id = :id AND livreur_id = :livreur_id';
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['id' => (int) $bl_id, 'livreur_id' => $admin_id]);
+        } else {
+            $sql = '
+                UPDATE commandes
+                SET tracking_active = 0,
+                    tracking_started_at = NULL
+            ';
+            if (livreur_livraison_terminee_column_ok()) {
+                $sql .= ', livraison_terminee_at = NOW()';
+            }
+            $sql .= ' WHERE id = :id AND livreur_id = :livreur_id';
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['id' => (int) $commande_id, 'livreur_id' => $admin_id]);
+
+            require_once __DIR__ . '/model_commandes_admin.php';
+            if (!in_array($row['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
+                update_commande_statut((int) $commande_id, 'livree');
+            }
+        }
+
+        livreur_countdown_clear($commande_id, $bl_id);
+        return ['ok' => true];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'error' => 'Erreur lors de la clôture de la livraison.'];
+    }
+}
+
+/**
  * @return array{ok:bool,error?:string}
  */
 function livreur_save_web_position($admin_id, $latitude, $longitude, $commande_id = null, $bl_id = null, $accuracy = null) {
@@ -1976,6 +2106,9 @@ function livreur_parse_coord($value) {
  * @param array<string, mixed> $row
  */
 function livreur_mes_livraison_en_cours($type, array $row) {
+    if (livreur_livraison_est_terminee($row, $type)) {
+        return false;
+    }
     if ((int) ($row['tracking_active'] ?? 0) === 1) {
         return true;
     }

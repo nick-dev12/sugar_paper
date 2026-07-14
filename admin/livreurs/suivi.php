@@ -203,7 +203,13 @@ if ($initial_watch_payload !== null) {
         <a href="<?php echo htmlspecialchars($index_back_url, ENT_QUOTES, 'UTF-8'); ?>" class="livreur-suivi-topbar__back" aria-label="Retour">
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </a>
-        <h1 class="livreur-suivi-topbar__title"><?php echo htmlspecialchars($statut_label ?: 'Livraison'); ?></h1>
+        <div class="livreur-suivi-topbar__main">
+            <h1 class="livreur-suivi-topbar__title" id="livreur-topbar-title"><?php echo htmlspecialchars($statut_label ?: 'Livraison'); ?></h1>
+            <div class="livreur-suivi-topbar__countdown" id="livreur-topbar-countdown" hidden aria-live="polite">
+                <span class="livreur-suivi-topbar__countdown-label" id="livreur-topbar-countdown-label">Arrivée dans</span>
+                <strong class="livreur-suivi-topbar__countdown-value" id="livreur-topbar-countdown-value">—</strong>
+            </div>
+        </div>
         <?php if ($regarder_mode && $show_share_delivery): ?>
         <button type="button"
             class="livreur-suivi-topbar__action livreur-suivi-topbar__action--share"

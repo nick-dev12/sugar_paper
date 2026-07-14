@@ -76,6 +76,10 @@ $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
 $tracking_active_initial = (int) ($livraison['tracking_active'] ?? 0);
 $initial_countdown = livreur_countdown_state_from_row($livraison);
 
+$livreur_profile = livreur_photo_profile_for_livraison($livraison);
+$livreur_photo_url = $livreur_profile['photo_url'];
+$livreur_initials = $livreur_profile['initials'];
+
 $last = null;
 if (!empty($livraison['livreur_id'])) {
     $last = livreur_get_last_position(
@@ -108,9 +112,6 @@ $initial_payload = [
 ];
 
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
-$livreur_profile = livreur_photo_profile_for_livraison($livraison);
-$livreur_photo_url = $livreur_profile['photo_url'];
-$livreur_initials = $livreur_profile['initials'];
 $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : '');
 ?>
 <!DOCTYPE html>
@@ -129,7 +130,13 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
 <div class="livreur-suivi-app is-public-watch" id="livreur-suivi-app">
     <header class="livreur-suivi-topbar livreur-suivi-topbar--public">
         <span class="livreur-suivi-topbar__brand" aria-hidden="true"><i class="fas fa-truck-fast"></i></span>
-        <h1 class="livreur-suivi-topbar__title"><?php echo htmlspecialchars($statut_label ?: 'Suivi livraison'); ?></h1>
+        <div class="livreur-suivi-topbar__main">
+            <h1 class="livreur-suivi-topbar__title" id="livreur-topbar-title"><?php echo htmlspecialchars($statut_label ?: 'Suivi livraison'); ?></h1>
+            <div class="livreur-suivi-topbar__countdown" id="livreur-topbar-countdown" hidden aria-live="polite">
+                <span class="livreur-suivi-topbar__countdown-label" id="livreur-topbar-countdown-label">Arrivée dans</span>
+                <strong class="livreur-suivi-topbar__countdown-value" id="livreur-topbar-countdown-value">—</strong>
+            </div>
+        </div>
         <a href="/index.php" class="livreur-suivi-topbar__action livreur-suivi-topbar__action--brand" aria-label="Sugar Paper — Accueil">
             <img src="/image/sugar_paper.jpg" alt="Sugar Paper" class="livreur-suivi-topbar__logo">
         </a>

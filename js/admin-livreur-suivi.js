@@ -28,6 +28,11 @@
     var confirmStopEl = document.getElementById('livreur-suivi-confirm-stop');
     var confirmStopYesBtn = document.getElementById('livreur-suivi-confirm-stop-yes');
     var confirmStopNoBtn = document.getElementById('livreur-suivi-confirm-stop-no');
+    var topbarEl = document.querySelector('.livreur-suivi-topbar');
+    var topbarTitleEl = document.getElementById('livreur-topbar-title');
+    var topbarCountdownEl = document.getElementById('livreur-topbar-countdown');
+    var topbarCountdownLabelEl = document.getElementById('livreur-topbar-countdown-label');
+    var topbarCountdownValueEl = document.getElementById('livreur-topbar-countdown-value');
     var lastSocketError = '';
     var autostartFailed = false;
     var autostartInProgress = false;
@@ -433,6 +438,7 @@
         }
         observerFollowActive = true;
         ensureNorthUpMap();
+        maybeRecalculateObserverRoute(lat, lng);
     }
 
     function escapeHtmlAttr(value) {
@@ -547,6 +553,65 @@
         return minutes + ' min';
     }
 
+    function setTopbarCountdownVisible(visible) {
+        if (topbarEl) {
+            topbarEl.classList.toggle('has-live-countdown', !!visible);
+        }
+        if (topbarCountdownEl) {
+            topbarCountdownEl.hidden = !visible;
+        }
+        if (topbarTitleEl) {
+            topbarTitleEl.hidden = !!visible;
+        }
+    }
+
+    function applyTopbarCountdownVisualState(status) {
+        if (!topbarCountdownEl) {
+            return;
+        }
+        topbarCountdownEl.classList.remove(
+            'livreur-suivi-topbar__countdown--running',
+            'livreur-suivi-topbar__countdown--late',
+            'livreur-suivi-topbar__countdown--paused'
+        );
+        if (status === 'running') {
+            topbarCountdownEl.classList.add('livreur-suivi-topbar__countdown--running');
+        } else if (status === 'late' || status === 'late_paused') {
+            topbarCountdownEl.classList.add('livreur-suivi-topbar__countdown--late');
+        } else if (status === 'paused') {
+            topbarCountdownEl.classList.add('livreur-suivi-topbar__countdown--paused');
+        }
+    }
+
+    function renderTopbarCountdown(status, remainingSec) {
+        if (!topbarCountdownEl || !topbarCountdownValueEl) {
+            return;
+        }
+        applyTopbarCountdownVisualState(status);
+        if (status === 'running') {
+            if (topbarCountdownLabelEl) {
+                topbarCountdownLabelEl.textContent = 'Arrivée dans';
+            }
+            topbarCountdownValueEl.textContent = formatCountdownTime(remainingSec);
+        } else if (status === 'late') {
+            if (topbarCountdownLabelEl) {
+                topbarCountdownLabelEl.textContent = 'Retard';
+            }
+            topbarCountdownValueEl.textContent = formatLateMinutes(remainingSec);
+        } else if (status === 'paused') {
+            if (topbarCountdownLabelEl) {
+                topbarCountdownLabelEl.textContent = 'En pause';
+            }
+            topbarCountdownValueEl.textContent = formatCountdownTime(remainingSec);
+        } else if (status === 'late_paused') {
+            if (topbarCountdownLabelEl) {
+                topbarCountdownLabelEl.textContent = 'Pause — retard';
+            }
+            topbarCountdownValueEl.textContent = formatLateMinutes(remainingSec);
+        }
+        setTopbarCountdownVisible(true);
+    }
+
     function setCountdownAppVisible(visible) {
         var app = document.getElementById('livreur-suivi-app');
         if (!app) {
@@ -581,7 +646,11 @@
     }
 
     function renderCountdownDisplay(status, remainingSec) {
+        if (topbarCountdownValueEl) {
+            renderTopbarCountdown(status, remainingSec);
+        }
         if (!etaBlock || !etaRangeEl) {
+            setCountdownAppVisible(true);
             return;
         }
         applyCountdownVisualState(status);
@@ -688,6 +757,7 @@
         countdownSync.status = null;
         countdownSync.localAt = null;
         setCountdownAppVisible(false);
+        setTopbarCountdownVisible(false);
         hideEta();
     }
 
@@ -697,6 +767,14 @@
         }
         if (cfg.canManage && !isObserverMode()) {
             pushCountdownToServer(durationSeconds);
+            return;
+        }
+        if ((cfg.regarderMode || cfg.publicMode) && cfg.trackingActive && countdownSync.remainingSec === null) {
+            applyCountdownFromServer({
+                status: 'running',
+                remaining_sec: durationToCountdownSeconds(durationSeconds),
+                paused: false
+            });
             return;
         }
         if (cfg.regarderMode || cfg.publicMode) {
@@ -1028,6 +1106,26 @@
             .finally(function () {
                 routeRecalcInFlight = false;
             });
+    }
+
+    function maybeRecalculateObserverRoute(driverLat, driverLng) {
+        if (!isObserverMode()) {
+            return;
+        }
+        var client = getClientCoords();
+        if (client.lat === null || client.lng === null) {
+            return;
+        }
+        var now = Date.now();
+        if (routeRecalcInFlight) {
+            return;
+        }
+        var needsRoute = !activeRouteCoords || activeRouteCoords.length < 3;
+        var periodicDue = now - lastRouteRecalcAt > ROUTE_RECALC_PERIODIC_MS;
+        if (!needsRoute && !periodicDue) {
+            return;
+        }
+        triggerRouteRecalc(driverLat, driverLng, true);
     }
 
     function maybeRecalculateRoute(driverLat, driverLng, force, coords) {
@@ -1652,9 +1750,28 @@
         }).addTo(layer);
     }
 
+    function getRouteFetchOptions() {
+        var opts = {};
+        if (cfg.publicWatchToken) {
+            opts.token = cfg.publicWatchToken;
+        }
+        if (cfg.blId) {
+            opts.blId = cfg.blId;
+        } else if (cfg.commandeId) {
+            opts.commandeId = cfg.commandeId;
+        }
+        return opts;
+    }
+
     function fetchRouteData(driverLat, driverLng, clientLat, clientLng) {
         if (window.LivreurRouteApi && typeof window.LivreurRouteApi.fetchRoute === 'function') {
-            return window.LivreurRouteApi.fetchRoute(driverLat, driverLng, clientLat, clientLng);
+            return window.LivreurRouteApi.fetchRoute(
+                driverLat,
+                driverLng,
+                clientLat,
+                clientLng,
+                getRouteFetchOptions()
+            );
         }
         return Promise.reject(new Error('route_api_unavailable'));
     }
@@ -2524,9 +2641,13 @@
                 setDeliveryActive(false);
                 manualDeliveryConfirmed = false;
                 setDeliveryStatusRealtime(false);
-                setStatus('Suivi GPS terminé', 'off');
+                setStatus('Livraison terminée', 'off');
                 if (cfg.indexUrl) {
-                    window.location.href = cfg.indexUrl;
+                    var backUrl = cfg.indexUrl;
+                    if (/livreurs\/index\.php|^index\.php$/i.test(backUrl.replace(/^\.\.\//, ''))) {
+                        backUrl += (backUrl.indexOf('?') >= 0 ? '&' : '?') + 'terminee=1';
+                    }
+                    window.location.href = backUrl;
                 }
             })
             .catch(function (err) {
@@ -3304,6 +3425,9 @@
     bindMapControls();
     bindTrackingButtons();
     bindShareDelivery();
+    if (cfg.initialCountdown) {
+        applyCountdownFromServer(cfg.initialCountdown);
+    }
     setStatus('Chargement de l\'itinéraire…', 'pending');
     showLoadingOverlay('Chargement de l\'itinéraire…');
 

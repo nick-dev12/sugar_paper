@@ -77,13 +77,13 @@ if ($action === 'set_countdown') {
 }
 
 if ($action === 'stop') {
-    $result = livreur_stop_web_tracking($admin_id, $cmd_param, $bl_param);
+    $result = livreur_terminer_livraison($admin_id, $cmd_param, $bl_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
         exit;
     }
-    echo json_encode(['success' => true, 'tracking_active' => false], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => true, 'tracking_active' => false, 'terminee' => true], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

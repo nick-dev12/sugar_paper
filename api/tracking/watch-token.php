@@ -13,6 +13,13 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/admin_permissions.php';
+if (!admin_can_livreur_gps() && !admin_can_watch_livraison()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Accès refusé']);
+    exit;
+}
+
 require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? $_POST['commande_id'] ?? 0);
