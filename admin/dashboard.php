@@ -91,14 +91,6 @@ if (!empty($produits)) {
                     title="Installer l'application Sugar Paper sur cet appareil" style="display: none;">
                     <i class="fas fa-download"></i> Installer l'application
                 </button>
-                <button type="button" id="btn-enable-notifications" class="btn-primary btn-secondary-style"
-                    data-notify-type="admin"
-                    title="Recevoir des notifications push pour les nouvelles commandes">
-                    <i class="fas fa-bell"></i> Activer les notifications
-                </button>
-                <!-- <a href="test-notification.php" class="btn-primary btn-secondary-style" title="Envoyer une notification de test sur cet ordinateur">
-                    <i class="fas fa-paper-plane"></i> Test notification
-                </a> -->
                 <a href="zones-livraison/index.php" class="btn-primary btn-secondary-style">
                     <i class="fas fa-truck"></i> Zones de livraison
                 </a>

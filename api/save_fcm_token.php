@@ -35,6 +35,20 @@ if ($type === '' && isset($input['device_type'])) {
     $type = 'user';
 }
 
+$page_context = isset($input['page_context']) ? trim((string) $input['page_context']) : '';
+
+if ($type === 'user' && isset($_SESSION['admin_id']) && $page_context !== '') {
+    $ctx = strtolower($page_context);
+    if (strpos($ctx, '/admin') !== false || strpos($ctx, 'admin/') === 0) {
+        $type = 'admin';
+    }
+}
+
+// App mobile actuelle : envoie type=user — basculer en admin si session admin sans compte client
+if ($type === 'user' && !isset($_SESSION['user_id']) && isset($_SESSION['admin_id'])) {
+    $type = 'admin';
+}
+
 if (empty($token) || !in_array($type, ['user', 'admin'], true)) {
     $response['message'] = 'Paramètres invalides';
     echo json_encode($response);

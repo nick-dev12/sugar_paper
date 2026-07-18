@@ -246,6 +246,12 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Mon profil</span>
             </a>
             <?php endif; ?>
+            <button type="button" id="btn-enable-notifications" class="menu-item menu-item-notify"
+                data-notify-type="admin"
+                title="Recevoir les alertes de nouvelles commandes sur cet appareil">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+            </button>
             <a href="<?php echo $nav_href('logout.php'); ?>" class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Déconnexion</span>

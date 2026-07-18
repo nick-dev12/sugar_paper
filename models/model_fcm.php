@@ -20,22 +20,42 @@ function save_fcm_token($token, $type, $user_id = null, $admin_id = null) {
     if (empty($token) || !in_array($type, ['user', 'admin'])) {
         return false;
     }
+
+    if (isset($_SESSION['admin_id'])) {
+        $admin_id = (int) $_SESSION['admin_id'];
+    }
+    if ($type === 'user' && isset($_SESSION['user_id'])) {
+        $user_id = (int) $_SESSION['user_id'];
+    }
+    if ($type === 'admin') {
+        $user_id = null;
+    }
     
     try {
         $user_agent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500);
         
-        $stmt = $db->prepare("SELECT id FROM fcm_tokens WHERE token = :token LIMIT 1");
+        $stmt = $db->prepare("SELECT id, user_id, admin_id FROM fcm_tokens WHERE token = :token LIMIT 1");
         $stmt->execute(['token' => $token]);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($existing) {
+            $final_user_id = ($type === 'user') ? $user_id : ($existing['user_id'] ?? null);
+            $final_admin_id = $admin_id ?: ($existing['admin_id'] ?? null);
+            $final_type = ($final_admin_id && $type === 'admin') ? 'admin' : ($final_admin_id && !$final_user_id ? 'admin' : $type);
+
             $stmt = $db->prepare("
-                UPDATE fcm_tokens SET user_id = :user_id, admin_id = :admin_id, user_agent = :user_agent, date_creation = NOW()
+                UPDATE fcm_tokens SET
+                    type = :type,
+                    user_id = :user_id,
+                    admin_id = :admin_id,
+                    user_agent = :user_agent,
+                    date_creation = NOW()
                 WHERE id = :id
             ");
             return $stmt->execute([
-                'user_id' => $type === 'user' ? $user_id : null,
-                'admin_id' => $type === 'admin' ? $admin_id : null,
+                'type' => $final_type,
+                'user_id' => $final_user_id,
+                'admin_id' => $final_admin_id,
                 'user_agent' => $user_agent,
                 'id' => $existing['id']
             ]);
@@ -50,7 +70,7 @@ function save_fcm_token($token, $type, $user_id = null, $admin_id = null) {
             'token' => $token,
             'type' => $type,
             'user_id' => $type === 'user' ? $user_id : null,
-            'admin_id' => $type === 'admin' ? $admin_id : null,
+            'admin_id' => $admin_id,
             'user_agent' => substr($user_agent, 0, 500)
         ]);
     } catch (PDOException $e) {
@@ -147,7 +167,13 @@ function get_all_fcm_tokens_admin() {
     global $db;
     
     try {
-        $stmt = $db->prepare("SELECT DISTINCT token FROM fcm_tokens WHERE type = 'admin' AND admin_id IS NOT NULL AND token IS NOT NULL AND token != ''");
+        $stmt = $db->prepare("
+            SELECT DISTINCT token
+            FROM fcm_tokens
+            WHERE admin_id IS NOT NULL
+              AND token IS NOT NULL
+              AND token != ''
+        ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     } catch (PDOException $e) {

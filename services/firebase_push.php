@@ -18,6 +18,59 @@ function _firebase_get_config() {
 }
 
 /**
+ * Prépare le payload data (liens absolus + titre/corps pour le web et l'app native)
+ */
+function firebase_prepare_push_data($title, $body, $data = []) {
+    require_once __DIR__ . '/../includes/site_url.php';
+    $payload = is_array($data) ? $data : [];
+    if (!empty($payload['link'])) {
+        $link = (string) $payload['link'];
+        if (!preg_match('#^https?://#i', $link)) {
+            $payload['link'] = rtrim(get_site_base_url(), '/') . (strpos($link, '/') === 0 ? $link : '/' . $link);
+        }
+    }
+    $payload['title'] = (string) $title;
+    $payload['body'] = (string) $body;
+    foreach ($payload as $k => $v) {
+        $payload[$k] = (string) $v;
+    }
+    return $payload;
+}
+
+/**
+ * Configuration Android / iOS pour l'app Flutter Sugar Paper
+ */
+function _firebase_build_mobile_config($title, $body, $dataPayload) {
+    $link = $dataPayload['link'] ?? '/';
+    return [
+        'android' => [
+            'priority' => 'high',
+            'notification' => [
+                'channel_id' => 'sugar_paper_channel',
+                'title' => (string) $title,
+                'body' => (string) $body,
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ],
+        ],
+        'apns' => [
+            'headers' => [
+                'apns-priority' => '10',
+            ],
+            'payload' => [
+                'aps' => [
+                    'alert' => [
+                        'title' => (string) $title,
+                        'body' => (string) $body,
+                    ],
+                    'sound' => 'default',
+                ],
+                'link' => (string) $link,
+            ],
+        ],
+    ];
+}
+
+/**
  * Configure les certificats SSL pour corriger l'erreur cURL 60 (Windows/WAMP)
  */
 function _firebase_configure_ssl() {
@@ -61,11 +114,9 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
         }
         $messaging = $factory->createMessaging();
 
+        $dataPayload = firebase_prepare_push_data($title, $body, $data);
         $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
-        $dataPayload = array_merge($data, ['title' => $title, 'body' => $body]);
-        foreach ($dataPayload as $k => $v) {
-            $dataPayload[$k] = (string) $v;
-        }
+        $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
 
         $success = 0;
         $errors = [];
@@ -74,8 +125,10 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
             try {
                 $message = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token)
                     ->withNotification($notification)
-                    ->withData($dataPayload);
-                $link = $data['link'] ?? '/';
+                    ->withData($dataPayload)
+                    ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
+                    ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']));
+                $link = $dataPayload['link'] ?? '/';
                 if (!empty($link)) {
                     $message = $message->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray([
                         'fcm_options' => ['link' => (string) $link]
@@ -176,17 +229,17 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
     $success = 0;
     $errors = [];
     foreach ($tokens as $token) {
-        $dataPayload = [];
-        foreach (array_merge($data, ['title' => $title, 'body' => $body]) as $k => $v) {
-            $dataPayload[$k] = (string) $v;
-        }
+        $dataPayload = firebase_prepare_push_data($title, $body, $data);
+        $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
         $message = [
             'message' => [
                 'token' => $token,
                 'notification' => ['title' => $title, 'body' => $body],
                 'data' => $dataPayload,
+                'android' => $mobile['android'],
+                'apns' => $mobile['apns'],
                 'webpush' => [
-                    'fcm_options' => ['link' => isset($data['link']) ? (string) $data['link'] : '/']
+                    'fcm_options' => ['link' => $dataPayload['link'] ?? '/']
                 ]
             ]
         ];

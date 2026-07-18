@@ -217,15 +217,28 @@ class FCMService {
           return cookieValue;
         }
         
-        console.log('📤 Envoi du token FCM au serveur...');
-        console.log('📤 Token:', token);
-        
-        // Nettoyer l'URL pour éviter les doubles slashes
-        let baseUrl = serverUrl;
+        function resolveNotifyType() {
+          if (window.FIREBASE_NOTIFY_TYPE === 'admin') {
+            return 'admin';
+          }
+          var path = (window.location.pathname || '').toLowerCase();
+          if (path.indexOf('/admin/') !== -1 || path.endsWith('/admin')) {
+            return 'admin';
+          }
+          return 'user';
+        }
+
+        var notifyType = resolveNotifyType();
+        var pageContext = window.location.pathname || '';
+
+        var baseUrl = serverUrl;
         if (baseUrl.endsWith('/')) {
           baseUrl = baseUrl.slice(0, -1);
         }
-        const apiUrl = baseUrl + '/api/save_fcm_token.php';
+        var apiUrl = baseUrl + '/api/save_fcm_token.php';
+
+        console.log('📤 Envoi du token FCM au serveur...');
+        console.log('📤 Type:', notifyType, '| Page:', pageContext);
         console.log('📤 URL:', apiUrl);
         
         fetch(apiUrl, {
@@ -236,7 +249,8 @@ class FCMService {
           credentials: 'include',
           body: JSON.stringify({
             token: token,
-            type: 'user',
+            type: notifyType,
+            page_context: pageContext,
             device_type: deviceType,
             device_name: deviceName
           })
