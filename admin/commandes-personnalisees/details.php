@@ -34,12 +34,22 @@ $is_annulee = $cp['statut'] === 'annulee';
 $is_refusee = $cp['statut'] === 'refusee';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_refusee) {
+    require_once __DIR__ . '/../../services/send_commande_personnalisee_notification.php';
+
     if (isset($_POST['changer_statut'])) {
         $nouveau_statut = $_POST['statut'] ?? '';
         $notes_admin = isset($_POST['notes_admin']) ? trim($_POST['notes_admin']) : null;
+        $ancien_statut = $cp['statut'] ?? '';
         if (in_array($nouveau_statut, array_keys($statuts_labels))) {
             if (update_commande_personnalisee_statut($cp_id, $nouveau_statut, $notes_admin)) {
-                $_SESSION['success_message'] = 'Statut mis à jour avec succès.';
+                if ($ancien_statut !== $nouveau_statut) {
+                    $uid = (int) ($cp['user_id'] ?? 0);
+                    if ($uid > 0) {
+                        $client_email = trim($cp['user_email'] ?? $cp['email'] ?? '');
+                        send_commande_personnalisee_status_notification($uid, $cp_id, $nouveau_statut, $client_email);
+                    }
+                }
+                $_SESSION['success_message'] = 'Statut mis à jour avec succès. Le client sera notifié s\'il est connecté.';
                 header('Location: details.php?id=' . $cp_id);
                 exit;
             }
@@ -57,7 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_refusee) {
         if ($prix !== null && $prix < 0) {
             $_SESSION['error_message'] = 'Le prix ne peut pas être négatif.';
         } elseif (update_commande_personnalisee_prix($cp_id, $prix)) {
-            $_SESSION['success_message'] = $prix !== null ? 'Prix enregistré : ' . number_format($prix, 0, ',', ' ') . ' CFA.' : 'Prix supprimé.';
+            $uid = (int) ($cp['user_id'] ?? 0);
+            if ($uid > 0 && $prix !== null) {
+                $client_email = trim($cp['user_email'] ?? $cp['email'] ?? '');
+                send_commande_personnalisee_prix_notification($uid, $cp_id, $prix, $client_email);
+            }
+            $_SESSION['success_message'] = $prix !== null ? 'Prix enregistré : ' . number_format($prix, 0, ',', ' ') . ' CFA. Le client sera notifié.' : 'Prix supprimé.';
             header('Location: details.php?id=' . $cp_id);
             exit;
         } else {

@@ -57,6 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $d['produits'] ?? []
             );
         }
+        if (file_exists(__DIR__ . '/services/send_commande_confirmation_to_client.php')) {
+            require_once __DIR__ . '/models/model_users.php';
+            require_once __DIR__ . '/services/send_commande_confirmation_to_client.php';
+            $user = get_user_by_id((int) $_SESSION['user_id']);
+            $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
+            send_new_commande_confirmation_to_client(
+                (int) $_SESSION['user_id'],
+                $result['numero_commande'],
+                (float) ($result['email_data']['montant_total'] ?? 0),
+                $client_email
+            );
+        }
         exit;
     } else {
         $message = $result['message'];

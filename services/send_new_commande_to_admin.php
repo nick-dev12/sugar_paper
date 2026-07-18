@@ -10,6 +10,7 @@
  * @return void
  */
 function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_articles, $telephone_livraison = '', $adresse_livraison = '', $produits = []) {
+    require_once __DIR__ . '/notify_helpers.php';
     require_once __DIR__ . '/../models/model_admin.php';
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
@@ -30,8 +31,9 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
         ]);
     }
 
+    notifications_ensure_mail_loaded();
     $admin_emails = get_all_admin_emails();
-    if (!empty($admin_emails) && function_exists('mail_send')) {
+    if (!empty($admin_emails)) {
         $sujet = "[Sugar Paper] Nouvelle commande #{$numero_commande}";
         $body_html = '<div style="font-family: Arial, sans-serif; max-width: 600px;">';
         $body_html .= '<h2 style="color: #918a44;">Nouvelle commande reçue</h2>';
@@ -83,7 +85,10 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
 
         foreach ($admin_emails as $email) {
             if (!empty(trim($email))) {
-                mail_send(trim($email), $sujet, $body_html, true);
+                notifications_mail_send(trim($email), $sujet, $body_html, true, [
+                    'type' => 'nouvelle_commande',
+                    'numero_commande' => $numero_commande,
+                ]);
             }
         }
     }

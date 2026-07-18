@@ -68,19 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     }
 
     if ($statut_mis_a_jour !== null) {
-        $user_email = trim($commande['user_email'] ?? '');
-        if (!empty($user_email)) {
-            require_once __DIR__ . '/../../services/send_commande_notification.php';
-            send_commande_status_notification(
-                (int) ($commande['user_id'] ?? 0),
-                $commande['numero_commande'],
-                $statut_mis_a_jour,
-                $user_email
-            );
-        }
-        $_SESSION['success_message'] = !empty($user_email)
-            ? 'Statut de la commande mis à jour avec succès. Une notification et un email ont été envoyés au client.'
-            : 'Statut de la commande mis à jour avec succès.';
+        $_SESSION['success_message'] = 'Statut de la commande mis à jour avec succès. Le client sera notifié s\'il est connecté et a activé les notifications.';
         header('Location: details.php?id=' . $commande_id);
         exit;
     }

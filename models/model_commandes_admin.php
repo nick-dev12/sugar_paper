@@ -227,6 +227,10 @@ function update_commande_statut($commande_id, $statut) {
             $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
 
             $db->commit();
+            if ($ancien_statut !== $statut) {
+                require_once __DIR__ . '/../services/notify_helpers.php';
+                notify_client_commande_statut_changed($commande_id, $statut);
+            }
             return true;
         } catch (PDOException $e) {
             $db->rollBack();
@@ -242,7 +246,12 @@ function update_commande_statut($commande_id, $statut) {
                 date_livraison = CASE WHEN :statut IN ('livree', 'paye') THEN NOW() ELSE date_livraison END
             WHERE id = :id
         ");
-        return $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
+        $ok = $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
+        if ($ok && $ancien_statut !== $statut) {
+            require_once __DIR__ . '/../services/notify_helpers.php';
+            notify_client_commande_statut_changed($commande_id, $statut);
+        }
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }

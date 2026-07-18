@@ -10,6 +10,7 @@
 function send_commande_status_notification($user_id, $numero_commande, $nouveau_statut, $user_email = '') {
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
+    require_once __DIR__ . '/notify_helpers.php';
 
     $statut_labels = [
         'en_attente' => 'En attente',
@@ -19,6 +20,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
         'livraison_en_cours' => 'Livraison en cours',
         'expediee' => 'Expédiée',
         'livree' => 'Livrée',
+        'paye' => 'Payée',
         'annulee' => 'Annulée'
     ];
 
@@ -43,26 +45,25 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
         ]);
     }
 
-    // Email au client (si email valide et service mail configuré)
+    // Email au client (file d'attente, arrière-plan)
     $user_email = trim($user_email ?? '');
     if (!empty($user_email) && filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
-        $autoload = __DIR__ . '/../vendor/autoload.php';
-        if (file_exists($autoload)) {
-            require_once $autoload;
-        }
-        if (function_exists('mail_send')) {
-            $sujet = "[Sugar Paper] Mise à jour de votre commande #{$numero_commande}";
-            $body_html = '<div style="font-family: Arial, sans-serif; max-width: 600px;">';
-            $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
-            $body_html .= '<p>Bonjour,</p>';
-            $body_html .= '<p>Le statut de votre commande <strong>#' . htmlspecialchars($numero_commande) . '</strong> a été mis à jour.</p>';
-            $body_html .= '<p><strong>Nouveau statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
-            $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
-            $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
-            $body_html .= '<p style="font-size: 12px; color: #999;">Sugar Paper - Produits naturels</p>';
-            $body_html .= '</div>';
+        $sujet = "[Sugar Paper] Mise à jour de votre commande #{$numero_commande}";
+        $body_html = '<div style="font-family: Arial, sans-serif; max-width: 600px;">';
+        $body_html .= '<h2 style="color: #918a44;">Mise à jour de votre commande</h2>';
+        $body_html .= '<p>Bonjour,</p>';
+        $body_html .= '<p>Le statut de votre commande <strong>#' . htmlspecialchars($numero_commande) . '</strong> a été mis à jour.</p>';
+        $body_html .= '<p><strong>Nouveau statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
+        $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #918a44; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
+        $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
+        $body_html .= '<p style="font-size: 12px; color: #999;">Sugar Paper - Produits naturels</p>';
+        $body_html .= '</div>';
 
-            mail_send($user_email, $sujet, $body_html, true);
-        }
+        notifications_mail_send($user_email, $sujet, $body_html, true, [
+            'type' => 'commande_statut',
+            'numero_commande' => $numero_commande,
+            'statut' => $nouveau_statut,
+            'user_id' => (int) $user_id,
+        ]);
     }
 }

@@ -243,6 +243,21 @@ function process_commande_personnalisee() {
         $errors[] = 'Le format du téléphone n\'est pas valide.';
     }
 
+    if ($user_id > 0) {
+        require_once __DIR__ . '/../models/model_users.php';
+        $user_compte = get_user_by_id($user_id);
+        if ($user_compte) {
+            $email = trim($user_compte['email'] ?? '');
+            $prenom = trim($user_compte['prenom'] ?? '');
+            if ($nom === '' && !empty($user_compte['nom'])) {
+                $nom = trim($user_compte['nom']);
+            }
+            if ($telephone === '' && !empty($user_compte['telephone'])) {
+                $telephone = trim($user_compte['telephone']);
+            }
+        }
+    }
+
     if (empty($description)) {
         $errors[] = 'La description de votre demande est obligatoire.';
     } elseif (strlen($description) < 10) {
@@ -304,6 +319,20 @@ function process_commande_personnalisee() {
         if ($id) {
             $success = true;
             $message = 'Votre demande de commande personnalisée a été envoyée avec succès. Nous vous contacterons rapidement.';
+            return [
+                'success' => true,
+                'message' => $message,
+                'notify_data' => [
+                    'commande_perso_id' => (int) $id,
+                    'user_id' => $user_id,
+                    'nom' => $nom,
+                    'telephone' => $telephone,
+                    'description' => $description,
+                    'type_produit' => $type_produit,
+                    'quantite' => $quantite,
+                    'user_email' => $email
+                ]
+            ];
         } else {
             $errors[] = 'Une erreur est survenue. Veuillez réessayer.';
         }

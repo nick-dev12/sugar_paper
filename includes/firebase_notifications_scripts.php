@@ -6,6 +6,22 @@
  *   $firebase_notify_type (string, optionnel : user|admin, défaut user)
  */
 if (empty($enable_firebase_notifications)) {
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    if (!empty($_SESSION['admin_id'])) {
+        $enable_firebase_notifications = true;
+        if (!isset($firebase_notify_type)) {
+            $firebase_notify_type = 'admin';
+        }
+    } elseif (!empty($_SESSION['user_id'])) {
+        $enable_firebase_notifications = true;
+        if (!isset($firebase_notify_type)) {
+            $firebase_notify_type = 'user';
+        }
+    }
+}
+if (empty($enable_firebase_notifications)) {
     return;
 }
 $firebase_notify_type = isset($firebase_notify_type) && $firebase_notify_type === 'admin' ? 'admin' : 'user';
