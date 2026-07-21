@@ -56,6 +56,11 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'user
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
 
+    if (file_exists(__DIR__ . '/../includes/panier_invite.php')) {
+        require_once __DIR__ . '/../includes/panier_invite.php';
+        panier_fusionner_invite_apres_connexion((int) $result['user']['id']);
+    }
+
     header('Location: ' . $redirect_url);
     exit;
 }

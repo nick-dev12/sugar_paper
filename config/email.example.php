@@ -29,6 +29,9 @@ return [
     // Email de contact (destinataire des messages du formulaire contact)
     'contact_email' => 'sugarpaper26@gmail.com',
 
+    // Alertes nouvelles commandes (classiques + personnalisées)
+    'commande_notification_email' => 'sugarpaper26@gmail.com',
+
     // Mode debug : true pour afficher les erreurs SMTP
     'debug' => false,
 

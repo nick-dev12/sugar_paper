@@ -42,6 +42,20 @@ function _commandes_has_zone_columns() {
     return $has;
 }
 
+function _commandes_has_client_columns() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commandes LIKE 'client_nom'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 function _commande_produits_has_nom_produit() {
     static $has = null;
     if ($has === null) {
@@ -88,9 +102,12 @@ function generate_numero_commande() {
  * @param int|null $zone_livraison_id ID de la zone de livraison (optionnel)
  * @param float $frais_livraison Frais de livraison en FCFA (défaut 0)
  * @param array $choix Choix couleur/poids/taille par panier_id [panier_id => ['couleur'=>..., 'poids'=>..., 'taille'=>...]]
+ * @param string|null $client_nom Nom client invité (optionnel)
+ * @param string|null $client_prenom Prénom client invité (optionnel)
+ * @param string|null $client_telephone Téléphone client invité (optionnel)
  * @return array|false Tableau avec 'success' et 'commande_id' ou False en cas d'erreur
  */
-function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = []) {
+function create_commande($user_id, $panier_items, $adresse_livraison, $telephone_livraison, $notes = null, $zone_livraison_id = null, $frais_livraison = 0, $choix = [], $client_nom = null, $client_prenom = null, $client_telephone = null) {
     global $db;
     
     try {
@@ -114,37 +131,79 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             $numero_commande = generate_numero_commande() . '-' . rand(100, 999);
         }
         
+        $is_guest = empty($user_id) || (int) $user_id <= 0;
+        $has_client_cols = _commandes_has_client_columns();
+        $guest_nom = $client_nom !== null ? trim($client_nom) : '';
+        $guest_prenom = $client_prenom !== null ? trim($client_prenom) : '';
+        $guest_tel = $client_telephone !== null ? trim($client_telephone) : trim($telephone_livraison);
+
         $params_cmd = [
-            'user_id' => $user_id,
             'numero_commande' => $numero_commande,
             'montant_total' => $montant_total,
             'adresse_livraison' => $adresse_livraison,
             'telephone_livraison' => $telephone_livraison,
             'notes' => $notes
         ];
-        
+
+        if ($is_guest && $has_client_cols) {
+            $params_cmd['client_nom'] = $guest_nom !== '' ? $guest_nom : 'Client';
+            $params_cmd['client_prenom'] = $guest_prenom !== '' ? $guest_prenom : '-';
+            $params_cmd['client_email'] = null;
+            $params_cmd['client_telephone'] = $guest_tel;
+        }
+
         if (_commandes_has_zone_columns()) {
             $params_cmd['zone_livraison_id'] = $zone_livraison_id ?: null;
             $params_cmd['frais_livraison'] = $frais_livraison;
-            $stmt = $db->prepare("
-                INSERT INTO commandes (
-                    user_id, numero_commande, montant_total, adresse_livraison, 
-                    zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes
-                ) VALUES (
-                    :user_id, :numero_commande, :montant_total, :adresse_livraison,
-                    :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes
-                )
-            ");
+            if ($is_guest && $has_client_cols) {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone
+                    )
+                ");
+            } else {
+                $params_cmd['user_id'] = $user_id;
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        zone_livraison_id, frais_livraison, telephone_livraison, statut, date_commande, notes
+                    ) VALUES (
+                        :user_id, :numero_commande, :montant_total, :adresse_livraison,
+                        :zone_livraison_id, :frais_livraison, :telephone_livraison, 'en_attente', NOW(), :notes
+                    )
+                ");
+            }
         } else {
-            $stmt = $db->prepare("
-                INSERT INTO commandes (
-                    user_id, numero_commande, montant_total, adresse_livraison, 
-                    telephone_livraison, statut, date_commande, notes
-                ) VALUES (
-                    :user_id, :numero_commande, :montant_total, :adresse_livraison,
-                    :telephone_livraison, 'en_attente', NOW(), :notes
-                )
-            ");
+            if ($is_guest && $has_client_cols) {
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        telephone_livraison, statut, date_commande, notes,
+                        client_nom, client_prenom, client_email, client_telephone
+                    ) VALUES (
+                        NULL, :numero_commande, :montant_total, :adresse_livraison,
+                        :telephone_livraison, 'en_attente', NOW(), :notes,
+                        :client_nom, :client_prenom, :client_email, :client_telephone
+                    )
+                ");
+            } else {
+                $params_cmd['user_id'] = $user_id;
+                $stmt = $db->prepare("
+                    INSERT INTO commandes (
+                        user_id, numero_commande, montant_total, adresse_livraison,
+                        telephone_livraison, statut, date_commande, notes
+                    ) VALUES (
+                        :user_id, :numero_commande, :montant_total, :adresse_livraison,
+                        :telephone_livraison, 'en_attente', NOW(), :notes
+                    )
+                ");
+            }
         }
         $stmt->execute($params_cmd);
         

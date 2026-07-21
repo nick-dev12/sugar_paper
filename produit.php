@@ -8,6 +8,7 @@ require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
+require_once __DIR__ . '/includes/guest_client.php';
 
 // Récupérer l'ID du produit depuis l'URL ou POST
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -38,16 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         header('Location: /panier.php?added=1');
         exit;
     }
-    // Redirection vers la connexion si non connecté
-    if (!$result['success'] && strpos($result['message'] ?? '', 'connecté') !== false) {
-        $pid = isset($_POST['produit_id']) ? (int) $_POST['produit_id'] : 0;
-        $redirect = $pid > 0 ? '/produit.php?id=' . $pid : '/panier';
-        header('Location: /user/connexion.php?redirect=' . urlencode($redirect));
-        exit;
-    }
     $message = $result['message'] ?? '';
     $message_type = 'error';
 }
+
+$user_logged_in = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+$guest_has_info = guest_client_has_info();
 
 // Récupérer les informations du produit
 $produit = $produit_id > 0 ? get_produit_by_id($produit_id) : false;
@@ -125,6 +122,9 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <?php if (!$user_logged_in): ?>
+        <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
+    <?php endif; ?>
     <style>
         /* Styles pour la page produit - Palette gourmande */
         body {
@@ -617,6 +617,107 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+
+        .produit-add-form {
+            position: relative;
+        }
+
+        .guest-info-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .guest-info-modal[hidden] {
+            display: none !important;
+        }
+
+        .guest-info-modal__backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        .guest-info-modal__panel {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(145, 138, 68, 0.35);
+        }
+
+        .guest-info-modal__title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #6b2f20;
+            margin: 0 0 8px;
+        }
+
+        .guest-info-modal__subtitle {
+            font-size: 14px;
+            color: #333;
+            margin: 0 0 20px;
+        }
+
+        .guest-info-modal__field {
+            margin-bottom: 16px;
+        }
+
+        .guest-info-modal__field label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: #000;
+            margin-bottom: 6px;
+        }
+
+        .guest-info-modal__field input[type="text"],
+        .guest-info-modal__field input[type="tel"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        .guest-info-modal__actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .guest-info-modal__btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .guest-info-modal__btn--cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .guest-info-modal__btn--submit {
+            background: #918a44;
+            color: #fff;
+        }
+
+        .guest-info-modal__btn--submit:hover {
+            background: #7a7340;
         }
 
         .message {
@@ -1613,6 +1714,10 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                     <!-- Sélection de quantité et ajout au panier -->
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
+                    <?php if (!$user_logged_in): ?>
+                        <input type="hidden" name="guest_nom" id="guest-nom-hidden" value="">
+                        <input type="hidden" name="guest_telephone" id="guest-telephone-hidden" value="">
+                    <?php endif; ?>
                     <div class="quantite-section">
                         <label class="quantite-label">Quantité:</label>
                         <div class="quantite-controls">
@@ -1636,10 +1741,34 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
 
 
                     <button type="submit" class="btn-add-panier" id="btn-add-panier">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <?php echo isset($_SESSION['user_id']) ? 'Ajouter au panier' : 'Se connecter pour ajouter au panier'; ?>
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        Passer la commande
                     </button>
                 </form>
+
+                <?php if (!$user_logged_in): ?>
+                <div class="guest-info-modal" id="guest-info-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="guest-info-modal-title">
+                    <div class="guest-info-modal__backdrop" id="guest-info-modal-backdrop"></div>
+                    <div class="guest-info-modal__panel">
+                        <h3 class="guest-info-modal__title" id="guest-info-modal-title">Vos coordonnées</h3>
+                        <p class="guest-info-modal__subtitle">Indiquez votre nom et votre numéro pour continuer la commande.</p>
+                        <div class="guest-info-modal__field">
+                            <label for="guest-nom-input">Nom *</label>
+                            <input type="text" id="guest-nom-input" name="guest_nom_display" autocomplete="name"
+                                value="<?php echo $guest_has_info ? htmlspecialchars(guest_client_get()['nom']) : ''; ?>">
+                        </div>
+                        <div class="guest-info-modal__field">
+                            <label for="guest-telephone-input">Numéro de téléphone *</label>
+                            <input type="tel" id="guest-telephone-input" name="guest_telephone_display" autocomplete="tel"
+                                value="<?php echo $guest_has_info ? htmlspecialchars(guest_client_get()['telephone']) : ''; ?>">
+                        </div>
+                        <div class="guest-info-modal__actions">
+                            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--cancel" id="guest-info-modal-cancel">Annuler</button>
+                            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--submit" id="guest-info-modal-confirm">Continuer</button>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Description (en bas) -->
                 <!-- <?php if (!empty($produit['description'])): ?>
@@ -1994,6 +2123,96 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
             }
         });
     </script>
+
+    <?php if (!$user_logged_in): ?>
+        <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+        <script>
+        (function () {
+            var userLoggedIn = false;
+            var guestHasInfo = <?php echo $guest_has_info ? 'true' : 'false'; ?>;
+            var addForm = document.getElementById('add-to-panier-form');
+            var modal = document.getElementById('guest-info-modal');
+            var btnCancel = document.getElementById('guest-info-modal-cancel');
+            var btnConfirm = document.getElementById('guest-info-modal-confirm');
+            var backdrop = document.getElementById('guest-info-modal-backdrop');
+            var inputNom = document.getElementById('guest-nom-input');
+            var inputTel = document.getElementById('guest-telephone-input');
+            var hiddenNom = document.getElementById('guest-nom-hidden');
+            var hiddenTel = document.getElementById('guest-telephone-hidden');
+            var guestTelIti = null;
+            var pendingSubmit = false;
+
+            if (inputTel && typeof window.initAuthIntlTel === 'function') {
+                guestTelIti = window.initAuthIntlTel('guest-telephone-input');
+            }
+
+            function openGuestModal() {
+                if (!modal) return;
+                modal.removeAttribute('hidden');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                if (inputNom) inputNom.focus();
+            }
+
+            function closeGuestModal() {
+                if (!modal) return;
+                modal.setAttribute('hidden', '');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+                pendingSubmit = false;
+            }
+
+            function getTelValue() {
+                if (guestTelIti) {
+                    try {
+                        if (typeof intlTelInput !== 'undefined' && intlTelInput.utils) {
+                            return guestTelIti.getNumber(intlTelInput.utils.numberFormat.E164) || inputTel.value.trim();
+                        }
+                        return guestTelIti.getNumber() || inputTel.value.trim();
+                    } catch (e) {
+                        return inputTel ? inputTel.value.trim() : '';
+                    }
+                }
+                return inputTel ? inputTel.value.trim() : '';
+            }
+
+            function applyGuestAndSubmit() {
+                var nom = inputNom ? inputNom.value.trim() : '';
+                var tel = getTelValue();
+                if (!nom || !tel) {
+                    alert('Veuillez renseigner votre nom et votre numéro de téléphone.');
+                    return;
+                }
+                if (hiddenNom) hiddenNom.value = nom;
+                if (hiddenTel) hiddenTel.value = tel;
+                guestHasInfo = true;
+                closeGuestModal();
+                pendingSubmit = true;
+                if (addForm) addForm.submit();
+            }
+
+            if (addForm) {
+                addForm.addEventListener('submit', function (e) {
+                    if (userLoggedIn || guestHasInfo || pendingSubmit) {
+                        return;
+                    }
+                    e.preventDefault();
+                    openGuestModal();
+                });
+            }
+
+            if (btnConfirm) btnConfirm.addEventListener('click', applyGuestAndSubmit);
+            if (btnCancel) btnCancel.addEventListener('click', closeGuestModal);
+            if (backdrop) backdrop.addEventListener('click', closeGuestModal);
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal && !modal.hasAttribute('hidden')) {
+                    closeGuestModal();
+                }
+            });
+        })();
+        </script>
+    <?php endif; ?>
 
 </body>
 

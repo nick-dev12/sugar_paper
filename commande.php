@@ -7,11 +7,11 @@ require_once __DIR__ . '/includes/session_user.php';
 
 session_start_persistent();
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
-    header('Location: /user/connexion.php?redirect=commande');
-    exit;
-}
+require_once __DIR__ . '/includes/guest_client.php';
+require_once __DIR__ . '/includes/panier_invite.php';
+require_once __DIR__ . '/includes/asset_version.php';
+
+$is_guest_checkout = !isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0;
 
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_panier.php';
@@ -33,7 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($result['success']) {
         // Envoi de la réponse immédiatement pour ne pas bloquer l'utilisateur
         ignore_user_abort(true);
-        header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
+        if (!empty($result['is_guest'])) {
+            header('Location: /commande.php?success=1&numero=' . urlencode($result['numero_commande']));
+        } else {
+            header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
+        }
         echo ' ';
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
@@ -60,14 +64,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if (file_exists(__DIR__ . '/services/send_commande_confirmation_to_client.php')) {
             require_once __DIR__ . '/models/model_users.php';
             require_once __DIR__ . '/services/send_commande_confirmation_to_client.php';
-            $user = get_user_by_id((int) $_SESSION['user_id']);
-            $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
-            send_new_commande_confirmation_to_client(
-                (int) $_SESSION['user_id'],
-                $result['numero_commande'],
-                (float) ($result['email_data']['montant_total'] ?? 0),
-                $client_email
-            );
+            if (!empty($result['is_guest'])) {
+                // Pas d'email client pour les invités sans compte
+            } else {
+                $user = get_user_by_id((int) $_SESSION['user_id']);
+                $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
+                send_new_commande_confirmation_to_client(
+                    (int) $_SESSION['user_id'],
+                    $result['numero_commande'],
+                    (float) ($result['email_data']['montant_total'] ?? 0),
+                    $client_email
+                );
+            }
         }
         exit;
     } else {
@@ -76,11 +84,547 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Récupérer les informations de l'utilisateur
-$user = get_user_by_id($_SESSION['user_id']);
+// Page de confirmation invité
+$commande_success = isset($_GET['success']) && $_GET['success'] === '1';
+$commande_numero = isset($_GET['numero']) ? trim($_GET['numero']) : '';
+
+if ($commande_success && $commande_numero !== '') {
+    include 'nav_bar.php';
+    ?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
+    <title>Commande confirmée - Sugar Paper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
+    <style>
+        body.commande-success-page {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(145, 138, 68, 0.22), transparent 60%),
+                radial-gradient(ellipse 60% 50% at 100% 100%, rgba(194, 102, 56, 0.12), transparent 55%),
+                linear-gradient(165deg, #fffaf7 0%, #ffffff 45%, #f9f6f0 100%);
+            font-family: var(--font-corps, 'Segoe UI', system-ui, sans-serif);
+            color: #1a1a1a;
+        }
+
+        .commande-success-wrap {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 48px 20px 72px;
+        }
+
+        .commande-success-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(145, 138, 68, 0.25);
+            border-radius: 24px;
+            padding: 40px 32px 36px;
+            box-shadow:
+                0 24px 60px rgba(107, 47, 32, 0.08),
+                0 8px 24px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .commande-success-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #918a44, #c26638, #918a44);
+        }
+
+        .commande-success-icon {
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(145, 138, 68, 0.18), rgba(194, 102, 56, 0.12));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+
+        .commande-success-icon i {
+            font-size: 42px;
+            color: #918a44;
+        }
+
+        @keyframes successPop {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .commande-success-eyebrow {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #c26638;
+            margin-bottom: 10px;
+        }
+
+        .commande-success-title {
+            font-family: var(--font-titres, Georgia, serif);
+            font-size: clamp(1.6rem, 4vw, 2rem);
+            font-weight: 700;
+            color: #6b2f20;
+            margin: 0 0 12px;
+            line-height: 1.25;
+        }
+
+        .commande-success-lead {
+            font-size: 16px;
+            color: #555;
+            margin: 0 0 28px;
+            line-height: 1.6;
+        }
+
+        .commande-success-numero {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 18px 28px;
+            background: linear-gradient(135deg, rgba(145, 138, 68, 0.1), rgba(194, 102, 56, 0.06));
+            border: 1px dashed rgba(145, 138, 68, 0.45);
+            border-radius: 14px;
+            margin-bottom: 28px;
+        }
+
+        .commande-success-numero__label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #918a44;
+        }
+
+        .commande-success-numero__value {
+            font-size: clamp(1.1rem, 3.5vw, 1.35rem);
+            font-weight: 800;
+            color: #000;
+            letter-spacing: 0.04em;
+            font-family: ui-monospace, 'Cascadia Code', monospace;
+        }
+
+        .commande-success-steps {
+            list-style: none;
+            margin: 0 0 32px;
+            padding: 0;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .commande-success-steps li {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 16px;
+            background: #faf9f6;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .commande-success-steps li.is-done .commande-success-step-icon {
+            background: rgba(145, 138, 68, 0.2);
+            color: #918a44;
+        }
+
+        .commande-success-step-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(194, 102, 56, 0.12);
+            color: #c26638;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .commande-success-step-text strong {
+            display: block;
+            font-size: 14px;
+            color: #6b2f20;
+            margin-bottom: 2px;
+        }
+
+        .commande-success-step-text span {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.45;
+        }
+
+        .commande-success-step-text a {
+            color: #918a44;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .commande-success-step-text a:hover {
+            color: #6b2f20;
+            text-decoration: underline;
+        }
+
+        .commande-success-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .commande-success-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .commande-success-btn--primary {
+            background: linear-gradient(135deg, #918a44, #7a7340);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(145, 138, 68, 0.35);
+        }
+
+        .commande-success-btn--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(145, 138, 68, 0.4);
+            color: #fff;
+        }
+
+        .commande-success-btn--secondary {
+            background: #fff;
+            color: #6b2f20;
+            border: 1px solid rgba(107, 47, 32, 0.2);
+        }
+
+        .commande-success-btn--secondary:hover {
+            background: #faf9f6;
+            color: #6b2f20;
+        }
+
+        .commande-success-contact {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto 26px;
+            padding: 14px 18px;
+            background: #fff;
+            border: 1px solid rgba(145, 138, 68, 0.28);
+            border-radius: 12px;
+        }
+
+        .commande-success-contact__label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b2f20;
+            margin: 0;
+        }
+
+        .commande-success-contact__phone {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #918a44;
+            text-decoration: none;
+            letter-spacing: 0.02em;
+        }
+
+        .commande-success-contact__phone i {
+            font-size: 1rem;
+            color: #c26638;
+        }
+
+        .commande-success-contact__phone:hover {
+            color: #6b2f20;
+        }
+
+        @media (max-width: 768px) {
+            .commande-success-wrap {
+                padding: 32px 16px 56px;
+            }
+
+            .commande-success-card {
+                padding: 28px 22px 24px;
+                border-radius: 18px;
+            }
+
+            .commande-success-icon {
+                width: 68px;
+                height: 68px;
+                margin-bottom: 18px;
+            }
+
+            .commande-success-icon i {
+                font-size: 32px;
+            }
+
+            .commande-success-eyebrow {
+                font-size: 10px;
+                margin-bottom: 8px;
+            }
+
+            .commande-success-title {
+                font-size: 1.35rem;
+                margin-bottom: 10px;
+            }
+
+            .commande-success-lead {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            .commande-success-numero {
+                padding: 14px 20px;
+                margin-bottom: 20px;
+            }
+
+            .commande-success-numero__value {
+                font-size: 1rem;
+            }
+
+            .commande-success-contact {
+                max-width: 100%;
+                padding: 12px 14px;
+                margin-bottom: 20px;
+            }
+
+            .commande-success-contact__phone {
+                font-size: 0.95rem;
+            }
+
+            .commande-success-steps {
+                gap: 10px;
+                margin-bottom: 24px;
+            }
+
+            .commande-success-steps li {
+                gap: 10px;
+                padding: 10px 12px;
+                border-radius: 10px;
+            }
+
+            .commande-success-step-icon {
+                width: 30px;
+                height: 30px;
+                font-size: 13px;
+                border-radius: 8px;
+            }
+
+            .commande-success-step-text strong {
+                font-size: 13px;
+            }
+
+            .commande-success-step-text span {
+                font-size: 12px;
+            }
+
+            .commande-success-btn {
+                padding: 12px 18px;
+                font-size: 14px;
+                border-radius: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .commande-success-wrap {
+                padding: 24px 12px 48px;
+            }
+
+            .commande-success-card {
+                padding: 22px 16px 20px;
+                border-radius: 14px;
+            }
+
+            .commande-success-icon {
+                width: 56px;
+                height: 56px;
+                margin-bottom: 14px;
+            }
+
+            .commande-success-icon i {
+                font-size: 26px;
+            }
+
+            .commande-success-title {
+                font-size: 1.15rem;
+            }
+
+            .commande-success-lead {
+                font-size: 13px;
+                margin-bottom: 16px;
+                line-height: 1.5;
+            }
+
+            .commande-success-numero {
+                padding: 12px 16px;
+                margin-bottom: 16px;
+                border-radius: 10px;
+            }
+
+            .commande-success-numero__label {
+                font-size: 10px;
+            }
+
+            .commande-success-numero__value {
+                font-size: 0.88rem;
+            }
+
+            .commande-success-contact {
+                padding: 10px 12px;
+                margin-bottom: 16px;
+                gap: 6px;
+            }
+
+            .commande-success-contact__label {
+                font-size: 11px;
+            }
+
+            .commande-success-contact__phone {
+                font-size: 0.88rem;
+                gap: 6px;
+            }
+
+            .commande-success-steps {
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+
+            .commande-success-steps li {
+                padding: 8px 10px;
+            }
+
+            .commande-success-step-icon {
+                width: 26px;
+                height: 26px;
+                font-size: 11px;
+            }
+
+            .commande-success-step-text strong {
+                font-size: 12px;
+            }
+
+            .commande-success-step-text span {
+                font-size: 11px;
+            }
+
+            .commande-success-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .commande-success-btn {
+                width: 100%;
+                padding: 11px 16px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body class="commande-success-page">
+    <div class="commande-success-wrap">
+        <div class="commande-success-card">
+            <div class="commande-success-icon" aria-hidden="true">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <p class="commande-success-eyebrow">Merci pour votre confiance</p>
+            <h1 class="commande-success-title">Votre commande est confirmée</h1>
+            <p class="commande-success-lead">
+                Nous avons bien enregistré votre commande. Notre équipe vous contactera très prochainement pour organiser la livraison.
+            </p>
+
+            <div class="commande-success-numero">
+                <span class="commande-success-numero__label">Numéro de commande</span>
+                <span class="commande-success-numero__value"><?php echo htmlspecialchars($commande_numero); ?></span>
+            </div>
+
+            <div class="commande-success-contact">
+                <p class="commande-success-contact__label">Une question ? Contactez Sugar Paper</p>
+                <a href="tel:+221773292123" class="commande-success-contact__phone">
+                    <i class="fas fa-phone-alt" aria-hidden="true"></i>
+                    +221 77 329 2123
+                </a>
+            </div>
+
+            <ul class="commande-success-steps">
+                <li class="is-done">
+                    <span class="commande-success-step-icon"><i class="fas fa-clipboard-check"></i></span>
+                    <div class="commande-success-step-text">
+                        <strong>Commande reçue</strong>
+                        <span>Votre demande a été transmise à notre équipe.</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="commande-success-step-icon"><i class="fas fa-box-open"></i></span>
+                    <div class="commande-success-step-text">
+                        <strong>Préparation</strong>
+                        <span>Nous préparons vos produits avec soin.</span>
+                    </div>
+                </li>
+                <li>
+                    <span class="commande-success-step-icon"><i class="fas fa-truck"></i></span>
+                    <div class="commande-success-step-text">
+                        <strong>Livraison</strong>
+                        <span>Vous serez contacté(e) au numéro indiqué ou au <a href="tel:+221773292123">+221 77 329 2123</a>.</span>
+                    </div>
+                </li>
+            </ul>
+
+            <div class="commande-success-actions">
+                <a href="/index.php" class="commande-success-btn commande-success-btn--primary">
+                    <i class="fas fa-home"></i> Retour à l'accueil
+                </a>
+                <a href="/produits.php" class="commande-success-btn commande-success-btn--secondary">
+                    <i class="fas fa-store"></i> Continuer mes achats
+                </a>
+            </div>
+        </div>
+    </div>
+    <?php include __DIR__ . '/footer.php'; ?>
+</body>
+</html>
+    <?php
+    exit;
+}
+
+if ($is_guest_checkout && !guest_client_has_info()) {
+    header('Location: /panier.php');
+    exit;
+}
+
+$user = null;
+if (!$is_guest_checkout) {
+    $user = get_user_by_id((int) $_SESSION['user_id']);
+}
 
 // Récupérer les produits du panier
-$panier_items = get_panier_by_user($_SESSION['user_id']);
+$panier_items = panier_get_items_courant();
 
 // Vérifier que le panier n'est pas vide
 if (empty($panier_items)) {
@@ -91,7 +635,7 @@ if (empty($panier_items)) {
 // S'il n'y a aucune zone de livraison, le formulaire affichera un message et sera désactivé
 
 // Calculer le total
-$panier_total = get_panier_total($_SESSION['user_id']);
+$panier_total = panier_get_total_courant();
 $nombre_total_articles = 0;
 foreach ($panier_items as $item) {
     $nombre_total_articles += $item['quantite'];
@@ -385,6 +929,173 @@ include 'nav_bar.php';
     }
 
     /* Footer - hérite du style global a_style.css */
+
+    /* ——— Overlay loader confirmation commande ——— */
+    .commande-loader-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(26, 18, 12, 0.52);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        animation: commandeLoaderFadeIn 0.35s ease-out both;
+    }
+
+    .commande-loader-overlay[hidden] {
+        display: none !important;
+    }
+
+    @keyframes commandeLoaderFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .commande-loader-card {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        padding: 40px 32px 36px;
+        text-align: center;
+        background: linear-gradient(165deg, #ffffff 0%, #fdfbf7 100%);
+        border: 1px solid rgba(145, 138, 68, 0.35);
+        border-radius: 24px;
+        box-shadow:
+            0 32px 80px rgba(107, 47, 32, 0.18),
+            0 12px 32px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        animation: commandeLoaderSlideUp 0.45s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+    }
+
+    @keyframes commandeLoaderSlideUp {
+        from {
+            opacity: 0;
+            transform: translateY(24px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .commande-loader-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #918a44, #c26638, #918a44);
+        background-size: 200% 100%;
+        animation: commandeLoaderBar 2s linear infinite;
+    }
+
+    @keyframes commandeLoaderBar {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+    }
+
+    .commande-loader-spinner {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 28px;
+    }
+
+    .commande-loader-spinner__ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 3px solid transparent;
+    }
+
+    .commande-loader-spinner__ring--outer {
+        border-top-color: #918a44;
+        border-right-color: rgba(145, 138, 68, 0.25);
+        animation: commandeLoaderSpin 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    }
+
+    .commande-loader-spinner__ring--inner {
+        inset: 10px;
+        border-bottom-color: #c26638;
+        border-left-color: rgba(194, 102, 56, 0.2);
+        animation: commandeLoaderSpin 0.85s cubic-bezier(0.5, 0, 0.5, 1) infinite reverse;
+    }
+
+    .commande-loader-spinner__icon {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: #6b2f20;
+        animation: commandeLoaderPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes commandeLoaderSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    @keyframes commandeLoaderPulse {
+        0%, 100% { opacity: 0.65; transform: scale(0.95); }
+        50% { opacity: 1; transform: scale(1); }
+    }
+
+    .commande-loader-title {
+        font-family: var(--font-titres, Georgia, serif);
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #6b2f20;
+        margin: 0 0 10px;
+        line-height: 1.3;
+    }
+
+    .commande-loader-text {
+        font-size: 15px;
+        color: #555;
+        margin: 0 0 22px;
+        line-height: 1.55;
+    }
+
+    .commande-loader-dots {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .commande-loader-dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #918a44;
+        animation: commandeLoaderDot 1.2s ease-in-out infinite;
+    }
+
+    .commande-loader-dots span:nth-child(2) {
+        background: #c26638;
+        animation-delay: 0.15s;
+    }
+
+    .commande-loader-dots span:nth-child(3) {
+        background: #6b2f20;
+        animation-delay: 0.3s;
+    }
+
+    @keyframes commandeLoaderDot {
+        0%, 80%, 100% {
+            transform: scale(0.6);
+            opacity: 0.4;
+        }
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
     </style>
 </head>
 
@@ -443,8 +1154,17 @@ include 'nav_bar.php';
                             <i class="fas fa-phone"></i> Téléphone de livraison *
                         </label>
                         <input type="tel" id="telephone_livraison" name="telephone_livraison" required
-                            placeholder="+241 XX XX XX XX"
-                            value="<?php echo isset($_POST['telephone_livraison']) ? htmlspecialchars($_POST['telephone_livraison']) : htmlspecialchars($user['telephone'] ?? ''); ?>">
+                            placeholder="+221 XX XXX XX XX"
+                            value="<?php
+                                if (isset($_POST['telephone_livraison'])) {
+                                    echo htmlspecialchars($_POST['telephone_livraison']);
+                                } elseif ($user) {
+                                    echo htmlspecialchars($user['telephone'] ?? '');
+                                } elseif ($is_guest_checkout) {
+                                    $gc = guest_client_get();
+                                    echo htmlspecialchars($gc['telephone'] ?? '');
+                                }
+                            ?>">
                         <small>Numéro de téléphone pour la livraison</small>
                     </div>
 
@@ -539,6 +1259,21 @@ include 'nav_bar.php';
         </div>
     </div>
 
+    <div id="commande-loader-overlay" class="commande-loader-overlay" hidden aria-hidden="true" role="alertdialog" aria-modal="true" aria-labelledby="commande-loader-title" aria-describedby="commande-loader-text">
+        <div class="commande-loader-card">
+            <div class="commande-loader-spinner" aria-hidden="true">
+                <span class="commande-loader-spinner__ring commande-loader-spinner__ring--outer"></span>
+                <span class="commande-loader-spinner__ring commande-loader-spinner__ring--inner"></span>
+                <span class="commande-loader-spinner__icon"><i class="fas fa-shopping-bag"></i></span>
+            </div>
+            <h2 class="commande-loader-title" id="commande-loader-title">Commande en cours</h2>
+            <p class="commande-loader-text" id="commande-loader-text">Votre commande est en train d'être enregistrée.<br>Merci de patienter quelques instants…</p>
+            <div class="commande-loader-dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
     <?php include 'footer.php'; ?>
 
     <script>
@@ -562,6 +1297,38 @@ include 'nav_bar.php';
         if (selectZone) {
             selectZone.addEventListener('change', updateTotaux);
             updateTotaux();
+        }
+
+        var formCommande = document.getElementById('form-commande');
+        var loaderOverlay = document.getElementById('commande-loader-overlay');
+        var commandeSubmitting = false;
+        var MIN_LOADER_MS = 3000;
+
+        if (formCommande && loaderOverlay) {
+            formCommande.addEventListener('submit', function (e) {
+                if (commandeSubmitting) {
+                    e.preventDefault();
+                    return;
+                }
+                if (!formCommande.checkValidity()) {
+                    return;
+                }
+                e.preventDefault();
+                commandeSubmitting = true;
+
+                loaderOverlay.hidden = false;
+                loaderOverlay.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+
+                var submitBtn = formCommande.querySelector('.btn-submit-commande');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+
+                setTimeout(function () {
+                    formCommande.submit();
+                }, MIN_LOADER_MS);
+            });
         }
     })();
     </script>

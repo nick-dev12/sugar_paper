@@ -4,6 +4,7 @@ session_start_persistent();
 
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/models/model_panier.php';
+require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 
 // Traitement des actions du panier
@@ -46,17 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
-    header('Location: /user/connexion.php?redirect=panier');
-    exit;
-}
-
-// Récupérer les produits du panier
-$panier_items = get_panier_by_user($_SESSION['user_id']);
+// Récupérer les produits du panier (connecté ou invité)
+$panier_items = panier_get_items_courant();
 
 // Calculer le total et le nombre total d'articles
-$panier_total = get_panier_total($_SESSION['user_id']);
+$panier_total = panier_get_total_courant();
 $nombre_total_articles = 0;
 foreach ($panier_items as $item) {
     $nombre_total_articles += $item['quantite'];

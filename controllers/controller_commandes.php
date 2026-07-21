@@ -7,6 +7,8 @@
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_zones_livraison.php';
+require_once __DIR__ . '/../includes/panier_invite.php';
+require_once __DIR__ . '/../includes/guest_client.php';
 
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoload)) {
@@ -18,43 +20,52 @@ if (file_exists($autoload)) {
  * @return array Tableau avec 'success', 'message', et éventuellement 'commande_id' et 'numero_commande'
  */
 function process_create_commande() {
-    if (!isset($_SESSION['user_id'])) {
-        return [
-            'success' => false,
-            'message' => 'Vous devez être connecté pour passer une commande.'
-        ];
+    $user_connecte = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+    $user_id = $user_connecte ? (int) $_SESSION['user_id'] : null;
+    $guest_client = null;
+
+    if (!$user_connecte) {
+        $guest_client = guest_client_get();
+        if (!$guest_client) {
+            return [
+                'success' => false,
+                'message' => 'Veuillez renseigner votre nom et votre numéro de téléphone avant de commander.'
+            ];
+        }
     }
-    
-    $user_id = $_SESSION['user_id'];
-    
+
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return [
             'success' => false,
             'message' => 'Méthode non autorisée.'
         ];
     }
-    
+
     $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : 0;
     $telephone_livraison = trim($_POST['telephone_livraison'] ?? '');
     $notes = trim($_POST['notes'] ?? '');
-    
+
+    if (empty($telephone_livraison) && $guest_client) {
+        $telephone_livraison = $guest_client['telephone'];
+    }
+
     if (empty($telephone_livraison)) {
         return [
             'success' => false,
             'message' => 'Le téléphone de livraison est obligatoire.'
         ];
     }
-    
+
     if (!preg_match('/^[0-9+\s\-()]+$/', $telephone_livraison)) {
         return [
             'success' => false,
             'message' => 'Le format du téléphone n\'est pas valide.'
         ];
     }
-    
+
     $adresse_livraison = 'À définir';
     $frais_livraison = 0;
-    
+
     if ($zone_livraison_id > 0) {
         $zone = get_zone_livraison_by_id($zone_livraison_id);
         if (!$zone || $zone['statut'] !== 'actif') {
@@ -71,16 +82,16 @@ function process_create_commande() {
             'message' => 'Veuillez sélectionner une zone de livraison.'
         ];
     }
-    
-    $panier_items = get_panier_by_user($user_id);
-    
+
+    $panier_items = panier_get_items_courant();
+
     if (empty($panier_items)) {
         return [
             'success' => false,
             'message' => 'Votre panier est vide. Ajoutez des produits avant de passer une commande.'
         ];
     }
-    
+
     foreach ($panier_items as $item) {
         if ($item['stock'] < $item['quantite']) {
             return [
@@ -89,8 +100,7 @@ function process_create_commande() {
             ];
         }
     }
-    
-    // Récupérer les choix couleur, poids, taille par panier_id (priorité: POST, sinon options du panier)
+
     $choix = [];
     foreach ($panier_items as $item) {
         $panier_id = isset($item['panier_id']) ? (int) $item['panier_id'] : 0;
@@ -106,7 +116,6 @@ function process_create_commande() {
             $poids = isset($c['poids']) ? trim($c['poids']) : '';
             $taille = isset($c['taille']) ? trim($c['taille']) : '';
         }
-        // Fallback: utiliser les options du panier (sélectionnées sur la page produit)
         if ($couleur === '' && !empty(trim($item['panier_couleur'] ?? ''))) {
             $couleur = trim($item['panier_couleur']);
         }
@@ -119,7 +128,10 @@ function process_create_commande() {
 
         $choix[$panier_id] = ['couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
     }
-    
+
+    $client_nom = $guest_client ? $guest_client['nom'] : null;
+    $client_telephone = $guest_client ? $guest_client['telephone'] : null;
+
     $result = create_commande(
         $user_id,
         $panier_items,
@@ -128,21 +140,27 @@ function process_create_commande() {
         $notes ?: null,
         $zone_livraison_id,
         $frais_livraison,
-        $choix
+        $choix,
+        $client_nom,
+        '-',
+        $client_telephone
     );
-    
+
     if ($result === false) {
         return [
             'success' => false,
             'message' => 'Une erreur est survenue lors de la création de la commande. Veuillez réessayer.'
         ];
     }
-    
-    if ($result['success']) {
-        // Vider le panier après création de la commande
-        clear_panier($user_id);
 
-        // Préparer les données pour la notification/email (envoi asynchrone dans commande.php)
+    if ($result['success']) {
+        if ($user_connecte) {
+            clear_panier($user_id);
+        } else {
+            panier_invite_clear();
+            guest_client_clear();
+        }
+
         $sous_total = 0;
         $nombre_articles = 0;
         $produits_email = [];
@@ -179,6 +197,7 @@ function process_create_commande() {
             'message' => 'Votre commande a été créée avec succès ! Numéro de commande: ' . $result['numero_commande'],
             'commande_id' => $result['commande_id'],
             'numero_commande' => $result['numero_commande'],
+            'is_guest' => !$user_connecte,
             'email_data' => [
                 'numero_commande' => $result['numero_commande'],
                 'montant_total' => $montant_total,
@@ -189,7 +208,7 @@ function process_create_commande() {
             ]
         ];
     }
-    
+
     return [
         'success' => false,
         'message' => 'Une erreur est survenue lors de la création de la commande.'

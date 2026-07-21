@@ -32,8 +32,8 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
     }
 
     notifications_ensure_mail_loaded();
-    $admin_emails = get_all_admin_emails();
-    if (!empty($admin_emails)) {
+    $admin_email = notifications_get_commande_admin_email();
+    if ($admin_email !== '' && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         $sujet = "[Sugar Paper] Nouvelle commande #{$numero_commande}";
         $body_html = '<div style="font-family: Arial, sans-serif; max-width: 600px;">';
         $body_html .= '<h2 style="color: #918a44;">Nouvelle commande reçue</h2>';
@@ -83,13 +83,9 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
         $body_html .= '<p style="font-size: 12px; color: #999;">Sugar Paper - Produits naturels</p>';
         $body_html .= '</div>';
 
-        foreach ($admin_emails as $email) {
-            if (!empty(trim($email))) {
-                notifications_mail_send(trim($email), $sujet, $body_html, true, [
-                    'type' => 'nouvelle_commande',
-                    'numero_commande' => $numero_commande,
-                ]);
-            }
-        }
+        notifications_mail_send($admin_email, $sujet, $body_html, true, [
+            'type' => 'nouvelle_commande',
+            'numero_commande' => $numero_commande,
+        ]);
     }
 }

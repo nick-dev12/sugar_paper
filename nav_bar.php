@@ -5,9 +5,14 @@ if (!function_exists('get_asset_version')) {
 require_once __DIR__ . '/includes/store_nav_account.php';
 $store_nav_account = store_nav_account_info();
 $asset_version = isset($asset_version) ? $asset_version : get_asset_version();
-// Compter les articles du panier si l'utilisateur est connecté
 $panier_count = 0;
-if (isset($_SESSION['user_id'])) {
+$panier_invite_path = file_exists(__DIR__ . '/includes/panier_invite.php')
+    ? __DIR__ . '/includes/panier_invite.php'
+    : dirname(__DIR__) . '/includes/panier_invite.php';
+if (file_exists($panier_invite_path)) {
+    require_once $panier_invite_path;
+}
+if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     $conn_path = file_exists(__DIR__ . '/conn/conn.php') ? __DIR__ . '/conn/conn.php' : dirname(__DIR__) . '/conn/conn.php';
     if (file_exists($conn_path)) {
         require_once $conn_path;
@@ -18,8 +23,10 @@ if (isset($_SESSION['user_id'])) {
 
     if (file_exists($model_path)) {
         require_once $model_path;
-        $panier_count = count_panier_items($_SESSION['user_id']);
+        $panier_count = count_panier_items((int) $_SESSION['user_id']);
     }
+} elseif (function_exists('panier_invite_count_items')) {
+    $panier_count = panier_invite_count_items();
 }
 ?>
 <link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
@@ -529,11 +536,11 @@ if (isset($_SESSION['user_id'])) {
             include $gtranslate_path;
         }
         ?>
-        <a href="<?php echo isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier'; ?>"
+        <a href="/panier.php"
             class="nav-panier-link"
-            title="<?php echo isset($_SESSION['user_id']) ? 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')' : 'Se connecter pour voir le panier'; ?>">
+            title="<?php echo 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
-            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+            <?php if ($panier_count > 0): ?>
                 <span class="nav-panier-badge"><?php echo $panier_count > 99 ? '99+' : $panier_count; ?></span>
             <?php endif; ?>
         </a>

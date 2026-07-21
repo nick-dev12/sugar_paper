@@ -58,6 +58,26 @@ function notifications_mail_send($to, $subject, $body, $is_html = true, $meta = 
 }
 
 /**
+ * Email unique pour les alertes nouvelles commandes (classiques et personnalisées)
+ * @return string
+ */
+function notifications_get_commande_admin_email() {
+    $default = 'sugarpaper26@gmail.com';
+    $config_path = __DIR__ . '/../config/email.php';
+    if (!file_exists($config_path)) {
+        return $default;
+    }
+    $config = require $config_path;
+    if (!empty($config['commande_notification_email'])) {
+        return trim((string) $config['commande_notification_email']);
+    }
+    if (!empty($config['contact_email'])) {
+        return trim((string) $config['contact_email']);
+    }
+    return $default;
+}
+
+/**
  * Notifie le client après changement de statut d'une commande classique
  * @param int $commande_id
  * @param string $nouveau_statut

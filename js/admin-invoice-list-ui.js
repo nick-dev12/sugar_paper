@@ -188,6 +188,20 @@
 
 
 
+    function itemMatchesPayment(el, filter) {
+
+        if (!filter) {
+
+            return true;
+
+        }
+
+        return el.getAttribute('data-payee') === filter;
+
+    }
+
+
+
     function initPeriodFilter(config, onChange) {
 
         var toggle = config.periodToggle ? document.querySelector(config.periodToggle) : null;
@@ -204,9 +218,9 @@
 
         var presetButtons = panel ? panel.querySelectorAll('.invoice-period-preset') : [];
 
+        var initialPreset = config.defaultPeriodPreset || 'today';
 
-
-        var range = presetRange('today');
+        var range = presetRange(initialPreset);
 
         if (dateFromInput) {
 
@@ -441,20 +455,88 @@
 
         var filterQuery = '';
 
+        var paymentFilter = null;
+
         // Filtre période uniquement pour devis/factures (pas pour contacts, sans data-date)
         var hasPeriodFilter = !!config.periodToggle;
 
-        var dateFrom = hasPeriodFilter ? todayYmd() : null;
+        var initialPreset = config.defaultPeriodPreset || 'today';
 
-        var dateTo = hasPeriodFilter ? todayYmd() : null;
+        var initialRange = hasPeriodFilter ? presetRange(initialPreset) : { from: null, to: null, preset: 'all' };
+
+        var dateFrom = hasPeriodFilter ? initialRange.from : null;
+
+        var dateTo = hasPeriodFilter ? initialRange.to : null;
+
+
+
+        function updateDateGroups() {
+
+            if (!config.container) {
+
+                return;
+
+            }
+
+            var tbody = document.querySelector(config.container);
+
+            if (!tbody) {
+
+                return;
+
+            }
+
+            var groups = tbody.querySelectorAll('.invoice-date-group-row');
+
+            for (var g = 0; g < groups.length; g++) {
+
+                var groupRow = groups[g];
+
+                var groupDate = groupRow.getAttribute('data-date-group');
+
+                var hasVisible = false;
+
+                for (var i = 0; i < items.length; i++) {
+
+                    var el = items[i];
+
+                    if (el.getAttribute('data-date') === groupDate && !el.hidden) {
+
+                        hasVisible = true;
+
+                        break;
+
+                    }
+
+                }
+
+                groupRow.hidden = !hasVisible;
+
+                groupRow.setAttribute('aria-hidden', hasVisible ? 'false' : 'true');
+
+            }
+
+        }
+
+
+
+        function getBaseMatchingItems() {
+
+            return items.filter(function (el) {
+
+                return itemMatches(el, filterQuery) && itemMatchesDate(el, dateFrom, dateTo);
+
+            });
+
+        }
 
 
 
         function getMatchingItems() {
 
-            return items.filter(function (el) {
+            return getBaseMatchingItems().filter(function (el) {
 
-                return itemMatches(el, filterQuery) && itemMatchesDate(el, dateFrom, dateTo);
+                return itemMatchesPayment(el, paymentFilter);
 
             });
 
@@ -483,6 +565,14 @@
             } else if (filterQuery) {
 
                 noResultsTextEl.textContent = config.emptySearchText || 'Aucun résultat ne correspond à votre recherche.';
+
+            } else if (paymentFilter === '1') {
+
+                noResultsTextEl.textContent = config.emptyPayeText || 'Aucune facture payée pour cette période.';
+
+            } else if (paymentFilter === '0') {
+
+                noResultsTextEl.textContent = config.emptyImpayeText || 'Aucune facture impayée pour cette période.';
 
             } else if (dateFrom || dateTo) {
 
@@ -602,7 +692,9 @@
 
             updateLoadMoreButton(matching.length);
 
-            updateFactureKpis(matching, config);
+            updateFactureKpis(getBaseMatchingItems(), config);
+
+            updateDateGroups();
 
         }
 
@@ -647,6 +739,74 @@
                 apply();
 
             });
+
+        }
+
+
+
+        if (config.enablePaymentKpiFilter) {
+
+            var kpiPayeBtn = config.kpiPayeCard ? document.querySelector(config.kpiPayeCard) : null;
+
+            var kpiImpayeBtn = config.kpiImpayeCard ? document.querySelector(config.kpiImpayeCard) : null;
+
+
+
+            function setPaymentKpiActive() {
+
+                if (kpiPayeBtn) {
+
+                    kpiPayeBtn.classList.toggle('is-active', paymentFilter === '1');
+
+                    kpiPayeBtn.setAttribute('aria-pressed', paymentFilter === '1' ? 'true' : 'false');
+
+                }
+
+                if (kpiImpayeBtn) {
+
+                    kpiImpayeBtn.classList.toggle('is-active', paymentFilter === '0');
+
+                    kpiImpayeBtn.setAttribute('aria-pressed', paymentFilter === '0' ? 'true' : 'false');
+
+                }
+
+            }
+
+
+
+            function togglePaymentFilter(nextFilter) {
+
+                paymentFilter = paymentFilter === nextFilter ? null : nextFilter;
+
+                visibleLimit = PAGE_SIZE;
+
+                setPaymentKpiActive();
+
+                apply();
+
+            }
+
+
+
+            if (kpiPayeBtn) {
+
+                kpiPayeBtn.addEventListener('click', function () {
+
+                    togglePaymentFilter('1');
+
+                });
+
+            }
+
+            if (kpiImpayeBtn) {
+
+                kpiImpayeBtn.addEventListener('click', function () {
+
+                    togglePaymentFilter('0');
+
+                });
+
+            }
 
         }
 
@@ -758,11 +918,18 @@
 
             periodSummary: '#facture-period-summary',
 
+            defaultPeriodPreset: 'all',
+
             emptySearchText: 'Aucune facture ne correspond à votre recherche.',
 
             emptyPeriodText: 'Aucune facture pour cette période.',
 
             emptySearchPeriodText: 'Aucune facture ne correspond à votre recherche pour cette période.',
+            emptyPayeText: 'Aucune facture payée pour cette période.',
+            emptyImpayeText: 'Aucune facture impayée pour cette période.',
+            enablePaymentKpiFilter: true,
+            kpiPayeCard: '.invoice-facture-kpi--paye',
+            kpiImpayeCard: '.invoice-facture-kpi--impaye',
             kpiPayeEl: '#facture-kpi-paye',
             kpiImpayeEl: '#facture-kpi-impaye',
             kpiLivraisonEl: '#facture-kpi-livraison'

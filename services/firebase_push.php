@@ -71,6 +71,27 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
 }
 
 /**
+ * Vérifie que les dépendances Composer requises par kreait/firebase-php sont présentes.
+ */
+function _firebase_library_dependencies_ready() {
+    $root = __DIR__ . '/../vendor';
+    $autoload = $root . '/autoload.php';
+    if (!is_file($autoload)) {
+        return false;
+    }
+    $required = [
+        $root . '/psr/cache/src/CacheItemPoolInterface.php',
+        $root . '/kreait/firebase-php/src/Firebase/Factory.php',
+    ];
+    foreach ($required as $path) {
+        if (!is_file($path)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * Configure les certificats SSL pour corriger l'erreur cURL 60 (Windows/WAMP)
  */
 function _firebase_configure_ssl() {
@@ -89,6 +110,10 @@ function _firebase_configure_ssl() {
  */
 function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data) {
     _firebase_configure_ssl();
+    if (!_firebase_library_dependencies_ready()) {
+        return null;
+    }
+
     $autoload = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoload)) {
         return null;

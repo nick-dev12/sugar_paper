@@ -53,8 +53,9 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
         $stmt->execute($params);
         $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        $nouvelle_quantite = $existing ? ((int) $existing['quantite'] + $quantite) : $quantite;
         $cols = "quantite = :quantite, couleur = :couleur, poids = :poids, taille = :taille";
-        $vals = ['quantite' => $existing ? $existing['quantite'] + $quantite : $quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille, 'id' => $existing['id']];
+        $vals = ['quantite' => $nouvelle_quantite, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
 
         if (_panier_has_variante_columns()) {
             $cols .= ", variante_id = :variante_id, variante_nom = :variante_nom, variante_image = :variante_image, surcout_poids = :surcout_poids, surcout_taille = :surcout_taille, prix_unitaire = :prix_unitaire";
@@ -67,6 +68,7 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
         }
 
         if ($existing) {
+            $vals['id'] = $existing['id'];
             $stmt = $db->prepare("UPDATE panier SET $cols WHERE id = :id");
             return $stmt->execute($vals);
         } else {

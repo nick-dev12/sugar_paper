@@ -7,6 +7,8 @@
 require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_variantes.php';
+require_once __DIR__ . '/../includes/panier_invite.php';
+require_once __DIR__ . '/../includes/guest_client.php';
 
 /**
  * Traite l'ajout d'un produit au panier
@@ -14,17 +16,24 @@ require_once __DIR__ . '/../models/model_variantes.php';
  */
 function process_add_to_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté pour ajouter des produits au panier.'];
-    }
-
     if (!isset($_POST['produit_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
 
-    $user_id = $_SESSION['user_id'];
+    $user_connecte = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+    $user_id = $user_connecte ? (int) $_SESSION['user_id'] : 0;
     $produit_id = (int) $_POST['produit_id'];
     $quantite = (int) $_POST['quantite'];
+
+    if (!$user_connecte) {
+        $guest_nom = isset($_POST['guest_nom']) ? trim($_POST['guest_nom']) : '';
+        $guest_telephone = isset($_POST['guest_telephone']) ? trim($_POST['guest_telephone']) : '';
+        if ($guest_nom !== '' && $guest_telephone !== '') {
+            guest_client_save($guest_nom, $guest_telephone);
+        } elseif (!guest_client_has_info()) {
+            return ['success' => false, 'message' => 'Veuillez renseigner votre nom et votre numéro de téléphone.'];
+        }
+    }
 
     $option_couleur = isset($_POST['option_couleur']) ? trim($_POST['option_couleur']) : '';
     $option_poids = isset($_POST['option_poids']) ? trim($_POST['option_poids']) : '';
@@ -40,13 +49,11 @@ function process_add_to_panier()
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
     }
 
-    // Vérifier que le produit existe et est actif
     $produit = get_produit_by_id($produit_id);
     if (!$produit || $produit['statut'] != 'actif') {
         return ['success' => false, 'message' => 'Ce produit n\'est pas disponible.'];
     }
 
-    // Validation des options si le produit en a
     $couleurs_options = [];
     $poids_options = parse_options_with_surcharge($produit['poids'] ?? null);
     $taille_options = parse_options_with_surcharge($produit['taille'] ?? null);
@@ -62,16 +69,11 @@ function process_add_to_panier()
             $couleurs_options = array_map('trim', array_filter(explode(',', $cr)));
         }
     }
-    $poids_values = array_map(function($x) { return $x['v']; }, $poids_options);
-    $taille_values = array_map(function($x) { return $x['v']; }, $taille_options);
-    // Les options couleur/poids/taille sont facultatives.
 
-    // Variante sélectionnée (pour nom/image)
     $variante = ($option_variante_id && ($v = get_variante_by_id($option_variante_id)) && $v['produit_id'] == $produit_id) ? $v : null;
     $surcout_poids = get_surcharge_for_option($poids_options, $option_poids);
     $surcout_taille = get_surcharge_for_option($taille_options, $option_taille);
 
-    // Prix final : priorité à option_prix_unitaire du formulaire (valeur vue par l'utilisateur)
     $prix_final = null;
     if ($option_prix_unitaire !== null && $option_prix_unitaire > 0) {
         $prix_final = $option_prix_unitaire;
@@ -85,25 +87,42 @@ function process_add_to_panier()
         $prix_final = $prix_base + $surcout_poids + $surcout_taille;
     }
 
-    // Vérifier le stock disponible
-    $item_panier = is_in_panier($user_id, $produit_id);
-    $quantite_actuelle = $item_panier ? $item_panier['quantite'] : 0;
+    $vid = ($option_variante_id && $option_variante_id > 0) ? $option_variante_id : null;
+    $quantite_actuelle = 0;
+    if ($user_connecte) {
+        $item_panier = is_in_panier($user_id, $produit_id);
+        $quantite_actuelle = $item_panier ? (int) $item_panier['quantite'] : 0;
+    } else {
+        $quantite_actuelle = panier_invite_get_line_quantity(
+            $produit_id,
+            $option_couleur ?: null,
+            $option_poids ?: null,
+            $option_taille ?: null,
+            $vid
+        );
+    }
     $quantite_totale = $quantite_actuelle + $quantite;
 
     if ($quantite_totale > $produit['stock']) {
         return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $produit['stock']];
     }
 
-    // Ajouter au panier avec options
-    $vid = ($option_variante_id && $option_variante_id > 0) ? $option_variante_id : null;
     $vnom = $variante ? $variante['nom'] : $option_variante_nom;
     $vimg = $variante ? $variante['image'] : $option_variante_image;
-    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
-        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
-        return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
-    } else {
+
+    if ($user_connecte) {
+        if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+            $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
+            return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
+        }
         return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
     }
+
+    if (panier_invite_add_line($produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
+        return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
+    }
+    return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
 }
 
 /**
@@ -112,10 +131,6 @@ function process_add_to_panier()
  */
 function process_update_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté.'];
-    }
-
     if (!isset($_POST['panier_id']) || !isset($_POST['quantite'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
@@ -127,7 +142,27 @@ function process_update_panier()
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
     }
 
-    // Récupérer l'élément du panier pour vérifier le stock
+    if (!isset($_SESSION['user_id'])) {
+        $panier_items = panier_invite_get_items();
+        $item = null;
+        foreach ($panier_items as $panier_item) {
+            if ($panier_item['panier_id'] == $panier_id) {
+                $item = $panier_item;
+                break;
+            }
+        }
+        if (!$item) {
+            return ['success' => false, 'message' => 'Élément du panier introuvable.'];
+        }
+        if ($quantite > $item['stock']) {
+            return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $item['stock']];
+        }
+        if (panier_invite_update_quantite($panier_id, $quantite)) {
+            return ['success' => true, 'message' => 'Quantité mise à jour.'];
+        }
+        return ['success' => false, 'message' => 'Erreur lors de la mise à jour.'];
+    }
+
     $panier_items = get_panier_by_user($_SESSION['user_id']);
     $item = null;
     foreach ($panier_items as $panier_item) {
@@ -141,17 +176,14 @@ function process_update_panier()
         return ['success' => false, 'message' => 'Élément du panier introuvable.'];
     }
 
-    // Vérifier le stock
     if ($quantite > $item['stock']) {
         return ['success' => false, 'message' => 'Stock insuffisant. Stock disponible : ' . $item['stock']];
     }
 
-    // Mettre à jour
     if (update_panier_quantite($panier_id, $quantite)) {
         return ['success' => true, 'message' => 'Quantité mise à jour.'];
-    } else {
-        return ['success' => false, 'message' => 'Erreur lors de la mise à jour.'];
     }
+    return ['success' => false, 'message' => 'Erreur lors de la mise à jour.'];
 }
 
 /**
@@ -160,19 +192,21 @@ function process_update_panier()
  */
 function process_delete_from_panier()
 {
-    if (!isset($_SESSION['user_id'])) {
-        return ['success' => false, 'message' => 'Vous devez être connecté.'];
-    }
-
     if (!isset($_POST['panier_id'])) {
         return ['success' => false, 'message' => 'Données manquantes.'];
     }
 
     $panier_id = (int) $_POST['panier_id'];
 
-    if (delete_from_panier($panier_id)) {
-        return ['success' => true, 'message' => 'Produit retiré du panier.'];
-    } else {
+    if (!isset($_SESSION['user_id'])) {
+        if (panier_invite_delete_line($panier_id)) {
+            return ['success' => true, 'message' => 'Produit retiré du panier.'];
+        }
         return ['success' => false, 'message' => 'Erreur lors de la suppression.'];
     }
+
+    if (delete_from_panier($panier_id)) {
+        return ['success' => true, 'message' => 'Produit retiré du panier.'];
+    }
+    return ['success' => false, 'message' => 'Erreur lors de la suppression.'];
 }

@@ -41,8 +41,8 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
     }
 
     notifications_ensure_mail_loaded();
-    $admin_emails = get_all_admin_emails();
-    if (empty($admin_emails)) {
+    $admin_email = notifications_get_commande_admin_email();
+    if ($admin_email === '' || !filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
         return;
     }
 
@@ -68,15 +68,10 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
     $body_html .= '<p style="font-size: 12px; color: #999;">Sugar Paper - Produits naturels</p>';
     $body_html .= '</div>';
 
-    foreach ($admin_emails as $email) {
-        $email = trim((string) $email);
-        if ($email !== '') {
-            notifications_mail_send($email, $sujet, $body_html, true, [
-                'type' => 'nouvelle_commande_personnalisee',
-                'commande_perso_id' => $cp_id,
-            ]);
-        }
-    }
+    notifications_mail_send($admin_email, $sujet, $body_html, true, [
+        'type' => 'nouvelle_commande_personnalisee',
+        'commande_perso_id' => $cp_id,
+    ]);
 }
 
 /**

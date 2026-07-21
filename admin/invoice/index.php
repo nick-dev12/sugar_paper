@@ -507,20 +507,20 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         </div>
         <?php endif; ?>
         <div class="invoice-facture-kpis" id="facture-kpis" aria-label="Montants totaux des factures">
-            <div class="invoice-facture-kpi invoice-facture-kpi--paye">
+            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--paye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures payées">
                 <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-check-circle"></i></span>
                 <div class="invoice-facture-kpi__body">
                     <span class="invoice-facture-kpi__label">Factures payées</span>
                     <strong class="invoice-facture-kpi__value" id="facture-kpi-paye"><?php echo number_format($facture_montant_paye, 0, ',', ' '); ?> FCFA</strong>
                 </div>
-            </div>
-            <div class="invoice-facture-kpi invoice-facture-kpi--impaye">
+            </button>
+            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--impaye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures impayées">
                 <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
                 <div class="invoice-facture-kpi__body">
                     <span class="invoice-facture-kpi__label">Factures impayées</span>
                     <strong class="invoice-facture-kpi__value" id="facture-kpi-impaye"><?php echo number_format($facture_montant_impaye, 0, ',', ' '); ?> FCFA</strong>
                 </div>
-            </div>
+            </button>
             <div class="invoice-facture-kpi invoice-facture-kpi--livraison">
                 <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-truck"></i></span>
                 <div class="invoice-facture-kpi__body">
@@ -557,10 +557,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                     </div>
                     <div class="invoice-period-panel" id="facture-period-panel" hidden>
                         <div class="invoice-period-presets" role="group" aria-label="Périodes rapides factures">
-                            <button type="button" class="invoice-period-preset is-active" data-preset="today">Aujourd'hui</button>
+                            <button type="button" class="invoice-period-preset" data-preset="today">Aujourd'hui</button>
                             <button type="button" class="invoice-period-preset" data-preset="week">7 jours</button>
                             <button type="button" class="invoice-period-preset" data-preset="month">Ce mois</button>
-                            <button type="button" class="invoice-period-preset" data-preset="all">Tout</button>
+                            <button type="button" class="invoice-period-preset is-active" data-preset="all">Tout</button>
                         </div>
                         <div class="admin-filters-bar invoice-period-fields">
                             <div class="admin-filter-field">
@@ -591,15 +591,42 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             </tr>
                         </thead>
                         <tbody id="facture-list-body">
-                            <?php foreach ($facture_list as $f): ?>
+                            <?php
+                            $facture_group_date = null;
+                            $facture_today_iso = date('Y-m-d');
+                            $facture_yesterday_iso = date('Y-m-d', strtotime('-1 day'));
+                            foreach ($facture_list as $f):
+                            ?>
                             <?php
                             $fid = (int) $f['id'];
                             $facture_href = 'bl_voir.php?id=' . $fid;
                             $client_label = trim($f['raison_sociale'] ?? '') ?: '—';
                             $numero_facture = $f['numero_bl'] ?? '—';
-                            $date_aff = !empty($f['date_bl'])
-                                ? date('d/m/Y', strtotime($f['date_bl']))
-                                : date('d/m/Y', strtotime($f['date_creation'] ?? 'now'));
+                            $date_source = !empty($f['date_bl']) ? $f['date_bl'] : ($f['date_creation'] ?? 'now');
+                            $date_iso = date('Y-m-d', strtotime($date_source));
+                            $date_aff = date('d/m/Y', strtotime($date_source));
+                            if ($date_iso !== $facture_group_date):
+                                $facture_group_date = $date_iso;
+                                if ($date_iso === $facture_today_iso) {
+                                    $facture_group_label = "Aujourd'hui (" . $date_aff . ')';
+                                } elseif ($date_iso === $facture_yesterday_iso) {
+                                    $facture_group_label = 'Hier (' . $date_aff . ')';
+                                } else {
+                                    $jours = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+                                    $mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+                                    $ts = strtotime($date_iso);
+                                    $facture_group_label = ucfirst($jours[(int) date('w', $ts)]) . ' ' . date('j', $ts) . ' ' . $mois[(int) date('n', $ts) - 1] . ' ' . date('Y', $ts);
+                                }
+                            ?>
+                            <tr class="invoice-date-group-row" data-date-group="<?php echo htmlspecialchars($date_iso); ?>" aria-hidden="true">
+                                <td colspan="2">
+                                    <div class="invoice-date-group">
+                                        <span class="invoice-date-group__label"><?php echo htmlspecialchars($facture_group_label); ?></span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                            <?php
                             $lignes_totaux_f = $facture_lignes_totaux_map[$fid] ?? null;
                             $decomp_montant_f = bl_decomposer_montant_facture($f, $lignes_totaux_f);
                             $montant_aff = (float) $decomp_montant_f['total'];
@@ -610,10 +637,6 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             $statut_facture = $est_payee ? 'Payée' : 'Impayée';
                             $statut_class = $est_payee ? 'paye' : 'impaye';
                             $search_blob = invoice_tab_search_blob($client_label, $numero_facture, $date_aff, $statut_facture, $montant_txt, 'fcfa');
-                            ?>
-                            <?php
-                            $date_source = !empty($f['date_bl']) ? $f['date_bl'] : ($f['date_creation'] ?? 'now');
-                            $date_iso = date('Y-m-d', strtotime($date_source));
                             ?>
                             <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($facture_href); ?>" data-montant="<?php echo (int) round($montant_aff); ?>" data-montant-hors-livraison="<?php echo $montant_hors_livraison; ?>" data-montant-livraison="<?php echo $montant_livraison; ?>" data-payee="<?php echo $est_payee ? '1' : '0'; ?>" role="link" tabindex="0" aria-label="Voir la facture <?php echo htmlspecialchars($numero_facture); ?>">
                                 <td data-label="Client">

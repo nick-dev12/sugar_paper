@@ -8,13 +8,6 @@ session_start_persistent();
 
 require_once __DIR__ . '/controllers/controller_panier.php';
 
-// Utilisateur non connecté : redirection vers la connexion
-if (!isset($_SESSION['user_id'])) {
-    $return = isset($_POST['return_url']) ? '&return=' . urlencode($_POST['return_url']) : '';
-    header('Location: /user/connexion.php?redirect=panier' . $return);
-    exit;
-}
-
 // Méthode POST uniquement
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['produit_id'])) {
     header('Location: /index.php');
