@@ -692,11 +692,49 @@
             if (isMarkedEnabled()) {
                 updateButtonState(btn, 'enabled');
                 window.FirebaseNotifications.setupForegroundHandler();
+                window.FirebaseNotifications.silentRefreshToken(getNotifyType(btn));
                 return;
             }
 
-            /* Pas d'auto-activation au chargement — évite boucles et timeouts */
             updateButtonState(btn, 'idle');
+        },
+
+        /**
+         * Rafraîchit le token FCM en arrière-plan (site fermé = Service Worker reçoit les push)
+         */
+        silentRefreshToken: function (type) {
+            if (typeof firebase === 'undefined' || !firebase.messaging || Notification.permission !== 'granted') {
+                return;
+            }
+            if (!isMarkedEnabled()) {
+                return;
+            }
+            var vapidKey = getVapidKey();
+            if (!vapidKey) {
+                return;
+            }
+            registerFcmServiceWorker(false).then(function (registration) {
+                var messaging = firebase.messaging();
+                return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: registration });
+            }).then(function (token) {
+                if (token) {
+                    return saveToken(token, type || window.FIREBASE_NOTIFY_TYPE || 'user');
+                }
+                return false;
+            }).catch(function () { /* silencieux */ });
+        },
+
+        setupTokenRefreshListener: function () {
+            if (typeof firebase === 'undefined' || !firebase.messaging) {
+                return;
+            }
+            try {
+                firebase.messaging().onTokenRefresh(function () {
+                    log('Token FCM rafraîchi');
+                    var type = window.FIREBASE_NOTIFY_TYPE || 'user';
+                    window.FirebaseNotifications.silentRefreshToken(type);
+                });
+            } catch (e) { /* ignore */ }
         },
 
         bindButton: function (buttonEl) {
@@ -769,6 +807,7 @@
                 && Notification.permission === 'granted'
                 && isMarkedEnabled()) {
                 window.FirebaseNotifications.setupForegroundHandler();
+                window.FirebaseNotifications.setupTokenRefreshListener();
             }
 
             if ('serviceWorker' in navigator) {

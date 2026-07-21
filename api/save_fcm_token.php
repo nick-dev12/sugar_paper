@@ -71,6 +71,13 @@ if ($type === 'user') {
     }
     $admin_id = (int) $_SESSION['admin_id'];
     $user_id = null;
+
+    require_once __DIR__ . '/../models/model_fcm.php';
+    if (!fcm_admin_is_eligible_for_notify($admin_id)) {
+        $response['message'] = 'Votre rôle ne permet pas de recevoir les alertes commandes.';
+        echo json_encode($response);
+        exit;
+    }
 }
 
 require_once __DIR__ . '/../models/model_fcm.php';

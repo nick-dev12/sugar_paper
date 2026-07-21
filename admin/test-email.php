@@ -1,10 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/session_user.php';
 /**
- * Page de test d'envoi d'emails (Admin)
- * Permet de vérifier que la configuration SMTP fonctionne
+ * Page de test d'envoi d'email (admin)
  */
-
 session_start_persistent();
 
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
@@ -12,87 +10,112 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
-$autoload = __DIR__ . '/../vendor/autoload.php';
-if (file_exists($autoload)) {
-    require_once $autoload;
-}
+require_once __DIR__ . '/../services/notify_helpers.php';
+require_once __DIR__ . '/../services/email_queue.php';
 
-$message = '';
-$message_type = '';
+$result_message = '';
+$result_type = '';
+$queue_stats = null;
+
+$default_to = notifications_get_commande_admin_email();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $destinataire = isset($_POST['email']) ? trim($_POST['email']) : $_SESSION['admin_email'];
-    if (empty($destinataire) || !filter_var($destinataire, FILTER_VALIDATE_EMAIL)) {
-        $message = 'Adresse email invalide.';
-        $message_type = 'error';
-    } elseif (!function_exists('mail_send')) {
-        $message = 'Service email non disponible. Exécutez "composer install".';
-        $message_type = 'error';
-    } else {
-        $sujet = 'Test email - Sugar Paper';
-        $body = '<h2>Test d\'envoi d\'email</h2>';
-        $body .= '<p>Si vous recevez ce message, la configuration SMTP fonctionne correctement.</p>';
-        $body .= '<p>Envoyé le ' . date('d/m/Y H:i:s') . ' depuis l\'interface admin.</p>';
-        $body .= '<hr><p><small>Sugar Paper - Site e-commerce</small></p>';
+    $to = trim($_POST['to_email'] ?? $default_to);
+    $mode = $_POST['mode'] ?? 'direct';
 
-        $result = mail_send($destinataire, $sujet, $body, true);
-
-        if ($result['success']) {
-            $message = "Email de test envoyé avec succès à {$destinataire}. Vérifiez votre boîte de réception (et les spams).";
-            $message_type = 'success';
+    if ($mode === 'process_queue') {
+        $queue_stats = email_queue_process(30);
+        $result_message = 'File traitée : ' . (int) $queue_stats['processed'] . ' job(s), '
+            . (int) $queue_stats['sent'] . ' envoyé(s), '
+            . (int) $queue_stats['failed'] . ' échec(s).';
+        $result_type = $queue_stats['failed'] > 0 ? 'error' : 'success';
+    } elseif (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        $result_message = 'Adresse email invalide.';
+        $result_type = 'error';
+    } elseif ($mode === 'queue') {
+        $send = notifications_mail_send(
+            $to,
+            '[Sugar Paper] Test email (file d\'attente)',
+            '<div style="font-family:Arial,sans-serif;max-width:520px;"><h2 style="color:#918a44;">Test file d\'attente</h2><p>Ce message a transité par la file d\'attente email.</p><p><strong>Date :</strong> ' . date('d/m/Y H:i:s') . '</p></div>',
+            true,
+            ['type' => 'test_email']
+        );
+        if (!empty($send['success'])) {
+            $result_message = 'Email mis en file et traité (job: ' . ($send['job_id'] ?? '—') . ').';
+            $result_type = 'success';
         } else {
-            $message = 'Échec de l\'envoi : ' . ($result['error'] ?? 'Erreur inconnue');
-            $message_type = 'error';
+            $result_message = 'Échec : ' . ($send['error'] ?? 'erreur inconnue');
+            $result_type = 'error';
+        }
+    } else {
+        notifications_ensure_mail_loaded();
+        $send = mail_send(
+            $to,
+            '[Sugar Paper] Test email direct',
+            '<div style="font-family:Arial,sans-serif;max-width:520px;"><h2 style="color:#918a44;">Test SMTP direct</h2><p>Ce message a été envoyé directement via PHPMailer.</p><p><strong>Date :</strong> ' . date('d/m/Y H:i:s') . '</p></div>',
+            true
+        );
+        if (!empty($send['success'])) {
+            $result_message = 'Email envoyé avec succès à ' . $to . '. Vérifiez la boîte de réception (et les spams).';
+            $result_type = 'success';
+        } else {
+            $result_message = 'Échec SMTP : ' . ($send['error'] ?? 'erreur inconnue');
+            $result_type = 'error';
         }
     }
 }
+
+$pending_count = is_dir(EMAIL_QUEUE_PENDING_DIR) ? count(glob(EMAIL_QUEUE_PENDING_DIR . '/*.json') ?: []) : 0;
+$failed_count = is_dir(EMAIL_QUEUE_FAILED_DIR) ? count(glob(EMAIL_QUEUE_FAILED_DIR . '/*.json') ?: []) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <?php include __DIR__ . '/../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test email - Admin</title>
+    <title>Test email - Administration Sugar Paper</title>
     <?php require_once __DIR__ . '/../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
-    <style>
-        .test-email-form { max-width: 500px; margin: 20px 0; }
-        .test-email-form label { display: block; margin-bottom: 8px; font-weight: 600; }
-        .test-email-form input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; }
-        .test-email-form button { margin-top: 15px; padding: 12px 24px; background: var(--couleur-dominante, #918a44); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
-        .test-email-form button:hover { opacity: 0.9; }
-        .message { padding: 15px 20px; border-radius: 10px; margin: 20px 0; }
-        .message.success { background: #e8f8f8; color: #0d7377; border-left: 4px solid #0d7377; }
-        .message.error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
-    </style>
 </head>
-<body>
+<body class="page-dashboard-admin">
     <?php include 'includes/nav.php'; ?>
+
     <div class="contents-container">
         <div class="content-header">
-            <h1><i class="fas fa-envelope"></i> Test d'envoi d'email</h1>
-            <a href="dashboard.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
+            <h1><i class="fas fa-envelope"></i> Test envoi email</h1>
+            <div class="header-actions">
+                <?php include __DIR__ . '/includes/btn_retour_site.php'; ?>
+                <a href="dashboard.php" class="btn-primary btn-secondary-style"><i class="fas fa-arrow-left"></i> Dashboard</a>
+            </div>
         </div>
 
-        <p>Envoyez un email de test pour vérifier que la configuration SMTP (tresorafricain.com) fonctionne.</p>
-
-        <?php if (!empty($message)): ?>
-        <div class="message <?php echo htmlspecialchars($message_type); ?>">
-            <i class="fas fa-<?php echo $message_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
-            <?php echo htmlspecialchars($message); ?>
-        </div>
+        <?php if ($result_message): ?>
+            <div class="alert-box message-<?php echo $result_type === 'success' ? 'success' : 'error'; ?>" style="margin-bottom:20px;">
+                <p><i class="fas fa-<?php echo $result_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                    <?php echo htmlspecialchars($result_message); ?></p>
+            </div>
         <?php endif; ?>
 
-        <form method="post" action="test-email.php" class="test-email-form">
-            <label for="email">Adresse de test *</label>
-            <input type="email" id="email" name="email" required
-                value="<?php echo htmlspecialchars($_POST['email'] ?? $_SESSION['admin_email'] ?? ''); ?>"
-                placeholder="email@exemple.com">
-            <button type="submit">
-                <i class="fas fa-paper-plane"></i> Envoyer l'email de test
-            </button>
+        <div class="alert-box" style="margin-bottom:20px;">
+            <p><strong>File d'attente :</strong> <?php echo $pending_count; ?> en attente, <?php echo $failed_count; ?> en échec.</p>
+            <p style="margin:8px 0 0;font-size:14px;color:#666;">SMTP : mail.sugar-paper.com — Alertes commandes : <?php echo htmlspecialchars($default_to); ?></p>
+        </div>
+
+        <form method="POST" class="dashboard-quick-links" style="display:block;max-width:640px;padding:24px;background:#fff;border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
+            <div style="margin-bottom:16px;">
+                <label for="to_email" style="display:block;font-weight:600;margin-bottom:6px;">Destinataire</label>
+                <input type="email" id="to_email" name="to_email" value="<?php echo htmlspecialchars($default_to); ?>" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label for="mode" style="display:block;font-weight:600;margin-bottom:6px;">Mode d'envoi</label>
+                <select id="mode" name="mode" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;">
+                    <option value="direct">Envoi SMTP direct (recommandé pour test)</option>
+                    <option value="queue">Via file d'attente (comme les commandes)</option>
+                    <option value="process_queue">Traiter uniquement la file en attente</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Lancer le test</button>
         </form>
     </div>
 </body>

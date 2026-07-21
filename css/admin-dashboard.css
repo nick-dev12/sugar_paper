@@ -4685,6 +4685,61 @@ body::before {
   }
 }
 
+/* Modal suppression commande (admin/commandes/details.php) */
+.commande-delete-modal-overlay .commande-delete-modal {
+  max-width: 520px;
+  padding: 28px 32px;
+}
+
+.commande-delete-modal__lead {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #111;
+}
+
+.commande-delete-modal__warning {
+  background: rgba(194, 102, 56, 0.1);
+  border-left: 4px solid #c26638;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  color: #6b2f20;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.commande-delete-modal__warning p {
+  margin: 0 0 8px;
+}
+
+.commande-delete-modal__warning p:last-child {
+  margin-bottom: 0;
+}
+
+.commande-delete-modal__warning i {
+  color: #c26638;
+  margin-right: 6px;
+}
+
+.commande-delete-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.page-admin-doc-detail .header-actions--primary-row .btn-delete {
+  background: #c26638;
+  color: #fff;
+  border: none;
+}
+
+.page-admin-doc-detail .header-actions--primary-row .btn-delete:hover {
+  background: #6b2f20;
+  color: #fff;
+}
+
 /* ——— Tableau de bord utilisateur boutique ——— */
 .dashboard-quick-links {
   margin: 0 0 24px;

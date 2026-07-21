@@ -39,6 +39,32 @@ if (!$commande) {
     exit;
 }
 
+if (empty($_SESSION['admin_csrf'])) {
+    $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
+}
+$admin_csrf = (string) $_SESSION['admin_csrf'];
+
+// Suppression définitive de la commande
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_commande'])) {
+    $token = $_POST['csrf_token'] ?? '';
+    if ($token === '' || !hash_equals($admin_csrf, (string) $token)) {
+        $_SESSION['error_message'] = 'Jeton de sécurité invalide. Rechargez la page et réessayez.';
+        header('Location: details.php?id=' . $commande_id);
+        exit;
+    }
+
+    $result = delete_commande($commande_id);
+    if (!empty($result['success'])) {
+        $_SESSION['success_message'] = $result['message'];
+        header('Location: index.php');
+        exit;
+    }
+
+    $_SESSION['error_message'] = $result['message'] ?? 'Impossible de supprimer la commande.';
+    header('Location: details.php?id=' . $commande_id);
+    exit;
+}
+
 // Vérifier si la commande est annulée ou livrée (pas de modification possible)
 $is_annulee = $commande['statut'] === 'annulee';
 $is_livree = $commande['statut'] === 'livree';
@@ -112,6 +138,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             <a href="index.php" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
+            <button type="button" class="btn-delete btn-secondary-style" id="btn-open-delete-commande"
+                title="Supprimer définitivement cette commande">
+                <i class="fas fa-trash-alt"></i> Supprimer
+            </button>
         </div>
     </div>
 
@@ -382,5 +412,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             </div>
         <?php endif; ?>
     </section>
+
+    <div id="modal-delete-commande" class="modal-overlay commande-delete-modal-overlay" role="dialog"
+        aria-modal="true" aria-labelledby="modal-delete-commande-title" aria-hidden="true">
+        <div class="modal-content commande-delete-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-delete-commande-title">
+                    <i class="fas fa-trash-alt"></i> Supprimer la commande
+                </h2>
+                <button type="button" class="modal-close" id="btn-close-delete-commande" aria-label="Fermer">
+                    &times;
+                </button>
+            </div>
+            <p class="commande-delete-modal__lead">
+                Êtes-vous sûr de vouloir supprimer définitivement la commande
+                <strong>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></strong> ?
+            </p>
+            <div class="commande-delete-modal__warning">
+                <p><i class="fas fa-exclamation-triangle"></i> Cette action est <strong>irréversible</strong>.</p>
+                <p>La commande, ses lignes produits<?php echo $facture ? ' et la facture associée' : ''; ?> seront effacées de la base de données.</p>
+                <?php if ($is_paye): ?>
+                    <p>Le stock des produits sera réintégré automatiquement (commande payée).</p>
+                <?php endif; ?>
+            </div>
+            <form method="POST" action="" class="commande-delete-modal__form" id="form-delete-commande">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
+                <div class="commande-delete-modal__actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-delete-commande">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" name="supprimer_commande" class="btn-delete">
+                        <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var modal = document.getElementById('modal-delete-commande');
+            var openBtn = document.getElementById('btn-open-delete-commande');
+            var closeBtn = document.getElementById('btn-close-delete-commande');
+            var cancelBtn = document.getElementById('btn-cancel-delete-commande');
+            if (!modal || !openBtn) return;
+
+            function openModal() {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            openBtn.addEventListener('click', openModal);
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+            modal.addEventListener('click', function (event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
 
     <?php include '../includes/footer.php'; ?>

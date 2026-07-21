@@ -246,12 +246,22 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Mon profil</span>
             </a>
             <?php endif; ?>
+            <?php if (!$is_livreur_nav): ?>
             <button type="button" id="btn-enable-notifications" class="menu-item menu-item-notify"
                 data-notify-type="admin"
-                title="Recevoir les alertes de nouvelles commandes sur cet appareil">
+                title="Recevoir les alertes de nouvelles commandes sur cet appareil (même site fermé)">
                 <i class="fas fa-bell"></i>
                 <span>Notifications</span>
             </button>
+            <?php endif; ?>
+            <?php if ($admin_role === 'admin'): ?>
+            <a href="<?php echo $nav_href('test-email.php'); ?>"
+                class="menu-item <?php echo $current_page === 'test-email.php' ? 'active' : ''; ?>"
+                title="Tester l'envoi SMTP et la file d'attente">
+                <i class="fas fa-envelope-open-text"></i>
+                <span>Test email</span>
+            </a>
+            <?php endif; ?>
             <a href="<?php echo $nav_href('logout.php'); ?>" class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Déconnexion</span>

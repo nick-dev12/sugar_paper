@@ -401,3 +401,87 @@ function get_stats_comptabilite_periode($commandes) {
     ];
 }
 
+/**
+ * Supprime définitivement une commande et ses données associées
+ * @param int $commande_id
+ * @return array{success:bool, message:string}
+ */
+function delete_commande($commande_id) {
+    global $db;
+
+    $commande_id = (int) $commande_id;
+    if ($commande_id <= 0) {
+        return ['success' => false, 'message' => 'Commande invalide.'];
+    }
+
+    $commande = get_commande_by_id($commande_id);
+    if (!$commande) {
+        return ['success' => false, 'message' => 'Commande introuvable.'];
+    }
+
+    try {
+        $db->beginTransaction();
+
+        if (($commande['statut'] ?? '') === 'paye') {
+            $produits = get_produits_by_commande($commande_id);
+            if (is_array($produits)) {
+                foreach ($produits as $item) {
+                    $produit_id = (int) ($item['produit_id'] ?? 0);
+                    $quantite = (int) ($item['quantite'] ?? 0);
+                    if ($produit_id <= 0 || $quantite <= 0) {
+                        continue;
+                    }
+                    $stmt = $db->prepare("
+                        UPDATE produits
+                        SET stock = stock + :qty, date_modification = NOW()
+                        WHERE id = :id
+                    ");
+                    $stmt->execute(['id' => $produit_id, 'qty' => $quantite]);
+                }
+            }
+        }
+
+        $stmt = $db->prepare('DELETE FROM factures WHERE commande_id = :id');
+        $stmt->execute(['id' => $commande_id]);
+
+        try {
+            $stmt = $db->prepare('DELETE FROM tracking_watch_tokens WHERE commande_id = :id');
+            $stmt->execute(['id' => $commande_id]);
+        } catch (PDOException $e) {
+            /* table optionnelle */
+        }
+
+        try {
+            $stmt = $db->prepare('UPDATE livreur_sessions SET commande_id = NULL WHERE commande_id = :id');
+            $stmt->execute(['id' => $commande_id]);
+        } catch (PDOException $e) {
+            /* table optionnelle */
+        }
+
+        $stmt = $db->prepare('DELETE FROM commande_produits WHERE commande_id = :id');
+        $stmt->execute(['id' => $commande_id]);
+
+        $stmt = $db->prepare('DELETE FROM commandes WHERE id = :id');
+        $stmt->execute(['id' => $commande_id]);
+
+        if ($stmt->rowCount() < 1) {
+            $db->rollBack();
+            return ['success' => false, 'message' => 'La commande n\'a pas pu être supprimée.'];
+        }
+
+        $db->commit();
+
+        $numero = $commande['numero_commande'] ?? (string) $commande_id;
+        return [
+            'success' => true,
+            'message' => 'La commande #' . $numero . ' a été supprimée définitivement.',
+        ];
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        error_log('[delete_commande] ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Erreur lors de la suppression de la commande.'];
+    }
+}
+

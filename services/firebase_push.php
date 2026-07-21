@@ -256,6 +256,8 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
     foreach ($tokens as $token) {
         $dataPayload = firebase_prepare_push_data($title, $body, $data);
         $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
+        require_once __DIR__ . '/../includes/site_url.php';
+        $iconUrl = rtrim(get_site_base_url(), '/') . '/image/produit1.jpg';
         $message = [
             'message' => [
                 'token' => $token,
@@ -264,6 +266,15 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
                 'android' => $mobile['android'],
                 'apns' => $mobile['apns'],
                 'webpush' => [
+                    'headers' => [
+                        'Urgency' => 'high',
+                        'TTL' => '86400',
+                    ],
+                    'notification' => [
+                        'title' => (string) $title,
+                        'body' => (string) $body,
+                        'icon' => $iconUrl,
+                    ],
                     'fcm_options' => ['link' => $dataPayload['link'] ?? '/']
                 ]
             ]
@@ -282,7 +293,16 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
             if (isset($response['name'])) {
                 $success++;
             } else {
-                $errors[] = $response['error']['message'] ?? 'Erreur inconnue';
+                $errMsg = $response['error']['message'] ?? 'Erreur inconnue';
+                $errors[] = $errMsg;
+                if (stripos($errMsg, 'UNREGISTERED') !== false
+                    || stripos($errMsg, 'NOT_FOUND') !== false
+                    || stripos($errMsg, 'InvalidRegistration') !== false) {
+                    if (!function_exists('fcm_delete_invalid_tokens')) {
+                        require_once __DIR__ . '/../models/model_fcm.php';
+                    }
+                    fcm_delete_invalid_tokens([$token]);
+                }
             }
         } else {
             $errors[] = 'Échec de la requête HTTP';
