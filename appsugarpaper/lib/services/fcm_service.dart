@@ -56,14 +56,16 @@ class FCMService {
     );
 
     if (!kIsWeb && Platform.isAndroid) {
+      // Nouveau channel id pour forcer Importance.max (Android ne met pas à jour un channel existant)
       const androidChannel = AndroidNotificationChannel(
-        'sugar_paper_channel',
-        'Sugar Paper',
+        'sugar_paper_alerts',
+        'Alertes Sugar Paper',
         description:
             'Alertes de commande et messages liés à votre compte Sugar Paper',
-        importance: Importance.high,
+        importance: Importance.max,
         playSound: true,
         enableVibration: true,
+        showBadge: true,
       );
 
       await _localNotifications
@@ -293,19 +295,22 @@ class FCMService {
     print('🔔 URL: $url');
 
     const androidDetails = AndroidNotificationDetails(
-      'sugar_paper_channel',
-      'Sugar Paper',
-      channelDescription: 'Notifications Sugar Paper',
-      importance: Importance.high,
-      priority: Priority.high,
+      'sugar_paper_alerts',
+      'Alertes Sugar Paper',
+      channelDescription: 'Alertes de commande Sugar Paper',
+      importance: Importance.max,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
+      visibility: NotificationVisibility.public,
+      category: AndroidNotificationCategory.message,
       icon: '@mipmap/ic_launcher',
     );
     const darwinDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
     const notificationDetails = NotificationDetails(
@@ -334,9 +339,15 @@ class FCMService {
       print('   Données: ${message.data}');
       print('   Message ID: ${message.messageId}');
 
-      // Afficher la notification localement
-      _showLocalNotification(message);
-      print('📬 Notification locale affichée');
+      // Android : forcer une bannière locale (sinon souvent silencieuse au premier plan)
+      // iOS : setForegroundNotificationPresentationOptions gère déjà l'alerte native
+      if (!kIsWeb && Platform.isAndroid) {
+        _showLocalNotification(message);
+      } else if (!kIsWeb && Platform.isIOS && message.notification == null) {
+        // Data-only iOS : afficher localement
+        _showLocalNotification(message);
+      }
+      print('📬 Handler premier plan traité');
     });
 
     // Notification reçue quand l'app est en arrière-plan et l'utilisateur clique dessus
@@ -403,7 +414,12 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('   Corps: ${message.notification?.body}');
   print('   Données: ${message.data}');
 
-  // Initialiser les notifications locales pour afficher la notification
+  // Si le payload contient déjà "notification", Android/iOS affichent
+  // la bannière système. On n'affiche une locale que pour les messages data-only.
+  if (message.notification != null) {
+    return;
+  }
+
   final FlutterLocalNotificationsPlugin localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -415,24 +431,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   );
   await localNotifications.initialize(initializationSettings);
 
-  final title = message.notification?.title ?? 'Sugar Paper';
-  final body = message.notification?.body ?? '';
+  final title = message.data['title']?.toString() ?? 'Sugar Paper';
+  final body = message.data['body']?.toString() ?? '';
   final url = FCMService.notificationUrlFromData(message.data) ?? '';
 
   const androidDetails = AndroidNotificationDetails(
-    'sugar_paper_channel',
-    'Sugar Paper',
-    channelDescription: 'Notifications Sugar Paper',
-    importance: Importance.high,
-    priority: Priority.high,
+    'sugar_paper_alerts',
+    'Alertes Sugar Paper',
+    channelDescription: 'Alertes de commande Sugar Paper',
+    importance: Importance.max,
+    priority: Priority.max,
     playSound: true,
     enableVibration: true,
+    visibility: NotificationVisibility.public,
+    category: AndroidNotificationCategory.message,
     icon: '@mipmap/ic_launcher',
   );
   const darwinDetails = DarwinNotificationDetails(
     presentAlert: true,
     presentBadge: true,
     presentSound: true,
+    interruptionLevel: InterruptionLevel.timeSensitive,
   );
 
   const notificationDetails = NotificationDetails(

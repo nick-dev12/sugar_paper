@@ -7,11 +7,8 @@ require_once __DIR__ . '/../includes/session_user.php';
 
 session_start_persistent();
 
-// Supprimer les tokens FCM du client avant déconnexion
-if (isset($_SESSION['user_id'])) {
-    require_once __DIR__ . '/../models/model_fcm.php';
-    delete_fcm_tokens_by_user((int) $_SESSION['user_id']);
-}
+// Ne PAS supprimer les tokens FCM à la déconnexion :
+// le client doit pouvoir recevoir les confirmations / mises à jour même déconnecté.
 
 // Détruire toutes les variables de session
 $_SESSION = array();

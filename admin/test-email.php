@@ -41,8 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ['type' => 'test_email']
         );
         if (!empty($send['success'])) {
-            $result_message = 'Email mis en file et traité (job: ' . ($send['job_id'] ?? '—') . ').';
-            $result_type = 'success';
+            // Sur la page de test, traiter tout de suite pour feedback immédiat
+            $queue_stats = email_queue_process(5);
+            $result_message = 'Email mis en file (job: ' . ($send['job_id'] ?? '—') . '). '
+                . 'Traitement : ' . (int) ($queue_stats['sent'] ?? 0) . ' envoyé(s), '
+                . (int) ($queue_stats['failed'] ?? 0) . ' échec(s).';
+            $result_type = (($queue_stats['failed'] ?? 0) > 0) ? 'error' : 'success';
         } else {
             $result_message = 'Échec : ' . ($send['error'] ?? 'erreur inconnue');
             $result_type = 'error';

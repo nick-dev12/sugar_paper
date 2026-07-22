@@ -38,7 +38,19 @@ function firebase_prepare_push_data($title, $body, $data = []) {
 }
 
 /**
+ * URL absolue de l'icône / logo pour les notifications push (web + SW)
+ * @return string
+ */
+function firebase_get_notification_icon_url() {
+    require_once __DIR__ . '/../includes/site_url.php';
+    $base = rtrim(get_site_base_url(), '/');
+    // Logo PWA officiel (carré, adapté aux toasts Windows / Chrome / Edge)
+    return $base . '/icons/icon-192.png';
+}
+
+/**
  * Configuration Android / iOS pour l'app Flutter Sugar Paper
+ * Force une alerte native (bannière + son), pas une notification silencieuse
  */
 function _firebase_build_mobile_config($title, $body, $dataPayload) {
     $link = $dataPayload['link'] ?? '/';
@@ -46,15 +58,21 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
         'android' => [
             'priority' => 'high',
             'notification' => [
-                'channel_id' => 'sugar_paper_channel',
+                'channel_id' => 'sugar_paper_alerts',
                 'title' => (string) $title,
                 'body' => (string) $body,
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                'sound' => 'default',
+                'default_sound' => true,
+                'default_vibrate_timings' => true,
+                'notification_priority' => 'PRIORITY_MAX',
+                'visibility' => 'PUBLIC',
             ],
         ],
         'apns' => [
             'headers' => [
                 'apns-priority' => '10',
+                'apns-push-type' => 'alert',
             ],
             'payload' => [
                 'aps' => [
@@ -63,9 +81,37 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
                         'body' => (string) $body,
                     ],
                     'sound' => 'default',
+                    'badge' => 1,
+                    'interruption-level' => 'time-sensitive',
                 ],
                 'link' => (string) $link,
             ],
+        ],
+    ];
+}
+
+/**
+ * Configuration Web Push (navigateur / PWA) avec logo du site
+ */
+function _firebase_build_webpush_config($title, $body, $dataPayload) {
+    $iconUrl = firebase_get_notification_icon_url();
+    return [
+        'headers' => [
+            'Urgency' => 'high',
+            'TTL' => '86400',
+        ],
+        'notification' => [
+            'title' => (string) $title,
+            'body' => (string) $body,
+            'icon' => $iconUrl,
+            'badge' => $iconUrl,
+            'image' => $iconUrl,
+            'requireInteraction' => false,
+            'silent' => false,
+            'vibrate' => [200, 100, 200],
+        ],
+        'fcm_options' => [
+            'link' => $dataPayload['link'] ?? '/',
         ],
     ];
 }
@@ -148,17 +194,13 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
 
         foreach ($tokens as $token) {
             try {
+                $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
                 $message = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token)
                     ->withNotification($notification)
                     ->withData($dataPayload)
                     ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
-                    ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']));
-                $link = $dataPayload['link'] ?? '/';
-                if (!empty($link)) {
-                    $message = $message->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray([
-                        'fcm_options' => ['link' => (string) $link]
-                    ]));
-                }
+                    ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']))
+                    ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webpush));
                 $messaging->send($message);
                 $success++;
             } catch (\Throwable $e) {
@@ -256,8 +298,7 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
     foreach ($tokens as $token) {
         $dataPayload = firebase_prepare_push_data($title, $body, $data);
         $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
-        require_once __DIR__ . '/../includes/site_url.php';
-        $iconUrl = rtrim(get_site_base_url(), '/') . '/image/produit1.jpg';
+        $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
         $message = [
             'message' => [
                 'token' => $token,
@@ -265,18 +306,7 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
                 'data' => $dataPayload,
                 'android' => $mobile['android'],
                 'apns' => $mobile['apns'],
-                'webpush' => [
-                    'headers' => [
-                        'Urgency' => 'high',
-                        'TTL' => '86400',
-                    ],
-                    'notification' => [
-                        'title' => (string) $title,
-                        'body' => (string) $body,
-                        'icon' => $iconUrl,
-                    ],
-                    'fcm_options' => ['link' => $dataPayload['link'] ?? '/']
-                ]
+                'webpush' => $webpush,
             ]
         ];
         $opts = [

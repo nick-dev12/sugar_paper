@@ -1,7 +1,9 @@
 import Flutter
 import UIKit
 import FirebaseCore
+import FirebaseMessaging
 import GoogleSignIn
+import UserNotifications
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -12,8 +14,25 @@ import GoogleSignIn
     if FirebaseApp.app() == nil {
       FirebaseApp.configure()
     }
+
+    // Proxy Firebase désactivé (Info.plist) → enregistrement APNs manuel obligatoire
+    // pour afficher les bannières natives (pas seulement dans le centre de notifications).
+    if #available(iOS 10.0, *) {
+      UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+    }
+    application.registerForRemoteNotifications()
+
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  /// Transmet le token APNs à FCM (requis quand FirebaseAppDelegateProxyEnabled = false).
+  override func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Messaging.messaging().apnsToken = deviceToken
+    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 
   /// Retour OAuth Google Sign-In (obligatoire avec FirebaseAppDelegateProxyEnabled = false).

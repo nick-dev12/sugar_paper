@@ -7,11 +7,8 @@ require_once __DIR__ . '/../includes/session_user.php';
 
 session_start_persistent();
 
-// Supprimer les tokens FCM de l'admin avant déconnexion
-if (isset($_SESSION['admin_id'])) {
-    require_once __DIR__ . '/../models/model_fcm.php';
-    delete_fcm_tokens_by_admin((int) $_SESSION['admin_id']);
-}
+// Ne PAS supprimer les tokens FCM à la déconnexion :
+// les alertes commandes doivent arriver même si l'admin n'est plus connecté / app fermée.
 
 // Détruire toutes les variables de session
 $_SESSION = array();

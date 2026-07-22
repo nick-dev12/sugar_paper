@@ -39,16 +39,15 @@ function notifications_mail_send($to, $subject, $body, $is_html = true, $meta = 
         if (function_exists('mail_send_async')) {
             $queued = mail_send_async($to, $subject, $body, $is_html, $meta);
             if (!empty($queued['success'])) {
-                // Traitement immédiat (WAMP/Windows : le worker en arrière-plan peut ne pas démarrer)
-                if (function_exists('email_queue_process')) {
-                    email_queue_process(5);
-                }
+                // Ne PAS traiter SMTP ici : ça bloque la requête HTTP 30s–2min.
+                // Le worker CLI (spawn) ou process_notify_queue traite la file.
                 return $queued;
             }
             error_log('[notifications_mail_send] file d\'attente : ' . ($queued['error'] ?? 'erreur inconnue'));
         }
     }
 
+    // Repli synchrone uniquement si la file est indisponible
     if (function_exists('mail_send')) {
         $sync = mail_send($to, $subject, $body, $is_html);
         return [

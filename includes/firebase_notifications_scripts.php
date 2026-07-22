@@ -58,6 +58,7 @@ $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_j
         console.error('[FCM] Firebase ou FIREBASE_CONFIG manquant');
     }
     window.FIREBASE_NOTIFY_TYPE = <?php echo json_encode($firebase_notify_type); ?>;
+    window.FCM_ICON_PATH = '/icons/icon-192.png';
 </script>
 <script src="/js/firebase-notifications.js?v=<?php echo htmlspecialchars($firebase_js_v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>

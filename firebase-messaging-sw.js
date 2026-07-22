@@ -66,7 +66,7 @@ messaging.onBackgroundMessage(function (payload) {
         || '';
     var link = (payload.data && payload.data.link) ? payload.data.link : '/user/mes-commandes.php';
     var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('sugar-paper-' + Date.now());
-    var icon = resolveNotificationUrl('/image/produit1.jpg');
+    var icon = resolveNotificationUrl('/icons/icon-192.png');
 
     return notifyPageClients('Message arrière-plan reçu', { title: title, body: body, tag: tag })
         .then(function () {
@@ -76,6 +76,8 @@ messaging.onBackgroundMessage(function (payload) {
                 badge: icon,
                 tag: tag,
                 requireInteraction: false,
+                silent: false,
+                vibrate: [200, 100, 200],
                 data: Object.assign({}, payload.data || {}, { link: link })
             });
         });

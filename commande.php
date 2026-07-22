@@ -31,51 +31,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $result = process_create_commande();
 
     if ($result['success']) {
-        // Envoi de la réponse immédiatement pour ne pas bloquer l'utilisateur
-        ignore_user_abort(true);
+        require_once __DIR__ . '/services/notify_queue.php';
+
+        // Enfiler push + emails AVANT la redirection (écriture fichier = instantané)
+        if (!empty($result['email_data'])) {
+            $d = $result['email_data'];
+            notify_queue_enqueue('nouvelle_commande', [
+                'numero_commande' => $d['numero_commande'] ?? $result['numero_commande'],
+                'montant_total' => $d['montant_total'] ?? 0,
+                'nombre_articles' => $d['nombre_articles'] ?? 0,
+                'telephone_livraison' => $d['telephone_livraison'] ?? '',
+                'adresse_livraison' => $d['adresse_livraison'] ?? '',
+                'produits' => $d['produits'] ?? [],
+            ]);
+        }
+        if (empty($result['is_guest']) && !empty($_SESSION['user_id'])) {
+            require_once __DIR__ . '/models/model_users.php';
+            $user = get_user_by_id((int) $_SESSION['user_id']);
+            $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
+            notify_queue_enqueue('confirmation_client', [
+                'user_id' => (int) $_SESSION['user_id'],
+                'numero_commande' => $result['numero_commande'],
+                'montant_total' => (float) ($result['email_data']['montant_total'] ?? 0),
+                'user_email' => $client_email,
+            ]);
+        }
+
         if (!empty($result['is_guest'])) {
             header('Location: /commande.php?success=1&numero=' . urlencode($result['numero_commande']));
         } else {
             header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
-        }
-        echo ' ';
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            flush();
-            if (ob_get_level()) {
-                ob_end_flush();
-            }
-        }
-
-        // Envoi notification + email en arrière-plan (après que le client a reçu la redirection)
-        if (!empty($result['email_data']) && file_exists(__DIR__ . '/services/send_new_commande_to_admin.php')) {
-            require_once __DIR__ . '/services/send_new_commande_to_admin.php';
-            $d = $result['email_data'];
-            send_new_commande_to_admin(
-                $d['numero_commande'],
-                $d['montant_total'],
-                $d['nombre_articles'],
-                $d['telephone_livraison'] ?? '',
-                $d['adresse_livraison'] ?? '',
-                $d['produits'] ?? []
-            );
-        }
-        if (file_exists(__DIR__ . '/services/send_commande_confirmation_to_client.php')) {
-            require_once __DIR__ . '/models/model_users.php';
-            require_once __DIR__ . '/services/send_commande_confirmation_to_client.php';
-            if (!empty($result['is_guest'])) {
-                // Pas d'email client pour les invités sans compte
-            } else {
-                $user = get_user_by_id((int) $_SESSION['user_id']);
-                $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
-                send_new_commande_confirmation_to_client(
-                    (int) $_SESSION['user_id'],
-                    $result['numero_commande'],
-                    (float) ($result['email_data']['montant_total'] ?? 0),
-                    $client_email
-                );
-            }
         }
         exit;
     } else {
@@ -1302,7 +1287,7 @@ include 'nav_bar.php';
         var formCommande = document.getElementById('form-commande');
         var loaderOverlay = document.getElementById('commande-loader-overlay');
         var commandeSubmitting = false;
-        var MIN_LOADER_MS = 3000;
+        var MIN_LOADER_MS = 600;
 
         if (formCommande && loaderOverlay) {
             formCommande.addEventListener('submit', function (e) {

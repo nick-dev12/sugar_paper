@@ -14,39 +14,30 @@ $result = process_commande_personnalisee();
 $zones_livraison = get_all_zones_livraison('actif');
 
 if ($result['success']) {
-    $_SESSION['commande_perso_success'] = $result['message'];
-    header('Location: index.php?commande_perso=1');
-    ignore_user_abort(true);
-    echo ' ';
-    if (function_exists('fastcgi_finish_request')) {
-        fastcgi_finish_request();
-    } else {
-        flush();
-        if (ob_get_level()) {
-            ob_end_flush();
+    require_once __DIR__ . '/services/notify_queue.php';
+
+    if (!empty($result['notify_data'])) {
+        $n = $result['notify_data'];
+        notify_queue_enqueue('nouvelle_cp', [
+            'commande_perso_id' => (int) ($n['commande_perso_id'] ?? 0),
+            'nom' => $n['nom'] ?? '',
+            'telephone' => $n['telephone'] ?? '',
+            'description' => $n['description'] ?? '',
+            'type_produit' => $n['type_produit'] ?? '',
+            'quantite' => $n['quantite'] ?? '',
+        ]);
+        $uid = (int) ($n['user_id'] ?? 0);
+        if ($uid > 0) {
+            notify_queue_enqueue('confirmation_cp', [
+                'user_id' => $uid,
+                'commande_perso_id' => (int) ($n['commande_perso_id'] ?? 0),
+                'user_email' => $n['user_email'] ?? '',
+            ]);
         }
     }
 
-    if (!empty($result['notify_data']) && file_exists(__DIR__ . '/services/send_commande_personnalisee_notification.php')) {
-        require_once __DIR__ . '/services/send_commande_personnalisee_notification.php';
-        $n = $result['notify_data'];
-        send_new_commande_personnalisee_to_admin(
-            (int) ($n['commande_perso_id'] ?? 0),
-            $n['nom'] ?? '',
-            $n['telephone'] ?? '',
-            $n['description'] ?? '',
-            $n['type_produit'] ?? '',
-            $n['quantite'] ?? ''
-        );
-        $uid = (int) ($n['user_id'] ?? 0);
-        if ($uid > 0) {
-            send_commande_personnalisee_confirmation_to_client(
-                $uid,
-                (int) ($n['commande_perso_id'] ?? 0),
-                $n['user_email'] ?? ''
-            );
-        }
-    }
+    $_SESSION['commande_perso_success'] = $result['message'];
+    header('Location: index.php?commande_perso=1');
     exit;
 }
 

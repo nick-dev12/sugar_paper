@@ -6,7 +6,7 @@
 
     var LOG = '[FCM]';
     var FCM_SW_PATH = window.FCM_SW_PATH || '/firebase-messaging-sw.js';
-    var FCM_ICON_PATH = '/image/produit1.jpg';
+    var FCM_ICON_PATH = window.FCM_ICON_PATH || '/icons/icon-192.png';
     var FCM_STORAGE_KEY = 'sugar_paper_fcm_enabled';
     var FCM_RESET_KEY = 'sugar_paper_fcm_force_reset';
     var PERMISSION_TIMEOUT_MS = 12000;

@@ -156,7 +156,7 @@ function get_fcm_tokens_by_admin($admin_id) {
 }
 
 /**
- * Supprime les tokens FCM d'un admin (à la déconnexion)
+ * Supprime les tokens FCM d'un admin (désactivation explicite uniquement — pas à la déconnexion)
  * @param int $admin_id ID de l'admin
  * @return bool True en cas de succès
  */
@@ -164,7 +164,7 @@ function delete_fcm_tokens_by_admin($admin_id) {
     global $db;
 
     try {
-        $stmt = $db->prepare("UPDATE fcm_tokens SET admin_id = NULL WHERE admin_id = :admin_id AND type = 'admin'");
+        $stmt = $db->prepare("DELETE FROM fcm_tokens WHERE admin_id = :admin_id AND type = 'admin'");
         return $stmt->execute(['admin_id' => (int) $admin_id]);
     } catch (PDOException $e) {
         return false;
@@ -190,7 +190,7 @@ function delete_fcm_tokens_by_user($user_id) {
     global $db;
 
     try {
-        $stmt = $db->prepare("UPDATE fcm_tokens SET user_id = NULL WHERE user_id = :user_id AND type = 'user'");
+        $stmt = $db->prepare("DELETE FROM fcm_tokens WHERE user_id = :user_id AND type = 'user'");
         return $stmt->execute(['user_id' => (int) $user_id]);
     } catch (PDOException $e) {
         return false;
@@ -222,6 +222,21 @@ function get_all_fcm_tokens_admin() {
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     } catch (PDOException $e) {
         return [];
+    }
+}
+
+/**
+ * Supprime les tokens admin orphelins (admin_id NULL) — inutilisables pour les alertes
+ * @return int Nombre de lignes supprimées
+ */
+function fcm_cleanup_orphan_admin_tokens() {
+    global $db;
+    try {
+        $stmt = $db->prepare("DELETE FROM fcm_tokens WHERE type = 'admin' AND (admin_id IS NULL OR admin_id = 0)");
+        $stmt->execute();
+        return (int) $stmt->rowCount();
+    } catch (PDOException $e) {
+        return 0;
     }
 }
 
