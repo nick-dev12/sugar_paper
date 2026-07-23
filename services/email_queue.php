@@ -89,19 +89,21 @@ function mail_send_async($to, $subject, $body, $is_html = true, $meta = []) {
  */
 function email_queue_spawn_worker() {
     $script = realpath(dirname(__DIR__) . '/scripts/process_email_queue.php');
-    if ($script === false || !is_readable($script)) {
-        return;
+    if ($script !== false && is_readable($script)) {
+        $php_bin = email_queue_resolve_php_binary();
+        $cmd = escapeshellarg($php_bin) . ' ' . escapeshellarg($script);
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            @pclose(@popen('start /B "" ' . $cmd . ' > NUL 2>&1', 'r'));
+        } elseif (function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true)) {
+            @exec($cmd . ' > /dev/null 2>&1 &');
+        }
     }
 
-    $php_bin = email_queue_resolve_php_binary();
-    $cmd = escapeshellarg($php_bin) . ' ' . escapeshellarg($script);
-
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        @pclose(@popen('start /B "" ' . $cmd . ' > NUL 2>&1', 'r'));
-        return;
+    if (is_file(dirname(__DIR__) . '/services/notify_queue_worker.php')) {
+        require_once dirname(__DIR__) . '/services/notify_queue_worker.php';
+        notify_queue_trigger_http_worker();
     }
-
-    @exec($cmd . ' > /dev/null 2>&1 &');
 }
 
 /**

@@ -26,6 +26,7 @@ if (!$cp || $cp['user_id'] != $_SESSION['user_id']) {
 }
 
 $statuts_labels = get_statuts_commande_personnalisee();
+$cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -62,6 +63,24 @@ $statuts_labels = get_statuts_commande_personnalisee();
                     <label>Description</label>
                     <div class="value"><?php echo nl2br(htmlspecialchars($cp['description'])); ?></div>
                 </div>
+                <?php if (!empty($cp_images)): ?>
+                <div class="detail-item detail-item-images">
+                    <label>Images d'inspiration (<?php echo count($cp_images); ?>)</label>
+                    <div class="cp-user-images-grid">
+                        <?php foreach ($cp_images as $img_index => $img_path): ?>
+                        <button type="button" class="cp-user-image-trigger"
+                            data-image-src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                            aria-label="Agrandir l'image <?php echo (int) $img_index + 1; ?>">
+                            <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                                alt="Image d'inspiration <?php echo (int) $img_index + 1; ?>"
+                                loading="lazy"
+                                onerror="this.src='/image/produit1.jpg'">
+                            <span class="cp-user-image-zoom" aria-hidden="true"><i class="fas fa-search-plus"></i></span>
+                        </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <?php if ($cp['type_produit']): ?>
                 <div class="detail-item">
                     <label>Type de produit</label>
@@ -87,6 +106,73 @@ $statuts_labels = get_statuts_commande_personnalisee();
             </div>
         </div>
     </section>
+
+    <?php if (!empty($cp_images)): ?>
+    <div class="cp-user-image-modal" id="cpUserImageModal" hidden aria-hidden="true">
+        <div class="cp-user-image-modal-backdrop" data-close-user-image-modal="1"></div>
+        <div class="cp-user-image-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cpUserImageModalTitle">
+            <button type="button" class="cp-user-image-modal-close" id="cpUserImageModalClose" aria-label="Fermer l'image">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="cp-user-image-modal-header">
+                <h3 id="cpUserImageModalTitle"><i class="fas fa-image"></i> Image d'inspiration</h3>
+                <p>Demande #<?php echo (int) $cp['id']; ?></p>
+            </div>
+            <div class="cp-user-image-modal-body">
+                <img id="cpUserImageModalPreview" src="/upload/<?php echo htmlspecialchars($cp_images[0]); ?>"
+                    alt="Image d'inspiration de la demande personnalisée"
+                    onerror="this.src='/image/produit1.jpg'">
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var modal = document.getElementById('cpUserImageModal');
+            var triggers = document.querySelectorAll('.cp-user-image-trigger[data-image-src]');
+            var closeButton = document.getElementById('cpUserImageModalClose');
+            var closeBackdrop = modal ? modal.querySelector('[data-close-user-image-modal="1"]') : null;
+            var previewImage = document.getElementById('cpUserImageModalPreview');
+
+            function openModal(src) {
+                if (!modal || !previewImage || !src) {
+                    return;
+                }
+                previewImage.src = src;
+                modal.hidden = false;
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                if (!modal) {
+                    return;
+                }
+                modal.hidden = true;
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            triggers.forEach(function (trigger) {
+                trigger.addEventListener('click', function () {
+                    openModal(trigger.getAttribute('data-image-src'));
+                });
+            });
+
+            if (closeButton) {
+                closeButton.addEventListener('click', closeModal);
+            }
+            if (closeBackdrop) {
+                closeBackdrop.addEventListener('click', closeModal);
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal && !modal.hidden) {
+                    closeModal();
+                }
+            });
+        })();
+    </script>
+    <?php endif; ?>
 
     <?php include 'includes/user_footer.php'; ?>
 </body>

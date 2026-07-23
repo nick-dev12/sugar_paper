@@ -217,18 +217,21 @@ $statuts_labels = get_statuts_commande_personnalisee();
         <?php endif; ?>
 
         <div class="section-title">
-            <h2><i class="fas fa-list"></i> Mes Commandes Actives (<?php echo count($commandes_actives); ?>)</h2>
+            <h2><i class="fas fa-list"></i> Mes commandes actives (<?php echo count($commandes_actives) + count($commandes_perso_actives); ?>)</h2>
             <a href="commande-categorie.php" class="btn-view-categories">
                 <i class="fas fa-layer-group"></i> Voir par catégorie
             </a>
         </div>
 
-        <?php if (empty($commandes_actives)): ?>
+        <?php if (empty($commandes_actives) && empty($commandes_perso_actives)): ?>
             <div class="empty-state">
                 <i class="fas fa-shopping-bag"></i>
                 <p>Aucune commande active pour le moment.</p>
                 <a href="/produits.php" class="btn-primary">
                     <i class="fas fa-shopping-cart"></i> Découvrir nos produits
+                </a>
+                <a href="/commande-personnalisee.php" class="btn-primary btn-primary--outline" style="margin-top: 10px;">
+                    <i class="fas fa-palette"></i> Faire une demande personnalisée
                 </a>
             </div>
         <?php else: ?>
@@ -243,13 +246,10 @@ $statuts_labels = get_statuts_commande_personnalisee();
                             <span class="commande-statut statut-<?php echo $commande['statut']; ?>"
                                 style="align-self: flex-start;">
                                 <?php
-                                // Formater l'affichage du statut
                                 $statut_display = ucfirst(str_replace('_', ' ', $commande['statut']));
-                                // Remplacer "Livree" par "Reçu"
                                 if ($commande['statut'] == 'livree' || $commande['statut'] == 'paye') {
                                     $statut_display = 'Reçu';
                                 }
-                                // Remplacer "Annulee" par "Annulée"
                                 if ($commande['statut'] == 'annulee') {
                                     $statut_display = 'Annulée';
                                 }
@@ -261,13 +261,6 @@ $statuts_labels = get_statuts_commande_personnalisee();
                             <div class="detail-item">
                                 <label>Montant total</label>
                                 <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA
-                                </div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Adresse</label>
-                                <div class="value"
-                                    style="font-size: 11px; max-width: 150px; text-align: right; word-break: break-word;">
-                                    <?php echo htmlspecialchars(substr($commande['adresse_livraison'], 0, 30)); ?>...
                                 </div>
                             </div>
                             <div class="detail-item">
@@ -292,7 +285,6 @@ $statuts_labels = get_statuts_commande_personnalisee();
                                 <i class="fas fa-eye"></i> Voir les produits
                             </a>
 
-                            <!-- Bouton Colis reçu - visible uniquement si statut = livraison_en_cours -->
                             <?php if ($commande['statut'] == 'livraison_en_cours'): ?>
                                 <form method="POST" action="" style="margin: 0;">
                                     <input type="hidden" name="commande_id" value="<?php echo $commande['id']; ?>">
@@ -303,7 +295,6 @@ $statuts_labels = get_statuts_commande_personnalisee();
                                 </form>
                             <?php endif; ?>
 
-                            <!-- Bouton Annuler - visible uniquement si la commande peut être annulée -->
                             <?php
                             $can_cancel = in_array($commande['statut'], ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation']);
                             if ($can_cancel):
@@ -320,32 +311,15 @@ $statuts_labels = get_statuts_commande_personnalisee();
                         </div>
                     </div>
                 <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
 
-        <!-- Section Commandes personnalisées -->
-        <div class="section-title section-title--spaced">
-            <h2><i class="fas fa-palette"></i> Mes commandes personnalisées (<?php echo count($commandes_perso_actives); ?>)</h2>
-            <a href="/commande-personnalisee.php" class="btn-view-categories">
-                <i class="fas fa-plus"></i> Nouvelle demande
-            </a>
-        </div>
-
-        <?php if (empty($commandes_perso_actives)): ?>
-            <div class="empty-state empty-state-compact">
-                <i class="fas fa-palette"></i>
-                <p>Aucune commande personnalisée en cours.</p>
-                <a href="/commande-personnalisee.php" class="btn-primary">
-                    <i class="fas fa-palette"></i> Faire une demande personnalisée
-                </a>
-            </div>
-        <?php else: ?>
-            <div class="commandes-grid">
                 <?php foreach ($commandes_perso_actives as $cp): ?>
                     <div class="commande-item commande-item-perso">
                         <div class="commande-header">
                             <div class="commande-info">
-                                <h3>Demande #<?php echo $cp['id']; ?></h3>
+                                <span class="commande-type-badge commande-type-badge--perso">
+                                    <i class="fas fa-palette" aria-hidden="true"></i> Commande personnalisée
+                                </span>
+                                <h3>Demande #<?php echo (int) $cp['id']; ?></h3>
                                 <p>Date: <?php echo date('d/m/Y à H:i', strtotime($cp['date_creation'])); ?></p>
                             </div>
                             <span class="commande-statut statut-<?php echo $cp['statut']; ?>" style="align-self: flex-start;">

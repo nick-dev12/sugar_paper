@@ -139,17 +139,29 @@ function get_fcm_tokens_by_admin($admin_id) {
 
     try {
         $stmt = $db->prepare("
-            SELECT ft.token
+            SELECT ft.token, a.role, a.statut
             FROM fcm_tokens ft
             INNER JOIN admin a ON a.id = ft.admin_id
             WHERE ft.admin_id = :admin_id
               AND ft.type = 'admin'
               AND ft.token IS NOT NULL AND ft.token != ''
-              AND a.statut = 'actif'
-              AND a.role IN ('admin', 'utilisateur')
         ");
         $stmt->execute(['admin_id' => (int) $admin_id]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $eligible_roles = fcm_notify_admin_roles_eligible();
+        $tokens = [];
+
+        foreach ($rows as $row) {
+            if (($row['statut'] ?? '') !== 'actif') {
+                continue;
+            }
+            $role = normalize_admin_role($row['role'] ?? '');
+            if (in_array($role, $eligible_roles, true)) {
+                $tokens[] = $row['token'];
+            }
+        }
+
+        return $tokens;
     } catch (PDOException $e) {
         return [];
     }
@@ -204,24 +216,61 @@ function delete_fcm_tokens_by_user($user_id) {
 function get_all_fcm_tokens_admin() {
     global $db;
 
-    $roles = fcm_notify_admin_roles_eligible();
-    $placeholders = implode(',', array_fill(0, count($roles), '?'));
-
     try {
-        $stmt = $db->prepare("
-            SELECT DISTINCT ft.token
+        $stmt = $db->query("
+            SELECT DISTINCT ft.token, a.role, a.statut
             FROM fcm_tokens ft
             INNER JOIN admin a ON a.id = ft.admin_id
             WHERE ft.type = 'admin'
               AND ft.admin_id IS NOT NULL
               AND ft.token IS NOT NULL AND ft.token != ''
-              AND a.statut = 'actif'
-              AND a.role IN ($placeholders)
         ");
-        $stmt->execute($roles);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $eligible_roles = fcm_notify_admin_roles_eligible();
+        $tokens = [];
+
+        foreach ($rows as $row) {
+            if (($row['statut'] ?? '') !== 'actif') {
+                continue;
+            }
+            $role = normalize_admin_role($row['role'] ?? '');
+            if (!in_array($role, $eligible_roles, true)) {
+                continue;
+            }
+            $tokens[] = $row['token'];
+        }
+
+        return array_values(array_unique($tokens));
     } catch (PDOException $e) {
         return [];
+    }
+}
+
+/**
+ * Réassocie les tokens admin orphelins (admin_id NULL) au compte connecté si le token correspond
+ * Appelé après activation / resync login
+ * @param int $admin_id
+ * @param string $token
+ * @return bool
+ */
+function fcm_relink_orphan_admin_token($admin_id, $token) {
+    global $db;
+
+    $admin_id = (int) $admin_id;
+    $token = trim((string) $token);
+    if ($admin_id <= 0 || $token === '' || !fcm_admin_is_eligible_for_notify($admin_id)) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            UPDATE fcm_tokens
+            SET admin_id = :admin_id, type = 'admin', user_id = NULL, date_creation = NOW()
+            WHERE token = :token AND type = 'admin'
+        ");
+        return $stmt->execute(['admin_id' => $admin_id, 'token' => $token]);
+    } catch (PDOException $e) {
+        return false;
     }
 }
 

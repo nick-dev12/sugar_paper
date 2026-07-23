@@ -689,10 +689,16 @@
                 return;
             }
 
-            if (isMarkedEnabled()) {
+            // Admin : resynchroniser le token à chaque visite (reconnexion / changement de compte)
+            var notifyType = getNotifyType(btn);
+            var forceSync = window.FCM_FORCE_RESYNC === true || notifyType === 'admin';
+            if (forceSync || isMarkedEnabled()) {
                 updateButtonState(btn, 'enabled');
                 window.FirebaseNotifications.setupForegroundHandler();
-                window.FirebaseNotifications.silentRefreshToken(getNotifyType(btn));
+                window.FirebaseNotifications.syncTokenWithServer(notifyType, forceSync || window.FCM_FORCE_RESYNC === true);
+                if (window.FCM_FORCE_RESYNC) {
+                    window.FCM_FORCE_RESYNC = false;
+                }
                 return;
             }
 
@@ -700,13 +706,13 @@
         },
 
         /**
-         * Rafraîchit le token FCM en arrière-plan (site fermé = Service Worker reçoit les push)
+         * Envoie le token FCM au serveur (reconnexion, changement admin, refresh)
          */
-        silentRefreshToken: function (type) {
+        syncTokenWithServer: function (type, force) {
             if (typeof firebase === 'undefined' || !firebase.messaging || Notification.permission !== 'granted') {
                 return;
             }
-            if (!isMarkedEnabled()) {
+            if (!force && !isMarkedEnabled()) {
                 return;
             }
             var vapidKey = getVapidKey();
@@ -724,6 +730,13 @@
             }).catch(function () { /* silencieux */ });
         },
 
+        /**
+         * @deprecated alias
+         */
+        silentRefreshToken: function (type) {
+            window.FirebaseNotifications.syncTokenWithServer(type, false);
+        },
+
         setupTokenRefreshListener: function () {
             if (typeof firebase === 'undefined' || !firebase.messaging) {
                 return;
@@ -732,7 +745,7 @@
                 firebase.messaging().onTokenRefresh(function () {
                     log('Token FCM rafraîchi');
                     var type = window.FIREBASE_NOTIFY_TYPE || 'user';
-                    window.FirebaseNotifications.silentRefreshToken(type);
+                    window.FirebaseNotifications.syncTokenWithServer(type, true);
                 });
             } catch (e) { /* ignore */ }
         },

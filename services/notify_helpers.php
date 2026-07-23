@@ -21,43 +21,32 @@ function notifications_ensure_mail_loaded() {
 }
 
 /**
- * Envoie un email via la file d'attente (arrière-plan) avec repli synchrone si besoin
+ * Envoie un email immédiatement via SMTP (PHPMailer).
  *
  * @param string $to
  * @param string $subject
  * @param string $body
  * @param bool $is_html
- * @param array $meta
+ * @param array $meta Conservé pour compatibilité (logs futurs)
  * @return array{success:bool, job_id:string|null, error:string|null}
  */
 function notifications_mail_send($to, $subject, $body, $is_html = true, $meta = []) {
     notifications_ensure_mail_loaded();
 
-    $queue_path = __DIR__ . '/email_queue.php';
-    if (file_exists($queue_path)) {
-        require_once $queue_path;
-        if (function_exists('mail_send_async')) {
-            $queued = mail_send_async($to, $subject, $body, $is_html, $meta);
-            if (!empty($queued['success'])) {
-                // Ne PAS traiter SMTP ici : ça bloque la requête HTTP 30s–2min.
-                // Le worker CLI (spawn) ou process_notify_queue traite la file.
-                return $queued;
-            }
-            error_log('[notifications_mail_send] file d\'attente : ' . ($queued['error'] ?? 'erreur inconnue'));
-        }
+    if (!function_exists('mail_send')) {
+        return ['success' => false, 'job_id' => null, 'error' => 'Service mail indisponible'];
     }
 
-    // Repli synchrone uniquement si la file est indisponible
-    if (function_exists('mail_send')) {
-        $sync = mail_send($to, $subject, $body, $is_html);
-        return [
-            'success' => !empty($sync['success']),
-            'job_id' => null,
-            'error' => $sync['error'] ?? null,
-        ];
+    $sync = mail_send($to, $subject, $body, $is_html);
+    if (empty($sync['success'])) {
+        error_log('[notifications_mail_send] ' . ($sync['error'] ?? 'échec SMTP'));
     }
 
-    return ['success' => false, 'job_id' => null, 'error' => 'Service mail indisponible'];
+    return [
+        'success' => !empty($sync['success']),
+        'job_id' => null,
+        'error' => $sync['error'] ?? null,
+    ];
 }
 
 /**

@@ -14,26 +14,10 @@ $result = process_commande_personnalisee();
 $zones_livraison = get_all_zones_livraison('actif');
 
 if ($result['success']) {
-    require_once __DIR__ . '/services/notify_queue.php';
+    require_once __DIR__ . '/services/notifications_order_dispatch.php';
 
     if (!empty($result['notify_data'])) {
-        $n = $result['notify_data'];
-        notify_queue_enqueue('nouvelle_cp', [
-            'commande_perso_id' => (int) ($n['commande_perso_id'] ?? 0),
-            'nom' => $n['nom'] ?? '',
-            'telephone' => $n['telephone'] ?? '',
-            'description' => $n['description'] ?? '',
-            'type_produit' => $n['type_produit'] ?? '',
-            'quantite' => $n['quantite'] ?? '',
-        ]);
-        $uid = (int) ($n['user_id'] ?? 0);
-        if ($uid > 0) {
-            notify_queue_enqueue('confirmation_cp', [
-                'user_id' => $uid,
-                'commande_perso_id' => (int) ($n['commande_perso_id'] ?? 0),
-                'user_email' => $n['user_email'] ?? '',
-            ]);
-        }
+        notifications_dispatch_after_commande_personnalisee($result['notify_data']);
     }
 
     $_SESSION['commande_perso_success'] = $result['message'];
@@ -70,6 +54,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body>
@@ -88,7 +73,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         <?php endif; ?>
 
         <div class="cp-layout">
-            <form method="POST" action="" class="form-commande-perso" enctype="multipart/form-data">
+            <form method="POST" action="" class="form-commande-perso" id="form-commande-perso" enctype="multipart/form-data">
                 <section class="cp-form-section">
                     <h2 class="cp-form-section-title"><i class="fas fa-user-circle" aria-hidden="true"></i> Vos coordonnées</h2>
                     <div class="form-row">
@@ -185,6 +170,21 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         </div>
 
         <a href="index.php" class="back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> Retour à l'accueil</a>
+    </div>
+
+    <div id="commande-loader-overlay" class="commande-loader-overlay" hidden aria-hidden="true" role="alertdialog" aria-modal="true" aria-labelledby="commande-loader-title" aria-describedby="commande-loader-text">
+        <div class="commande-loader-card">
+            <div class="commande-loader-spinner" aria-hidden="true">
+                <span class="commande-loader-spinner__ring commande-loader-spinner__ring--outer"></span>
+                <span class="commande-loader-spinner__ring commande-loader-spinner__ring--inner"></span>
+                <span class="commande-loader-spinner__icon"><i class="fas fa-palette"></i></span>
+            </div>
+            <h2 class="commande-loader-title" id="commande-loader-title">Demande en cours</h2>
+            <p class="commande-loader-text" id="commande-loader-text">Votre demande personnalisée est en train d'être enregistrée.<br>Merci de patienter quelques instants…</p>
+            <div class="commande-loader-dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
     </div>
 
     <script src="/js/commande-personnalisee.js<?php echo asset_version_query(); ?>"></script>

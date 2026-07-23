@@ -267,6 +267,29 @@ body.user-page-mes-commandes .commande-item-perso {
   border-left: 4px solid var(--couleur-dominante);
 }
 
+body.user-page-mes-commandes .commande-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+
+body.user-page-mes-commandes .commande-type-badge--perso {
+  background: rgba(229, 72, 138, 0.12);
+  color: #b8326a;
+}
+
+body.user-page-mes-commandes .btn-primary--outline {
+  background: transparent;
+  color: var(--couleur-dominante);
+  border: 2px solid var(--couleur-dominante);
+}
+
 body.user-page-mes-commandes .empty-state,
 body.user-page-mes-commandes .empty-state-compact {
   padding: clamp(24px, 5vw, 36px);

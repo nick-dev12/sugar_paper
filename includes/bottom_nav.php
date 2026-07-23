@@ -52,6 +52,40 @@ $compte_label = $store_nav_account['short_label'];
 $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
 ?>
 <link rel="stylesheet" href="/css/bottom-nav.css<?php echo asset_version_query(); ?>">
+<?php if ($bottom_nav_context === 'user'): ?>
+<nav class="bottom-nav bottom-nav--user" id="bottomNav" aria-label="Navigation espace client">
+    <a href="/user/mon-compte.php"
+        class="bottom-nav-item bottom-nav-item--dashboard<?php echo $bottom_nav_active === 'dashboard' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Tableau de bord</span>
+    </a>
+    <a href="/user/mes-commandes.php"
+        class="bottom-nav-item bottom-nav-item--commandes<?php echo $bottom_nav_active === 'commandes' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Mes commandes</span>
+    </a>
+    <a href="<?php echo htmlspecialchars($panier_url); ?>"
+        class="bottom-nav-item bottom-nav-item--panier<?php echo $bottom_nav_active === 'panier' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon">
+            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                <span class="bottom-nav-badge"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+            <?php endif; ?>
+        </span>
+        <span class="bottom-nav-label">Mon panier</span>
+    </a>
+    <a href="/user/profil.php"
+        class="bottom-nav-item bottom-nav-item--profil<?php echo $bottom_nav_active === 'profil' ? ' is-active' : ''; ?>">
+        <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Mon profil</span>
+    </a>
+    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn"
+        data-menu-target="user" aria-label="Ouvrir le menu">
+        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-label">Menu</span>
+    </button>
+</nav>
+<?php else: ?>
 <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
     <a href="/index.php"
         class="bottom-nav-item bottom-nav-item--accueil<?php echo $bottom_nav_active === 'accueil' ? ' is-active' : ''; ?>">
@@ -84,6 +118,7 @@ $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
         <span class="bottom-nav-label">Menu</span>
     </button>
 </nav>
+<?php endif; ?>
 <script>
     (function () {
         document.documentElement.classList.add('has-bottom-nav');
@@ -187,3 +222,11 @@ $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
         });
     })();
 </script>
+<?php
+$jf_skip_pages = ['tracking-background.php'];
+if (!in_array(basename($_SERVER['PHP_SELF'] ?? ''), $jf_skip_pages, true)) {
+    if (empty($skip_jotform_ai_assistant) && !defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
+        include __DIR__ . '/jotform_ai_assistant.php';
+    }
+}
+?>

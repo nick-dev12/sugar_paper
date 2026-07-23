@@ -4,6 +4,10 @@
  * Programmation procédurale uniquement.
  */
 
+if (empty($skip_jotform_ai_assistant) && !defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
+    include __DIR__ . '/jotform_ai_assistant.php';
+}
+
 if (defined('FLOATING_BACK_BUTTON_INCLUDED')) {
     return;
 }

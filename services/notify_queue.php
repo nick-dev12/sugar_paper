@@ -58,25 +58,29 @@ function notify_queue_enqueue($type, array $payload) {
 }
 
 /**
- * Lance scripts/process_notify_queue.php en arrière-plan
+ * Lance le worker (CLI puis HTTP si besoin)
  */
 function notify_queue_spawn_worker() {
     $script = realpath(dirname(__DIR__) . '/scripts/process_notify_queue.php');
-    if ($script === false || !is_readable($script)) {
-        return;
+    $spawned = false;
+
+    if ($script !== false && is_readable($script)) {
+        require_once __DIR__ . '/email_queue.php';
+        $php_bin = email_queue_resolve_php_binary();
+        $cmd = escapeshellarg($php_bin) . ' ' . escapeshellarg($script);
+
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            @pclose(@popen('start /B "" ' . $cmd . ' > NUL 2>&1', 'r'));
+            $spawned = true;
+        } elseif (function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true)) {
+            @exec($cmd . ' > /dev/null 2>&1 &');
+            $spawned = true;
+        }
     }
 
-    require_once __DIR__ . '/email_queue.php';
-    $php_bin = email_queue_resolve_php_binary();
-    $cmd = escapeshellarg($php_bin) . ' ' . escapeshellarg($script);
-
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        // start /B détache vraiment le processus sous Windows
-        @pclose(@popen('start /B "" ' . $cmd . ' > NUL 2>&1', 'r'));
-        return;
-    }
-
-    @exec($cmd . ' > /dev/null 2>&1 &');
+    // Production : exec souvent désactivé → requête HTTP interne non bloquante
+    require_once __DIR__ . '/notify_queue_worker.php';
+    notify_queue_trigger_http_worker();
 }
 
 /**

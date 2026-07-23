@@ -33,7 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result_message = 'Adresse email invalide.';
         $result_type = 'error';
     } elseif ($mode === 'queue') {
-        $send = notifications_mail_send(
+        require_once __DIR__ . '/../services/email_queue.php';
+        $send = mail_send_async(
             $to,
             '[Sugar Paper] Test email (file d\'attente)',
             '<div style="font-family:Arial,sans-serif;max-width:520px;"><h2 style="color:#918a44;">Test file d\'attente</h2><p>Ce message a transité par la file d\'attente email.</p><p><strong>Date :</strong> ' . date('d/m/Y H:i:s') . '</p></div>',

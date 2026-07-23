@@ -539,4 +539,42 @@ if (!function_exists('geo_geocode_suggest')) {
         unset($best['score']);
         return $best;
     }
+
+    /**
+     * Géocodage inverse — libellé court pour affichage livraison.
+     *
+     * @return string
+     */
+    function geo_geocode_reverse($lat, $lng) {
+        $lat = geo_geocode_suggest_parse_coord($lat);
+        $lng = geo_geocode_suggest_parse_coord($lng);
+        if (!geo_geocode_suggest_coords_valid($lat, $lng)) {
+            return '';
+        }
+
+        geo_geocode_suggest_nominatim_throttle();
+        $url = 'https://nominatim.openstreetmap.org/reverse?' . http_build_query([
+            'format' => 'jsonv2',
+            'lat' => (string) $lat,
+            'lon' => (string) $lng,
+            'zoom' => 17,
+            'addressdetails' => 1,
+        ]);
+        $raw = geo_geocode_suggest_http_get($url);
+        if ($raw === null) {
+            return '';
+        }
+        $data = json_decode($raw, true);
+        if (!is_array($data)) {
+            return '';
+        }
+
+        $full = isset($data['display_name']) ? trim((string) $data['display_name']) : '';
+        if ($full === '') {
+            return '';
+        }
+
+        $label = geo_geocode_suggest_short_label($full);
+        return $label !== '' ? $label : $full;
+    }
 }

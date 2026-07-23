@@ -36,6 +36,7 @@ if (isset($result['success']) && $result['success'] && $result['admin']) {
     $_SESSION['admin_email'] = $result['admin']['email'];
     $_SESSION['admin_statut'] = $result['admin']['statut'];
     $_SESSION['admin_role'] = normalize_admin_role($result['admin']['role'] ?? 'admin');
+    $_SESSION['fcm_resync_admin'] = 1;
 
     require_once __DIR__ . '/../includes/admin_route_access.php';
     $target = admin_role_default_redirect_path($_SESSION['admin_role']);

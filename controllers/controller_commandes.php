@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/model_panier.php';
 require_once __DIR__ . '/../models/model_zones_livraison.php';
 require_once __DIR__ . '/../includes/panier_invite.php';
 require_once __DIR__ . '/../includes/guest_client.php';
+require_once __DIR__ . '/../includes/geo_location.php';
 
 $autoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoload)) {
@@ -43,7 +44,16 @@ function process_create_commande() {
 
     $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : 0;
     $telephone_livraison = trim($_POST['telephone_livraison'] ?? '');
-    $notes = trim($_POST['notes'] ?? '');
+    $mode_livraison = commande_mode_livraison_normalize($_POST['mode_livraison'] ?? 'livraison');
+
+    $geo_lat = geo_parse_coord($_POST['geo_lat'] ?? null);
+    $geo_lng = geo_parse_coord($_POST['geo_lng'] ?? null);
+    $geo_precision = geo_parse_precision($_POST['geo_precision'] ?? null);
+    $geo_source = trim((string) ($_POST['geo_source'] ?? 'gps'));
+    if (!in_array($geo_source, GEO_SOURCES_COMMANDE, true)) {
+        $geo_source = 'gps';
+    }
+    $geo_address = trim((string) ($_POST['geo_address'] ?? ''));
 
     if (empty($telephone_livraison) && $guest_client) {
         $telephone_livraison = $guest_client['telephone'];
@@ -66,7 +76,20 @@ function process_create_commande() {
     $adresse_livraison = 'À définir';
     $frais_livraison = 0;
 
-    if ($zone_livraison_id > 0) {
+    if ($mode_livraison === 'retrait') {
+        $zones_actives = get_all_zones_livraison('actif');
+        $zone_retrait = zones_livraison_find_retrait($zones_actives);
+        if ($zone_retrait) {
+            $zone_livraison_id = (int) $zone_retrait['id'];
+            $adresse_livraison = trim($zone_retrait['ville'] . ' - ' . $zone_retrait['quartier']);
+            $frais_livraison = (float) $zone_retrait['prix_livraison'];
+        } else {
+            require_once __DIR__ . '/../includes/commande_mode_helpers.php';
+            $zone_livraison_id = null;
+            $adresse_livraison = commande_retrait_fallback_adresse();
+            $frais_livraison = 0;
+        }
+    } elseif ($zone_livraison_id > 0) {
         $zone = get_zone_livraison_by_id($zone_livraison_id);
         if (!$zone || $zone['statut'] !== 'actif') {
             return [
@@ -74,7 +97,29 @@ function process_create_commande() {
                 'message' => 'La zone de livraison sélectionnée n\'est pas valide.'
             ];
         }
-        $adresse_livraison = $zone['ville'] . ' - ' . $zone['quartier'];
+        $zone_retrait_check = zones_livraison_find_retrait(get_all_zones_livraison('actif'));
+        if ($zone_retrait_check && (int) $zone['id'] === (int) $zone_retrait_check['id']) {
+            return [
+                'success' => false,
+                'message' => 'Veuillez choisir une zone de livraison à domicile ou l\'option retrait sur place.'
+            ];
+        }
+        if (!geo_coords_valid($geo_lat, $geo_lng)) {
+            return [
+                'success' => false,
+                'message' => 'Votre position GPS est obligatoire pour une livraison à domicile. Autorisez la géolocalisation ou actualisez votre position.'
+            ];
+        }
+        $zone_label = trim($zone['ville'] . ' - ' . $zone['quartier']);
+        if ($geo_address !== '') {
+            $adresse_livraison = $geo_address . ' (' . $zone_label . ')';
+        } else {
+            $adresse_livraison = geo_reverse_geocode_label($geo_lat, $geo_lng);
+            if ($adresse_livraison === '' || strpos($adresse_livraison, 'Position GPS') === 0) {
+                $adresse_livraison = sprintf('Position GPS : %.6f, %.6f', $geo_lat, $geo_lng);
+            }
+            $adresse_livraison .= ' (' . $zone_label . ')';
+        }
         $frais_livraison = (float) $zone['prix_livraison'];
     } else {
         return [
@@ -137,7 +182,7 @@ function process_create_commande() {
         $panier_items,
         $adresse_livraison,
         $telephone_livraison,
-        $notes ?: null,
+        null,
         $zone_livraison_id,
         $frais_livraison,
         $choix,
@@ -145,6 +190,14 @@ function process_create_commande() {
         '-',
         $client_telephone
     );
+
+    if ($result !== false && !empty($result['success'])) {
+        require_once __DIR__ . '/../includes/commande_mode_helpers.php';
+        geo_save_commande_mode((int) $result['commande_id'], $mode_livraison);
+        if ($mode_livraison === 'livraison' && geo_coords_valid($geo_lat, $geo_lng)) {
+            geo_save_commande_location((int) $result['commande_id'], $geo_lat, $geo_lng, $geo_precision, $geo_source);
+        }
+    }
 
     if ($result === false) {
         return [

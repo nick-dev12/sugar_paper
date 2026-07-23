@@ -319,6 +319,7 @@ $all_categories = get_all_categories();
     </div>
 
     <section class="content-section commande-categorie-page">
+        <?php if (!$commande_id): ?>
         <!-- Filtre par catégorie -->
         <div class="filter-section">
             <h3>
@@ -336,6 +337,7 @@ $all_categories = get_all_categories();
                 <?php endforeach; ?>
             </div>
         </div>
+        <?php endif; ?>
 
         <?php if (empty($commandes_by_categorie)): ?>
             <div class="empty-state">
@@ -376,7 +378,7 @@ $all_categories = get_all_categories();
                                         <div class="produit-card-commande-info">
                                             <?php
                                             $numero_commande = $produit['numero_commande'] ?? null;
-                                            if ($numero_commande):
+                                            if ($numero_commande && !$commande_id):
                                                 ?>
                                                 <div class="commande-info-badge">
                                                     Commande #<?php echo htmlspecialchars($numero_commande); ?>

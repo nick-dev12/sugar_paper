@@ -25,6 +25,11 @@ if (empty($enable_firebase_notifications)) {
     return;
 }
 $firebase_notify_type = isset($firebase_notify_type) && $firebase_notify_type === 'admin' ? 'admin' : 'user';
+$fcm_force_resync = false;
+if ($firebase_notify_type === 'admin' && !empty($_SESSION['fcm_resync_admin'])) {
+    $fcm_force_resync = true;
+    unset($_SESSION['fcm_resync_admin']);
+}
 require_once __DIR__ . '/asset_version.php';
 $firebase_js_path = __DIR__ . '/../js/firebase-notifications.js';
 $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_js_path) : get_asset_version();
@@ -59,6 +64,7 @@ $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_j
     }
     window.FIREBASE_NOTIFY_TYPE = <?php echo json_encode($firebase_notify_type); ?>;
     window.FCM_ICON_PATH = '/icons/icon-192.png';
+    window.FCM_FORCE_RESYNC = <?php echo $fcm_force_resync ? 'true' : 'false'; ?>;
 </script>
 <script src="/js/firebase-notifications.js?v=<?php echo htmlspecialchars($firebase_js_v, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>

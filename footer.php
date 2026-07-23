@@ -85,4 +85,9 @@
     </div>
 </footer>
 <?php include __DIR__ . '/includes/social_floating.php'; ?>
+<?php
+if (!defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
+    include __DIR__ . '/includes/jotform_ai_assistant.php';
+}
+?>
 <?php include __DIR__ . '/includes/firebase_notifications_scripts.php'; ?>

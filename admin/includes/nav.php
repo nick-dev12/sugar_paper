@@ -255,6 +255,12 @@ $nav_href = function ($path) use ($admin_nav_base) {
             </button>
             <?php endif; ?>
             <?php if ($admin_role === 'admin'): ?>
+            <a href="<?php echo $nav_href('fcm-diagnostic.php'); ?>"
+                class="menu-item <?php echo $current_page === 'fcm-diagnostic.php' ? 'active' : ''; ?>"
+                title="Diagnostic push FCM et files d'attente">
+                <i class="fas fa-satellite-dish"></i>
+                <span>Diag. FCM</span>
+            </a>
             <a href="<?php echo $nav_href('test-email.php'); ?>"
                 class="menu-item <?php echo $current_page === 'test-email.php' ? 'active' : ''; ?>"
                 title="Tester l'envoi SMTP et la file d'attente">

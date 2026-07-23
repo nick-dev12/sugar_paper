@@ -127,4 +127,36 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   updateCounter();
+
+  var formPerso = document.getElementById('form-commande-perso');
+  var loaderOverlay = document.getElementById('commande-loader-overlay');
+  var persoSubmitting = false;
+  var MIN_LOADER_MS = 600;
+
+  if (formPerso && loaderOverlay) {
+    formPerso.addEventListener('submit', function (event) {
+      if (persoSubmitting) {
+        event.preventDefault();
+        return;
+      }
+      if (!formPerso.checkValidity()) {
+        return;
+      }
+      event.preventDefault();
+      persoSubmitting = true;
+
+      loaderOverlay.hidden = false;
+      loaderOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+
+      var submitBtn = formPerso.querySelector('.btn-submit');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+
+      setTimeout(function () {
+        formPerso.submit();
+      }, MIN_LOADER_MS);
+    });
+  }
 });

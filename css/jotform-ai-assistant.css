@@ -1,0 +1,35 @@
+/**
+ * Assistant IA JotForm — bas gauche, au-dessus de la bottom nav mobile
+ */
+
+:root {
+    --jf-agent-bottom-offset: 24px;
+    --jf-agent-left-offset: 14px;
+}
+
+@media (max-width: 992px) {
+    html.has-bottom-nav {
+        --jf-agent-bottom-offset: calc(var(--bottom-nav-stack-height, 88px) + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+#JotformAgent-019f778143a0700083020339cfca9d410011,
+[id^="JotformAgent-"] {
+    left: var(--jf-agent-left-offset) !important;
+    right: auto !important;
+    bottom: var(--jf-agent-bottom-offset) !important;
+    top: auto !important;
+    z-index: 10030 !important;
+    pointer-events: auto;
+}
+
+#JotformAgent-019f778143a0700083020339cfca9d410011 *,
+[id^="JotformAgent-"] * {
+    max-width: none;
+}
+
+@media (max-width: 600px) {
+    :root {
+        --jf-agent-left-offset: 12px;
+    }
+}

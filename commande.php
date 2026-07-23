@@ -17,9 +17,13 @@ $is_guest_checkout = !isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] 
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_users.php';
 require_once __DIR__ . '/models/model_zones_livraison.php';
+require_once __DIR__ . '/includes/geo_location.php';
 require_once __DIR__ . '/controllers/controller_commandes.php';
 
 $zones_livraison = get_all_zones_livraison('actif');
+$zone_retrait = zones_livraison_find_retrait($zones_livraison);
+$zones_livraison_delivery = zones_livraison_filter_delivery($zones_livraison, $zone_retrait);
+$commande_mode_selected = commande_mode_livraison_normalize($_POST['mode_livraison'] ?? 'livraison');
 
 // Traitement du formulaire
 $message = '';
@@ -31,31 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $result = process_create_commande();
 
     if ($result['success']) {
-        require_once __DIR__ . '/services/notify_queue.php';
-
-        // Enfiler push + emails AVANT la redirection (écriture fichier = instantané)
-        if (!empty($result['email_data'])) {
-            $d = $result['email_data'];
-            notify_queue_enqueue('nouvelle_commande', [
-                'numero_commande' => $d['numero_commande'] ?? $result['numero_commande'],
-                'montant_total' => $d['montant_total'] ?? 0,
-                'nombre_articles' => $d['nombre_articles'] ?? 0,
-                'telephone_livraison' => $d['telephone_livraison'] ?? '',
-                'adresse_livraison' => $d['adresse_livraison'] ?? '',
-                'produits' => $d['produits'] ?? [],
-            ]);
-        }
-        if (empty($result['is_guest']) && !empty($_SESSION['user_id'])) {
-            require_once __DIR__ . '/models/model_users.php';
-            $user = get_user_by_id((int) $_SESSION['user_id']);
-            $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
-            notify_queue_enqueue('confirmation_client', [
-                'user_id' => (int) $_SESSION['user_id'],
-                'numero_commande' => $result['numero_commande'],
-                'montant_total' => (float) ($result['email_data']['montant_total'] ?? 0),
-                'user_email' => $client_email,
-            ]);
-        }
+        require_once __DIR__ . '/services/notifications_order_dispatch.php';
+        notifications_dispatch_after_commande($result);
 
         if (!empty($result['is_guest'])) {
             header('Location: /commande.php?success=1&numero=' . urlencode($result['numero_commande']));
@@ -641,6 +622,10 @@ include 'nav_bar.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
     .commande-container {
         max-width: 1200px;
@@ -751,6 +736,141 @@ include 'nav_bar.php';
         color: #737373;
         font-size: 12px;
         margin-top: 5px;
+    }
+
+    .cmd-mode-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 22px;
+        padding: 6px;
+        background: rgba(229, 72, 138, 0.08);
+        border: 1px solid rgba(229, 72, 138, 0.22);
+        border-radius: 12px;
+    }
+
+    .cmd-mode-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border: 2px solid rgba(229, 72, 138, 0.25);
+        border-radius: 10px;
+        background: #ffffff;
+        color: #6b2f20;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+    }
+
+    .cmd-mode-btn:hover {
+        border-color: #e5488a;
+        color: #e5488a;
+    }
+
+    .cmd-mode-btn.is-active {
+        background: #e5488a;
+        color: #ffffff;
+        border-color: #e5488a;
+        box-shadow: 0 4px 14px rgba(229, 72, 138, 0.28);
+    }
+
+    .cmd-mode-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .cmd-mode-panel {
+        display: none;
+    }
+
+    .cmd-mode-panel.is-visible {
+        display: block;
+    }
+
+    .cmd-retrait-info {
+        padding: 14px 16px;
+        border-radius: 10px;
+        background: rgba(145, 138, 68, 0.1);
+        border: 1px dashed rgba(145, 138, 68, 0.45);
+        color: #6b2f20;
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: 8px;
+    }
+
+    .commande-geo-box {
+        margin-top: 8px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(145, 138, 68, 0.28);
+        background: rgba(255, 255, 255, 0.72);
+    }
+
+    .commande-geo-map {
+        width: 100%;
+        height: 260px;
+        min-height: 260px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        margin-bottom: 12px;
+        display: block;
+        background: #f3f0e8;
+    }
+
+    .commande-geo-map .leaflet-container {
+        width: 100%;
+        height: 100%;
+        min-height: 260px;
+        border-radius: 10px;
+        font-family: inherit;
+    }
+
+    .btn-commande-geo-refresh {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: #918a44;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        margin-bottom: 10px;
+    }
+
+    .btn-commande-geo-refresh:hover {
+        background: #6b2f20;
+    }
+
+    .commande-geo-status {
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 10px 12px;
+        border-radius: 8px;
+        display: none;
+    }
+
+    .commande-geo-status[data-geo-state="pending"] {
+        background: rgba(145, 138, 68, 0.12);
+        color: #6b2f20;
+    }
+
+    .commande-geo-status[data-geo-state="ok"] {
+        background: rgba(145, 138, 68, 0.15);
+        color: #6b2f20;
+    }
+
+    .commande-geo-status[data-geo-state="error"] {
+        background: rgba(194, 102, 56, 0.12);
+        color: #6b2f20;
     }
 
     .summary-item {
@@ -1107,6 +1227,8 @@ include 'nav_bar.php';
 
                 <form method="POST" action="" id="form-commande">
                     <input type="hidden" name="action" value="create_commande">
+                    <input type="hidden" name="mode_livraison" id="mode_livraison"
+                        value="<?php echo htmlspecialchars($commande_mode_selected, ENT_QUOTES, 'UTF-8'); ?>">
 
                     <?php if (empty($zones_livraison)): ?>
                     <div class="message error">
@@ -1114,29 +1236,100 @@ include 'nav_bar.php';
                         contacter l'administrateur.
                     </div>
                     <?php else: ?>
-                    <div class="form-group">
-                        <label for="zone_livraison_id">
-                            <i class="fas fa-map-marker-alt"></i> Zone de livraison *
-                        </label>
-                        <select id="zone_livraison_id" name="zone_livraison_id" required>
-                            <option value="">Sélectionnez votre zone de livraison</option>
-                            <?php if (!empty($zones_livraison)): ?>
-                            <?php foreach ($zones_livraison as $zone): ?>
-                            <option value="<?php echo $zone['id']; ?>"
-                                data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
-                                <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
-                                (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
-                            </option>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-                        <small>Choisissez la zone correspondant à votre adresse de livraison</small>
+
+                    <div class="cmd-mode-switch" role="tablist" aria-label="Mode de réception">
+                        <button type="button"
+                            class="cmd-mode-btn<?php echo $commande_mode_selected === 'livraison' ? ' is-active' : ''; ?>"
+                            data-mode="livraison" id="cmd-mode-btn-livraison" role="tab"
+                            aria-selected="<?php echo $commande_mode_selected === 'livraison' ? 'true' : 'false'; ?>">
+                            <i class="fas fa-truck" aria-hidden="true"></i> Livraison
+                        </button>
+                        <button type="button"
+                            class="cmd-mode-btn<?php echo $commande_mode_selected === 'retrait' ? ' is-active' : ''; ?>"
+                            data-mode="retrait" id="cmd-mode-btn-retrait" role="tab"
+                            aria-selected="<?php echo $commande_mode_selected === 'retrait' ? 'true' : 'false'; ?>">
+                            <i class="fas fa-store" aria-hidden="true"></i> Récupérer sur place
+                        </button>
+                    </div>
+
+                    <?php if ($zone_retrait): ?>
+                    <input type="hidden" name="zone_livraison_id" id="zone_retrait_id"
+                        value="<?php echo (int) $zone_retrait['id']; ?>"
+                        <?php echo $commande_mode_selected === 'retrait' ? '' : 'disabled'; ?>>
+                    <?php endif; ?>
+
+                    <div id="panel-livraison"
+                        class="cmd-mode-panel<?php echo $commande_mode_selected === 'livraison' ? ' is-visible' : ''; ?>"
+                        role="tabpanel">
+                        <?php if (!empty($zones_livraison_delivery)): ?>
+                        <div class="form-group">
+                            <label for="zone_livraison_id">
+                                <i class="fas fa-map-marker-alt"></i> Zone de livraison *
+                            </label>
+                            <select id="zone_livraison_id" name="zone_livraison_id"
+                                <?php echo $commande_mode_selected === 'livraison' ? 'required' : 'disabled'; ?>>
+                                <option value="">Sélectionnez votre zone de livraison</option>
+                                <?php foreach ($zones_livraison_delivery as $zone): ?>
+                                <option value="<?php echo (int) $zone['id']; ?>"
+                                    data-prix="<?php echo (float) $zone['prix_livraison']; ?>"
+                                    <?php echo (isset($_POST['zone_livraison_id']) && (int) $_POST['zone_livraison_id'] === (int) $zone['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
+                                    (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small>Choisissez la zone correspondant à votre secteur de livraison</small>
+                        </div>
+                        <?php else: ?>
+                        <div class="message error">
+                            <i class="fas fa-exclamation-triangle"></i> Aucune zone de livraison à domicile n'est configurée.
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="form-group">
+                            <label>
+                                <i class="fas fa-location-crosshairs"></i> Votre position exacte *
+                            </label>
+                            <div class="commande-geo-box">
+                                <div id="commande-geo-map" class="commande-geo-map" aria-label="Carte de votre position"></div>
+                                <button type="button" class="btn-commande-geo-refresh" id="btn-commande-geo-refresh">
+                                    <i class="fas fa-crosshairs" aria-hidden="true"></i> Actualiser ma position
+                                </button>
+                                <div id="commande-geo-status" class="commande-geo-status" aria-live="polite"></div>
+                                <small>Votre position est capturée en temps réel pour permettre au livreur de vous trouver.</small>
+                            </div>
+                            <input type="hidden" name="geo_lat" id="geo_lat"
+                                value="<?php echo isset($_POST['geo_lat']) ? htmlspecialchars((string) $_POST['geo_lat'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                            <input type="hidden" name="geo_lng" id="geo_lng"
+                                value="<?php echo isset($_POST['geo_lng']) ? htmlspecialchars((string) $_POST['geo_lng'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                            <input type="hidden" name="geo_precision" id="geo_precision"
+                                value="<?php echo isset($_POST['geo_precision']) ? htmlspecialchars((string) $_POST['geo_precision'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                            <input type="hidden" name="geo_source" id="geo_source"
+                                value="<?php echo isset($_POST['geo_source']) ? htmlspecialchars((string) $_POST['geo_source'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                            <input type="hidden" name="geo_address" id="geo_address"
+                                value="<?php echo isset($_POST['geo_address']) ? htmlspecialchars((string) $_POST['geo_address'], ENT_QUOTES, 'UTF-8') : ''; ?>">
+                        </div>
+                    </div>
+
+                    <div id="panel-retrait"
+                        class="cmd-mode-panel<?php echo $commande_mode_selected === 'retrait' ? ' is-visible' : ''; ?>"
+                        role="tabpanel">
+                        <div class="cmd-retrait-info">
+                            <i class="fas fa-store" aria-hidden="true"></i>
+                            Vous récupérez votre commande directement en boutique
+                            <?php if ($zone_retrait): ?>
+                            — <strong><?php echo htmlspecialchars($zone_retrait['ville'] . ' - ' . $zone_retrait['quartier']); ?></strong>
+                            (gratuit)
+                            <?php else: ?>
+                            — <strong>Sugar Paper, Hann Mariste 2</strong> (gratuit)
+                            <?php endif; ?>.
+                        </div>
                     </div>
                     <?php endif; ?>
 
                     <div class="form-group">
                         <label for="telephone_livraison">
-                            <i class="fas fa-phone"></i> Téléphone de livraison *
+                            <i class="fas fa-phone"></i> <span id="tel-label-text"><?php echo $commande_mode_selected === 'retrait' ? 'Téléphone de contact' : 'Téléphone de livraison'; ?></span> *
                         </label>
                         <input type="tel" id="telephone_livraison" name="telephone_livraison" required
                             placeholder="+221 XX XXX XX XX"
@@ -1150,16 +1343,7 @@ include 'nav_bar.php';
                                     echo htmlspecialchars($gc['telephone'] ?? '');
                                 }
                             ?>">
-                        <small>Numéro de téléphone pour la livraison</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes">
-                            <i class="fas fa-sticky-note"></i> Notes (optionnel)
-                        </label>
-                        <textarea id="notes" name="notes"
-                            placeholder="Instructions spéciales pour la livraison (ex: code d'accès, étage, etc.)"><?php echo isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : ''; ?></textarea>
-                        <small>Ajoutez des instructions spéciales si nécessaire</small>
+                        <small>Numéro pour vous contacter au sujet de votre commande</small>
                     </div>
 
                     <button type="submit" class="btn-submit-commande"
@@ -1261,10 +1445,12 @@ include 'nav_bar.php';
 
     <?php include 'footer.php'; ?>
 
+    <script src="/js/commande-geo.js<?php echo asset_version_query(); ?>"></script>
     <script>
     (function() {
         var panierTotal = <?php echo $panier_total; ?>;
         var selectZone = document.getElementById('zone_livraison_id');
+        var hiddenRetraitZone = document.getElementById('zone_retrait_id');
         var spanLivraison = document.getElementById('summary-livraison');
         var spanTotal = document.getElementById('summary-total');
 
@@ -1272,17 +1458,33 @@ include 'nav_bar.php';
             return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
         }
 
+        function getActiveZoneOption() {
+            if (window.CommandeGeo && CommandeGeo.getMode() === 'retrait') {
+                return { dataset: { prix: '0' } };
+            }
+            if (!selectZone || selectZone.disabled) {
+                return null;
+            }
+            return selectZone.options[selectZone.selectedIndex];
+        }
+
         function updateTotaux() {
-            var opt = selectZone.options[selectZone.selectedIndex];
-            var frais = opt && opt.dataset.prix ? parseFloat(opt.dataset.prix) : 0;
+            var opt = getActiveZoneOption();
+            var frais = opt && opt.dataset && opt.dataset.prix ? parseFloat(opt.dataset.prix) : 0;
+            if (isNaN(frais)) {
+                frais = 0;
+            }
             var total = panierTotal + frais;
             spanLivraison.textContent = formatNumber(Math.round(frais)) + ' FCFA';
             spanTotal.textContent = formatNumber(Math.round(total)) + ' FCFA';
         }
+
+        window.CommandeTotaux = { refresh: updateTotaux };
+
         if (selectZone) {
             selectZone.addEventListener('change', updateTotaux);
-            updateTotaux();
         }
+        updateTotaux();
 
         var formCommande = document.getElementById('form-commande');
         var loaderOverlay = document.getElementById('commande-loader-overlay');
@@ -1295,11 +1497,19 @@ include 'nav_bar.php';
                     e.preventDefault();
                     return;
                 }
+                if (window.CommandeGeo && typeof CommandeGeo.validate === 'function' && !CommandeGeo.validate()) {
+                    e.preventDefault();
+                    return;
+                }
                 if (!formCommande.checkValidity()) {
                     return;
                 }
                 e.preventDefault();
                 commandeSubmitting = true;
+
+                if (window.CommandeGeo && typeof CommandeGeo.stopWatch === 'function') {
+                    CommandeGeo.stopWatch();
+                }
 
                 loaderOverlay.hidden = false;
                 loaderOverlay.setAttribute('aria-hidden', 'false');

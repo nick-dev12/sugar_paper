@@ -552,6 +552,22 @@
         }
     }
 
+    function reverseGeocodeLabel(lat, lng) {
+        return fetch('/api/geo-reverse.php?lat=' + encodeURIComponent(lat) + '&lng=' + encodeURIComponent(lng), {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (data && data.ok && data.label) {
+                    return data.label;
+                }
+                return lat.toFixed(6) + ', ' + lng.toFixed(6);
+            })
+            .catch(function () {
+                return lat.toFixed(6) + ', ' + lng.toFixed(6);
+            });
+    }
+
     function openPanel(btn) {
         if (!panel || !form) return;
 
@@ -612,6 +628,12 @@
 
         if (dLat !== null && dLng !== null) {
             updateClientOnMap(dLat, dLng);
+            reverseGeocodeLabel(dLat, dLng).then(function (label) {
+                var adresseInput = qs('livreur-demarrage-adresse');
+                if (adresseInput && label) {
+                    adresseInput.value = label;
+                }
+            });
         } else if (adresse) {
             geocodeAddress(adresse);
         }

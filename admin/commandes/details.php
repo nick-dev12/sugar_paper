@@ -27,12 +27,19 @@ require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_factures.php';
 require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
+require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
+require_once __DIR__ . '/../../includes/geo_location.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
 $facture = get_facture_by_commande($commande_id);
 $cmd_tracking = livreur_tracking_tables_ready() ? livreur_get_commande_tracking($commande_id) : false;
 $cmd_livraison_suivable = $cmd_tracking && !empty($cmd_tracking['livreur_id']);
+$cmd_is_retrait = commande_is_retrait($commande);
+$cmd_mode_label = commande_mode_livraison_label($commande['mode_livraison'] ?? ($cmd_is_retrait ? 'retrait' : 'livraison'));
+$cmd_geo_lat = livreur_parse_coord($commande['delivery_latitude'] ?? null);
+$cmd_geo_lng = livreur_parse_coord($commande['delivery_longitude'] ?? null);
+$cmd_has_geo = $cmd_geo_lat !== null && $cmd_geo_lng !== null;
 
 if (!$commande) {
     header('Location: index.php');
@@ -111,6 +118,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
+    <style>
+        .detail-mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .detail-mode-badge--retrait {
+            background: rgba(145, 138, 68, 0.15);
+            color: #6b2f20;
+        }
+        .detail-mode-badge--livraison {
+            background: rgba(229, 72, 138, 0.12);
+            color: #b8326a;
+        }
+        .geo-nav-apps {
+            margin-top: 10px;
+        }
+        .geo-nav-app {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #e5488a;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .geo-nav-app:hover {
+            background: #c93d76;
+        }
+    </style>
 </head>
 
 <body class="page-admin-doc-detail">
@@ -183,13 +230,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         <div class="detail-box">
             <h3><i class="fas fa-map-marker-alt"></i> Livraison</h3>
             <div class="detail-item">
+                <label>Option</label>
+                <div class="value">
+                    <span class="detail-mode-badge <?php echo $cmd_is_retrait ? 'detail-mode-badge--retrait' : 'detail-mode-badge--livraison'; ?>">
+                        <i class="fas fa-<?php echo $cmd_is_retrait ? 'store' : 'truck'; ?>" aria-hidden="true"></i>
+                        <?php echo htmlspecialchars($cmd_mode_label); ?>
+                    </span>
+                </div>
+            </div>
+            <div class="detail-item">
                 <label>Adresse</label>
                 <div class="value"><?php echo nl2br(htmlspecialchars($commande['adresse_livraison'] ?? '')); ?></div>
             </div>
+            <?php if (!$cmd_is_retrait && $cmd_has_geo): ?>
             <div class="detail-item">
-                <label>Téléphone livraison</label>
-                <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison'] ?? ''); ?></div>
+                <label>Localisation client</label>
+                <div class="value">
+                    <?php
+                    $geo_nav_lat = $cmd_geo_lat;
+                    $geo_nav_lng = $cmd_geo_lng;
+                    $geo_nav_label = 'Commande #' . (string) ($commande['numero_commande'] ?? '');
+                    include __DIR__ . '/../../includes/partials/geo_nav_apps_buttons.php';
+                    ?>
+                </div>
             </div>
+            <?php endif; ?>
             <?php if (!empty($commande['frais_livraison'])): ?>
                 <div class="detail-item">
                     <label>Frais de livraison</label>
@@ -486,5 +551,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             });
         })();
     </script>
+
+    <?php require __DIR__ . '/../../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/geo-nav-apps.js<?php echo asset_version_query(); ?>"></script>
 
     <?php include '../includes/footer.php'; ?>
