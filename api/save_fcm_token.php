@@ -99,6 +99,13 @@ if (save_fcm_token($token, $type, $user_id, $admin_id)) {
     // Relier aussi d'éventuels orphelins du même token
     if ($type === 'admin') {
         fcm_relink_orphan_admin_token($admin_id, $token);
+        // Abonner ce token au topic alertes commandes (tous les admins/utilisateurs)
+        require_once __DIR__ . '/../services/firebase_push.php';
+        if (fcm_admin_is_eligible_for_notify((int) $admin_id)) {
+            firebase_fcm_subscribe_admin_topic([$token]);
+        } else {
+            firebase_fcm_unsubscribe_admin_topic([$token]);
+        }
     }
 
     $response['success'] = true;

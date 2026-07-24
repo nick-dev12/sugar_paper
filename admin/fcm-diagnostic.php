@@ -98,13 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $push = firebase_send_notification_to_all_admins(
                 'Test Sugar Paper (diagnostic)',
-                'Envoi parallèle à tous les comptes admin/utilisateur avec token.',
+                'Envoi à tous les comptes admin/utilisateur (topic FCM + secours).',
                 ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-tous-' . time()]
             );
             $parts = [
                 (int) $push['admins_notified'] . '/' . (int) $push['admins_total'] . ' compte(s)',
                 (int) $push['success'] . ' appareil(s) OK',
+                'canal=' . ($push['channel'] ?? '?'),
             ];
+            if (!empty($push['topic_success'])) {
+                $parts[] = 'topic OK (' . (int) ($push['topic_synced'] ?? 0) . ' abonnés)';
+            }
             if ((int) ($push['failed'] ?? 0) > 0) {
                 $parts[] = (int) $push['failed'] . ' échec(s)';
             }
@@ -112,14 +116,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($push['details'])) {
                 foreach ($push['details'] as $d) {
                     $result_message .= "\n• #" . (int) $d['admin_id'] . ' ' . ($d['email'] ?? '')
-                        . ' → ' . (int) $d['success'] . '/' . (int) $d['tokens'];
+                        . ' → ' . (int) $d['success'] . '/' . (int) $d['tokens']
+                        . (!empty($d['topic_ok']) ? ' (topic)' : '');
                 }
             }
             if (!empty($push['errors'])) {
                 $result_message .= "\nErreurs: " . implode(' ; ', array_slice($push['errors'], 0, 5));
             }
-            $result_type = ((int) ($push['success'] ?? 0) > 0) ? 'success' : 'error';
+            $result_type = ((int) ($push['admins_notified'] ?? 0) > 0 || !empty($push['topic_success'])) ? 'success' : 'error';
         }
+    } elseif ($action === 'sync_topic') {
+        require_once __DIR__ . '/../services/firebase_push.php';
+        $sync = firebase_fcm_sync_admin_topic();
+        $result_message = !empty($sync['ok'])
+            ? ('Topic synchronisé : ' . (int) ($sync['subscribed'] ?? 0) . ' token(s) abonné(s) à « ' . firebase_fcm_admin_topic_name() . ' ».')
+            : ('Échec sync topic : ' . implode(' ; ', $sync['errors'] ?? ['erreur']));
+        $result_type = !empty($sync['ok']) ? 'success' : 'error';
+    } elseif ($action === 'test_push_admin') {
+        require_once __DIR__ . '/../services/firebase_push.php';
+        $aid = (int) ($_POST['admin_id'] ?? 0);
+        $r = firebase_send_notification_to_admin_id(
+            $aid,
+            'Test Sugar Paper (votre compte)',
+            'Si vous voyez cette alerte, les push fonctionnent pour CE compte sur CET appareil.',
+            ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-one-' . $aid]
+        );
+        $result_message = 'Test compte #' . $aid . ' : ' . (int) ($r['success'] ?? 0) . ' succès'
+            . ((int) ($r['failed'] ?? 0) > 0 ? ', ' . (int) $r['failed'] . ' échec(s)' : '') . '.';
+        if (!empty($r['errors'])) {
+            $result_message .= "\n" . implode(' ; ', array_slice($r['errors'], 0, 3));
+        }
+        $result_type = ((int) ($r['success'] ?? 0) > 0) ? 'success' : 'error';
     }
 }
 
@@ -222,6 +249,9 @@ $admin_alert_email = notifications_get_commande_admin_email();
         <form method="POST"><input type="hidden" name="action" value="test_push_all">
             <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-bell"></i> Tester push (tous)</button>
         </form>
+        <form method="POST"><input type="hidden" name="action" value="sync_topic">
+            <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-sync"></i> Sync topic FCM</button>
+        </form>
         <form method="POST"><input type="hidden" name="action" value="test_smtp">
             <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-envelope-open-text"></i> Tester SMTP</button>
         </form>
@@ -270,8 +300,12 @@ $admin_alert_email = notifications_get_commande_admin_email();
     </p>
 
     <h2 style="margin:24px 0 12px;font-size:1.1rem;">Comptes admin</h2>
+    <p style="font-size:13px;color:#666;margin:0 0 10px;">
+        Chaque personne doit cliquer <strong>Notifications</strong> dans le menu <strong>sur son propre téléphone / PC</strong>
+        (pas sur l’appareil de l’admin principal). Utilisez « Tester ce compte » connecté… ou testez depuis le diagnostic ci-dessous.
+    </p>
     <table class="fcm-diag-table">
-        <thead><tr><th>ID</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Éligible push</th><th>Tokens liés</th></tr></thead>
+        <thead><tr><th>ID</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Éligible push</th><th>Tokens liés</th><th>Test</th></tr></thead>
         <tbody>
         <?php foreach ($admins as $a):
             $role = normalize_admin_role($a['role'] ?? '');
@@ -286,6 +320,19 @@ $admin_alert_email = notifications_get_commande_admin_email();
                 <td><?php echo htmlspecialchars($a['statut']); ?></td>
                 <td class="<?php echo $ok ? 'badge-ok' : 'badge-ko'; ?>"><?php echo $ok ? 'Oui' : 'Non'; ?></td>
                 <td class="<?php echo $tok_n > 0 ? 'badge-ok' : 'badge-ko'; ?>"><?php echo (int) $tok_n; ?></td>
+                <td>
+                    <?php if ($tok_n > 0 && $ok): ?>
+                    <form method="POST" style="margin:0;">
+                        <input type="hidden" name="action" value="test_push_admin">
+                        <input type="hidden" name="admin_id" value="<?php echo $aid; ?>">
+                        <button type="submit" class="btn-primary btn-secondary-style" style="padding:6px 10px;font-size:12px;">
+                            Tester ce compte
+                        </button>
+                    </form>
+                    <?php else: ?>
+                    —
+                    <?php endif; ?>
+                </td>
             </tr>
         <?php endforeach; ?>
         </tbody>
