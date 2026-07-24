@@ -26,6 +26,19 @@ import UserNotifications
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  /// Bannière native TOUJOURS visible même si l'app est au premier plan
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    willPresent notification: UNNotification,
+    withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+  ) {
+    if #available(iOS 14.0, *) {
+      completionHandler([.banner, .list, .sound, .badge])
+    } else {
+      completionHandler([.alert, .sound, .badge])
+    }
+  }
+
   /// Transmet le token APNs à FCM (requis quand FirebaseAppDelegateProxyEnabled = false).
   override func application(
     _ application: UIApplication,

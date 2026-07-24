@@ -39,7 +39,7 @@ function fcm_admin_is_eligible_for_notify($admin_id)
  * @param int|null $admin_id ID admin (pour type='admin')
  * @return bool True en cas de succès
  */
-function save_fcm_token($token, $type, $user_id = null, $admin_id = null)
+function save_fcm_token($token, $type, $user_id = null, $admin_id = null, $device_type = '', $device_name = '')
 {
     global $db;
 
@@ -69,7 +69,11 @@ function save_fcm_token($token, $type, $user_id = null, $admin_id = null)
     }
 
     try {
-        $user_agent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 500);
+        $user_agent = fcm_build_stored_user_agent(
+            $_SERVER['HTTP_USER_AGENT'] ?? '',
+            $device_type,
+            $device_name
+        );
 
         // Un token FCM = un appareil. On le rattache toujours au compte actuellement connecté.
         $stmt = $db->prepare("SELECT id, admin_id, user_id, type FROM fcm_tokens WHERE token = :token LIMIT 1");
@@ -106,7 +110,7 @@ function save_fcm_token($token, $type, $user_id = null, $admin_id = null)
             'type' => $type,
             'user_id' => $type === 'user' ? $user_id : null,
             'admin_id' => $type === 'admin' ? $admin_id : null,
-            'user_agent' => substr($user_agent, 0, 500),
+            'user_agent' => $user_agent,
         ]);
     } catch (PDOException $e) {
         return false;
@@ -226,7 +230,7 @@ function delete_fcm_tokens_by_user($user_id)
 
 /**
  * Tokens FCM regroupés par admin éligible (un envoi individuel par compte)
- * @return array [admin_id => ['admin_id'=>int,'email'=>string,'role'=>string,'tokens'=>string[]], ...]
+ * @return array [admin_id => ['admin_id'=>int,'email'=>string,'role'=>string,'tokens'=>string[],'token_meta'=>array], ...]
  */
 function get_fcm_admin_token_groups()
 {
@@ -235,7 +239,7 @@ function get_fcm_admin_token_groups()
 
     try {
         $stmt = $db->query("
-            SELECT ft.token, ft.admin_id, a.email, a.role, a.statut
+            SELECT ft.token, ft.admin_id, ft.user_agent, a.email, a.role, a.statut
             FROM fcm_tokens ft
             INNER JOIN admin a ON a.id = ft.admin_id
             WHERE ft.type = 'admin'
@@ -266,10 +270,14 @@ function get_fcm_admin_token_groups()
                     'email' => (string) ($row['email'] ?? ''),
                     'role' => $role,
                     'tokens' => [],
+                    'token_meta' => [],
                 ];
             }
             if (!in_array($token, $groups[$admin_id]['tokens'], true)) {
                 $groups[$admin_id]['tokens'][] = $token;
+                $groups[$admin_id]['token_meta'][$token] = [
+                    'user_agent' => (string) ($row['user_agent'] ?? ''),
+                ];
             }
         }
     } catch (PDOException $e) {
@@ -277,6 +285,72 @@ function get_fcm_admin_token_groups()
     }
 
     return $groups;
+}
+
+/**
+ * Indique si un user-agent correspond à un navigateur desktop (Chrome/Edge/Firefox Windows/Mac)
+ * — pas l'app Flutter ni Safari iPhone.
+ */
+function fcm_user_agent_is_desktop_browser($user_agent)
+{
+    $ua = (string) $user_agent;
+    if ($ua === '') {
+        return false;
+    }
+    // App Flutter native (préfixe enregistré via device_type)
+    if (stripos($ua, 'SugarPaper-iOS') !== false || stripos($ua, 'SugarPaper-Android') !== false) {
+        return false;
+    }
+    if (stripos($ua, 'Dart/') !== false || stripos($ua, 'okhttp') !== false) {
+        return false;
+    }
+    // WebView Android de l'app
+    if (stripos($ua, '; wv)') !== false) {
+        return false;
+    }
+    // iPhone / iPad : toujours traiter comme mobile (app ou Safari) → besoin APNs
+    if (stripos($ua, 'iPhone') !== false || stripos($ua, 'iPad') !== false || stripos($ua, 'iPod') !== false) {
+        return false;
+    }
+    // Navigateur desktop classique
+    if (stripos($ua, 'Windows') !== false || stripos($ua, 'Macintosh') !== false || stripos($ua, 'X11') !== false) {
+        return stripos($ua, 'Mozilla') !== false;
+    }
+    return false;
+}
+
+/**
+ * @deprecated Utiliser fcm_user_agent_is_desktop_browser — conservé pour compat
+ */
+function fcm_user_agent_is_web($user_agent)
+{
+    return fcm_user_agent_is_desktop_browser($user_agent);
+}
+
+/**
+ * Construit un user-agent stocké enrichi avec le device_type app (ios/android)
+ */
+function fcm_build_stored_user_agent($http_ua, $device_type = '', $device_name = '')
+{
+    $ua = trim((string) $http_ua);
+    $dt = strtolower(trim((string) $device_type));
+    $name = trim((string) $device_name);
+    if ($dt === 'ios') {
+        $prefix = 'SugarPaper-iOS';
+        if ($name !== '') {
+            $prefix .= '/' . preg_replace('/[^a-zA-Z0-9 _.-]/', '', $name);
+        }
+        return substr($prefix . '; ' . $ua, 0, 500);
+    }
+    if ($dt === 'android') {
+        $prefix = 'SugarPaper-Android';
+        if ($name !== '') {
+            $prefix .= '/' . preg_replace('/[^a-zA-Z0-9 _.-]/', '', $name);
+        }
+        // Marqueur wv pour détection app
+        return substr($prefix . '; wv; ' . $ua, 0, 500);
+    }
+    return substr($ua, 0, 500);
 }
 
 /**

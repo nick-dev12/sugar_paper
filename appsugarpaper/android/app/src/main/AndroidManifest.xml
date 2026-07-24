@@ -32,7 +32,7 @@
             android:resource="@color/ic_launcher_background" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="sugar_paper_alerts" />
+            android:value="sugar_paper_popup" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

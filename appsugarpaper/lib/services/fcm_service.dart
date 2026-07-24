@@ -9,6 +9,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/webview_site_config.dart';
 
+/// Canal Android haute priorité — bannière heads-up (popup native).
+/// Nouvel ID obligatoire : Android ne met pas à jour l'importance d'un canal existant.
+const String kSugarPaperNotifyChannelId = 'sugar_paper_popup';
+const String kSugarPaperNotifyChannelName = 'Alertes Sugar Paper';
+const String kSugarPaperNotifyChannelDesc =
+    'Bannière native pour commandes et alertes Sugar Paper';
+
 /// Service pour gérer Firebase Cloud Messaging
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -17,6 +24,7 @@ class FCMService {
   static String? _fcmToken;
   static String? _serverUrl;
   static Function(String)? _onNotificationTap;
+  static bool _handlersReady = false;
 
   /// Extrait l'URL de navigation depuis le payload FCM (web: link, legacy: redirect_url/url)
   static String? notificationUrlFromData(Map<String, dynamic> data) {
@@ -29,15 +37,67 @@ class FCMService {
     return null;
   }
 
+  /// Titre / corps depuis notification FCM ou data payload
+  static ({String title, String body}) _messageText(RemoteMessage message) {
+    final title = message.notification?.title?.trim().isNotEmpty == true
+        ? message.notification!.title!.trim()
+        : (message.data['title']?.toString().trim().isNotEmpty == true
+            ? message.data['title'].toString().trim()
+            : 'Sugar Paper');
+    final body = message.notification?.body?.trim().isNotEmpty == true
+        ? message.notification!.body!.trim()
+        : (message.data['body']?.toString().trim() ?? '');
+    return (title: title, body: body);
+  }
+
+  static AndroidNotificationDetails _androidHeadsUpDetails() {
+    return const AndroidNotificationDetails(
+      kSugarPaperNotifyChannelId,
+      kSugarPaperNotifyChannelName,
+      channelDescription: kSugarPaperNotifyChannelDesc,
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+      visibility: NotificationVisibility.public,
+      category: AndroidNotificationCategory.message,
+      icon: '@mipmap/ic_launcher',
+      ticker: 'Nouvelle alerte Sugar Paper',
+      channelShowBadge: true,
+      autoCancel: true,
+      // Favorise la bannière heads-up au-dessus des autres apps
+      fullScreenIntent: false,
+      styleInformation: BigTextStyleInformation(''),
+    );
+  }
+
+  static DarwinNotificationDetails _iosHeadsUpDetails() {
+    return const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      presentBanner: true,
+      presentList: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      sound: 'default',
+    );
+  }
+
   /// Initialiser les notifications locales (Android + iOS)
   static Future<void> initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
     const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
     const initializationSettings = InitializationSettings(
       android: androidSettings,
@@ -56,12 +116,10 @@ class FCMService {
     );
 
     if (!kIsWeb && Platform.isAndroid) {
-      // Nouveau channel id pour forcer Importance.max (Android ne met pas à jour un channel existant)
       const androidChannel = AndroidNotificationChannel(
-        'sugar_paper_alerts',
-        'Alertes Sugar Paper',
-        description:
-            'Alertes de commande et messages liés à votre compte Sugar Paper',
+        kSugarPaperNotifyChannelId,
+        kSugarPaperNotifyChannelName,
+        description: kSugarPaperNotifyChannelDesc,
         importance: Importance.max,
         playSound: true,
         enableVibration: true,
@@ -70,9 +128,23 @@ class FCMService {
 
       await _localNotifications
           .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >()
+              AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(androidChannel);
+
+      // Ancien canal (au cas où) — aussi en MAX pour les push déjà en file
+      const legacyChannel = AndroidNotificationChannel(
+        'sugar_paper_alerts',
+        'Alertes Sugar Paper (ancien)',
+        description: 'Canal legacy — préférer sugar_paper_popup',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        showBadge: true,
+      );
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(legacyChannel);
     }
   }
 
@@ -98,7 +170,7 @@ class FCMService {
 
     final authorized =
         settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
+            settings.authorizationStatus == AuthorizationStatus.provisional;
 
     if (authorized) {
       print('✅ Permission de notification accordée');
@@ -109,7 +181,7 @@ class FCMService {
     return authorized;
   }
 
-  /// Définir le callback pour la navigation depuis les notifications
+  /// Définir le callback pour la navigation depuis une notification
   static void setNotificationTapCallback(Function(String url) callback) {
     _onNotificationTap = callback;
   }
@@ -120,7 +192,6 @@ class FCMService {
     _serverUrl = serverUrl;
 
     try {
-      // Initialiser les notifications locales
       print('🔥 Initialisation des notifications locales...');
       await initializeLocalNotifications();
       print('✅ Notifications locales initialisées');
@@ -130,43 +201,46 @@ class FCMService {
         return null;
       }
 
-      // iOS : enregistrement auprès d'APNs (requis pour recevoir le token FCM)
+      // iOS + Android : toujours afficher bannière / son / badge même app au premier plan
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
       if (!kIsWeb && Platform.isIOS) {
-        await _messaging.setForegroundNotificationPresentationOptions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
+        String? apnsToken;
+        for (var i = 0; i < 10; i++) {
+          apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken != null && apnsToken.isNotEmpty) {
+            print('🍎 Token APNs obtenu');
+            break;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        }
+        if (apnsToken == null || apnsToken.isEmpty) {
+          print('⚠️ Token APNs indisponible — tentative FCM quand même');
+        }
       }
 
-      // Obtenir le token FCM
       _fcmToken = await _messaging.getToken();
 
       if (_fcmToken != null) {
         print('📱 Token FCM obtenu: ${_fcmToken!.substring(0, 20)}...');
-        print('📱 TOKEN FCM COMPLET: $_fcmToken'); // Pour debug
-
-        // Sauvegarder le token localement
         await _saveTokenLocally(_fcmToken!);
-
-        // Envoyer le token au serveur
         await _sendTokenToServer(_fcmToken!);
-
-        // Configurer les handlers pour les notifications
         _setupMessageHandlers();
-
         return _fcmToken;
-      } else {
-        print('❌ Impossible d\'obtenir le token FCM');
-        return null;
       }
+
+      print('❌ Impossible d\'obtenir le token FCM');
+      return null;
     } catch (e) {
       print('❌ Erreur lors de l\'initialisation FCM: $e');
       return null;
     }
   }
 
-  /// Sauvegarder le token localement
   static Future<void> _saveTokenLocally(String token) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -176,49 +250,29 @@ class FCMService {
     }
   }
 
-  /// Envoyer le token au serveur Django via JavaScript dans la WebView
-  /// Note: L'envoi réel se fait via getTokenRegistrationScript() injecté dans la WebView
   static Future<bool> _sendTokenToServer(String token) async {
     if (_serverUrl == null) {
       print('❌ URL du serveur non configurée');
       return false;
     }
-
-    // Le token sera envoyé via JavaScript dans la WebView
-    // Cela permet d'utiliser la session authentifiée de l'utilisateur
     print('📤 Token FCM prêt à être envoyé via WebView');
     return true;
   }
 
   /// Code JavaScript à injecter dans la WebView pour enregistrer le token
   static String getTokenRegistrationScript(String token) {
-    final serverUrl = _serverUrl ?? kMarketplaceBaseUrl.replaceAll(RegExp(r'/+$'), '');
+    final serverUrl =
+        _serverUrl ?? kMarketplaceBaseUrl.replaceAll(RegExp(r'/+$'), '');
     final deviceType = (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
-    final deviceName = (!kIsWeb && Platform.isIOS)
-        ? 'Sugar Paper iOS'
-        : 'Sugar Paper Android';
+    final deviceName =
+        (!kIsWeb && Platform.isIOS) ? 'Sugar Paper iOS' : 'Sugar Paper Android';
     return '''
       (function() {
         const token = '$token';
         const deviceType = '$deviceType';
         const deviceName = '$deviceName';
         const serverUrl = '$serverUrl';
-        
-        function getCookie(name) {
-          let cookieValue = null;
-          if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-              const cookie = cookies[i].trim();
-              if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-              }
-            }
-          }
-          return cookieValue;
-        }
-        
+
         function resolveNotifyType() {
           if (window.FIREBASE_NOTIFY_TYPE === 'admin') {
             return 'admin';
@@ -232,22 +286,12 @@ class FCMService {
 
         var notifyType = resolveNotifyType();
         var pageContext = window.location.pathname || '';
-
-        var baseUrl = serverUrl;
-        if (baseUrl.endsWith('/')) {
-          baseUrl = baseUrl.slice(0, -1);
-        }
+        var baseUrl = serverUrl.endsWith('/') ? serverUrl.slice(0, -1) : serverUrl;
         var apiUrl = baseUrl + '/api/save_fcm_token.php';
 
-        console.log('📤 Envoi du token FCM au serveur...');
-        console.log('📤 Type:', notifyType, '| Page:', pageContext);
-        console.log('📤 URL:', apiUrl);
-        
         fetch(apiUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             token: token,
@@ -257,146 +301,107 @@ class FCMService {
             device_name: deviceName
           })
         })
-        .then(response => {
-          console.log('📤 Réponse du serveur:', response.status, response.statusText);
-          console.log('📤 Content-Type:', response.headers.get('content-type'));
-          
-          const contentType = response.headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            return response.text().then(text => {
-              console.error('❌ Le serveur a renvoyé du HTML au lieu de JSON:');
-              console.error('❌ Premiers caractères:', text.substring(0, 200));
-              throw new Error('Le serveur a renvoyé du HTML au lieu de JSON. Vérifiez l\\'endpoint PHP /api/save_fcm_token.php.');
-            });
-          }
-          
-          return response.json();
-        })
-        .then(data => {
-          console.log('✅ Token FCM enregistré avec succès:', data);
-        })
-        .catch(error => {
-          console.error('❌ Erreur enregistrement token FCM:', error);
-        });
+        .then(function(r) { return r.json(); })
+        .then(function(data) { console.log('✅ Token FCM enregistré', data); })
+        .catch(function(err) { console.error('❌ Token FCM', err); });
       })();
     ''';
   }
 
-  /// Afficher une notification locale
-  static Future<void> _showLocalNotification(RemoteMessage message) async {
-    print('🔔 Affichage de la notification locale...');
-    final title = message.notification?.title ?? 'Sugar Paper';
-    final body = message.notification?.body ?? '';
-    final url =
-        notificationUrlFromData(message.data) ?? _serverUrl ?? '';
+  /// Affiche toujours une bannière native (popup) — premier plan et secours arrière-plan
+  static Future<void> showHeadsUpNotification(RemoteMessage message) async {
+    final text = _messageText(message);
+    final url = notificationUrlFromData(message.data) ?? _serverUrl ?? '';
 
-    print('🔔 Titre: $title');
-    print('🔔 Corps: $body');
-    print('🔔 URL: $url');
+    print('🔔 Bannière native: ${text.title} — ${text.body}');
 
-    const androidDetails = AndroidNotificationDetails(
-      'sugar_paper_alerts',
-      'Alertes Sugar Paper',
-      channelDescription: 'Alertes de commande Sugar Paper',
+    // BigText avec le vrai corps pour Android
+    final androidDetails = AndroidNotificationDetails(
+      kSugarPaperNotifyChannelId,
+      kSugarPaperNotifyChannelName,
+      channelDescription: kSugarPaperNotifyChannelDesc,
       importance: Importance.max,
       priority: Priority.max,
       playSound: true,
       enableVibration: true,
+      enableLights: true,
       visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.message,
       icon: '@mipmap/ic_launcher',
-    );
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
+      ticker: text.title,
+      channelShowBadge: true,
+      autoCancel: true,
+      styleInformation: BigTextStyleInformation(
+        text.body.isNotEmpty ? text.body : text.title,
+        contentTitle: text.title,
+        summaryText: 'Sugar Paper',
+      ),
     );
 
-    const notificationDetails = NotificationDetails(
+    final notificationDetails = NotificationDetails(
       android: androidDetails,
-      iOS: darwinDetails,
+      iOS: _iosHeadsUpDetails(),
     );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
+      text.title,
+      text.body,
       notificationDetails,
       payload: url,
     );
   }
 
-  /// Configurer les handlers pour les notifications
-  static void _setupMessageHandlers() {
-    print('🔔 Configuration des handlers de notification...');
+  /// @deprecated utiliser [showHeadsUpNotification]
+  static Future<void> _showLocalNotification(RemoteMessage message) =>
+      showHeadsUpNotification(message);
 
-    // Notification reçue quand l'app est au premier plan
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📬 ===== NOTIFICATION REÇUE (APP OUVERTE) =====');
+  static void _setupMessageHandlers() {
+    if (_handlersReady) {
+      return;
+    }
+    _handlersReady = true;
+    print('🔔 Configuration des handlers (bannière native toujours on)...');
+
+    // App ouverte / WebView visible : forcer la popup locale (Android + iOS)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      print('📬 Notification premier plan');
       print('   Titre: ${message.notification?.title}');
       print('   Corps: ${message.notification?.body}');
-      print('   Données: ${message.data}');
-      print('   Message ID: ${message.messageId}');
-
-      // Android : forcer une bannière locale (sinon souvent silencieuse au premier plan)
-      // iOS : setForegroundNotificationPresentationOptions gère déjà l'alerte native
-      if (!kIsWeb && Platform.isAndroid) {
-        _showLocalNotification(message);
-      } else if (!kIsWeb && Platform.isIOS && message.notification == null) {
-        // Data-only iOS : afficher localement
-        _showLocalNotification(message);
+      try {
+        await showHeadsUpNotification(message);
+      } catch (e) {
+        print('❌ Affichage bannière: $e');
       }
-      print('📬 Handler premier plan traité');
     });
 
-    // Notification reçue quand l'app est en arrière-plan et l'utilisateur clique dessus
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('📬 Notification ouverte depuis l\'arrière-plan:');
-      print('   Titre: ${message.notification?.title}');
-      print('   Données: ${message.data}');
-
-      // Naviguer vers la page appropriée si nécessaire
+      print('📬 Notification ouverte depuis l\'arrière-plan');
       _handleNotificationNavigation(message.data);
     });
 
-    // Vérifier si l'app a été ouverte depuis une notification
     _checkInitialMessage();
   }
 
-  /// Vérifier si l'app a été ouverte depuis une notification
   static Future<void> _checkInitialMessage() async {
-    RemoteMessage? initialMessage = await _messaging.getInitialMessage();
-
+    final initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
-      print('📬 App ouverte depuis une notification:');
-      print('   Titre: ${initialMessage.notification?.title}');
-      print('   Données: ${initialMessage.data}');
-
       _handleNotificationNavigation(initialMessage.data);
     }
   }
 
-  /// Gérer la navigation depuis une notification
   static void _handleNotificationNavigation(Map<String, dynamic> data) {
     final url = notificationUrlFromData(data);
-    if (url != null && url.isNotEmpty) {
-      print('🔗 Navigation vers: $url');
-      if (_onNotificationTap != null) {
-        _onNotificationTap!(url);
-      }
+    if (url != null && url.isNotEmpty && _onNotificationTap != null) {
+      _onNotificationTap!(url);
     }
   }
 
-  /// Obtenir le token FCM actuel
-  static String? getToken() {
-    return _fcmToken;
-  }
+  static String? getToken() => _fcmToken;
 
-  /// Rafraîchir le token (appelé automatiquement par FCM)
   static void setupTokenRefresh() {
     _messaging.onTokenRefresh.listen((newToken) {
-      print('🔄 Token FCM rafraîchi: ${newToken.substring(0, 20)}...');
+      print('🔄 Token FCM rafraîchi');
       _fcmToken = newToken;
       _saveTokenLocally(newToken);
       _sendTokenToServer(newToken);
@@ -404,66 +409,88 @@ class FCMService {
   }
 }
 
-/// Handler pour les notifications en arrière-plan (doit être une fonction top-level)
+/// Handler arrière-plan / app tuée (fonction top-level obligatoire)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 
-  print('📬 Notification reçue en arrière-plan:');
+  print('📬 Notification arrière-plan / terminée');
   print('   Titre: ${message.notification?.title}');
   print('   Corps: ${message.notification?.body}');
-  print('   Données: ${message.data}');
 
-  // Si le payload contient déjà "notification", Android/iOS affichent
-  // la bannière système. On n'affiche une locale que pour les messages data-only.
+  // Si FCM a déjà une "notification", le système affiche via le canal.
+  // On crée quand même le canal MAX et, pour data-only, une locale heads-up.
+  final localNotifications = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const darwinSettings = DarwinInitializationSettings();
+  await localNotifications.initialize(
+    const InitializationSettings(android: androidSettings, iOS: darwinSettings),
+  );
+
+  if (!kIsWeb && Platform.isAndroid) {
+    const channel = AndroidNotificationChannel(
+      kSugarPaperNotifyChannelId,
+      kSugarPaperNotifyChannelName,
+      description: kSugarPaperNotifyChannelDesc,
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+    await localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  // Message avec payload notification : le système affiche via canal sugar_paper_popup (MAX).
+  // Data-only uniquement → bannière locale forcée.
   if (message.notification != null) {
     return;
   }
 
-  final FlutterLocalNotificationsPlugin localNotifications =
-      FlutterLocalNotificationsPlugin();
-
-  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-  const darwinSettings = DarwinInitializationSettings();
-  const initializationSettings = InitializationSettings(
-    android: androidSettings,
-    iOS: darwinSettings,
-  );
-  await localNotifications.initialize(initializationSettings);
-
-  final title = message.data['title']?.toString() ?? 'Sugar Paper';
+  final title = message.data['title']?.toString().trim().isNotEmpty == true
+      ? message.data['title'].toString().trim()
+      : 'Sugar Paper';
   final body = message.data['body']?.toString() ?? '';
   final url = FCMService.notificationUrlFromData(message.data) ?? '';
 
-  const androidDetails = AndroidNotificationDetails(
-    'sugar_paper_alerts',
-    'Alertes Sugar Paper',
-    channelDescription: 'Alertes de commande Sugar Paper',
+  final androidDetails = AndroidNotificationDetails(
+    kSugarPaperNotifyChannelId,
+    kSugarPaperNotifyChannelName,
+    channelDescription: kSugarPaperNotifyChannelDesc,
     importance: Importance.max,
     priority: Priority.max,
     playSound: true,
     enableVibration: true,
+    enableLights: true,
     visibility: NotificationVisibility.public,
     category: AndroidNotificationCategory.message,
     icon: '@mipmap/ic_launcher',
+    ticker: title,
+    channelShowBadge: true,
+    autoCancel: true,
+    styleInformation: BigTextStyleInformation(
+      body.isNotEmpty ? body : title,
+      contentTitle: title,
+      summaryText: 'Sugar Paper',
+    ),
   );
+
   const darwinDetails = DarwinNotificationDetails(
     presentAlert: true,
     presentBadge: true,
     presentSound: true,
+    presentBanner: true,
+    presentList: true,
     interruptionLevel: InterruptionLevel.timeSensitive,
-  );
-
-  const notificationDetails = NotificationDetails(
-    android: androidDetails,
-    iOS: darwinDetails,
   );
 
   await localNotifications.show(
     DateTime.now().millisecondsSinceEpoch.remainder(100000),
     title,
     body,
-    notificationDetails,
+    NotificationDetails(android: androidDetails, iOS: darwinDetails),
     payload: url,
   );
 }

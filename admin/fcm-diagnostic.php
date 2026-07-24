@@ -87,6 +87,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 . "\nVérifiez username/password dans config/email.php (compte service@sugar-paper.com).";
             $result_type = 'error';
         }
+    } elseif ($action === 'test_push_admin') {
+        require_once __DIR__ . '/../services/firebase_push.php';
+        @set_time_limit(180);
+        @ignore_user_abort(true);
+        $aid = (int) ($_POST['admin_id'] ?? 0);
+        if ($aid <= 0) {
+            $result_message = 'Compte invalide.';
+            $result_type = 'error';
+        } else {
+            $push = firebase_send_notification_to_admin_id(
+                $aid,
+                'Test Sugar Paper — compte #' . $aid,
+                'Si vous voyez cette alerte, les push fonctionnent pour CE compte sur CET appareil.',
+                ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-one']
+            );
+            $result_message = 'Test compte #' . $aid . ' : '
+                . (int) ($push['success'] ?? 0) . ' succès, '
+                . (int) ($push['failed'] ?? 0) . ' échec(s).';
+            if (!empty($push['details'][0]['email'])) {
+                $result_message .= "\nEmail : " . $push['details'][0]['email'];
+            }
+            if (!empty($push['errors'])) {
+                $result_message .= "\n" . implode("\n", array_slice($push['errors'], 0, 5));
+            }
+            $result_message .= "\n\nImportant : la bulle n’apparaît que sur l’appareil où CE compte a cliqué « Notifications ».";
+            $result_type = ((int) ($push['success'] ?? 0) > 0) ? 'success' : 'error';
+        }
     } elseif ($action === 'test_push_all') {
         require_once __DIR__ . '/../services/firebase_push.php';
         @set_time_limit(180);
@@ -98,17 +125,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $push = firebase_send_notification_to_all_admins(
                 'Test Sugar Paper (diagnostic)',
-                'Envoi à tous les comptes admin/utilisateur (topic FCM + secours).',
+                'Envoi parallèle à tous les comptes admin/utilisateur avec token.',
                 ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-tous-' . time()]
             );
             $parts = [
                 (int) $push['admins_notified'] . '/' . (int) $push['admins_total'] . ' compte(s)',
                 (int) $push['success'] . ' appareil(s) OK',
-                'canal=' . ($push['channel'] ?? '?'),
             ];
-            if (!empty($push['topic_success'])) {
-                $parts[] = 'topic OK (' . (int) ($push['topic_synced'] ?? 0) . ' abonnés)';
-            }
             if ((int) ($push['failed'] ?? 0) > 0) {
                 $parts[] = (int) $push['failed'] . ' échec(s)';
             }
@@ -116,43 +139,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($push['details'])) {
                 foreach ($push['details'] as $d) {
                     $result_message .= "\n• #" . (int) $d['admin_id'] . ' ' . ($d['email'] ?? '')
-                        . ' → ' . (int) $d['success'] . '/' . (int) $d['tokens']
-                        . (!empty($d['topic_ok']) ? ' (topic)' : '');
+                        . ' → ' . (int) $d['success'] . '/' . (int) $d['tokens'];
                 }
             }
             if (!empty($push['errors'])) {
                 $result_message .= "\nErreurs: " . implode(' ; ', array_slice($push['errors'], 0, 5));
             }
-            $result_type = ((int) ($push['admins_notified'] ?? 0) > 0 || !empty($push['topic_success'])) ? 'success' : 'error';
+            $result_type = ((int) ($push['success'] ?? 0) > 0) ? 'success' : 'error';
         }
-    } elseif ($action === 'sync_topic') {
-        require_once __DIR__ . '/../services/firebase_push.php';
-        $sync = firebase_fcm_sync_admin_topic();
-        $result_message = !empty($sync['ok'])
-            ? ('Topic synchronisé : ' . (int) ($sync['subscribed'] ?? 0) . ' token(s) abonné(s) à « ' . firebase_fcm_admin_topic_name() . ' ».')
-            : ('Échec sync topic : ' . implode(' ; ', $sync['errors'] ?? ['erreur']));
-        $result_type = !empty($sync['ok']) ? 'success' : 'error';
-    } elseif ($action === 'test_push_admin') {
-        require_once __DIR__ . '/../services/firebase_push.php';
-        $aid = (int) ($_POST['admin_id'] ?? 0);
-        $r = firebase_send_notification_to_admin_id(
-            $aid,
-            'Test Sugar Paper (votre compte)',
-            'Si vous voyez cette alerte, les push fonctionnent pour CE compte sur CET appareil.',
-            ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-one-' . $aid]
-        );
-        $result_message = 'Test compte #' . $aid . ' : ' . (int) ($r['success'] ?? 0) . ' succès'
-            . ((int) ($r['failed'] ?? 0) > 0 ? ', ' . (int) $r['failed'] . ' échec(s)' : '') . '.';
-        if (!empty($r['errors'])) {
-            $result_message .= "\n" . implode(' ; ', array_slice($r['errors'], 0, 3));
-        }
-        $result_type = ((int) ($r['success'] ?? 0) > 0) ? 'success' : 'error';
     }
 }
 
 $admins = $db->query('SELECT id, email, prenom, nom, role, statut FROM admin ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
 $token_rows = $db->query("
-    SELECT ft.id, ft.token, ft.admin_id, ft.type, LEFT(ft.user_agent, 80) AS ua, ft.date_creation,
+    SELECT ft.id, ft.token, ft.admin_id, ft.type, ft.user_agent, LEFT(ft.user_agent, 100) AS ua, ft.date_creation,
            a.email AS admin_email, a.role, a.statut
     FROM fcm_tokens ft
     LEFT JOIN admin a ON a.id = ft.admin_id
@@ -249,9 +249,6 @@ $admin_alert_email = notifications_get_commande_admin_email();
         <form method="POST"><input type="hidden" name="action" value="test_push_all">
             <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-bell"></i> Tester push (tous)</button>
         </form>
-        <form method="POST"><input type="hidden" name="action" value="sync_topic">
-            <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-sync"></i> Sync topic FCM</button>
-        </form>
         <form method="POST"><input type="hidden" name="action" value="test_smtp">
             <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-envelope-open-text"></i> Tester SMTP</button>
         </form>
@@ -299,11 +296,14 @@ $admin_alert_email = notifications_get_commande_admin_email();
         Commande cron : <code>curl -fsS "<?php echo htmlspecialchars($worker_url); ?>" >/dev/null 2>&amp;1</code>
     </p>
 
-    <h2 style="margin:24px 0 12px;font-size:1.1rem;">Comptes admin</h2>
-    <p style="font-size:13px;color:#666;margin:0 0 10px;">
-        Chaque personne doit cliquer <strong>Notifications</strong> dans le menu <strong>sur son propre téléphone / PC</strong>
-        (pas sur l’appareil de l’admin principal). Utilisez « Tester ce compte » connecté… ou testez depuis le diagnostic ci-dessous.
+    <p style="font-size:14px;color:#666;margin:0 0 16px;padding:12px;background:#fff8e6;border-radius:8px;border:1px solid #f0e0b2;">
+        <strong>Pourquoi seul l’admin principal voit les push ?</strong><br>
+        Chaque compte (<code>admin</code> ou <code>utilisateur</code>) doit être connecté sur <em>son</em> PC/téléphone
+        et cliquer <strong>Notifications</strong> dans le menu. Un même navigateur ne peut lier le token qu’à <strong>un seul</strong> compte.
+        Si <code>m.mendy</code> a activé les notifications sur le PC de <code>sugarpaper26</code>, la bulle sortira sur ce PC — pas ailleurs.
     </p>
+
+    <h2 style="margin:24px 0 12px;font-size:1.1rem;">Comptes admin</h2>
     <table class="fcm-diag-table">
         <thead><tr><th>ID</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Éligible push</th><th>Tokens liés</th><th>Test</th></tr></thead>
         <tbody>
@@ -321,7 +321,7 @@ $admin_alert_email = notifications_get_commande_admin_email();
                 <td class="<?php echo $ok ? 'badge-ok' : 'badge-ko'; ?>"><?php echo $ok ? 'Oui' : 'Non'; ?></td>
                 <td class="<?php echo $tok_n > 0 ? 'badge-ok' : 'badge-ko'; ?>"><?php echo (int) $tok_n; ?></td>
                 <td>
-                    <?php if ($tok_n > 0 && $ok): ?>
+                    <?php if ($ok && $tok_n > 0): ?>
                     <form method="POST" style="margin:0;">
                         <input type="hidden" name="action" value="test_push_admin">
                         <input type="hidden" name="admin_id" value="<?php echo $aid; ?>">
@@ -330,7 +330,7 @@ $admin_alert_email = notifications_get_commande_admin_email();
                         </button>
                     </form>
                     <?php else: ?>
-                    —
+                    <span class="badge-ko">—</span>
                     <?php endif; ?>
                 </td>
             </tr>
@@ -346,14 +346,15 @@ $admin_alert_email = notifications_get_commande_admin_email();
 
     <h2 style="margin:24px 0 12px;font-size:1.1rem;">Tokens FCM enregistrés (type admin)</h2>
     <table class="fcm-diag-table">
-        <thead><tr><th>Admin</th><th>Token (début)</th><th>Lié admin_id</th><th>Date</th></tr></thead>
+        <thead><tr><th>Admin</th><th>Token (début)</th><th>Appareil (user-agent)</th><th>Lié admin_id</th><th>Date</th></tr></thead>
         <tbody>
         <?php if (empty($token_rows)): ?>
-            <tr><td colspan="4">Aucun token — chaque admin doit autoriser les notifications dans le menu.</td></tr>
+            <tr><td colspan="5">Aucun token — chaque admin doit autoriser les notifications dans le menu.</td></tr>
         <?php else: foreach ($token_rows as $t): ?>
             <tr>
                 <td><?php echo htmlspecialchars($t['admin_email'] ?? '—'); ?><br><small><?php echo htmlspecialchars(normalize_admin_role($t['role'] ?? '')); ?></small></td>
                 <td><code><?php echo htmlspecialchars(substr($t['token'], 0, 36)); ?>…</code></td>
+                <td style="font-size:11px;max-width:280px;word-break:break-word;"><?php echo htmlspecialchars($t['ua'] ?? ''); ?></td>
                 <td class="<?php echo !empty($t['admin_id']) ? 'badge-ok' : 'badge-ko'; ?>"><?php echo $t['admin_id'] ? (int) $t['admin_id'] : 'NULL'; ?></td>
                 <td><?php echo htmlspecialchars($t['date_creation'] ?? ''); ?></td>
             </tr>

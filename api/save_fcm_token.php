@@ -31,8 +31,13 @@ if (stripos($content_type, 'application/json') !== false) {
 
 $token = isset($input['token']) ? trim((string) $input['token']) : '';
 $type = isset($input['type']) ? trim((string) $input['type']) : '';
+$device_type = isset($input['device_type']) ? strtolower(trim((string) $input['device_type'])) : '';
+$device_name = isset($input['device_name']) ? trim((string) $input['device_name']) : '';
+if (!in_array($device_type, ['ios', 'android', 'web'], true)) {
+    $device_type = '';
+}
 
-if ($type === '' && isset($input['device_type'])) {
+if ($type === '' && $device_type !== '') {
     $type = 'user';
 }
 
@@ -95,23 +100,17 @@ if ($type === 'user') {
     }
 }
 
-if (save_fcm_token($token, $type, $user_id, $admin_id)) {
+if (save_fcm_token($token, $type, $user_id, $admin_id, $device_type, $device_name)) {
     // Relier aussi d'éventuels orphelins du même token
     if ($type === 'admin') {
         fcm_relink_orphan_admin_token($admin_id, $token);
-        // Abonner ce token au topic alertes commandes (tous les admins/utilisateurs)
-        require_once __DIR__ . '/../services/firebase_push.php';
-        if (fcm_admin_is_eligible_for_notify((int) $admin_id)) {
-            firebase_fcm_subscribe_admin_topic([$token]);
-        } else {
-            firebase_fcm_unsubscribe_admin_topic([$token]);
-        }
     }
 
     $response['success'] = true;
     $response['message'] = 'Notifications activées pour votre compte';
     $response['type'] = $type;
     $response['account_id'] = $account_id;
+    $response['device_type'] = $device_type !== '' ? $device_type : 'web';
     $response['token_count'] = $type === 'admin'
         ? count(get_fcm_tokens_by_admin($admin_id))
         : count(get_fcm_tokens_by_user($user_id));

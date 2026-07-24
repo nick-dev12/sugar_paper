@@ -72,6 +72,7 @@ function firebase_get_notification_icon_url() {
 
 /**
  * Configuration Android / iOS pour l'app Flutter Sugar Paper
+ * Force une alerte native (bannière + son), pas une notification silencieuse
  */
 function _firebase_build_mobile_config($title, $body, $dataPayload) {
     $link = $dataPayload['link'] ?? '/';
@@ -79,7 +80,7 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
         'android' => [
             'priority' => 'high',
             'notification' => [
-                'channel_id' => 'sugar_paper_alerts',
+                'channel_id' => 'sugar_paper_popup',
                 'title' => (string) $title,
                 'body' => (string) $body,
                 'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
@@ -103,9 +104,13 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
                     ],
                     'sound' => 'default',
                     'badge' => 1,
+                    'content-available' => 1,
+                    'mutable-content' => 1,
                     'interruption-level' => 'time-sensitive',
                 ],
                 'link' => (string) $link,
+                'title' => (string) $title,
+                'body' => (string) $body,
             ],
         ],
     ];
@@ -234,38 +239,66 @@ function _firebase_error_is_invalid_token($message) {
 }
 
 /**
- * Envoie via kreait (multicast parallèle) — retourne null pour basculer en natif
+ * Envoie via kreait (sendAll parallèle, message adapté web vs app native)
+ * $token_meta: [token => ['user_agent' => string]]
  */
-function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data) {
+function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data, $token_meta = []) {
     $messaging = _firebase_get_messaging($credentials_path);
     if ($messaging === null) {
         return null;
     }
 
     try {
-        $dataPayload = firebase_prepare_push_data($title, $body, $data);
+        $dataPayloadBase = firebase_prepare_push_data($title, $body, $data);
         $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
-        $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
-        $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
+        $mobile = _firebase_build_mobile_config($title, $body, $dataPayloadBase);
 
-        $message = \Kreait\Firebase\Messaging\CloudMessage::new()
-            ->withNotification($notification)
-            ->withData($dataPayload)
-            ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
-            ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']))
-            ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webpush));
+        $messages = [];
+        $token_by_index = [];
+
+        foreach ($tokens as $idx => $token) {
+            $token = (string) $token;
+            $payload = $dataPayloadBase;
+            $payload['tag'] = ($payload['tag'] ?? ('alert-' . time())) . '-t' . substr(md5($token), 0, 8);
+            $ua = '';
+            if (isset($token_meta[$token]['user_agent'])) {
+                $ua = (string) $token_meta[$token]['user_agent'];
+            }
+            // Desktop navigateur : webpush suffit. iPhone / Android app : APNs + Android OBLIGATOIRES.
+            $desktop_only = function_exists('fcm_user_agent_is_desktop_browser')
+                && fcm_user_agent_is_desktop_browser($ua);
+            $webpush = _firebase_build_webpush_config($title, $body, $payload);
+
+            $msg = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token)
+                ->withNotification($notification)
+                ->withData($payload)
+                ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webpush));
+
+            // Toujours envoyer Android/APNs sauf navigateur desktop pur
+            // (les tokens iPhone app ont un UA Mozilla → sans APNs = aucune bulle iOS)
+            if (!$desktop_only) {
+                $msg = $msg
+                    ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
+                    ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']));
+            }
+
+            $messages[] = $msg;
+            $token_by_index[$idx] = $token;
+        }
+
+        $report = $messaging->sendAll($messages);
 
         $success = 0;
         $errors = [];
         $token_results = [];
         $invalid = [];
 
-        // Multicast = sendAll concurrent (tous les appareils en parallèle)
-        $report = $messaging->sendMulticast($message, $tokens);
-
-        foreach ($report->getItems() as $item) {
+        foreach ($report->getItems() as $index => $item) {
             $target = $item->target();
             $token = method_exists($target, 'value') ? (string) $target->value() : '';
+            if ($token === '' && isset($token_by_index[$index])) {
+                $token = $token_by_index[$index];
+            }
             if ($item->isSuccess()) {
                 $success++;
                 if ($token !== '') {
@@ -275,7 +308,7 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
             }
             $err = $item->error();
             $errMsg = $err ? $err->getMessage() : 'Erreur FCM';
-            $errors[] = $errMsg;
+            $errors[] = ($token !== '' ? (substr($token, 0, 12) . '…: ') : '') . $errMsg;
             if ($token !== '') {
                 $token_results[$token] = false;
             }
@@ -425,9 +458,10 @@ function _firebase_apply_curl_ssl($ch) {
 }
 
 /**
- * Envoi natif parallèle (curl_multi) — tous les tokens en même temps
+ * Envoi natif parallèle (curl_multi) — message adapté web vs app
+ * @param array $token_meta [token => ['user_agent'=>string]]
  */
-function _firebase_send_native($credentials_path, $project_id, $tokens, $title, $body, $data) {
+function _firebase_send_native($credentials_path, $project_id, $tokens, $title, $body, $data, $token_meta = []) {
     $access_token = firebase_get_access_token($credentials_path);
     if (!$access_token) {
         return [
@@ -440,34 +474,42 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
     }
 
     $url = "https://fcm.googleapis.com/v1/projects/{$project_id}/messages:send";
-    $dataPayload = firebase_prepare_push_data($title, $body, $data);
-    $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
-    $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
-
     $success = 0;
     $errors = [];
     $token_results = [];
     $invalid = [];
 
+    $build_message = static function ($token) use ($title, $body, $data, $token_meta) {
+        $dataPayload = firebase_prepare_push_data($title, $body, $data);
+        $dataPayload['tag'] = ($dataPayload['tag'] ?? ('alert-' . time())) . '-t' . substr(md5($token), 0, 8);
+        $ua = isset($token_meta[$token]['user_agent']) ? (string) $token_meta[$token]['user_agent'] : '';
+        $desktop_only = function_exists('fcm_user_agent_is_desktop_browser')
+            && fcm_user_agent_is_desktop_browser($ua);
+        $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
+        $msg = [
+            'token' => $token,
+            'notification' => ['title' => $title, 'body' => $body],
+            'data' => $dataPayload,
+            'webpush' => $webpush,
+        ];
+        // iPhone / Android app : toujours APNs + Android (sinon iOS ne affiche rien)
+        if (!$desktop_only) {
+            $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
+            $msg['android'] = $mobile['android'];
+            $msg['apns'] = $mobile['apns'];
+        }
+        return ['message' => $msg];
+    };
+
     if (!function_exists('curl_multi_init')) {
-        // Fallback ultra-simple séquentiel (rare)
         foreach ($tokens as $token) {
-            $message = [
-                'message' => [
-                    'token' => $token,
-                    'notification' => ['title' => $title, 'body' => $body],
-                    'data' => $dataPayload,
-                    'android' => $mobile['android'],
-                    'apns' => $mobile['apns'],
-                    'webpush' => $webpush,
-                ]
-            ];
+            $message = $build_message($token);
             $opts = [
                 'http' => [
                     'header' => "Content-Type: application/json\r\nAuthorization: Bearer {$access_token}\r\n",
                     'method' => 'POST',
                     'content' => json_encode($message),
-                    'timeout' => 12,
+                    'timeout' => 15,
                 ]
             ];
             $context = stream_context_create($opts);
@@ -479,14 +521,14 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
                     $token_results[$token] = true;
                 } else {
                     $errMsg = $response['error']['message'] ?? 'Erreur inconnue';
-                    $errors[] = $errMsg;
+                    $errors[] = substr($token, 0, 12) . '…: ' . $errMsg;
                     $token_results[$token] = false;
                     if (_firebase_error_is_invalid_token($errMsg)) {
                         $invalid[] = $token;
                     }
                 }
             } else {
-                $errors[] = 'Échec de la requête HTTP';
+                $errors[] = substr($token, 0, 12) . '…: Échec de la requête HTTP';
                 $token_results[$token] = false;
             }
         }
@@ -495,16 +537,7 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
         $handles = [];
 
         foreach ($tokens as $idx => $token) {
-            $message = [
-                'message' => [
-                    'token' => $token,
-                    'notification' => ['title' => $title, 'body' => $body],
-                    'data' => $dataPayload,
-                    'android' => $mobile['android'],
-                    'apns' => $mobile['apns'],
-                    'webpush' => $webpush,
-                ]
-            ];
+            $message = $build_message($token);
             $ch = curl_init($url);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
@@ -514,8 +547,8 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
                     'Authorization: Bearer ' . $access_token,
                 ],
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 15,
-                CURLOPT_CONNECTTIMEOUT => 8,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_CONNECTTIMEOUT => 10,
             ]);
             _firebase_apply_curl_ssl($ch);
             curl_multi_add_handle($mh, $ch);
@@ -535,6 +568,7 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
             $token = $item['token'];
             $result = curl_multi_getcontent($ch);
             $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr = curl_error($ch);
             curl_multi_remove_handle($mh, $ch);
             curl_close($ch);
 
@@ -545,8 +579,8 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
             } else {
                 $errMsg = is_array($response)
                     ? ($response['error']['message'] ?? ('HTTP ' . $httpCode))
-                    : ('Échec HTTP ' . $httpCode);
-                $errors[] = $errMsg;
+                    : ($curlErr !== '' ? $curlErr : ('Échec HTTP ' . $httpCode));
+                $errors[] = substr($token, 0, 12) . '…: ' . $errMsg;
                 $token_results[$token] = false;
                 if (_firebase_error_is_invalid_token($errMsg)) {
                     $invalid[] = $token;
@@ -578,9 +612,10 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
  * @param string $title Titre de la notification
  * @param string $body Corps du message
  * @param array $data Données additionnelles (optionnel)
+ * @param array $token_meta [token => ['user_agent'=>string]]
  * @return array ['success' => int, 'failed' => int, 'errors' => array, 'token_results' => array]
  */
-function firebase_send_notification($tokens, $title, $body, $data = []) {
+function firebase_send_notification($tokens, $title, $body, $data = [], $token_meta = []) {
     @set_time_limit(180);
     @ignore_user_abort(true);
 
@@ -595,63 +630,50 @@ function firebase_send_notification($tokens, $title, $body, $data = []) {
         return ['success' => 0, 'failed' => 0, 'errors' => [], 'token_results' => [], 'invalid_tokens' => []];
     }
 
+    if (!function_exists('fcm_user_agent_is_desktop_browser')) {
+        require_once __DIR__ . '/../models/model_fcm.php';
+    }
+
     $config = _firebase_get_config();
     $credentials_path = $config['credentials_path'];
     $project_id = _firebase_get_project_id($credentials_path);
 
-    $result = _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data);
+    $result = _firebase_send_via_library($credentials_path, $tokens, $title, $body, $data, $token_meta);
     if ($result === null) {
-        $result = _firebase_send_native($credentials_path, $project_id, $tokens, $title, $body, $data);
+        $result = _firebase_send_native($credentials_path, $project_id, $tokens, $title, $body, $data, $token_meta);
     }
 
-    // 2e tentative sur les tokens en échec HTTP / temporaire
-    $token_results = is_array($result['token_results'] ?? null) ? $result['token_results'] : [];
+    // 2e tentative pour les échecs HTTP / réseau uniquement
     $retry_tokens = [];
-    foreach ($tokens as $t) {
-        $tok_ok = $token_results[$t] ?? null;
-        if ($tok_ok === true) {
+    $token_results = is_array($result['token_results'] ?? null) ? $result['token_results'] : [];
+    foreach ($tokens as $token) {
+        if (!empty($token_results[$token])) {
             continue;
         }
-        if (in_array($t, $result['invalid_tokens'] ?? [], true)) {
-            continue;
-        }
-        $err_blob = implode(' ', $result['errors'] ?? []);
-        if ($tok_ok === false
-            || $tok_ok === null
-            || stripos($err_blob, 'HTTP') !== false
-            || stripos($err_blob, 'timeout') !== false
-            || stripos($err_blob, 'cURL') !== false
-        ) {
-            $retry_tokens[] = $t;
-        }
+        $retry_tokens[] = $token;
     }
-    $retry_tokens = array_values(array_unique($retry_tokens));
-    if (!empty($retry_tokens)) {
-        usleep(400000);
-        $retry = _firebase_send_via_library($credentials_path, $retry_tokens, $title, $body, $data);
+    if (!empty($retry_tokens) && (int) ($result['success'] ?? 0) > 0) {
+        // Ne retry que s'il y a eu au moins un succès (évite de spammer si credentials HS)
+        $retry_meta = [];
+        foreach ($retry_tokens as $t) {
+            if (isset($token_meta[$t])) {
+                $retry_meta[$t] = $token_meta[$t];
+            }
+        }
+        $retry = _firebase_send_via_library($credentials_path, $retry_tokens, $title, $body, $data, $retry_meta);
         if ($retry === null) {
-            $retry = _firebase_send_native($credentials_path, $project_id, $retry_tokens, $title, $body, $data);
+            $retry = _firebase_send_native($credentials_path, $project_id, $retry_tokens, $title, $body, $data, $retry_meta);
         }
-        foreach (($retry['token_results'] ?? []) as $tok => $ok) {
+        foreach ($retry['token_results'] ?? [] as $t => $ok) {
             if ($ok) {
-                $token_results[$tok] = true;
-            } elseif (!isset($token_results[$tok])) {
-                $token_results[$tok] = false;
+                $token_results[$t] = true;
+                $result['success'] = (int) ($result['success'] ?? 0) + 1;
+                $result['failed'] = max(0, (int) ($result['failed'] ?? 0) - 1);
             }
         }
-        $result['errors'] = array_merge($result['errors'] ?? [], $retry['errors'] ?? []);
-        $result['invalid_tokens'] = array_values(array_unique(array_merge(
-            $result['invalid_tokens'] ?? [],
-            $retry['invalid_tokens'] ?? []
-        )));
-        $success = 0;
-        foreach ($tokens as $t) {
-            if (!empty($token_results[$t])) {
-                $success++;
-            }
+        if (!empty($retry['errors'])) {
+            $result['errors'] = array_merge($result['errors'] ?? [], $retry['errors']);
         }
-        $result['success'] = $success;
-        $result['failed'] = count($tokens) - $success;
         $result['token_results'] = $token_results;
     }
 
@@ -659,210 +681,12 @@ function firebase_send_notification($tokens, $title, $body, $data = []) {
 }
 
 /**
- * Nom du topic FCM pour les alertes admin / utilisateur
- */
-function firebase_fcm_admin_topic_name() {
-    return 'sugar_paper_admin_alerts';
-}
-
-/**
- * Abonne des tokens au topic alertes admin
- * @param array $tokens
- * @return array{ok:bool,subscribed:int,errors:array}
- */
-function firebase_fcm_subscribe_admin_topic(array $tokens) {
-    $tokens = array_values(array_unique(array_filter(array_map('strval', $tokens))));
-    if (empty($tokens)) {
-        return ['ok' => true, 'subscribed' => 0, 'errors' => []];
-    }
-
-    $topic = firebase_fcm_admin_topic_name();
-    $config = _firebase_get_config();
-    $credentials_path = $config['credentials_path'];
-    $messaging = _firebase_get_messaging($credentials_path);
-
-    if ($messaging !== null) {
-        try {
-            $messaging->subscribeToTopic($topic, $tokens);
-            return ['ok' => true, 'subscribed' => count($tokens), 'errors' => []];
-        } catch (\Throwable $e) {
-            // fallback natif ci-dessous
-            $lib_err = $e->getMessage();
-        }
-    }
-
-    $access = firebase_get_access_token($credentials_path);
-    if (!$access) {
-        return ['ok' => false, 'subscribed' => 0, 'errors' => [isset($lib_err) ? $lib_err : 'Token OAuth indisponible']];
-    }
-
-    $payload = json_encode([
-        'to' => '/topics/' . $topic,
-        'registration_tokens' => $tokens,
-    ]);
-    $ch = curl_init('https://iid.googleapis.com/iid/v1:batchAdd');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $access,
-            'access_token_auth: true',
-        ],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 20,
-    ]);
-    _firebase_apply_curl_ssl($ch);
-    $body = curl_exec($ch);
-    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $cerr = curl_error($ch);
-    curl_close($ch);
-
-    if ($body === false || $code >= 400) {
-        return ['ok' => false, 'subscribed' => 0, 'errors' => [$cerr !== '' ? $cerr : ('HTTP ' . $code . ' ' . (string) $body)]];
-    }
-    return ['ok' => true, 'subscribed' => count($tokens), 'errors' => []];
-}
-
-/**
- * Désabonne des tokens du topic alertes admin
- */
-function firebase_fcm_unsubscribe_admin_topic(array $tokens) {
-    $tokens = array_values(array_unique(array_filter(array_map('strval', $tokens))));
-    if (empty($tokens)) {
-        return true;
-    }
-    $topic = firebase_fcm_admin_topic_name();
-    $config = _firebase_get_config();
-    $credentials_path = $config['credentials_path'];
-    $messaging = _firebase_get_messaging($credentials_path);
-    if ($messaging !== null) {
-        try {
-            $messaging->unsubscribeFromTopic($topic, $tokens);
-            return true;
-        } catch (\Throwable $e) {
-            // continue natif
-        }
-    }
-    $access = firebase_get_access_token($credentials_path);
-    if (!$access || !function_exists('curl_init')) {
-        return false;
-    }
-    $payload = json_encode([
-        'to' => '/topics/' . $topic,
-        'registration_tokens' => $tokens,
-    ]);
-    $ch = curl_init('https://iid.googleapis.com/iid/v1:batchRemove');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $access,
-            'access_token_auth: true',
-        ],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 20,
-    ]);
-    _firebase_apply_curl_ssl($ch);
-    curl_exec($ch);
-    curl_close($ch);
-    return true;
-}
-
-/**
- * Synchronise tous les tokens admin éligibles vers le topic
- */
-function firebase_fcm_sync_admin_topic() {
-    if (!function_exists('get_all_fcm_tokens_admin')) {
-        require_once __DIR__ . '/../models/model_fcm.php';
-    }
-    $tokens = get_all_fcm_tokens_admin();
-    return firebase_fcm_subscribe_admin_topic($tokens);
-}
-
-/**
- * Envoi FCM vers un topic
- */
-function firebase_send_to_topic($topic, $title, $body, $data = []) {
-    $topic = trim((string) $topic);
-    if ($topic === '') {
-        return ['success' => 0, 'failed' => 1, 'errors' => ['Topic vide']];
-    }
-
-    $config = _firebase_get_config();
-    $credentials_path = $config['credentials_path'];
-    $dataPayload = firebase_prepare_push_data($title, $body, $data);
-    $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
-    $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
-
-    $messaging = _firebase_get_messaging($credentials_path);
-    if ($messaging !== null) {
-        try {
-            $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
-            $message = \Kreait\Firebase\Messaging\CloudMessage::withTarget('topic', $topic)
-                ->withNotification($notification)
-                ->withData($dataPayload)
-                ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
-                ->withApnsConfig(\Kreait\Firebase\Messaging\ApnsConfig::fromArray($mobile['apns']))
-                ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webpush));
-            $messaging->send($message);
-            return ['success' => 1, 'failed' => 0, 'errors' => [], 'channel' => 'topic'];
-        } catch (\Throwable $e) {
-            $lib_err = $e->getMessage();
-        }
-    }
-
-    $project_id = _firebase_get_project_id($credentials_path);
-    $access = firebase_get_access_token($credentials_path);
-    if (!$access) {
-        return ['success' => 0, 'failed' => 1, 'errors' => [isset($lib_err) ? $lib_err : 'OAuth indisponible']];
-    }
-    $url = "https://fcm.googleapis.com/v1/projects/{$project_id}/messages:send";
-    $message = [
-        'message' => [
-            'topic' => $topic,
-            'notification' => ['title' => $title, 'body' => $body],
-            'data' => $dataPayload,
-            'android' => $mobile['android'],
-            'apns' => $mobile['apns'],
-            'webpush' => $webpush,
-        ],
-    ];
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($message),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $access,
-        ],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 20,
-    ]);
-    _firebase_apply_curl_ssl($ch);
-    $raw = curl_exec($ch);
-    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $cerr = curl_error($ch);
-    curl_close($ch);
-    $resp = is_string($raw) ? json_decode($raw, true) : null;
-    if (is_array($resp) && isset($resp['name'])) {
-        return ['success' => 1, 'failed' => 0, 'errors' => [], 'channel' => 'topic'];
-    }
-    $err = $cerr !== '' ? $cerr : (is_array($resp) ? ($resp['error']['message'] ?? ('HTTP ' . $code)) : ('HTTP ' . $code));
-    if (isset($lib_err)) {
-        $err = $lib_err . ' | ' . $err;
-    }
-    return ['success' => 0, 'failed' => 1, 'errors' => [$err], 'channel' => 'topic'];
-}
-
-/**
- * Envoie une notification push à TOUS les admins éligibles
- * 1) Synchronise le topic FCM (tous les tokens admin/utilisateur)
- * 2) Envoie via le topic (un message → tous les appareils abonnés)
- * 3) Si le topic échoue : envoi token-par-token (secours)
+ * Envoie une notification push à CHAQUE admin éligible (tag unique par compte)
  *
- * @return array
+ * @param string $title
+ * @param string $body
+ * @param array $data
+ * @return array ['success'=>int,'failed'=>int,'admins_notified'=>int,'admins_total'=>int,'errors'=>array,'details'=>array]
  */
 function firebase_send_notification_to_all_admins($title, $body, $data = []) {
     @set_time_limit(180);
@@ -879,138 +703,129 @@ function firebase_send_notification_to_all_admins($title, $body, $data = []) {
             'failed' => 0,
             'admins_notified' => 0,
             'admins_total' => 0,
-            'errors' => ['Aucun token admin éligible — chaque compte doit activer Notifications sur SON appareil'],
+            'errors' => ['Aucun token admin éligible'],
             'details' => [],
-            'channel' => 'none',
         ];
         _firebase_log_send('all_admins', $empty);
         return $empty;
     }
 
+    $payload_base = is_array($data) ? $data : [];
+    $base_tag = isset($payload_base['tag']) ? (string) $payload_base['tag'] : ('admin-alert-' . time());
+
+    // Flatten all tokens with meta + unique tag per admin (évite fusion navigateur)
     $all_tokens = [];
+    $token_meta = [];
+    $token_to_admin = [];
     foreach ($groups as $group) {
+        $admin_id = (int) $group['admin_id'];
+        $meta = is_array($group['token_meta'] ?? null) ? $group['token_meta'] : [];
         foreach ($group['tokens'] as $token) {
             $token = trim((string) $token);
-            if ($token !== '') {
-                $all_tokens[] = $token;
+            if ($token === '') {
+                continue;
             }
+            $all_tokens[] = $token;
+            $token_to_admin[$token] = $admin_id;
+            $token_meta[$token] = $meta[$token] ?? ['user_agent' => ''];
         }
     }
     $all_tokens = array_values(array_unique($all_tokens));
 
-    $payload = is_array($data) ? $data : [];
-    $base_tag = isset($payload['tag']) ? (string) $payload['tag'] : ('admin-alert-' . time());
-    $payload['tag'] = $base_tag . '-' . time();
+    // Un envoi parallèle, mais tag unique injecté par token dans _firebase_send_*
+    $payload = $payload_base;
+    $payload['tag'] = $base_tag;
 
-    $errors = [];
-    $sync = firebase_fcm_subscribe_admin_topic($all_tokens);
-    if (!empty($sync['errors'])) {
-        foreach ($sync['errors'] as $e) {
-            $errors[] = 'topic-sync: ' . $e;
-        }
-    }
-
-    $topic_name = firebase_fcm_admin_topic_name();
-    $topic_res = firebase_send_to_topic($topic_name, $title, $body, $payload);
-    if (!empty($topic_res['errors'])) {
-        foreach ($topic_res['errors'] as $e) {
-            $errors[] = 'topic-send: ' . $e;
-        }
-    }
+    $result = firebase_send_notification($all_tokens, $title, $body, $payload, $token_meta);
+    $token_results = is_array($result['token_results'] ?? null) ? $result['token_results'] : [];
 
     $details = [];
-    $total_success = 0;
-    $total_failed = 0;
     $admins_notified = 0;
-    $channel = 'topic';
+    $errors = $result['errors'] ?? [];
 
-    if (!empty($topic_res['success'])) {
-        // Topic OK : tous les appareils abonnés reçoivent 1 notification (pas de double envoi)
-        foreach ($groups as $group) {
-            $n = count($group['tokens']);
-            $total_success += $n;
-            $admins_notified++;
-            $details[] = [
-                'admin_id' => (int) $group['admin_id'],
-                'email' => $group['email'] ?? '',
-                'role' => $group['role'] ?? '',
-                'tokens' => $n,
-                'success' => $n,
-                'failed' => 0,
-                'topic_ok' => true,
-            ];
-        }
-    } else {
-        // Secours : envoi individuel par compte
-        $channel = 'tokens';
-        foreach ($groups as $group) {
-            $admin_id = (int) $group['admin_id'];
-            $tokens = $group['tokens'];
-            if (empty($tokens)) {
+    foreach ($groups as $group) {
+        $admin_id = (int) $group['admin_id'];
+        $ok = 0;
+        $ko = 0;
+        foreach ($group['tokens'] as $token) {
+            $token = trim((string) $token);
+            if ($token === '') {
                 continue;
             }
-            $p = $payload;
-            $p['tag'] = $base_tag . '-a' . $admin_id;
-            $p['admin_id'] = (string) $admin_id;
-
-            $result = firebase_send_notification($tokens, $title, $body, $p);
-            $ok = (int) ($result['success'] ?? 0);
-            $ko = (int) ($result['failed'] ?? 0);
-            $total_success += $ok;
-            $total_failed += $ko;
-            if ($ok > 0) {
-                $admins_notified++;
+            if (!empty($token_results[$token])) {
+                $ok++;
+            } else {
+                $ko++;
             }
-            if (!empty($result['errors'])) {
-                foreach ($result['errors'] as $err) {
-                    $errors[] = 'admin#' . $admin_id . ': ' . $err;
-                }
-            }
-            $details[] = [
-                'admin_id' => $admin_id,
-                'email' => $group['email'] ?? '',
-                'role' => $group['role'] ?? '',
-                'tokens' => count($tokens),
-                'success' => $ok,
-                'failed' => $ko,
-                'topic_ok' => false,
-            ];
         }
+        if ($ok > 0) {
+            $admins_notified++;
+        }
+        $details[] = [
+            'admin_id' => $admin_id,
+            'email' => $group['email'] ?? '',
+            'role' => $group['role'] ?? '',
+            'tokens' => count($group['tokens']),
+            'success' => $ok,
+            'failed' => $ko,
+        ];
     }
 
     $out = [
-        'success' => $total_success,
-        'failed' => $total_failed,
+        'success' => (int) ($result['success'] ?? 0),
+        'failed' => (int) ($result['failed'] ?? 0),
         'admins_notified' => $admins_notified,
         'admins_total' => count($groups),
         'errors' => $errors,
         'details' => $details,
-        'topic_success' => !empty($topic_res['success']),
-        'topic_synced' => (int) ($sync['subscribed'] ?? 0),
-        'channel' => $channel,
+        'invalid_tokens' => $result['invalid_tokens'] ?? [],
     ];
     _firebase_log_send('all_admins', $out);
     return $out;
 }
 
 /**
- * Envoi de test / alerte à UN seul compte admin (ses tokens uniquement)
+ * Test push pour UN compte admin (diagnostic)
+ *
+ * @param int $admin_id
+ * @return array
  */
 function firebase_send_notification_to_admin_id($admin_id, $title, $body, $data = []) {
-    if (!function_exists('get_fcm_tokens_by_admin')) {
+    if (!function_exists('get_fcm_admin_token_groups')) {
         require_once __DIR__ . '/../models/model_fcm.php';
     }
     $admin_id = (int) $admin_id;
-    $tokens = get_fcm_tokens_by_admin($admin_id);
-    if (empty($tokens)) {
-        return ['success' => 0, 'failed' => 0, 'errors' => ['Aucun token pour ce compte'], 'admins_notified' => 0];
+    $groups = get_fcm_admin_token_groups();
+    if (!isset($groups[$admin_id]) || empty($groups[$admin_id]['tokens'])) {
+        return [
+            'success' => 0,
+            'failed' => 0,
+            'errors' => ['Aucun token pour ce compte (activer Notifications sur son appareil).'],
+            'details' => [],
+            'admins_notified' => 0,
+            'admins_total' => 1,
+        ];
     }
-    // S'assurer que ces tokens sont bien sur le topic
-    firebase_fcm_subscribe_admin_topic($tokens);
+    $group = $groups[$admin_id];
     $payload = is_array($data) ? $data : [];
-    $payload['tag'] = ($payload['tag'] ?? 'admin-one') . '-a' . $admin_id;
+    $payload['tag'] = ($payload['tag'] ?? 'test-admin') . '-a' . $admin_id . '-' . time();
     $payload['admin_id'] = (string) $admin_id;
-    $result = firebase_send_notification($tokens, $title, $body, $payload);
-    $result['admins_notified'] = (($result['success'] ?? 0) > 0) ? 1 : 0;
-    return $result;
+    $meta = is_array($group['token_meta'] ?? null) ? $group['token_meta'] : [];
+    $result = firebase_send_notification($group['tokens'], $title, $body, $payload, $meta);
+    $ok = (int) ($result['success'] ?? 0);
+    return [
+        'success' => $ok,
+        'failed' => (int) ($result['failed'] ?? 0),
+        'errors' => $result['errors'] ?? [],
+        'admins_notified' => $ok > 0 ? 1 : 0,
+        'admins_total' => 1,
+        'details' => [[
+            'admin_id' => $admin_id,
+            'email' => $group['email'] ?? '',
+            'role' => $group['role'] ?? '',
+            'tokens' => count($group['tokens']),
+            'success' => $ok,
+            'failed' => (int) ($result['failed'] ?? 0),
+        ]],
+    ];
 }
