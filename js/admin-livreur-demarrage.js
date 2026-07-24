@@ -22,9 +22,12 @@
     var suppressSuggest = false;
     var activeBtn = null;
     var activeRow = null;
-    var sessionReserved = false;
     var formSubmitted = false;
     var currentLivraisonType = 'commande';
+    var orderOriginalLat = null;
+    var orderOriginalLng = null;
+    var originalClientAdresse = '';
+    var hasOrderGps = false;
 
     var DEFAULT_CENTER = [14.6937, -17.4441];
 
@@ -142,7 +145,73 @@
 
         fillCoord('livreur-delivery-lat', lat.toFixed(8));
         fillCoord('livreur-delivery-lng', lng.toFixed(8));
+        syncGpsDisplay(lat, lng);
         refreshRoute();
+    }
+
+    function formatGpsLabel(lat, lng) {
+        return lat.toFixed(6) + ', ' + lng.toFixed(6);
+    }
+
+    function syncGpsDisplay(lat, lng) {
+        var gpsDisplay = qs('livreur-client-gps-display');
+        if (gpsDisplay && lat !== null && lng !== null) {
+            gpsDisplay.value = formatGpsLabel(lat, lng);
+        }
+        updateRestoreButtonVisibility();
+    }
+
+    function updateRestoreButtonVisibility() {
+        var restoreBtn = qs('livreur-gps-restore');
+        if (!restoreBtn) return;
+        if (!hasOrderGps || orderOriginalLat === null || orderOriginalLng === null) {
+            restoreBtn.hidden = true;
+            return;
+        }
+        var c = readCoords();
+        var same =
+            c.clientLat !== null &&
+            c.clientLng !== null &&
+            Math.abs(c.clientLat - orderOriginalLat) < 0.000001 &&
+            Math.abs(c.clientLng - orderOriginalLng) < 0.000001;
+        restoreBtn.hidden = same;
+    }
+
+    function showOrderGpsPanel(show) {
+        var gpsBlock = qs('livreur-demarrage-gps-exact');
+        if (gpsBlock) {
+            gpsBlock.hidden = !show;
+        }
+    }
+
+    function applyOrderOriginalGps(options) {
+        options = options || {};
+        if (orderOriginalLat === null || orderOriginalLng === null) return;
+        updateClientOnMap(orderOriginalLat, orderOriginalLng);
+        if (options.resetAdresse !== false) {
+            var adresseInput = qs('livreur-demarrage-adresse');
+            if (adresseInput) {
+                adresseInput.value = originalClientAdresse || '';
+            }
+        }
+        setStatus('ok', 'Position GPS exacte du client restaurée.');
+    }
+
+    function resetAddressUi() {
+        hasOrderGps = false;
+        orderOriginalLat = null;
+        orderOriginalLng = null;
+        originalClientAdresse = '';
+        showOrderGpsPanel(false);
+        var gpsDisplay = qs('livreur-client-gps-display');
+        if (gpsDisplay) gpsDisplay.value = '';
+        var restoreBtn = qs('livreur-gps-restore');
+        if (restoreBtn) restoreBtn.hidden = true;
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (adresseInput) {
+            adresseInput.readOnly = false;
+            adresseInput.value = '';
+        }
     }
 
     function fitMapToPoints() {
@@ -572,7 +641,6 @@
         if (!panel || !form) return;
 
         activeBtn = btn;
-        sessionReserved = false;
         formSubmitted = false;
         var livraisonType = btn.getAttribute('data-livraison-type') || 'commande';
         currentLivraisonType = livraisonType;
@@ -583,6 +651,10 @@
         var adresse = btn.getAttribute('data-adresse') || '';
         var dLat = parseCoord(btn.getAttribute('data-delivery-lat'));
         var dLng = parseCoord(btn.getAttribute('data-delivery-lng'));
+        originalClientAdresse = adresse;
+        orderOriginalLat = dLat;
+        orderOriginalLng = dLng;
+        hasOrderGps = (dLat !== null && dLng !== null);
 
         var actionInput = qs('livreur-demarrage-action');
         var labelEl = qs('livreur-demarrage-label');
@@ -599,7 +671,7 @@
             if (qs('livreur-demarrage-bl-id')) qs('livreur-demarrage-bl-id').value = '';
             qs('livreur-demarrage-numero').textContent = numero;
         }
-        qs('livreur-demarrage-adresse').value = adresse;
+
         hideAddressSuggestions();
 
         fillCoord('livreur-driver-lat', '');
@@ -626,56 +698,50 @@
 
         ensureMap();
 
-        if (dLat !== null && dLng !== null) {
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (adresseInput) {
+            adresseInput.readOnly = false;
+            adresseInput.value = adresse;
+        }
+
+        if (hasOrderGps) {
+            showOrderGpsPanel(true);
             updateClientOnMap(dLat, dLng);
-            reverseGeocodeLabel(dLat, dLng).then(function (label) {
-                var adresseInput = qs('livreur-demarrage-adresse');
-                if (adresseInput && label) {
-                    adresseInput.value = label;
-                }
-            });
-        } else if (adresse) {
-            geocodeAddress(adresse);
+            setStatus('ok', 'Position GPS du client chargée — vous pouvez la modifier ou rechercher une adresse.');
+        } else {
+            showOrderGpsPanel(false);
+            var restoreBtn = qs('livreur-gps-restore');
+            if (restoreBtn) restoreBtn.hidden = true;
+            if (adresse) {
+                geocodeAddress(adresse);
+            } else {
+                setStatus('pending', 'Saisissez l\'adresse du client.');
+            }
         }
 
         startWatch();
     }
 
     function closePanel() {
-        var shouldAbandon = sessionReserved && !formSubmitted;
-
-        function finishClose() {
-            stopWatch();
-            hideAddressSuggestions();
-            if (suggestAbort && typeof suggestAbort.abort === 'function') {
-                suggestAbort.abort();
-                suggestAbort = null;
-            }
-            if (panel) {
-                panel.hidden = true;
-                panel.setAttribute('aria-hidden', 'true');
-            }
-            document.body.classList.remove('livreur-demarrage-open');
-            if (activeBtn) {
-                activeBtn.removeAttribute('disabled');
-            }
-            activeBtn = null;
-            activeRow = null;
-            sessionReserved = false;
-            formSubmitted = false;
-            currentLivraisonType = 'commande';
+        stopWatch();
+        hideAddressSuggestions();
+        resetAddressUi();
+        if (suggestAbort && typeof suggestAbort.abort === 'function') {
+            suggestAbort.abort();
+            suggestAbort = null;
         }
-
-        if (shouldAbandon) {
-            revertRowIfNeeded();
-            finishClose();
-            abandonReservation().catch(function () {
-                /* UI déjà réinitialisée — annulation BDD en arrière-plan */
-            });
-            return;
+        if (panel) {
+            panel.hidden = true;
+            panel.setAttribute('aria-hidden', 'true');
         }
-
-        finishClose();
+        document.body.classList.remove('livreur-demarrage-open');
+        if (activeBtn) {
+            activeBtn.removeAttribute('disabled');
+        }
+        activeBtn = null;
+        activeRow = null;
+        formSubmitted = false;
+        currentLivraisonType = 'commande';
     }
 
     function onSubmit(e) {
@@ -699,133 +765,6 @@
         formSubmitted = true;
     }
 
-    function abandonReservation() {
-        var blInput = qs('livreur-demarrage-bl-id');
-        var blId = blInput ? parseInt(blInput.value || '0', 10) : 0;
-        var livraisonType = blId > 0 ? 'facture' : (currentLivraisonType || 'commande');
-        var body = {
-            action: livraisonType === 'facture' ? 'annuler_facture' : 'annuler_commande'
-        };
-        if (livraisonType === 'facture') {
-            body.bl_id = blId;
-        } else {
-            body.commande_id = parseInt(qs('livreur-demarrage-commande-id') && qs('livreur-demarrage-commande-id').value || '0', 10);
-        }
-
-        return fetch('/api/tracking/prendre-livraison.php', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(body)
-        }).then(function (res) {
-            return res.json().then(function (data) {
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'Annulation impossible.');
-                }
-                return data;
-            });
-        });
-    }
-
-    function revertRowIfNeeded() {
-        if (!activeRow) return;
-
-        var actions = activeRow.querySelector('.livreur-actions');
-        if (actions && activeRow.dataset.livreurOriginalActions) {
-            actions.innerHTML = activeRow.dataset.livreurOriginalActions;
-            delete activeRow.dataset.livreurOriginalActions;
-        }
-
-        var statusCell = activeRow.querySelector('td[data-label="Statut"]');
-        if (statusCell && activeRow.dataset.livreurOriginalStatut) {
-            statusCell.innerHTML = activeRow.dataset.livreurOriginalStatut;
-            delete activeRow.dataset.livreurOriginalStatut;
-        }
-    }
-
-    function reserveLivraison(btn) {
-        var livraisonType = btn.getAttribute('data-livraison-type') || 'commande';
-        var body = {
-            action: livraisonType === 'facture' ? 'prendre_facture' : 'prendre_commande'
-        };
-        if (livraisonType === 'facture') {
-            body.bl_id = parseInt(btn.getAttribute('data-bl-id') || '0', 10);
-        } else {
-            body.commande_id = parseInt(btn.getAttribute('data-commande-id') || '0', 10);
-        }
-
-        btn.setAttribute('disabled', 'disabled');
-
-        return fetch('/api/tracking/prendre-livraison.php', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(body)
-        }).then(function (res) {
-            return res.json().then(function (data) {
-                if (!res.ok || !data.success) {
-                    throw new Error(data.message || 'Prise en charge impossible.');
-                }
-                var reservedNow = !data.already;
-                if (panel && panel.hidden) {
-                    if (reservedNow) {
-                        sessionReserved = true;
-                        abandonReservation().catch(function () { /* ignore */ });
-                    }
-                    return data;
-                }
-                if (reservedNow) {
-                    sessionReserved = true;
-                }
-                btn.setAttribute('data-reserved', sessionReserved ? '1' : '0');
-                markRowAsTaken(btn, data.suivi_url || '');
-                return data;
-            });
-        }).finally(function () {
-            if (btn) {
-                btn.removeAttribute('disabled');
-            }
-        });
-    }
-
-    function markRowAsTaken(btn, suiviUrl) {
-        if (panel && panel.hidden) {
-            return;
-        }
-        var row = btn.closest('tr');
-        if (!row || !suiviUrl || !sessionReserved) return;
-        activeRow = row;
-        var actions = row.querySelector('.livreur-actions');
-        if (!actions) return;
-
-        if (!row.dataset.livreurOriginalActions) {
-            row.dataset.livreurOriginalActions = actions.innerHTML;
-        }
-
-        var statusCell = row.querySelector('td[data-label="Statut"]');
-        if (statusCell && !row.dataset.livreurOriginalStatut) {
-            row.dataset.livreurOriginalStatut = statusCell.innerHTML;
-        }
-        if (statusCell && statusCell.innerHTML.indexOf('livreur-cmd-mine') === -1) {
-            statusCell.innerHTML =
-                '<span class="livreur-badge livreur-badge--statut">En cours</span>' +
-                '<br><small class="livreur-cmd-mine">Votre livraison</small>';
-        }
-
-        actions.innerHTML =
-            '<a href="' + suiviUrl + '" class="btn-secondary btn-sm livreur-btn-suivi">' +
-            '<i class="fas fa-map-location-dot" aria-hidden="true"></i> ' +
-            '<span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>' +
-            '<span class="livreur-btn-text livreur-btn-text--short">GPS</span>' +
-            '</a>';
-    }
-
     function init() {
         panel = qs('livreur-demarrage-panel');
         form = qs('livreur-demarrage-form');
@@ -845,12 +784,11 @@
             if (btn) {
                 e.preventDefault();
                 openPanel(btn);
-                setStatus('pending', 'Prise en charge de la livraison…');
-                reserveLivraison(btn).then(function () {
+                if (hasOrderGps) {
+                    setStatus('ok', 'Position GPS du client chargée — capture de votre position…');
+                } else {
                     setStatus('pending', 'Capture de votre position en cours… Autorisez l\'accès GPS.');
-                }).catch(function (err) {
-                    setStatus('error', err.message || 'Impossible de prendre cette livraison.');
-                });
+                }
                 return;
             }
             if (e.target.closest('[data-livreur-demarrage-close]')) {
@@ -859,8 +797,15 @@
             }
         });
 
-        var adresseInput = qs('livreur-demarrage-adresse');
         bindAddressAutocomplete();
+
+        var restoreBtn = qs('livreur-gps-restore');
+        if (restoreBtn) {
+            restoreBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                applyOrderOriginalGps({ resetAdresse: true });
+            });
+        }
 
         form.addEventListener('submit', onSubmit);
 

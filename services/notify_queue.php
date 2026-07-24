@@ -28,13 +28,15 @@ function notify_queue_ensure_dirs() {
 }
 
 /**
- * Enfile un job de notification et lance le worker CLI (non bloquant).
+ * Enfile un job de notification.
+ * Le worker / cron traite push FCM + emails ensuite (hors requête client).
  *
  * @param string $type Ex. nouvelle_commande | confirmation_client | nouvelle_cp | confirmation_cp
  * @param array $payload
+ * @param bool $spawn_worker Si true, tente de démarrer le worker immédiatement
  * @return array{success:bool, job_id:string|null, error:string|null}
  */
-function notify_queue_enqueue($type, array $payload) {
+function notify_queue_enqueue($type, array $payload, $spawn_worker = true) {
     if (!notify_queue_ensure_dirs()) {
         return ['success' => false, 'job_id' => null, 'error' => 'File notify indisponible'];
     }
@@ -53,7 +55,9 @@ function notify_queue_enqueue($type, array $payload) {
         return ['success' => false, 'job_id' => null, 'error' => 'Écriture job notify impossible'];
     }
 
-    notify_queue_spawn_worker();
+    if ($spawn_worker) {
+        notify_queue_spawn_worker();
+    }
     return ['success' => true, 'job_id' => $job_id, 'error' => null];
 }
 

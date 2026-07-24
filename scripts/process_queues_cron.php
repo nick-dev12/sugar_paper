@@ -24,8 +24,9 @@ if (isset($argv[1]) && is_numeric($argv[1])) {
     $email_limit = max(1, min(100, (int) $argv[1]));
 }
 
-// Notify legacy (anciens jobs) + emails async
-$result = notify_queue_process_jobs(10, $email_limit);
+// Notify (push FCM + emails liés) + emails async
+$result = notify_queue_process_jobs(25, $email_limit);
+
 
 echo json_encode([
     'ok' => true,

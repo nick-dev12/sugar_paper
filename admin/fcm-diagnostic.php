@@ -27,9 +27,17 @@ if ($admin_role !== 'admin') {
 $result_message = '';
 $result_type = '';
 
+if (!empty($_SESSION['notification_test_message'])) {
+    $result_message = (string) $_SESSION['notification_test_message'];
+    $result_type = (string) ($_SESSION['notification_test_type'] ?? 'success');
+    unset($_SESSION['notification_test_message'], $_SESSION['notification_test_type'], $_SESSION['notification_test_details']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'process_queues') {
+        @set_time_limit(180);
+        @ignore_user_abort(true);
         $stats = notify_queue_process_jobs(30, 30);
         $result_message = 'Files traitées — notify: ' . (int) $stats['notify']['processed']
             . ' job(s), email: ' . (int) ($stats['email']['sent'] ?? 0) . ' envoyé(s).';
@@ -43,6 +51,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $n = fcm_cleanup_orphan_admin_tokens();
         $result_message = $n . ' token(s) admin orphelin(s) supprimé(s).';
         $result_type = 'success';
+    } elseif ($action === 'test_push_all') {
+        require_once __DIR__ . '/../services/firebase_push.php';
+        @set_time_limit(180);
+        @ignore_user_abort(true);
+        $groups = get_fcm_admin_token_groups();
+        if (empty($groups)) {
+            $result_message = 'Aucun token — chaque admin/utilisateur doit activer les notifications sur son appareil.';
+            $result_type = 'error';
+        } else {
+            $push = firebase_send_notification_to_all_admins(
+                'Test Sugar Paper (diagnostic)',
+                'Envoi parallèle à tous les comptes admin/utilisateur avec token.',
+                ['link' => '/admin/fcm-diagnostic.php', 'tag' => 'diag-tous-' . time()]
+            );
+            $parts = [
+                (int) $push['admins_notified'] . '/' . (int) $push['admins_total'] . ' compte(s)',
+                (int) $push['success'] . ' appareil(s) OK',
+            ];
+            if ((int) ($push['failed'] ?? 0) > 0) {
+                $parts[] = (int) $push['failed'] . ' échec(s)';
+            }
+            $result_message = 'Test push : ' . implode(', ', $parts) . '.';
+            if (!empty($push['details'])) {
+                foreach ($push['details'] as $d) {
+                    $result_message .= "\n• #" . (int) $d['admin_id'] . ' ' . ($d['email'] ?? '')
+                        . ' → ' . (int) $d['success'] . '/' . (int) $d['tokens'];
+                }
+            }
+            if (!empty($push['errors'])) {
+                $result_message .= "\nErreurs: " . implode(' ; ', array_slice($push['errors'], 0, 5));
+            }
+            $result_type = ((int) ($push['success'] ?? 0) > 0) ? 'success' : 'error';
+        }
     }
 }
 
@@ -93,14 +134,14 @@ $worker_url = rtrim(get_site_base_url(), '/') . get_public_root_uri_path() . '/a
     <div class="content-header">
         <h1><i class="fas fa-bell"></i> Diagnostic notifications push</h1>
         <div class="header-actions">
-            <a href="test-notification.php?mode=tous" class="btn-primary btn-secondary-style"><i class="fas fa-paper-plane"></i> Test push tous</a>
+            <a href="test-notification.php?mode=tous&from=diag" class="btn-primary btn-secondary-style"><i class="fas fa-paper-plane"></i> Test push tous</a>
             <a href="dashboard.php" class="btn-primary btn-secondary-style"><i class="fas fa-arrow-left"></i> Dashboard</a>
         </div>
     </div>
 
     <?php if ($result_message): ?>
         <div class="alert-box message-<?php echo $result_type === 'success' ? 'success' : 'error'; ?>" style="margin-bottom:16px;">
-            <p><?php echo htmlspecialchars($result_message); ?></p>
+            <p style="white-space:pre-wrap;margin:0;"><?php echo htmlspecialchars($result_message); ?></p>
         </div>
     <?php endif; ?>
 
@@ -125,15 +166,19 @@ $worker_url = rtrim(get_site_base_url(), '/') . get_public_root_uri_path() . '/a
         <form method="POST"><input type="hidden" name="action" value="process_queues">
             <button type="submit" class="btn-primary"><i class="fas fa-play"></i> Traiter les files (notify + email)</button>
         </form>
+        <form method="POST"><input type="hidden" name="action" value="test_push_all">
+            <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-bell"></i> Tester push (tous les comptes)</button>
+        </form>
         <form method="POST"><input type="hidden" name="action" value="cleanup_orphans">
             <button type="submit" class="btn-primary btn-secondary-style"><i class="fas fa-broom"></i> Nettoyer tokens orphelins</button>
         </form>
     </div>
 
-    <h2 style="margin:0 0 12px;font-size:1.1rem;">Cron emails (production Webuzo)</h2>
+    <h2 style="margin:0 0 12px;font-size:1.1rem;">Cron files (production Webuzo)</h2>
     <p style="font-size:14px;color:#666;margin:0 0 8px;">
-        Après une commande : les <strong>push</strong> partent tout de suite, les <strong>emails</strong> sont mis en file
-        (<code>storage/email_queue/pending</code>) et traités par le cron ci-dessous (toutes les 1–2 min).
+        Après une commande : les <strong>push FCM</strong> et les <strong>emails</strong> sont mis en file
+        (<code>storage/notify_queue/pending</code> + <code>storage/email_queue/pending</code>)
+        puis traités par le cron ci-dessous (toutes les 1–2 min).
     </p>
     <p style="font-size:14px;color:#666;margin:0 0 8px;"><strong>Option A — CLI (recommandé) :</strong></p>
     <div class="fcm-diag-url">/usr/bin/php /home/jomas/public_html/scripts/process_queues_cron.php</div>

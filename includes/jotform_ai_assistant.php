@@ -16,8 +16,10 @@ $jotform_script_path = str_replace('\\', '/', $_SERVER['PHP_SELF'] ?? '');
 $jotform_request_uri = str_replace('\\', '/', $_SERVER['REQUEST_URI'] ?? '');
 $jotform_is_admin_area = (strpos($jotform_script_path, '/admin/') !== false)
     || (strpos($jotform_request_uri, '/admin/') !== false);
+$jotform_is_auth_page = (bool) preg_match('#/(user/)?(connexion|inscription)\.php#i', $jotform_script_path)
+    || (bool) preg_match('#/(user/)?(connexion|inscription)\.php#i', $jotform_request_uri);
 
-if ($jotform_is_admin_area) {
+if ($jotform_is_admin_area || $jotform_is_auth_page) {
     return;
 }
 

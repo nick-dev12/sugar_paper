@@ -55,6 +55,18 @@ $commande_success = isset($_GET['success']) && $_GET['success'] === '1';
 $commande_numero = isset($_GET['numero']) ? trim($_GET['numero']) : '';
 
 if ($commande_success && $commande_numero !== '') {
+    $social_config = [];
+    if (file_exists(__DIR__ . '/config/social.php')) {
+        $social_config = require __DIR__ . '/config/social.php';
+    }
+    $whatsapp_raw = $social_config['whatsapp'] ?? '221773292123';
+    $whatsapp_clean = preg_replace('/[^0-9]/', '', (string) $whatsapp_raw);
+    $whatsapp_url = $whatsapp_clean !== '' ? 'https://wa.me/' . $whatsapp_clean : 'https://wa.me/221773292123';
+    $whatsapp_display = '+221 77 329 2123';
+    if (strlen($whatsapp_clean) >= 12 && strpos($whatsapp_clean, '221') === 0) {
+        $whatsapp_display = '+221 ' . substr($whatsapp_clean, 3, 2) . ' ' . substr($whatsapp_clean, 5, 3) . ' ' . substr($whatsapp_clean, 8, 4);
+    }
+
     include 'nav_bar.php';
     ?>
 <!DOCTYPE html>
@@ -317,18 +329,24 @@ if ($commande_success && $commande_numero !== '') {
             gap: 8px;
             font-size: 1.05rem;
             font-weight: 700;
-            color: #918a44;
+            color: #25d366;
             text-decoration: none;
             letter-spacing: 0.02em;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(37, 211, 102, 0.1);
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
 
         .commande-success-contact__phone i {
-            font-size: 1rem;
-            color: #c26638;
+            font-size: 1.15rem;
+            color: #25d366;
         }
 
         .commande-success-contact__phone:hover {
-            color: #6b2f20;
+            color: #128c7e;
+            background: rgba(37, 211, 102, 0.18);
+            transform: translateY(-1px);
         }
 
         @media (max-width: 768px) {
@@ -531,10 +549,14 @@ if ($commande_success && $commande_numero !== '') {
             </div>
 
             <div class="commande-success-contact">
-                <p class="commande-success-contact__label">Une question ? Contactez Sugar Paper</p>
-                <a href="tel:+221773292123" class="commande-success-contact__phone">
-                    <i class="fas fa-phone-alt" aria-hidden="true"></i>
-                    +221 77 329 2123
+                <p class="commande-success-contact__label">Une question ? Contactez-nous sur WhatsApp</p>
+                <a href="<?php echo htmlspecialchars($whatsapp_url); ?>"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="commande-success-contact__phone"
+                   title="Contactez-nous sur WhatsApp">
+                    <i class="fab fa-whatsapp" aria-hidden="true"></i>
+                    <?php echo htmlspecialchars($whatsapp_display); ?>
                 </a>
             </div>
 

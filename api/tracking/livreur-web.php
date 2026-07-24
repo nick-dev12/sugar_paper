@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../../includes/session_user.php';
 /**
  * Suivi GPS web (livreur connecté via session admin)
- * POST JSON : action = start | stop | position
+ * POST JSON : action = start | stop | terminer | position | set_countdown
+ * - stop : pause le suivi GPS (sans clôturer la livraison)
+ * - terminer : clôture définitive (bouton Terminer uniquement)
  */
 session_start_persistent();
 header('Content-Type: application/json; charset=utf-8');
@@ -77,6 +79,19 @@ if ($action === 'set_countdown') {
 }
 
 if ($action === 'stop') {
+    /* Pause uniquement du suivi GPS — ne marque PAS la livraison comme terminée */
+    $result = livreur_stop_web_tracking($admin_id, $cmd_param, $bl_param);
+    if (empty($result['ok'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
+        exit;
+    }
+    echo json_encode(['success' => true, 'tracking_active' => false, 'terminee' => false], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'terminer') {
+    /* Clôture définitive : uniquement via le bouton Terminer */
     $result = livreur_terminer_livraison($admin_id, $cmd_param, $bl_param);
     if (empty($result['ok'])) {
         http_response_code(400);

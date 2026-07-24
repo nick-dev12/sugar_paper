@@ -2634,7 +2634,7 @@
         stopNativeDriverTracking()
             .catch(function () { return { success: false }; })
             .then(function () {
-                return callWebApi({ action: 'stop' });
+                return callWebApi({ action: 'terminer' });
             })
             .then(function () {
                 clearBackgroundTracking();

@@ -12,6 +12,9 @@ require_once __DIR__ . '/email_queue.php';
  * @return array{notify:array, email:array}
  */
 function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
+    @set_time_limit(180);
+    @ignore_user_abort(true);
+
     $result = [
         'notify' => ['processed' => 0, 'errors' => []],
         'email' => ['processed' => 0, 'sent' => 0, 'failed' => 0],
@@ -142,21 +145,26 @@ function notify_queue_trigger_http_worker() {
     if ($port === null) {
         $port = ($scheme === 'https') ? 443 : 80;
     }
+    if ($host === null || $host === '') {
+        return false;
+    }
 
     $errno = 0;
     $errstr = '';
+    // Timeout court : ne jamais ralentir la page commande si le worker HTTP est lent
     $fp = @fsockopen(
         ($scheme === 'https' ? 'ssl://' : '') . $host,
         (int) $port,
         $errno,
         $errstr,
-        3
+        0.8
     );
     if (!$fp) {
-        error_log('[notify_queue_trigger_http_worker] fsockopen failed: ' . $errstr);
+        // Silencieux : le cron minute rattrape les jobs
         return false;
     }
 
+    stream_set_timeout($fp, 1);
     $out = "GET {$url_path} HTTP/1.1\r\n";
     $out .= "Host: {$host}\r\n";
     $out .= "Connection: Close\r\n\r\n";

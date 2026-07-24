@@ -150,7 +150,7 @@ if (!empty($produits)) {
             unset($_SESSION['notification_test_message'], $_SESSION['notification_test_type']);
             ?>
             <div class="alert-box message-<?php echo htmlspecialchars($test_type); ?>" style="margin-bottom: 20px;">
-                <p><i class="fas fa-<?php echo $test_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                <p style="white-space:pre-wrap;margin:0;"><i class="fas fa-<?php echo $test_type === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
                     <?php echo htmlspecialchars($test_msg); ?></p>
             </div>
             <?php

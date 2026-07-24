@@ -457,10 +457,24 @@ foreach ($factures_liste as $facture_row) {
                 <input type="text" id="livreur-driver-position" readonly placeholder="Capture GPS en cours…">
             </div>
 
-            <div class="livreur-demarrage-field livreur-demarrage-field--address">
-                <label for="livreur-demarrage-adresse">Adresse du client (arrivée)</label>
+            <div class="livreur-demarrage-field livreur-demarrage-field--address" id="livreur-demarrage-address-wrap">
+                <label for="livreur-demarrage-adresse" id="livreur-demarrage-adresse-label">Adresse du client (arrivée)</label>
+
+                <div id="livreur-demarrage-gps-exact" class="livreur-demarrage-gps-exact" hidden>
+                    <div class="livreur-demarrage-gps-exact__badge">
+                        <i class="fas fa-location-crosshairs" aria-hidden="true"></i>
+                        Position GPS de la commande
+                    </div>
+                    <input type="text" id="livreur-client-gps-display" readonly value="" aria-label="Coordonnées GPS actuelles de l'arrivée">
+                    <div class="livreur-demarrage-gps-exact__actions">
+                        <button type="button" class="livreur-demarrage-gps-exact__restore" id="livreur-gps-restore" hidden>
+                            <i class="fas fa-undo" aria-hidden="true"></i> Remettre la position du client
+                        </button>
+                    </div>
+                </div>
+
                 <div class="livreur-address-autocomplete" id="livreur-address-autocomplete">
-                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Quartier, rue, ville…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
+                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Rechercher une adresse (quartier, rue, ville…)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
                     <ul id="livreur-address-suggest" class="livreur-address-suggest" role="listbox" hidden aria-label="Suggestions d'adresse"></ul>
                 </div>
             </div>

@@ -367,11 +367,14 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
         }
 
         .checkbox-group input[type="checkbox"] {
-            width: auto;
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
             margin: 0;
-            margin-top: 3px;
+            margin-top: 1px;
             cursor: pointer;
             accent-color: var(--couleur-dominante);
+            flex-shrink: 0;
         }
 
         .checkbox-group label {
@@ -594,7 +597,10 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     </script>
     <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
-    <?php include __DIR__ . '/../includes/social_floating.php'; ?>
+    <?php
+    $skip_jotform_ai_assistant = true;
+    include __DIR__ . '/../includes/social_floating.php';
+    ?>
 </body>
 
 </html>

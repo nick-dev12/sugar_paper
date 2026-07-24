@@ -1,12 +1,14 @@
 <?php
 /**
  * Dispatch post-commande :
- * - Push FCM : synchrone (premier plan)
- * - Emails SMTP : file d'attente async (cron / worker)
+ * Tout (push FCM + emails) part en file d'attente — le cron / worker traite ensuite.
+ * La réponse HTTP au client n'est plus bloquée par Firebase (~30s).
  */
 
+require_once __DIR__ . '/notify_queue.php';
+
 /**
- * Push immédiat + emails mis en file après commande classique.
+ * Enfile les notifications après commande classique.
  *
  * @param array<string, mixed> $result Retour de process_create_commande()
  */
@@ -15,20 +17,16 @@ function notifications_dispatch_after_commande(array $result) {
         return;
     }
 
-    // Push FCM uniquement — les emails partent en file async
-    @set_time_limit(45);
-
     if (!empty($result['email_data']) && is_array($result['email_data'])) {
         $d = $result['email_data'];
-        require_once __DIR__ . '/send_new_commande_to_admin.php';
-        send_new_commande_to_admin(
-            (string) ($d['numero_commande'] ?? $result['numero_commande'] ?? ''),
-            (float) ($d['montant_total'] ?? 0),
-            (int) ($d['nombre_articles'] ?? 0),
-            (string) ($d['telephone_livraison'] ?? ''),
-            (string) ($d['adresse_livraison'] ?? ''),
-            is_array($d['produits'] ?? null) ? $d['produits'] : []
-        );
+        notify_queue_enqueue('nouvelle_commande', [
+            'numero_commande' => (string) ($d['numero_commande'] ?? $result['numero_commande'] ?? ''),
+            'montant_total' => (float) ($d['montant_total'] ?? 0),
+            'nombre_articles' => (int) ($d['nombre_articles'] ?? 0),
+            'telephone_livraison' => (string) ($d['telephone_livraison'] ?? ''),
+            'adresse_livraison' => (string) ($d['adresse_livraison'] ?? ''),
+            'produits' => is_array($d['produits'] ?? null) ? $d['produits'] : [],
+        ], false);
     }
 
     if (empty($result['is_guest']) && !empty($result['numero_commande'])) {
@@ -41,21 +39,23 @@ function notifications_dispatch_after_commande(array $result) {
         }
         if ($user_id > 0) {
             require_once __DIR__ . '/../models/model_users.php';
-            require_once __DIR__ . '/send_commande_confirmation_to_client.php';
             $user = get_user_by_id($user_id);
             $client_email = trim($user['email'] ?? ($_SESSION['user_email'] ?? ''));
-            send_new_commande_confirmation_to_client(
-                $user_id,
-                (string) $result['numero_commande'],
-                (float) ($result['email_data']['montant_total'] ?? 0),
-                $client_email
-            );
+            notify_queue_enqueue('confirmation_client', [
+                'user_id' => $user_id,
+                'numero_commande' => (string) $result['numero_commande'],
+                'montant_total' => (float) ($result['email_data']['montant_total'] ?? 0),
+                'user_email' => $client_email,
+            ], false);
         }
     }
+
+    // Déclenche le worker une seule fois (non bloquant) — le cron rattrape sinon
+    notify_queue_spawn_worker();
 }
 
 /**
- * Push immédiat + emails mis en file après commande personnalisée.
+ * Enfile les notifications après commande personnalisée.
  *
  * @param array<string, mixed> $notify_data
  */
@@ -64,25 +64,23 @@ function notifications_dispatch_after_commande_personnalisee(array $notify_data)
         return;
     }
 
-    @set_time_limit(45);
-
-    require_once __DIR__ . '/send_commande_personnalisee_notification.php';
-
-    send_new_commande_personnalisee_to_admin(
-        (int) ($notify_data['commande_perso_id'] ?? 0),
-        (string) ($notify_data['nom'] ?? ''),
-        (string) ($notify_data['telephone'] ?? ''),
-        (string) ($notify_data['description'] ?? ''),
-        (string) ($notify_data['type_produit'] ?? ''),
-        (string) ($notify_data['quantite'] ?? '')
-    );
+    notify_queue_enqueue('nouvelle_cp', [
+        'commande_perso_id' => (int) ($notify_data['commande_perso_id'] ?? 0),
+        'nom' => (string) ($notify_data['nom'] ?? ''),
+        'telephone' => (string) ($notify_data['telephone'] ?? ''),
+        'description' => (string) ($notify_data['description'] ?? ''),
+        'type_produit' => (string) ($notify_data['type_produit'] ?? ''),
+        'quantite' => (string) ($notify_data['quantite'] ?? ''),
+    ], false);
 
     $uid = (int) ($notify_data['user_id'] ?? 0);
     if ($uid > 0) {
-        send_commande_personnalisee_confirmation_to_client(
-            $uid,
-            (int) ($notify_data['commande_perso_id'] ?? 0),
-            (string) ($notify_data['user_email'] ?? '')
-        );
+        notify_queue_enqueue('confirmation_cp', [
+            'user_id' => $uid,
+            'commande_perso_id' => (int) ($notify_data['commande_perso_id'] ?? 0),
+            'user_email' => (string) ($notify_data['user_email'] ?? ''),
+        ], false);
     }
+
+    notify_queue_spawn_worker();
 }
