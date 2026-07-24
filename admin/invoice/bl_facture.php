@@ -49,6 +49,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['marquer_facture_paye
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['marquer_facture_non_payee'])) {
+    $tok = (string) ($_POST['csrf_token'] ?? '');
+    if (!admin_can_bl_retours_b2b()) {
+        $_SESSION['flash_facture_error'] = 'Action non autorisée.';
+    } elseif ($tok === '' || !hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), $tok)) {
+        $_SESSION['flash_facture_error'] = 'Session expirée. Réessayez.';
+    } else {
+        $r = marquer_bl_facture_non_payee($bl_id);
+        if (!empty($r['ok'])) {
+            $_SESSION['success_message'] = 'Facture marquée comme non payée.';
+        } else {
+            $_SESSION['flash_facture_error'] = $r['error'] ?? 'Action impossible.';
+        }
+    }
+    header('Location: bl_facture.php?id=' . $bl_id);
+    exit;
+}
+
 $bl = get_bl_by_id($bl_id);
 if (!$bl) {
     header('Location: index.php?tab=facture');
@@ -161,8 +179,12 @@ $facture_est_payee = $bl_facture_payee;
 $facture_afficher_marquer_payee = admin_can_bl_retours_b2b()
     && bl_col_facture_payee_ok()
     && !$bl_facture_payee;
+$facture_afficher_marquer_non_payee = admin_can_bl_retours_b2b()
+    && bl_col_facture_payee_ok()
+    && $bl_facture_payee;
 $facture_csrf_token = (string) ($_SESSION['admin_csrf'] ?? '');
 $facture_marquer_payee_confirm = 'Confirmer le paiement ? Cette facture ne sera plus proposée dans les factures mensuelles groupées.';
+$facture_marquer_non_payee_confirm = 'Marquer cette facture comme non payée ? Elle pourra à nouveau apparaître dans les factures mensuelles groupées.';
 
 $facture_document_type_label = 'FACTURE';
 $facture_numero_affichage = bl_numero_document_affichage($bl);
@@ -170,9 +192,13 @@ $facture_recap_label_total = $tva_incl ? 'TOTAL TTC' : 'TOTAL';
 
 require_once __DIR__ . '/../../includes/site_url.php';
 $bl_facture_token = ensure_bl_facture_token($bl_id);
-$base_url = get_site_base_url();
+// Lien public = même hôte que la session admin (localhost ↔ localhost, prod ↔ prod)
+$base_url = get_request_origin_base_url();
+if ($base_url === '' || $base_url === 'http://' || $base_url === 'https://') {
+    $base_url = get_site_base_url();
+}
 if ($bl_facture_token) {
-    $facture_url = $base_url . '/facture-bl.php?token=' . rawurlencode($bl_facture_token);
+    $facture_url = rtrim($base_url, '/') . '/facture-bl.php?token=' . rawurlencode($bl_facture_token);
     $facture_share_url = $facture_url;
     $facture_share_title = 'Facture ' . $facture_numero_affichage;
     $facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . $facture_numero_affichage

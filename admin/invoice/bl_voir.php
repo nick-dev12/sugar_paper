@@ -49,6 +49,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['marquer_facture_paye
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['marquer_facture_non_payee'])) {
+    $tok = (string) ($_POST['csrf_token'] ?? '');
+    if ($tok === '' || !hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), $tok)) {
+        $_SESSION['bl_erreur'] = 'Session expirée. Réessayez.';
+    } else {
+        $r = marquer_bl_facture_non_payee($bl_id);
+        if (!empty($r['ok'])) {
+            $_SESSION['success_message'] = 'Facture marquée comme non payée.';
+        } else {
+            $_SESSION['bl_erreur'] = $r['error'] ?? 'Action impossible.';
+        }
+    }
+    header('Location: bl_voir.php?id=' . $bl_id);
+    exit;
+}
+
 $bl = get_bl_by_id($bl_id);
 if (!$bl) {
     header('Location: index.php?tab=facture');
@@ -63,7 +79,7 @@ $remise_pct = (float) ($bl['remise_globale_pct'] ?? 0);
 $total_ht = (float) ($bl['total_ht'] ?? 0);
 $tva_incl = bl_tva_columns_ok() && !empty($bl['tva_incluse']);
 $bl_est_archive = bl_est_archive($bl);
-$bl_peut_modifier = !$bl_est_archive && !bl_est_statut_verrouille($bl['statut'] ?? '') && ($bl['statut'] ?? 'brouillon') === 'brouillon';
+$bl_peut_modifier = !$bl_est_archive;
 $bl_tracking = livreur_bl_livraison_columns_ok() ? livreur_get_facture_tracking($bl_id) : false;
 $bl_livraison_suivable = $bl_tracking && !empty($bl_tracking['livreur_id']);
 $bl_livraison_statut = $bl_livraison_suivable ? livreur_facture_statut_livraison($bl_tracking) : '';
@@ -104,6 +120,14 @@ $can_desarchiver = admin_is_full_admin() && $bl_est_archive;
                 <input type="hidden" name="marquer_facture_payee" value="1">
                 <button type="submit" class="btn-secondary">
                     <i class="fas fa-check-circle"></i> Marquer comme payée
+                </button>
+            </form>
+            <?php elseif ($est_payee && bl_col_facture_payee_ok()): ?>
+            <form method="post" action="bl_voir.php?id=<?php echo (int) $bl_id; ?>" class="header-actions__form" onsubmit="return confirm('Marquer cette facture comme non payée ?');">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
+                <input type="hidden" name="marquer_facture_non_payee" value="1">
+                <button type="submit" class="btn-secondary">
+                    <i class="fas fa-undo"></i> Marquer comme non payée
                 </button>
             </form>
             <?php endif; ?>

@@ -22,10 +22,14 @@ require_once __DIR__ . '/site_url.php';
 require_once __DIR__ . '/fiscal_tva.php';
 $facture_est_payee = isset($facture_est_payee) ? (bool) $facture_est_payee : (!empty($facture['payee']));
 $facture_afficher_marquer_payee = !empty($facture_afficher_marquer_payee);
+$facture_afficher_marquer_non_payee = !empty($facture_afficher_marquer_non_payee);
 $facture_csrf_token = isset($facture_csrf_token) ? (string) $facture_csrf_token : '';
 $facture_marquer_payee_confirm = isset($facture_marquer_payee_confirm) && (string) $facture_marquer_payee_confirm !== ''
     ? (string) $facture_marquer_payee_confirm
     : 'Confirmer le paiement de cette facture ?';
+$facture_marquer_non_payee_confirm = isset($facture_marquer_non_payee_confirm) && (string) $facture_marquer_non_payee_confirm !== ''
+    ? (string) $facture_marquer_non_payee_confirm
+    : 'Marquer cette facture comme non payée ?';
 $facture_page_flash_success = isset($facture_page_flash_success) ? (string) $facture_page_flash_success : '';
 $facture_page_flash_error = isset($facture_page_flash_error) ? (string) $facture_page_flash_error : '';
 $facture_document_type_label = isset($facture_document_type_label) && (string) $facture_document_type_label !== ''
@@ -399,6 +403,24 @@ if ($facture_can_share && !function_exists('asset_version_query')) {
             background: #145214;
         }
 
+        .facture-actions .btn-marquer-non-paye {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #c26638;
+            background: #fff;
+            color: #c26638;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .facture-actions .btn-marquer-non-paye:hover {
+            background: rgba(194, 102, 56, 0.08);
+        }
+
         .facture-summary .facture-solde-paye-row {
             background: rgba(27, 94, 32, 0.12);
             color: #1b5e20;
@@ -622,6 +644,14 @@ if ($facture_can_share && !function_exists('asset_version_query')) {
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($facture_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
                     <button type="submit" name="marquer_facture_payee" value="1" class="btn-marquer-paye">
                         <i class="fas fa-check-circle" aria-hidden="true"></i> Marquer comme payée
+                    </button>
+                </form>
+            <?php elseif ($facture_afficher_marquer_non_payee): ?>
+                <form method="post" action="" class="facture-form-marquer-paye"
+                    onsubmit="return confirm(<?php echo json_encode($facture_marquer_non_payee_confirm, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($facture_csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                    <button type="submit" name="marquer_facture_non_payee" value="1" class="btn-marquer-non-paye">
+                        <i class="fas fa-undo" aria-hidden="true"></i> Marquer comme non payée
                     </button>
                 </form>
             <?php endif; ?>

@@ -10,12 +10,21 @@ if (!defined('NOTIFY_QUEUE_BASE_DIR')) {
 if (!defined('NOTIFY_QUEUE_PENDING_DIR')) {
     define('NOTIFY_QUEUE_PENDING_DIR', NOTIFY_QUEUE_BASE_DIR . '/pending');
 }
+if (!defined('NOTIFY_QUEUE_FAILED_DIR')) {
+    define('NOTIFY_QUEUE_FAILED_DIR', NOTIFY_QUEUE_BASE_DIR . '/failed');
+}
+if (!defined('NOTIFY_QUEUE_LOCK_FILE')) {
+    define('NOTIFY_QUEUE_LOCK_FILE', NOTIFY_QUEUE_BASE_DIR . '/worker.lock');
+}
+if (!defined('NOTIFY_QUEUE_MAX_ATTEMPTS')) {
+    define('NOTIFY_QUEUE_MAX_ATTEMPTS', 3);
+}
 
 /**
  * @return bool
  */
 function notify_queue_ensure_dirs() {
-    foreach ([NOTIFY_QUEUE_BASE_DIR, NOTIFY_QUEUE_PENDING_DIR] as $dir) {
+    foreach ([NOTIFY_QUEUE_BASE_DIR, NOTIFY_QUEUE_PENDING_DIR, NOTIFY_QUEUE_FAILED_DIR] as $dir) {
         if (is_dir($dir)) {
             continue;
         }
@@ -47,6 +56,7 @@ function notify_queue_enqueue($type, array $payload, $spawn_worker = true) {
         'type' => (string) $type,
         'payload' => $payload,
         'created_at' => time(),
+        'attempts' => 0,
     ];
 
     $path = NOTIFY_QUEUE_PENDING_DIR . '/' . $job_id . '.json';
@@ -62,11 +72,10 @@ function notify_queue_enqueue($type, array $payload, $spawn_worker = true) {
 }
 
 /**
- * Lance le worker (CLI puis HTTP si besoin)
+ * Lance le worker (CLI, HTTP, puis shutdown PHP en secours)
  */
 function notify_queue_spawn_worker() {
     $script = realpath(dirname(__DIR__) . '/scripts/process_notify_queue.php');
-    $spawned = false;
 
     if ($script !== false && is_readable($script)) {
         require_once __DIR__ . '/email_queue.php';
@@ -75,21 +84,101 @@ function notify_queue_spawn_worker() {
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             @pclose(@popen('start /B "" ' . $cmd . ' > NUL 2>&1', 'r'));
-            $spawned = true;
         } elseif (function_exists('exec') && !in_array('exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true)) {
             @exec($cmd . ' > /dev/null 2>&1 &');
-            $spawned = true;
         }
     }
 
     // Production : exec souvent désactivé → requête HTTP interne non bloquante
     require_once __DIR__ . '/notify_queue_worker.php';
     notify_queue_trigger_http_worker();
+
+    // Secours : traiter après la réponse HTTP (si le cron / HTTP échoue)
+    if (!defined('NOTIFY_QUEUE_SHUTDOWN_REGISTERED')) {
+        define('NOTIFY_QUEUE_SHUTDOWN_REGISTERED', true);
+        register_shutdown_function(static function () {
+            if (defined('NOTIFY_QUEUE_IN_WORKER') && NOTIFY_QUEUE_IN_WORKER) {
+                return;
+            }
+            @ignore_user_abort(true);
+            @set_time_limit(180);
+            if (function_exists('fastcgi_finish_request')) {
+                @fastcgi_finish_request();
+            }
+            require_once __DIR__ . '/notify_queue_worker.php';
+            notify_queue_process_jobs(8, 15);
+        });
+    }
+}
+
+/**
+ * Remet un job notify en pending après échec (retry)
+ *
+ * @param array $job
+ * @param string $reason
+ * @return bool
+ */
+function notify_queue_requeue_job(array $job, $reason = '') {
+    if (!notify_queue_ensure_dirs()) {
+        return false;
+    }
+    $attempts = (int) ($job['attempts'] ?? 0) + 1;
+    $job['attempts'] = $attempts;
+    $job['last_error'] = (string) $reason;
+    $job['last_attempt_at'] = time();
+
+    $id = !empty($job['id'])
+        ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $job['id'])
+        : ('nq_retry_' . time());
+    $job['id'] = $id;
+
+    if ($attempts >= NOTIFY_QUEUE_MAX_ATTEMPTS) {
+        $job['failed_at'] = time();
+        $job['fail_reason'] = (string) $reason;
+        $dest = NOTIFY_QUEUE_FAILED_DIR . '/' . $id . '.json';
+        $json = json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $json !== false && @file_put_contents($dest, $json, LOCK_EX) !== false;
+    }
+
+    $dest = NOTIFY_QUEUE_PENDING_DIR . '/' . $id . '.json';
+    $json = json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return $json !== false && @file_put_contents($dest, $json, LOCK_EX) !== false;
+}
+
+/**
+ * Remet tous les jobs notify failed en pending
+ * @return int
+ */
+function notify_queue_retry_failed() {
+    if (!notify_queue_ensure_dirs()) {
+        return 0;
+    }
+    $n = 0;
+    foreach (glob(NOTIFY_QUEUE_FAILED_DIR . '/*.json') ?: [] as $file) {
+        $raw = @file_get_contents($file);
+        $job = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($job)) {
+            @unlink($file);
+            continue;
+        }
+        $job['attempts'] = 0;
+        unset($job['failed_at'], $job['fail_reason'], $job['last_error']);
+        $id = !empty($job['id'])
+            ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $job['id'])
+            : ('nq_retry_' . time() . '_' . $n);
+        $job['id'] = $id;
+        $dest = NOTIFY_QUEUE_PENDING_DIR . '/' . $id . '.json';
+        $json = json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json !== false && @file_put_contents($dest, $json, LOCK_EX) !== false) {
+            @unlink($file);
+            $n++;
+        }
+    }
+    return $n;
 }
 
 /**
  * Ferme la réponse HTTP au client puis laisse le script PHP continuer (best-effort).
- * Sous Apache/WAMP, fastcgi_finish_request n'existe souvent pas.
  */
 function notifications_close_http_response() {
     ignore_user_abort(true);

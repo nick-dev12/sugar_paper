@@ -15,8 +15,12 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
     @set_time_limit(180);
     @ignore_user_abort(true);
 
+    if (!defined('NOTIFY_QUEUE_IN_WORKER')) {
+        define('NOTIFY_QUEUE_IN_WORKER', true);
+    }
+
     $result = [
-        'notify' => ['processed' => 0, 'errors' => []],
+        'notify' => ['processed' => 0, 'errors' => [], 'retried' => 0],
         'email' => ['processed' => 0, 'sent' => 0, 'failed' => 0],
     ];
 
@@ -24,6 +28,24 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
         $result['notify']['errors'][] = 'Dossiers notify indisponibles';
         return $result;
     }
+
+    // Verrou exclusif : évite double traitement (HTTP + shutdown + cron)
+    $lock_fp = @fopen(NOTIFY_QUEUE_LOCK_FILE, 'c+');
+    if ($lock_fp === false) {
+        $result['notify']['errors'][] = 'Impossible d\'ouvrir le verrou notify';
+        // On tente quand même les emails
+        $result['email'] = email_queue_process($email_limit);
+        return $result;
+    }
+    if (!flock($lock_fp, LOCK_EX | LOCK_NB)) {
+        fclose($lock_fp);
+        // Un autre worker tourne déjà — ne pas bloquer
+        return $result;
+    }
+
+    ftruncate($lock_fp, 0);
+    fwrite($lock_fp, (string) getmypid());
+    fflush($lock_fp);
 
     $files = glob(NOTIFY_QUEUE_PENDING_DIR . '/*.json') ?: [];
     usort($files, static function ($a, $b) {
@@ -36,15 +58,19 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
         }
 
         $raw = @file_get_contents($file);
-        @unlink($file);
         if ($raw === false || $raw === '') {
+            @unlink($file);
             continue;
         }
 
         $job = json_decode($raw, true);
         if (!is_array($job) || empty($job['type'])) {
+            @unlink($file);
             continue;
         }
+
+        // Retirer du pending seulement après lecture OK — en cas d'échec on ré-enfile
+        @unlink($file);
 
         $result['notify']['processed']++;
         $type = (string) $job['type'];
@@ -99,10 +125,17 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
                     $result['notify']['errors'][] = 'type inconnu: ' . $type;
             }
         } catch (Throwable $e) {
-            $result['notify']['errors'][] = $type . ': ' . $e->getMessage();
-            error_log('[notify_queue_process_jobs] ' . $e->getMessage());
+            $msg = $e->getMessage();
+            $result['notify']['errors'][] = $type . ': ' . $msg;
+            error_log('[notify_queue_process_jobs] ' . $msg);
+            if (notify_queue_requeue_job($job, $msg)) {
+                $result['notify']['retried']++;
+            }
         }
     }
+
+    flock($lock_fp, LOCK_UN);
+    fclose($lock_fp);
 
     $result['email'] = email_queue_process($email_limit);
     return $result;
@@ -139,6 +172,7 @@ function notify_queue_trigger_http_worker() {
     $base = rtrim(get_site_base_url(), '/');
     $path = get_public_root_uri_path();
     $url_path = ($path !== '' ? $path : '') . '/api/process_queues.php?key=' . urlencode($secret);
+    $full_url = $base . $url_path;
     $host = parse_url($base, PHP_URL_HOST);
     $scheme = parse_url($base, PHP_URL_SCHEME) ?: 'https';
     $port = parse_url($base, PHP_URL_PORT);
@@ -149,18 +183,46 @@ function notify_queue_trigger_http_worker() {
         return false;
     }
 
+    // 1) cURL non bloquant (meilleur sur Webuzo / HTTPS)
+    if (function_exists('curl_init')) {
+        $ch = curl_init($full_url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 1,
+            CURLOPT_CONNECTTIMEOUT => 1,
+            CURLOPT_NOSIGNAL => 1,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => 0,
+            CURLOPT_HTTPHEADER => ['Connection: Close'],
+        ]);
+        @curl_exec($ch);
+        @curl_close($ch);
+        return true;
+    }
+
+    // 2) Fallback fsockopen / stream_socket_client
     $errno = 0;
     $errstr = '';
-    // Timeout court : ne jamais ralentir la page commande si le worker HTTP est lent
-    $fp = @fsockopen(
-        ($scheme === 'https' ? 'ssl://' : '') . $host,
-        (int) $port,
+    $remote = ($scheme === 'https' ? 'ssl://' : '') . $host . ':' . (int) $port;
+    $ctx = null;
+    if ($scheme === 'https') {
+        $ctx = stream_context_create([
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true,
+            ],
+        ]);
+    }
+    $fp = @stream_socket_client(
+        $remote,
         $errno,
         $errstr,
-        0.8
+        1.0,
+        STREAM_CLIENT_CONNECT,
+        $ctx
     );
     if (!$fp) {
-        // Silencieux : le cron minute rattrape les jobs
         return false;
     }
 

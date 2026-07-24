@@ -147,3 +147,43 @@ function create_client_b2b($data) {
         return false;
     }
 }
+
+/**
+ * Met à jour la fiche client B2B (nom, téléphone, adresse) — synchronise page publique facture.
+ *
+ * @param int $client_id
+ * @param array $data
+ * @return bool
+ */
+function update_client_b2b_fiche($client_id, array $data)
+{
+    global $db;
+    $client_id = (int) $client_id;
+    if ($client_id <= 0) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE clients_b2b SET
+                raison_sociale = :raison_sociale,
+                nom_contact = :nom_contact,
+                prenom_contact = :prenom_contact,
+                telephone = :telephone,
+                adresse = :adresse,
+                email = :email
+            WHERE id = :id
+        ');
+        return $stmt->execute([
+            'raison_sociale' => trim((string) ($data['raison_sociale'] ?? '')),
+            'nom_contact' => trim((string) ($data['nom_contact'] ?? '')) !== '' ? trim((string) $data['nom_contact']) : null,
+            'prenom_contact' => trim((string) ($data['prenom_contact'] ?? '')) !== '' ? trim((string) $data['prenom_contact']) : null,
+            'telephone' => trim((string) ($data['telephone'] ?? '')) !== '' ? trim((string) $data['telephone']) : null,
+            'adresse' => trim((string) ($data['adresse'] ?? '')) !== '' ? trim((string) $data['adresse']) : null,
+            'email' => trim((string) ($data['email'] ?? '')) !== '' ? trim((string) $data['email']) : null,
+            'id' => $client_id,
+        ]);
+    } catch (PDOException $e) {
+        error_log('[update_client_b2b_fiche] ' . $e->getMessage());
+        return false;
+    }
+}

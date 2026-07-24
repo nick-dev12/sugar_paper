@@ -23,13 +23,7 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
     $base_url = get_site_base_url();
     $link = $base_url . '/admin/commandes/index.php';
 
-    // Envoi individuel à chaque admin éligible (admin + rôle utilisateur) et à tous ses appareils
-    firebase_send_notification_to_all_admins($title, $body, [
-        'link' => $link,
-        'numero_commande' => $numero_commande,
-        'tag' => 'nouvelle-commande-' . $numero_commande
-    ]);
-
+    // 1) Email d'abord (rapide à enfiler) — ne dépend pas du succès FCM
     notifications_ensure_mail_loaded();
     $admin_email = notifications_get_commande_admin_email();
     if ($admin_email !== '' && filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
@@ -91,4 +85,11 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
             'numero_commande' => $numero_commande,
         ]);
     }
+
+    // 2) Push FCM ensuite (parallèle, tous les admins éligibles)
+    firebase_send_notification_to_all_admins($title, $body, [
+        'link' => $link,
+        'numero_commande' => $numero_commande,
+        'tag' => 'nouvelle-commande-' . $numero_commande
+    ]);
 }

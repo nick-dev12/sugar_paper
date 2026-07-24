@@ -46,8 +46,8 @@ $client_nom = trim($_POST['client_nom'] ?? '');
 $client_prenom = '';
 $client_telephone = trim($_POST['client_telephone'] ?? '');
 $client_email = '';
-$adresse_client = '';
 $adresse_livraison = trim($_POST['adresse_livraison'] ?? '');
+$adresse_client = $adresse_livraison;
 $notes = trim($_POST['notes'] ?? '');
 $frais_livraison = (float) ($_POST['frais_livraison'] ?? 0);
 $remise_globale_pct = min(100, max(0, (float) str_replace(',', '.', $_POST['remise_globale_pct'] ?? '0')));
@@ -151,6 +151,16 @@ if (!$client) {
 } else {
     sync_client_b2b_type_bl_depuis_contact($client_telephone);
     $client = find_client_b2b_by_telephone($client_telephone) ?: $client;
+    $rs = trim($client_prenom . ' ' . $client_nom);
+    update_client_b2b_fiche((int) $client['id'], [
+        'raison_sociale' => $rs !== '' ? $rs : (string) ($client['raison_sociale'] ?? 'Client BL'),
+        'nom_contact' => $client_nom,
+        'prenom_contact' => $client_prenom,
+        'telephone' => $client_telephone,
+        'adresse' => $adresse_livraison,
+        'email' => $client_email,
+    ]);
+    $client = get_client_b2b_by_id((int) $client['id']) ?: $client;
 }
 
 $lignes = [];
@@ -201,7 +211,8 @@ $res = update_bl_complet(
 );
 
 if (!empty($res['success'])) {
-    $_SESSION['success_message'] = 'Facture ' . ($bl_exist['numero_bl'] ?? '') . ' mise à jour.';
+    ensure_bl_facture_token($bl_id);
+    $_SESSION['success_message'] = 'Facture ' . ($bl_exist['numero_bl'] ?? '') . ' mise à jour. La page publique affiche déjà les nouvelles données.';
     header('Location: ' . $redirect_voir);
     exit;
 }

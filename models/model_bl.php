@@ -534,6 +534,42 @@ function marquer_bl_facture_payee($bl_id)
 }
 
 /**
+ * Annule le marquage « payée » d'une facture BL (réapparait dans les factures mensuelles groupées).
+ *
+ * @return array{ok:bool,error?:string}
+ */
+function marquer_bl_facture_non_payee($bl_id)
+{
+    global $db;
+    $bl_id = (int) $bl_id;
+    if ($bl_id <= 0 || !bl_col_facture_payee_ok()) {
+        return ['ok' => false, 'error' => 'Opération indisponible (migration requise).'];
+    }
+    $bl = get_bl_by_id($bl_id);
+    if (!$bl) {
+        return ['ok' => false, 'error' => 'Bon de livraison introuvable.'];
+    }
+    if (!bl_est_facture_payee($bl)) {
+        return ['ok' => false, 'error' => 'Cette facture n’est pas marquée comme payée.'];
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE bons_livraison
+            SET facture_bl_payee = 0, date_paiement_bl = NULL, date_modification = NOW()
+            WHERE id = :id AND COALESCE(facture_bl_payee, 0) = 1
+        ');
+        $stmt->execute(['id' => $bl_id]);
+        if ($stmt->rowCount() < 1) {
+            return ['ok' => false, 'error' => 'Impossible d’annuler le paiement.'];
+        }
+        return ['ok' => true];
+    } catch (PDOException $e) {
+        error_log('[marquer_bl_facture_non_payee] ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Erreur lors de l’annulation du paiement.'];
+    }
+}
+
+/**
  * Aligne l’ENUM sur brouillon + valide et fusionne l’ancien « paye » vers « valide » si besoin.
  * @return bool
  */
@@ -1312,7 +1348,7 @@ function delete_bl_ligne($ligne_id, $bl_id) {
     }
 }
 
-function replace_bl_lignes($bl_id, $lignes) {
+function replace_bl_lignes($bl_id, $lignes, $allow_locked = false) {
     global $db;
     if (!bl_tables_available()) {
         return ['success' => false, 'message' => 'Tables BL absentes.'];
@@ -1322,7 +1358,7 @@ function replace_bl_lignes($bl_id, $lignes) {
     if (!$bl) {
         return ['success' => false, 'message' => 'BL introuvable.'];
     }
-    if (bl_est_statut_verrouille($bl['statut'] ?? '')) {
+    if (!$allow_locked && bl_est_statut_verrouille($bl['statut'] ?? '')) {
         return ['success' => false, 'message' => 'BL validé : modification des lignes impossible.'];
     }
     $clean = [];
@@ -1377,13 +1413,13 @@ function replace_bl_lignes($bl_id, $lignes) {
     }
 }
 
-function update_bl_entete($bl_id, $date_bl, $notes, $adresse_client = null) {
+function update_bl_entete($bl_id, $date_bl, $notes, $adresse_client = null, $allow_locked = false) {
     global $db;
     if (!bl_tables_available()) {
         return false;
     }
     $bl = get_bl_by_id($bl_id);
-    if ($bl && bl_est_statut_verrouille($bl['statut'] ?? '')) {
+    if ($bl && !$allow_locked && bl_est_statut_verrouille($bl['statut'] ?? '')) {
         return false;
     }
     $ac = trim((string) ($adresse_client ?? ''));
@@ -1484,6 +1520,7 @@ function bl_update_tva_incluse($bl_id, $tva_incluse)
 
 /**
  * Mise à jour complète d'un BL (même périmètre que create_bl_manuel / formulaire modal).
+ * Autorise aussi les corrections après validation pour synchroniser la page publique.
  *
  * @return array{success:bool,message?:string}
  */
@@ -1498,19 +1535,23 @@ function update_bl_complet($bl_id, $client_b2b_id, $date_bl, $notes, $lignes, $s
     if (!$bl) {
         return ['success' => false, 'message' => 'BL introuvable.'];
     }
-    if (bl_est_statut_verrouille($bl['statut'] ?? '')) {
-        return ['success' => false, 'message' => 'Ce bon est validé : modification impossible.'];
+    if (function_exists('bl_est_archive') && bl_est_archive($bl)) {
+        return ['success' => false, 'message' => 'Facture archivée : modification impossible.'];
     }
     if (!in_array($statut, ['brouillon', 'valide'], true)) {
         $statut = 'brouillon';
     }
+    // Une facture déjà validée reste validée (évite de la repasser en brouillon par erreur)
+    if (bl_est_statut_verrouille($bl['statut'] ?? '')) {
+        $statut = 'valide';
+    }
 
-    $res_lignes = replace_bl_lignes($bl_id, $lignes);
+    $res_lignes = replace_bl_lignes($bl_id, $lignes, true);
     if (empty($res_lignes['success'])) {
         return ['success' => false, 'message' => $res_lignes['message'] ?? 'Erreur lignes.'];
     }
 
-    update_bl_entete($bl_id, $date_bl, $notes, $adresse_client);
+    update_bl_entete($bl_id, $date_bl, $notes, $adresse_client, true);
     bl_update_tva_incluse($bl_id, (bool) $tva_incluse);
     bl_recalc_total_ht($bl_id, $remise_globale_pct);
 

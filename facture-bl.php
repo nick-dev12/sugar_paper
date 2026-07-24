@@ -2,7 +2,12 @@
 /**
  * Affichage public d'une facture B2B (bon de livraison) — accès par token.
  * URL: /facture-bl.php?token=xxx
+ * Toujours lu depuis la BDD (pas de cache) pour rester synchronisé après modification.
  */
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 $token = isset($_GET['token']) ? trim((string) $_GET['token']) : '';
 if ($token === '') {
     header('HTTP/1.0 404 Not Found');

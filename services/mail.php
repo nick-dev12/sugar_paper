@@ -57,6 +57,7 @@ function mail_create_instance() {
             if ($mail->SMTPAuth) {
                 $mail->Username   = $smtp['username'] ?? '';
                 $mail->Password   = $smtp['password'] ?? '';
+                $mail->AuthType   = $smtp['auth_type'] ?? 'LOGIN';
             }
             $enc = $smtp['encryption'] ?? 'tls';
             if ($enc === 'ssl') {

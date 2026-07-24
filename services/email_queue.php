@@ -241,3 +241,66 @@ function email_queue_mark_failed($job, $source_file, $reason) {
     }
     @unlink($source_file);
 }
+
+/**
+ * Remet les emails en échec dans la file pending (après correction SMTP)
+ * @return int Nombre de jobs remis en file
+ */
+function email_queue_retry_failed() {
+    if (!email_queue_ensure_dirs()) {
+        return 0;
+    }
+    $n = 0;
+    foreach (glob(EMAIL_QUEUE_FAILED_DIR . '/*.json') ?: [] as $file) {
+        $raw = @file_get_contents($file);
+        $job = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($job) || empty($job['to'])) {
+            @unlink($file);
+            continue;
+        }
+        $job['attempts'] = 0;
+        unset($job['failed_at'], $job['fail_reason'], $job['last_error'], $job['last_attempt_at']);
+        $id = !empty($job['id'])
+            ? preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $job['id'])
+            : ('eq_retry_' . time() . '_' . $n);
+        $job['id'] = $id;
+        $dest = EMAIL_QUEUE_PENDING_DIR . '/' . $id . '.json';
+        $json = json_encode($job, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json !== false && @file_put_contents($dest, $json, LOCK_EX) !== false) {
+            @unlink($file);
+            $n++;
+        }
+    }
+    return $n;
+}
+
+/**
+ * Résumé des derniers échecs email (pour diagnostic admin)
+ * @param int $limit
+ * @return array<int, array{to:string,subject:string,error:string,failed_at:string}>
+ */
+function email_queue_list_failed($limit = 10) {
+    if (!email_queue_ensure_dirs()) {
+        return [];
+    }
+    $files = glob(EMAIL_QUEUE_FAILED_DIR . '/*.json') ?: [];
+    usort($files, static function ($a, $b) {
+        return filemtime($b) <=> filemtime($a);
+    });
+    $out = [];
+    foreach (array_slice($files, 0, max(1, (int) $limit)) as $file) {
+        $raw = @file_get_contents($file);
+        $job = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($job)) {
+            continue;
+        }
+        $ts = (int) ($job['failed_at'] ?? $job['last_attempt_at'] ?? filemtime($file));
+        $out[] = [
+            'to' => (string) ($job['to'] ?? ''),
+            'subject' => (string) ($job['subject'] ?? ''),
+            'error' => (string) ($job['fail_reason'] ?? $job['last_error'] ?? 'Erreur inconnue'),
+            'failed_at' => $ts > 0 ? date('Y-m-d H:i:s', $ts) : '',
+        ];
+    }
+    return $out;
+}

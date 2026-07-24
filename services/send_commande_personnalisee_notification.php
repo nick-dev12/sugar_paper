@@ -32,16 +32,15 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
     $base_url = get_site_base_url();
     $link = $base_url . '/admin/commandes-personnalisees/details.php?id=' . $cp_id;
 
-    // Envoi individuel à chaque admin éligible (admin + rôle utilisateur) et à tous ses appareils
-    firebase_send_notification_to_all_admins($title, $body, [
-        'link' => $link,
-        'commande_perso_id' => (string) $cp_id,
-        'tag' => 'nouvelle-cp-' . $cp_id
-    ]);
-
     notifications_ensure_mail_loaded();
     $admin_email = notifications_get_commande_admin_email();
     if ($admin_email === '' || !filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
+        // Push quand même même sans email admin configuré
+        firebase_send_notification_to_all_admins($title, $body, [
+            'link' => $link,
+            'commande_perso_id' => (string) $cp_id,
+            'tag' => 'nouvelle-cp-' . $cp_id
+        ]);
         return;
     }
 
@@ -70,6 +69,13 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
     notifications_mail_send($admin_email, $sujet, $body_html, true, [
         'type' => 'nouvelle_commande_personnalisee',
         'commande_perso_id' => $cp_id,
+    ]);
+
+    // Push après mise en file de l'email
+    firebase_send_notification_to_all_admins($title, $body, [
+        'link' => $link,
+        'commande_perso_id' => (string) $cp_id,
+        'tag' => 'nouvelle-cp-' . $cp_id
     ]);
 }
 
