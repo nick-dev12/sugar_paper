@@ -1,42 +1,80 @@
 <?php
 require_once __DIR__ . '/../../includes/session_user.php';
 /**
- * Page de liste des commandes non traitées (Admin)
- * Programmation procédurale uniquement
+ * Page de liste des commandes (Admin) — onglets : à traiter / livrées / annulées
  */
 
 session_start_persistent();
 
-// Vérifier si l'admin est connecté
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
     exit;
 }
 
-// Récupérer toutes les commandes
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
-$toutes_commandes = get_all_commandes();
+
+$commandes_archive_mode = !empty($COMMANDES_ARCHIVE_MODE);
+$commandes_archive_sql_mode = $commandes_archive_mode ? 'archived' : 'active';
+if ($commandes_archive_mode && !admin_is_full_admin()) {
+    header('Location: index.php');
+    exit;
+}
+$commandes_hub_self = $commandes_archive_mode ? 'archives.php' : 'index.php';
+
+$toutes_commandes = get_all_commandes(null, $commandes_archive_sql_mode);
+if (!is_array($toutes_commandes)) {
+    $toutes_commandes = [];
+}
 $zones_livraison = get_all_zones_livraison('actif');
 
-$show_modal_commande_manuelle = isset($_GET['modal']) && $_GET['modal'] === 'commande_manuelle';
+$show_modal_commande_manuelle = !$commandes_archive_mode && isset($_GET['modal']) && $_GET['modal'] === 'commande_manuelle';
 $commande_manuelle_erreur = $_SESSION['commande_manuelle_erreur'] ?? null;
 $commande_manuelle_post = $_SESSION['commande_manuelle_post'] ?? null;
 if (isset($_SESSION['commande_manuelle_erreur'])) unset($_SESSION['commande_manuelle_erreur']);
 if (isset($_SESSION['commande_manuelle_post'])) unset($_SESSION['commande_manuelle_post']);
 
-// Filtrer pour exclure les commandes avec le statut "livree", "paye" et "annulee" (commandes non traitées)
-// Afficher toutes les commandes non traitées (du jour et des jours précédents)
-$commandes = array_filter($toutes_commandes, function($commande) {
-    return $commande['statut'] !== 'livree' && $commande['statut'] !== 'paye' && $commande['statut'] !== 'annulee';
-});
+$tab_param = isset($_GET['tab']) ? (string) $_GET['tab'] : 'a_traiter';
+if (!in_array($tab_param, ['a_traiter', 'livrees', 'annulees'], true)) {
+    $tab_param = 'a_traiter';
+}
+$active_tab = $tab_param;
 
-// Statistiques
-$total_commandes = count_commandes_by_statut();
-$en_attente = count_commandes_by_statut('en_attente');
+$commandes_a_traiter = array_values(array_filter($toutes_commandes, function ($commande) {
+    return !in_array($commande['statut'] ?? '', ['livree', 'paye', 'annulee'], true);
+}));
 
-// Comptabilité : montant total des commandes à traiter
-$montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
+$commandes_livrees = array_values(array_filter($toutes_commandes, function ($commande) {
+    return in_array($commande['statut'] ?? '', ['livree', 'paye'], true);
+}));
+
+$jours_precedents = isset($_GET['jours_precedents']) && $_GET['jours_precedents'] === '1';
+$commandes_livrees_affichees = $commandes_livrees;
+if ($active_tab === 'livrees' && !$jours_precedents && !$commandes_archive_mode) {
+    $aujourd_hui = date('Y-m-d');
+    $commandes_livrees_affichees = array_values(array_filter($commandes_livrees, function ($c) use ($aujourd_hui) {
+        $date_ref = !empty($c['date_livraison']) ? $c['date_livraison'] : ($c['date_commande'] ?? '');
+        if ($date_ref === '') {
+            return false;
+        }
+        return date('Y-m-d', strtotime($date_ref)) === $aujourd_hui;
+    }));
+}
+
+$commandes_annulees = array_values(array_filter($toutes_commandes, function ($commande) {
+    return ($commande['statut'] ?? '') === 'annulee';
+}));
+
+$count_a_traiter = count($commandes_a_traiter);
+$count_livrees = count($commandes_livrees);
+$count_annulees = count($commandes_annulees);
+
+$total_commandes = count_commandes_by_statut(null, $commandes_archive_sql_mode);
+$en_attente = count_commandes_by_statut('en_attente', $commandes_archive_sql_mode);
+$montant_total_a_traiter = array_sum(array_column($commandes_a_traiter, 'montant_total'));
+$montant_total_livrees = get_montant_total_commandes('livree', $commandes_archive_sql_mode) + get_montant_total_commandes('paye', $commandes_archive_sql_mode);
+$montant_total_annulees = get_montant_total_commandes('annulee', $commandes_archive_sql_mode);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -45,20 +83,31 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Commandes Non Traitées - Administration</title>
+    <title><?php echo $commandes_archive_mode ? 'Archives commandes' : 'Commandes'; ?> - Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-invoice-onglets.css<?php echo asset_version_query(); ?>">
 </head>
 
-<body class="page-commandes-index">
+<body class="page-commandes-index<?php echo $commandes_archive_mode ? ' page-commandes-archives' : ''; ?>">
     <?php include '../includes/nav.php'; ?>
 
     <div class="content-header">
-        <h1><i class="fas fa-shopping-bag"></i> Commandes Non Traitées</h1>
+        <h1>
+            <i class="fas <?php echo $commandes_archive_mode ? 'fa-box-archive' : 'fa-shopping-bag'; ?>"></i>
+            <?php echo $commandes_archive_mode ? 'Archives des commandes' : 'Commandes'; ?>
+        </h1>
         <div class="header-actions">
-            <?php if (($_SESSION['admin_role'] ?? '') === 'admin'): ?>
+            <?php if (admin_is_full_admin()): ?>
+                <?php if ($commandes_archive_mode): ?>
+                <a href="index.php" class="btn-secondary"><i class="fas fa-shopping-bag"></i> Commandes actives</a>
+                <?php else: ?>
+                <a href="archives.php" class="btn-secondary"><i class="fas fa-box-archive"></i> Archives</a>
+                <?php endif; ?>
+            <?php endif; ?>
+            <?php if (($_SESSION['admin_role'] ?? '') === 'admin' && !$commandes_archive_mode): ?>
             <a href="historique-ventes.php" class="btn-primary">
                 <i class="fas fa-chart-line"></i> Historique des ventes & Comptabilité
             </a>
@@ -72,8 +121,35 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         <span><?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?></span>
     </div>
     <?php endif; ?>
+    <?php if (isset($_SESSION['error_message'])): ?>
+    <div class="message error">
+        <i class="fas fa-exclamation-circle"></i>
+        <span><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></span>
+    </div>
+    <?php endif; ?>
 
-    <!-- Statistiques -->
+    <div class="admin-devis-bl-tabs commandes-hub-tabs" role="tablist" aria-label="Statuts des commandes">
+        <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=a_traiter"
+            class="admin-tab <?php echo $active_tab === 'a_traiter' ? 'is-active' : ''; ?>"
+            role="tab" aria-selected="<?php echo $active_tab === 'a_traiter' ? 'true' : 'false'; ?>">
+            <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-inbox"></i></span>
+            <span class="admin-tab__txt">Reçues / non traitées (<?php echo (int) $count_a_traiter; ?>)</span>
+        </a>
+        <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees<?php echo $jours_precedents ? '&amp;jours_precedents=1' : ''; ?>"
+            class="admin-tab <?php echo $active_tab === 'livrees' ? 'is-active' : ''; ?>"
+            role="tab" aria-selected="<?php echo $active_tab === 'livrees' ? 'true' : 'false'; ?>">
+            <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-check-circle"></i></span>
+            <span class="admin-tab__txt">Livrées (<?php echo (int) $count_livrees; ?>)</span>
+        </a>
+        <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=annulees"
+            class="admin-tab <?php echo $active_tab === 'annulees' ? 'is-active' : ''; ?>"
+            role="tab" aria-selected="<?php echo $active_tab === 'annulees' ? 'true' : 'false'; ?>">
+            <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-ban"></i></span>
+            <span class="admin-tab__txt">Annulées (<?php echo (int) $count_annulees; ?>)</span>
+        </a>
+    </div>
+
+    <?php if ($active_tab === 'a_traiter'): ?>
     <div class="commandes-stats commandes-stats--compact">
         <div class="stat-box">
             <h3>Total Commandes</h3>
@@ -84,38 +160,31 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
             <div class="stat-value"><?php echo $en_attente; ?></div>
         </div>
     </div>
-
-    <!-- Comptabilité -->
     <div class="comptabilite-box">
         <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes à traiter</div>
         <div class="comptabilite-value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</div>
     </div>
 
-    <!-- Liste des commandes -->
     <section class="content-section">
         <div class="section-header">
             <div class="section-title">
-                <h2><i class="fas fa-list"></i> Commandes à Traiter (<?php echo count($commandes); ?>)</h2>
+                <h2><i class="fas fa-list"></i> Commandes à traiter (<?php echo count($commandes_a_traiter); ?>)</h2>
             </div>
+            <?php if (!$commandes_archive_mode): ?>
             <div class="form-actions commandes-section-actions">
                 <button type="button" class="btn-primary" id="btn-commande-manuelle"
                     aria-label="Ajouter une commande manuellement">
                     <i class="fas fa-plus-circle"></i> Ajouter une commande
                 </button>
-                <a href="livrees.php" class="btn-link">
-                    <i class="fas fa-check-circle"></i> Voir les commandes livrées
-                </a>
-                <a href="annulees.php" class="btn-link btn-danger">
-                    <i class="fas fa-ban"></i> Voir les commandes annulées
-                </a>
             </div>
+            <?php endif; ?>
         </div>
 
-        <?php if (empty($commandes)): ?>
+        <?php if (empty($commandes_a_traiter)): ?>
         <div class="empty-state">
             <i class="fas fa-shopping-bag"></i>
             <h3>Aucune commande à traiter</h3>
-            <p>Toutes les commandes ont été traitées et livrées.</p>
+            <p><?php echo $commandes_archive_mode ? 'Aucune commande archivée dans cette catégorie.' : 'Toutes les commandes ont été traitées et livrées.'; ?></p>
         </div>
         <?php else: ?>
         <div class="commandes-table-wrap">
@@ -133,7 +202,7 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($commandes as $commande): ?>
+                    <?php foreach ($commandes_a_traiter as $commande): ?>
                     <?php
                     $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? '')) ?: '—';
                     $telephone_aff = trim($commande['telephone_livraison'] ?? '') ?: '—';
@@ -161,6 +230,145 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
         <?php endif; ?>
     </section>
 
+    <?php elseif ($active_tab === 'livrees'): ?>
+    <div class="commandes-stats commandes-stats--compact">
+        <div class="stat-box">
+            <h3>Total Commandes</h3>
+            <div class="stat-value"><?php echo $total_commandes; ?></div>
+        </div>
+        <div class="stat-box">
+            <h3>Commandes Livrées</h3>
+            <div class="stat-value"><?php echo $count_livrees; ?></div>
+        </div>
+    </div>
+    <div class="comptabilite-box">
+        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes livrées</div>
+        <div class="comptabilite-value"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?> FCFA</div>
+    </div>
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-title">
+                <h2><i class="fas fa-check-circle"></i> Commandes livrées (<?php echo count($commandes_livrees_affichees); ?>)</h2>
+            </div>
+            <?php if (!$commandes_archive_mode): ?>
+            <div class="form-actions">
+                <?php if ($jours_precedents): ?>
+                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees" class="btn-link">
+                    <i class="fas fa-calendar-day"></i> Uniquement aujourd'hui
+                </a>
+                <?php else: ?>
+                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees&amp;jours_precedents=1" class="btn-link">
+                    <i class="fas fa-calendar-alt"></i> Inclure les jours précédents
+                </a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php if (empty($commandes_livrees_affichees)): ?>
+        <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            <h3>Aucune commande livrée</h3>
+            <p><?php echo (!$jours_precedents && !$commandes_archive_mode) ? 'Aucune livraison aujourd\'hui.' : 'Aucune commande livrée dans cette liste.'; ?></p>
+        </div>
+        <?php else: ?>
+        <div class="commandes-grid">
+            <?php foreach ($commandes_livrees_affichees as $commande): ?>
+            <div class="commande-item">
+                <div class="commande-header">
+                    <div class="commande-info">
+                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
+                        <p>
+                            <strong>Client:</strong>
+                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
+                            <span class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
+                        </p>
+                        <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
+                    </div>
+                    <span class="commande-statut statut-<?php echo htmlspecialchars($commande['statut']); ?>">
+                        <?php echo $commande['statut'] === 'paye' ? '<i class="fas fa-money-bill-wave"></i> Payée' : '<i class="fas fa-check-circle"></i> Livrée'; ?>
+                    </span>
+                </div>
+                <div class="commande-details">
+                    <div class="detail-item">
+                        <label>Montant total</label>
+                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Adresse</label>
+                        <div class="value small"><?php echo htmlspecialchars(substr((string) ($commande['adresse_livraison'] ?? ''), 0, 40)); ?></div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Téléphone</label>
+                        <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison'] ?? ''); ?></div>
+                    </div>
+                </div>
+                <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
+                    <i class="fas fa-eye"></i> Voir les détails
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </section>
+
+    <?php else: ?>
+    <div class="commandes-stats commandes-stats--compact">
+        <div class="stat-box">
+            <h3>Total Commandes</h3>
+            <div class="stat-value"><?php echo $total_commandes; ?></div>
+        </div>
+        <div class="stat-box">
+            <h3>Commandes Annulées</h3>
+            <div class="stat-value"><?php echo $count_annulees; ?></div>
+        </div>
+    </div>
+    <div class="comptabilite-box">
+        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes annulées</div>
+        <div class="comptabilite-value"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?> FCFA</div>
+    </div>
+    <section class="content-section">
+        <div class="section-header">
+            <div class="section-title">
+                <h2><i class="fas fa-ban"></i> Commandes annulées (<?php echo count($commandes_annulees); ?>)</h2>
+            </div>
+        </div>
+        <?php if (empty($commandes_annulees)): ?>
+        <div class="empty-state">
+            <i class="fas fa-ban"></i>
+            <h3>Aucune commande annulée</h3>
+        </div>
+        <?php else: ?>
+        <div class="commandes-grid">
+            <?php foreach ($commandes_annulees as $commande): ?>
+            <div class="commande-item">
+                <div class="commande-header">
+                    <div class="commande-info">
+                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
+                        <p>
+                            <strong>Client:</strong>
+                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?>
+                        </p>
+                        <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
+                    </div>
+                    <span class="commande-statut statut-annulee"><i class="fas fa-ban"></i> Annulée</span>
+                </div>
+                <div class="commande-details">
+                    <div class="detail-item">
+                        <label>Montant total</label>
+                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+                    </div>
+                </div>
+                <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
+                    <i class="fas fa-eye"></i> Voir les détails
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
+<?php if (!$commandes_archive_mode): ?>
     <!-- Modal commande manuelle (plein écran) -->
     <div id="modal-commande-manuelle"
         class="modal-commande-manuelle <?php echo $show_modal_commande_manuelle ? 'modal-open' : ''; ?>" role="dialog"
@@ -685,3 +893,4 @@ $montant_total_a_traiter = array_sum(array_column($commandes, 'montant_total'));
 </body>
 
 </html>
+<?php endif; ?>

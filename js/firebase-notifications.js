@@ -7,13 +7,23 @@
     var LOG = '[FCM]';
     var FCM_SW_PATH = window.FCM_SW_PATH || '/firebase-messaging-sw.js';
     var FCM_ICON_PATH = window.FCM_ICON_PATH || '/icons/icon-192.png';
-    var FCM_STORAGE_KEY = 'sugar_paper_fcm_enabled';
+    var FCM_STORAGE_PREFIX = 'sugar_paper_fcm_enabled_';
     var FCM_RESET_KEY = 'sugar_paper_fcm_force_reset';
     var PERMISSION_TIMEOUT_MS = 12000;
     var TOKEN_TIMEOUT_MS = 20000;
     var NATIVE_APP_MOBILE_MAX_WIDTH = 1024;
     var _activationInProgress = false;
     var _fcmRegistration = null;
+
+    function getAccountStorageKey() {
+        var key = window.FCM_ACCOUNT_KEY || '';
+        if (!key || key === 'admin_0' || key === 'user_0') {
+            var type = window.FIREBASE_NOTIFY_TYPE || 'user';
+            var id = parseInt(window.FCM_ACCOUNT_ID, 10) || 0;
+            key = type + '_' + id;
+        }
+        return FCM_STORAGE_PREFIX + key;
+    }
 
     function isSugarPaperNativeApp() {
         if (window.__SUGARPAPER_NATIVE_APP === true) {
@@ -103,13 +113,13 @@
 
     function markEnabled() {
         try {
-            localStorage.setItem(FCM_STORAGE_KEY, '1');
+            localStorage.setItem(getAccountStorageKey(), '1');
         } catch (e) { /* ignore */ }
     }
 
     function isMarkedEnabled() {
         try {
-            return localStorage.getItem(FCM_STORAGE_KEY) === '1';
+            return localStorage.getItem(getAccountStorageKey()) === '1';
         } catch (e) {
             return false;
         }
@@ -117,7 +127,7 @@
 
     function clearEnabledMark() {
         try {
-            localStorage.removeItem(FCM_STORAGE_KEY);
+            localStorage.removeItem(getAccountStorageKey());
         } catch (e) { /* ignore */ }
     }
 
@@ -386,10 +396,12 @@
     }
 
     function saveToken(token, type) {
-        log('Envoi du token au serveur…', type);
+        log('Envoi du token au serveur…', type, 'account=', window.FCM_ACCOUNT_ID);
         var formData = new FormData();
         formData.append('token', token);
         formData.append('type', type);
+        formData.append('page_context', window.location.pathname || '');
+        formData.append('account_id', String(window.FCM_ACCOUNT_ID || 0));
         return fetch('/api/save_fcm_token.php', {
             method: 'POST',
             body: formData,
@@ -398,13 +410,34 @@
             return r.json();
         }).then(function (data) {
             if (data.success) {
-                log('Token FCM enregistré avec succès ✓');
+                var expectedId = parseInt(window.FCM_ACCOUNT_ID, 10) || 0;
+                var savedId = parseInt(data.account_id, 10) || 0;
+                if (expectedId > 0 && savedId > 0 && expectedId !== savedId) {
+                    warn('Token enregistré pour un autre compte', savedId, 'attendu', expectedId);
+                    clearEnabledMark();
+                    alert('Erreur : le token n\'a pas été lié à votre compte. Reconnectez-vous puis réactivez.');
+                    return false;
+                }
+                log('Token FCM enregistré pour le compte', data.type + '#' + data.account_id, '✓');
                 markEnabled();
             } else {
                 warn('Échec enregistrement token:', data.message || data);
+                clearEnabledMark();
                 alert(data.message || 'Erreur lors de l\'enregistrement du token.');
             }
             return !!data.success;
+        });
+    }
+
+    function fetchAccountFcmStatus() {
+        return fetch('/api/fcm_status.php', {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json' }
+        }).then(function (r) {
+            return r.json();
+        }).catch(function () {
+            return { success: false, enabled: false };
         });
     }
 
@@ -686,40 +719,65 @@
             }
             if (Notification.permission !== 'granted') {
                 updateButtonState(btn, 'idle');
+                clearEnabledMark();
                 return;
             }
 
-            // Admin : resynchroniser le token à chaque visite (reconnexion / changement de compte)
             var notifyType = getNotifyType(btn);
-            var forceSync = window.FCM_FORCE_RESYNC === true || notifyType === 'admin';
-            if (forceSync || isMarkedEnabled()) {
-                updateButtonState(btn, 'enabled');
-                window.FirebaseNotifications.setupForegroundHandler();
-                window.FirebaseNotifications.syncTokenWithServer(notifyType, forceSync || window.FCM_FORCE_RESYNC === true);
+            // Resync forcé après connexion (user + admin) ou à chaque visite admin
+            var forceSync = window.FCM_FORCE_RESYNC === true
+                || notifyType === 'admin'
+                || notifyType === 'user';
+
+            // Vérifier côté serveur si CE compte a déjà un token — pas de faux "activé"
+            fetchAccountFcmStatus().then(function (status) {
+                var accountOk = status && status.success && status.enabled
+                    && (!window.FCM_ACCOUNT_ID || parseInt(status.account_id, 10) === parseInt(window.FCM_ACCOUNT_ID, 10));
+
+                if (accountOk) {
+                    markEnabled();
+                    updateButtonState(btn, 'enabled');
+                    window.FirebaseNotifications.setupForegroundHandler();
+                } else {
+                    clearEnabledMark();
+                    updateButtonState(btn, 'idle');
+                }
+
+                if (forceSync || accountOk || isMarkedEnabled()) {
+                    window.FirebaseNotifications.syncTokenWithServer(notifyType, true).then(function (ok) {
+                        if (ok) {
+                            markEnabled();
+                            updateButtonState(btn, 'enabled');
+                            window.FirebaseNotifications.setupForegroundHandler();
+                        } else if (!accountOk) {
+                            clearEnabledMark();
+                            updateButtonState(btn, 'idle');
+                        }
+                    });
+                }
+
                 if (window.FCM_FORCE_RESYNC) {
                     window.FCM_FORCE_RESYNC = false;
                 }
-                return;
-            }
-
-            updateButtonState(btn, 'idle');
+            });
         },
 
         /**
          * Envoie le token FCM au serveur (reconnexion, changement admin, refresh)
+         * @return {Promise<boolean>}
          */
         syncTokenWithServer: function (type, force) {
             if (typeof firebase === 'undefined' || !firebase.messaging || Notification.permission !== 'granted') {
-                return;
+                return Promise.resolve(false);
             }
             if (!force && !isMarkedEnabled()) {
-                return;
+                return Promise.resolve(false);
             }
             var vapidKey = getVapidKey();
             if (!vapidKey) {
-                return;
+                return Promise.resolve(false);
             }
-            registerFcmServiceWorker(false).then(function (registration) {
+            return registerFcmServiceWorker(false).then(function (registration) {
                 var messaging = firebase.messaging();
                 return messaging.getToken({ vapidKey: vapidKey, serviceWorkerRegistration: registration });
             }).then(function (token) {
@@ -727,7 +785,9 @@
                     return saveToken(token, type || window.FIREBASE_NOTIFY_TYPE || 'user');
                 }
                 return false;
-            }).catch(function () { /* silencieux */ });
+            }).catch(function () {
+                return false;
+            });
         },
 
         /**
@@ -804,17 +864,34 @@
         boot: function () {
             log('Initialisation module notifications');
             log('Projet:', window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId, '| SW:', FCM_SW_PATH);
+            log('Compte:', window.FIREBASE_NOTIFY_TYPE, '#' + (window.FCM_ACCOUNT_ID || 0));
 
             applyNativeAppNotificationUi();
 
             if (shouldHideWebPushButton()) {
-                log('App COLObanes (mobile) — activation web push masquée (FCM natif)');
+                log('App native mobile — bouton web push masqué (FCM natif via WebView)');
+                // L'app injecte déjà le token ; on écoute quand même les messages page visible
+                window.FirebaseNotifications.setupForegroundHandler();
                 return;
             }
 
-            window.FirebaseNotifications.bindButton(document.getElementById('btn-enable-notifications'));
+            var btn = document.getElementById('btn-enable-notifications');
+            window.FirebaseNotifications.bindButton(btn);
             window.FirebaseNotifications.bindHelpPanel();
-            window.FirebaseNotifications.syncButton(document.getElementById('btn-enable-notifications'));
+
+            if (btn) {
+                window.FirebaseNotifications.syncButton(btn);
+            } else if (window.FCM_ACCOUNT_ID && (window.FCM_FORCE_RESYNC || isMarkedEnabled())) {
+                // Pages sans bouton : resync silencieux du token pour CE compte
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    window.FirebaseNotifications.syncTokenWithServer(
+                        window.FIREBASE_NOTIFY_TYPE || 'user',
+                        true
+                    );
+                    window.FirebaseNotifications.setupForegroundHandler();
+                    window.FirebaseNotifications.setupTokenRefreshListener();
+                }
+            }
 
             if (typeof Notification !== 'undefined'
                 && Notification.permission === 'granted'

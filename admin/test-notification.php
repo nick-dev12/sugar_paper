@@ -26,29 +26,51 @@ if ($mode === 'tous') {
         header('Location: dashboard.php');
         exit;
     }
-    $tokens = get_all_fcm_tokens_admin();
-    $scope_label = count($tokens) . ' appareil(s) enregistré(s) (admin + utilisateur)';
-} else {
-    if (!fcm_admin_is_eligible_for_notify((int) $_SESSION['admin_id'])) {
-        $_SESSION['notification_test_message'] = 'Votre rôle ne peut pas recevoir les alertes commandes.';
+    $groups = get_fcm_admin_token_groups();
+    if (empty($groups)) {
+        $_SESSION['notification_test_message'] = 'Aucun token enregistré. '
+            . 'Chaque admin / utilisateur doit activer « Notifications » sur son propre appareil.';
         $_SESSION['notification_test_type'] = 'error';
-        header('Location: dashboard.php');
-        exit;
+    } else {
+        $result = firebase_send_notification_to_all_admins(
+            'Test Sugar Paper (tous les admins)',
+            'Notification de test individuelle — chaque compte avec token doit recevoir cette alerte.',
+            ['link' => '/admin/dashboard.php', 'tag' => 'test-tous']
+        );
+        if (($result['success'] ?? 0) > 0) {
+            $_SESSION['notification_test_message'] = 'Notification envoyée à '
+                . (int) $result['admins_notified'] . '/' . (int) $result['admins_total']
+                . ' compte(s) admin (' . (int) $result['success'] . ' appareil(s)).';
+            $_SESSION['notification_test_type'] = 'success';
+        } else {
+            $_SESSION['notification_test_message'] = "Échec de l'envoi. " . implode(' ', $result['errors'] ?? []);
+            $_SESSION['notification_test_type'] = 'error';
+        }
     }
-    $tokens = get_fcm_tokens_by_admin((int) $_SESSION['admin_id']);
-    $scope_label = 'votre compte';
+    header('Location: dashboard.php');
+    exit;
 }
+
+if (!fcm_admin_is_eligible_for_notify((int) $_SESSION['admin_id'])) {
+    $_SESSION['notification_test_message'] = 'Votre rôle ne peut pas recevoir les alertes commandes.';
+    $_SESSION['notification_test_type'] = 'error';
+    header('Location: dashboard.php');
+    exit;
+}
+
+$tokens = get_fcm_tokens_by_admin((int) $_SESSION['admin_id']);
+$scope_label = 'votre compte';
 
 if (empty($tokens)) {
     $_SESSION['notification_test_message'] = 'Aucun token enregistré pour ' . $scope_label . '. '
-        . 'Chaque personne doit cliquer sur « Notifications » dans le menu admin sur chaque appareil (une seule fois).';
+        . 'Cliquez sur « Notifications » dans le menu admin sur cet appareil (une seule fois).';
     $_SESSION['notification_test_type'] = 'error';
 } else {
     $result = firebase_send_notification(
         $tokens,
         'Test Sugar Paper',
         'Notification de test — les alertes fonctionnent même si le site est fermé (Service Worker).',
-        ['link' => '/admin/dashboard.php', 'tag' => 'test']
+        ['link' => '/admin/dashboard.php', 'tag' => 'test-a' . (int) $_SESSION['admin_id']]
     );
     if ($result['success'] > 0) {
         $_SESSION['notification_test_message'] = 'Notification envoyée à ' . $scope_label

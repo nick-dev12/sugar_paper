@@ -3347,21 +3347,22 @@
                 }
 
                 card.innerHTML =
+                    '<div class="livreur-switch-item__body">' +
                     '<div class="livreur-switch-item__top">' +
                     '<span class="livreur-switch-item__ref">' + escapeHtml(numero) + '</span>' +
                     '<span class="livreur-switch-item__badges">' + badges + '</span>' +
                     '</div>' +
                     '<p class="livreur-switch-item__client">' + escapeHtml(client) + '</p>' +
                     (tel ? '<p class="livreur-switch-item__meta"><i class="fas fa-phone" aria-hidden="true"></i> ' + escapeHtml(tel) + '</p>' : '') +
-                    (adresse ? '<p class="livreur-switch-item__meta"><i class="fas fa-location-dot" aria-hidden="true"></i> ' + escapeHtml(adresse) + '</p>' : '');
-
-                li.appendChild(card);
+                    (adresse ? '<p class="livreur-switch-item__meta"><i class="fas fa-location-dot" aria-hidden="true"></i> ' + escapeHtml(adresse) + '</p>' : '') +
+                    '</div>';
 
                 if (isCurrent) {
                     var currentNote = document.createElement('p');
                     currentNote.className = 'livreur-switch-item__current-note';
                     currentNote.textContent = 'Livraison actuellement affichée';
-                    li.appendChild(currentNote);
+                    card.appendChild(currentNote);
+                    card.classList.add('is-current');
                 } else {
                     var continueBtn = document.createElement('button');
                     continueBtn.type = 'button';
@@ -3372,9 +3373,10 @@
                             window.location.href = item.suivi_url;
                         }
                     });
-                    li.appendChild(continueBtn);
+                    card.appendChild(continueBtn);
                 }
 
+                li.appendChild(card);
                 listEl.appendChild(li);
             });
         }

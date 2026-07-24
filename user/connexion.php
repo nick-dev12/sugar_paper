@@ -55,6 +55,7 @@ if (isset($result['success']) && $result['success'] && $result['type'] === 'user
     $_SESSION['user_email'] = $result['user']['email'];
     $_SESSION['user_telephone'] = $result['user']['telephone'];
     $_SESSION['user_statut'] = $result['user']['statut'];
+    $_SESSION['fcm_resync_user'] = 1;
 
     if (file_exists(__DIR__ . '/../includes/panier_invite.php')) {
         require_once __DIR__ . '/../includes/panier_invite.php';

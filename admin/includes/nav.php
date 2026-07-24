@@ -139,7 +139,7 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Stock</span>
             </a>
             <a href="<?php echo $nav_href('commandes/index.php'); ?>"
-                class="menu-item <?php echo ($is_commandes_std && in_array($current_page, ['index.php', 'livrees.php', 'annulees.php', 'details.php', 'historique-ventes.php'], true)) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($is_commandes_std && in_array($current_page, ['index.php', 'livrees.php', 'annulees.php', 'details.php', 'historique-ventes.php', 'archives.php'], true)) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Commandes</span>
             </a>
@@ -188,7 +188,7 @@ $nav_href = function ($path) use ($admin_nav_base) {
             </a>
 
             <a href="<?php echo $nav_href('commandes/index.php'); ?>"
-                class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php' || $current_page == 'archives.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Commandes</span>
             </a>

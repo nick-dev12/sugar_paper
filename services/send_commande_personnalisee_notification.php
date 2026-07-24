@@ -8,7 +8,8 @@ require_once __DIR__ . '/notify_helpers.php';
 /**
  * Notifie les administrateurs d'une nouvelle demande personnalisée
  */
-function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $description, $type_produit = '', $quantite = '') {
+function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $description, $type_produit = '', $quantite = '')
+{
     require_once __DIR__ . '/../models/model_admin.php';
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
@@ -31,14 +32,12 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
     $base_url = get_site_base_url();
     $link = $base_url . '/admin/commandes-personnalisees/details.php?id=' . $cp_id;
 
-    $tokens = get_all_fcm_tokens_admin();
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'commande_perso_id' => (string) $cp_id,
-            'tag' => 'nouvelle-cp-' . $cp_id
-        ]);
-    }
+    // Envoi individuel à chaque admin éligible (admin + rôle utilisateur) et à tous ses appareils
+    firebase_send_notification_to_all_admins($title, $body, [
+        'link' => $link,
+        'commande_perso_id' => (string) $cp_id,
+        'tag' => 'nouvelle-cp-' . $cp_id
+    ]);
 
     notifications_ensure_mail_loaded();
     $admin_email = notifications_get_commande_admin_email();
@@ -77,7 +76,8 @@ function send_new_commande_personnalisee_to_admin($cp_id, $nom, $telephone, $des
 /**
  * Notifie le client connecté d'une mise à jour de statut (commande personnalisée)
  */
-function send_commande_personnalisee_status_notification($user_id, $cp_id, $nouveau_statut, $user_email = '') {
+function send_commande_personnalisee_status_notification($user_id, $cp_id, $nouveau_statut, $user_email = '')
+{
     require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
@@ -135,7 +135,8 @@ function send_commande_personnalisee_status_notification($user_id, $cp_id, $nouv
 /**
  * Notifie le client qu'un prix / devis a été défini
  */
-function send_commande_personnalisee_prix_notification($user_id, $cp_id, $prix, $user_email = '') {
+function send_commande_personnalisee_prix_notification($user_id, $cp_id, $prix, $user_email = '')
+{
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
     require_once __DIR__ . '/../includes/site_url.php';
@@ -189,7 +190,8 @@ function send_commande_personnalisee_prix_notification($user_id, $cp_id, $prix, 
 /**
  * Confirmation au client connecté après envoi d'une demande personnalisée
  */
-function send_commande_personnalisee_confirmation_to_client($user_id, $cp_id, $user_email = '') {
+function send_commande_personnalisee_confirmation_to_client($user_id, $cp_id, $user_email = '')
+{
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
     require_once __DIR__ . '/../includes/site_url.php';

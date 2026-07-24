@@ -38,7 +38,11 @@ if (!defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
 }
 ?>
 <?php include __DIR__ . '/../../includes/social_floating.php'; ?>
-<?php include __DIR__ . '/../../includes/firebase_notifications_scripts.php'; ?>
+<?php
+$enable_firebase_notifications = true;
+$firebase_notify_type = 'user';
+include __DIR__ . '/../../includes/firebase_notifications_scripts.php';
+?>
 </body>
 </html>
 

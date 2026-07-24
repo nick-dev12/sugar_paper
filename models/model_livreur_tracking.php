@@ -529,6 +529,10 @@ function livreur_get_commandes_livraison_list($only_today = false) {
                   OR c.livreur_id IS NOT NULL
               )
         ";
+        require_once __DIR__ . '/model_commandes_admin.php';
+        if (commandes_archived_column_ok()) {
+            $sql .= " AND COALESCE(c.archived, 0) = 0";
+        }
         if ($only_today) {
             $sql .= " AND DATE(c.date_commande) = CURDATE()";
         }
@@ -620,6 +624,7 @@ function livreur_get_factures_livraison_list($only_today = false) {
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
             ' . $join_admin . '
+            WHERE 1=1' . bl_sql_archived_clause('b', 'active') . '
             ORDER BY b.date_creation DESC
         ');
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -1331,9 +1336,14 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
         $db->commit();
 
         require_once __DIR__ . '/model_commandes_admin.php';
+        require_once __DIR__ . '/../services/send_commande_notification.php';
         $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];
         if (in_array($commande['statut'] ?? '', $statuts_avant_livraison, true)) {
+            // Passe en livraison_en_cours → notify_client via update_commande_statut (Livreur en route)
             update_commande_statut($commande_id, 'livraison_en_cours');
+        } elseif (($commande['statut'] ?? '') === 'livraison_en_cours') {
+            // Déjà en livraison (prise préalable) : push dédié au démarrage réel
+            notify_client_livreur_en_route($commande_id);
         }
 
         return [
@@ -1930,6 +1940,7 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
 
             require_once __DIR__ . '/model_commandes_admin.php';
             if (!in_array($row['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
+                // Passe en livree → notify_client (Livraison terminée)
                 update_commande_statut((int) $commande_id, 'livree');
             }
         }

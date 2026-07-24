@@ -62,10 +62,12 @@ $montant_aff = bl_montant_facture_affichage($bl);
 $remise_pct = (float) ($bl['remise_globale_pct'] ?? 0);
 $total_ht = (float) ($bl['total_ht'] ?? 0);
 $tva_incl = bl_tva_columns_ok() && !empty($bl['tva_incluse']);
-$bl_peut_modifier = !bl_est_statut_verrouille($bl['statut'] ?? '') && ($bl['statut'] ?? 'brouillon') === 'brouillon';
+$bl_est_archive = bl_est_archive($bl);
+$bl_peut_modifier = !$bl_est_archive && !bl_est_statut_verrouille($bl['statut'] ?? '') && ($bl['statut'] ?? 'brouillon') === 'brouillon';
 $bl_tracking = livreur_bl_livraison_columns_ok() ? livreur_get_facture_tracking($bl_id) : false;
 $bl_livraison_suivable = $bl_tracking && !empty($bl_tracking['livreur_id']);
 $bl_livraison_statut = $bl_livraison_suivable ? livreur_facture_statut_livraison($bl_tracking) : '';
+$can_desarchiver = admin_is_full_admin() && $bl_est_archive;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -109,15 +111,25 @@ $bl_livraison_statut = $bl_livraison_suivable ? livreur_facture_statut_livraison
             <a href="index.php?tab=facture&amp;modal=bl&amp;edit=<?php echo (int) $bl_id; ?>" class="btn-secondary">
                 <i class="fas fa-edit"></i> Modifier
             </a>
-            <form method="post" action="bl_supprimer.php" class="header-actions__form" onsubmit="return confirm('Supprimer définitivement cette facture ?');">
+            <?php endif; ?>
+            <?php if ($can_desarchiver): ?>
+            <form method="post" action="bl_desarchiver.php" class="header-actions__form" onsubmit="return confirm('Désarchiver cette facture ? Elle réapparaîtra dans Invoice.');">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
                 <input type="hidden" name="bl_id" value="<?php echo (int) $bl_id; ?>">
                 <button type="submit" class="btn-secondary">
-                    <i class="fas fa-trash"></i> Supprimer
+                    <i class="fas fa-box-open"></i> Désarchiver
+                </button>
+            </form>
+            <?php elseif (!$bl_est_archive): ?>
+            <form method="post" action="bl_archiver.php" class="header-actions__form" onsubmit="return confirm('Archiver cette facture ? Elle disparaîtra d\'Invoice mais le lien public restera valide.');">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
+                <input type="hidden" name="bl_id" value="<?php echo (int) $bl_id; ?>">
+                <button type="submit" class="btn-secondary">
+                    <i class="fas fa-box-archive"></i> Archiver
                 </button>
             </form>
             <?php endif; ?>
-            <a href="index.php?tab=facture" class="btn-back">
+            <a href="<?php echo $bl_est_archive && admin_is_full_admin() ? 'archives.php?tab=facture' : 'index.php?tab=facture'; ?>" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
         </div>

@@ -9,15 +9,26 @@ if (empty($enable_firebase_notifications)) {
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }
-    if (!empty($_SESSION['admin_id'])) {
+
+    $request_path = strtolower(str_replace('\\', '/', (string) ($_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '')));
+    $is_admin_area = (strpos($request_path, '/admin/') !== false || preg_match('#/admin($|[?#])#', $request_path));
+    $is_user_area = (strpos($request_path, '/user/') !== false);
+
+    // Priorité : zone admin → type admin ; zone client / boutique → type user si session client
+    if ($is_admin_area && !empty($_SESSION['admin_id'])) {
         $enable_firebase_notifications = true;
         if (!isset($firebase_notify_type)) {
             $firebase_notify_type = 'admin';
         }
-    } elseif (!empty($_SESSION['user_id'])) {
+    } elseif (!empty($_SESSION['user_id']) && (!$is_admin_area || $is_user_area)) {
         $enable_firebase_notifications = true;
         if (!isset($firebase_notify_type)) {
             $firebase_notify_type = 'user';
+        }
+    } elseif (!empty($_SESSION['admin_id'])) {
+        $enable_firebase_notifications = true;
+        if (!isset($firebase_notify_type)) {
+            $firebase_notify_type = 'admin';
         }
     }
 }
@@ -30,6 +41,18 @@ if ($firebase_notify_type === 'admin' && !empty($_SESSION['fcm_resync_admin'])) 
     $fcm_force_resync = true;
     unset($_SESSION['fcm_resync_admin']);
 }
+if ($firebase_notify_type === 'user' && !empty($_SESSION['fcm_resync_user'])) {
+    $fcm_force_resync = true;
+    unset($_SESSION['fcm_resync_user']);
+}
+
+$fcm_account_id = 0;
+if ($firebase_notify_type === 'admin' && !empty($_SESSION['admin_id'])) {
+    $fcm_account_id = (int) $_SESSION['admin_id'];
+} elseif ($firebase_notify_type === 'user' && !empty($_SESSION['user_id'])) {
+    $fcm_account_id = (int) $_SESSION['user_id'];
+}
+
 require_once __DIR__ . '/asset_version.php';
 $firebase_js_path = __DIR__ . '/../js/firebase-notifications.js';
 $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_js_path) : get_asset_version();
@@ -63,6 +86,8 @@ $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_j
         console.error('[FCM] Firebase ou FIREBASE_CONFIG manquant');
     }
     window.FIREBASE_NOTIFY_TYPE = <?php echo json_encode($firebase_notify_type); ?>;
+    window.FCM_ACCOUNT_ID = <?php echo (int) $fcm_account_id; ?>;
+    window.FCM_ACCOUNT_KEY = <?php echo json_encode($firebase_notify_type . '_' . (int) $fcm_account_id); ?>;
     window.FCM_ICON_PATH = '/icons/icon-192.png';
     window.FCM_FORCE_RESYNC = <?php echo $fcm_force_resync ? 'true' : 'false'; ?>;
 </script>

@@ -51,10 +51,11 @@ function _admin_cp_has_variante_columns() {
 
 /**
  * Récupère toutes les commandes
- * @param string $statut Filtrer par statut (optionnel)
+ * @param string|null $statut Filtrer par statut (optionnel)
+ * @param string $archive_mode active|archived|all
  * @return array|false Tableau des commandes ou False en cas d'erreur
  */
-function get_all_commandes($statut = null) {
+function get_all_commandes($statut = null, $archive_mode = 'active') {
     global $db;
 
     try {
@@ -68,6 +69,13 @@ function get_all_commandes($statut = null) {
             WHERE 1=1
         ";
         $params = [];
+        if (commandes_archived_column_ok()) {
+            if ($archive_mode === 'archived') {
+                $sql .= " AND COALESCE(c.archived, 0) = 1";
+            } elseif ($archive_mode !== 'all') {
+                $sql .= " AND COALESCE(c.archived, 0) = 0";
+            }
+        }
         if ($statut) {
             $sql .= " AND c.statut = :statut";
             $params['statut'] = $statut;
@@ -81,6 +89,109 @@ function get_all_commandes($statut = null) {
         return $commandes ? $commandes : [];
     } catch (PDOException $e) {
         return false;
+    }
+}
+
+/**
+ * Colonne archived sur commandes.
+ */
+function commandes_archived_column_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    $ok = false;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $db->query('SELECT archived FROM commandes LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * Indique si une commande est archivée.
+ */
+function commande_est_archivee(array $commande) {
+    return commandes_archived_column_ok() && !empty($commande['archived']);
+}
+
+/**
+ * Archive une commande (soft-hide).
+ *
+ * @return array{success:bool,message:string}
+ */
+function archive_commande($commande_id, $admin_id = null) {
+    global $db;
+    $commande_id = (int) $commande_id;
+    if ($commande_id <= 0) {
+        return ['success' => false, 'message' => 'Commande invalide.'];
+    }
+    if (!commandes_archived_column_ok()) {
+        return ['success' => false, 'message' => 'Archivage indisponible. Exécutez la migration.'];
+    }
+    $commande = get_commande_by_id($commande_id);
+    if (!$commande) {
+        return ['success' => false, 'message' => 'Commande introuvable.'];
+    }
+    if (!empty($commande['archived'])) {
+        return ['success' => true, 'message' => 'Commande déjà archivée.'];
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE commandes
+            SET archived = 1,
+                date_archivage = NOW(),
+                archived_by_admin_id = :admin_id
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            'id' => $commande_id,
+            'admin_id' => $admin_id !== null ? (int) $admin_id : null,
+        ]);
+        $numero = $commande['numero_commande'] ?? (string) $commande_id;
+        return [
+            'success' => true,
+            'message' => 'La commande #' . $numero . ' a été archivée.',
+        ];
+    } catch (PDOException $e) {
+        error_log('[archive_commande] ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Impossible d\'archiver la commande.'];
+    }
+}
+
+/**
+ * Désarchive une commande.
+ *
+ * @return array{success:bool,message:string}
+ */
+function unarchive_commande($commande_id) {
+    global $db;
+    $commande_id = (int) $commande_id;
+    if ($commande_id <= 0) {
+        return ['success' => false, 'message' => 'Commande invalide.'];
+    }
+    if (!commandes_archived_column_ok()) {
+        return ['success' => false, 'message' => 'Désarchivage indisponible.'];
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE commandes
+            SET archived = 0,
+                date_archivage = NULL,
+                archived_by_admin_id = NULL
+            WHERE id = :id
+        ');
+        $stmt->execute(['id' => $commande_id]);
+        return ['success' => true, 'message' => 'La commande a été désarchivée.'];
+    } catch (PDOException $e) {
+        error_log('[unarchive_commande] ' . $e->getMessage());
+        return ['success' => false, 'message' => 'Impossible de désarchiver la commande.'];
     }
 }
 
@@ -262,17 +373,25 @@ function update_commande_statut($commande_id, $statut) {
  * @param string $statut Le statut à compter
  * @return int Le nombre de commandes
  */
-function count_commandes_by_statut($statut = null) {
+function count_commandes_by_statut($statut = null, $archive_mode = 'active') {
     global $db;
     
     try {
-        if ($statut) {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM commandes WHERE statut = :statut");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM commandes");
-            $stmt->execute();
+        $sql = "SELECT COUNT(*) FROM commandes WHERE 1=1";
+        $params = [];
+        if (commandes_archived_column_ok()) {
+            if ($archive_mode === 'archived') {
+                $sql .= " AND COALESCE(archived, 0) = 1";
+            } elseif ($archive_mode !== 'all') {
+                $sql .= " AND COALESCE(archived, 0) = 0";
+            }
         }
+        if ($statut) {
+            $sql .= " AND statut = :statut";
+            $params['statut'] = $statut;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
@@ -283,18 +402,28 @@ function count_commandes_by_statut($statut = null) {
 /**
  * Retourne le montant total des commandes (comptabilité)
  * @param string|null $statut Filtrer par statut (optionnel). Si null, toutes les commandes.
+ * @param string $archive_mode active|archived|all
  * @return float Montant total en FCFA
  */
-function get_montant_total_commandes($statut = null) {
+function get_montant_total_commandes($statut = null, $archive_mode = 'active') {
     global $db;
     
     try {
-        if ($statut) {
-            $stmt = $db->prepare("SELECT COALESCE(SUM(montant_total), 0) FROM commandes WHERE statut = :statut");
-            $stmt->execute(['statut' => $statut]);
-        } else {
-            $stmt = $db->query("SELECT COALESCE(SUM(montant_total), 0) FROM commandes");
+        $sql = "SELECT COALESCE(SUM(montant_total), 0) FROM commandes WHERE 1=1";
+        $params = [];
+        if (commandes_archived_column_ok()) {
+            if ($archive_mode === 'archived') {
+                $sql .= " AND COALESCE(archived, 0) = 1";
+            } elseif ($archive_mode !== 'all') {
+                $sql .= " AND COALESCE(archived, 0) = 0";
+            }
         }
+        if ($statut) {
+            $sql .= " AND statut = :statut";
+            $params['statut'] = $statut;
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         
         return (float) $stmt->fetchColumn();
     } catch (PDOException $e) {

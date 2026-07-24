@@ -207,6 +207,7 @@ function build_factures_stats_by_contact_telephone()
             SELECT b.*, c.telephone AS client_telephone
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
+            WHERE 1=1' . bl_sql_archived_clause('b', 'active') . '
         ');
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {

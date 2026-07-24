@@ -9,7 +9,8 @@
  * @param array $produits Liste des produits [['nom' => ..., 'quantite' => ..., 'prix_unitaire' => ..., 'prix_total' => ...], ...]
  * @return void
  */
-function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_articles, $telephone_livraison = '', $adresse_livraison = '', $produits = []) {
+function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_articles, $telephone_livraison = '', $adresse_livraison = '', $produits = [])
+{
     require_once __DIR__ . '/notify_helpers.php';
     require_once __DIR__ . '/../models/model_admin.php';
     require_once __DIR__ . '/../models/model_fcm.php';
@@ -22,14 +23,12 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
     $base_url = get_site_base_url();
     $link = $base_url . '/admin/commandes/index.php';
 
-    $tokens = get_all_fcm_tokens_admin();
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'numero_commande' => $numero_commande,
-            'tag' => 'nouvelle-commande-' . $numero_commande
-        ]);
-    }
+    // Envoi individuel à chaque admin éligible (admin + rôle utilisateur) et à tous ses appareils
+    firebase_send_notification_to_all_admins($title, $body, [
+        'link' => $link,
+        'numero_commande' => $numero_commande,
+        'tag' => 'nouvelle-commande-' . $numero_commande
+    ]);
 
     notifications_ensure_mail_loaded();
     $admin_email = notifications_get_commande_admin_email();
@@ -54,16 +53,20 @@ function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_ar
             $body_html .= '<thead><tr style="background: #f5f5f5;"><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Produit</th><th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Qté</th><th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Options (variante, couleur, poids, taille)</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Prix unit.</th><th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Total</th></tr></thead><tbody>';
             foreach ($produits as $p) {
                 $details = [];
-                if (!empty(trim($p['variante_nom'] ?? ''))) $details[] = 'Variante: ' . htmlspecialchars($p['variante_nom']);
-                if (!empty(trim($p['couleur'] ?? ''))) $details[] = 'Couleur: ' . htmlspecialchars($p['couleur']);
+                if (!empty(trim($p['variante_nom'] ?? '')))
+                    $details[] = 'Variante: ' . htmlspecialchars($p['variante_nom']);
+                if (!empty(trim($p['couleur'] ?? '')))
+                    $details[] = 'Couleur: ' . htmlspecialchars($p['couleur']);
                 if (!empty(trim($p['poids'] ?? ''))) {
                     $poids_str = htmlspecialchars($p['poids']);
-                    if (!empty($p['surcout_poids']) && $p['surcout_poids'] > 0) $poids_str .= ' (+' . number_format($p['surcout_poids'], 0, ',', ' ') . ' FCFA)';
+                    if (!empty($p['surcout_poids']) && $p['surcout_poids'] > 0)
+                        $poids_str .= ' (+' . number_format($p['surcout_poids'], 0, ',', ' ') . ' FCFA)';
                     $details[] = 'Poids: ' . $poids_str;
                 }
                 if (!empty(trim($p['taille'] ?? ''))) {
                     $taille_str = htmlspecialchars($p['taille']);
-                    if (!empty($p['surcout_taille']) && $p['surcout_taille'] > 0) $taille_str .= ' (+' . number_format($p['surcout_taille'], 0, ',', ' ') . ' FCFA)';
+                    if (!empty($p['surcout_taille']) && $p['surcout_taille'] > 0)
+                        $taille_str .= ' (+' . number_format($p['surcout_taille'], 0, ',', ' ') . ' FCFA)';
                     $details[] = 'Taille: ' . $taille_str;
                 }
                 $details_str = !empty($details) ? implode(' — ', $details) : '—';

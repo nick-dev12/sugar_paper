@@ -72,6 +72,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-user"></i>
                 <span>Mon profil</span>
             </a>
+            <button type="button" id="btn-enable-notifications" class="menu-item menu-item-notify"
+                data-notify-type="user"
+                title="Recevoir les alertes de vos commandes (web et application)">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+            </button>
             <a href="deconnexion.php" class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Déconnexion</span>

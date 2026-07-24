@@ -22,6 +22,129 @@ function bl_tables_available() {
 }
 
 /**
+ * Colonne archived sur bons_livraison.
+ */
+function bl_archived_column_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    $ok = false;
+    if (!bl_tables_available() || !$db) {
+        return false;
+    }
+    try {
+        $db->query('SELECT archived FROM bons_livraison LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * Clause SQL archive : active | archived | all
+ *
+ * @param string $alias Alias table
+ * @param string $mode active|archived|all
+ */
+function bl_sql_archived_clause($alias = 'b', $mode = 'active') {
+    if (!bl_archived_column_ok()) {
+        return '';
+    }
+    $a = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias);
+    if ($a === '') {
+        $a = 'b';
+    }
+    $mode = (string) $mode;
+    if ($mode === 'archived') {
+        return ' AND COALESCE(' . $a . '.archived, 0) = 1';
+    }
+    if ($mode === 'all') {
+        return '';
+    }
+    return ' AND COALESCE(' . $a . '.archived, 0) = 0';
+}
+
+/**
+ * Indique si un BL est archivé.
+ */
+function bl_est_archive(array $bl) {
+    return bl_archived_column_ok() && !empty($bl['archived']);
+}
+
+/**
+ * Archive une facture BL (soft-hide). Le lien public reste valide.
+ *
+ * @return array{ok:bool,error?:string}
+ */
+function archive_bl($bl_id, $admin_id = null) {
+    global $db;
+    if (!bl_tables_available() || !bl_archived_column_ok()) {
+        return ['ok' => false, 'error' => 'Archivage indisponible. Exécutez la migration.'];
+    }
+    $bl_id = (int) $bl_id;
+    if ($bl_id < 1) {
+        return ['ok' => false, 'error' => 'Facture invalide.'];
+    }
+    $bl = get_bl_by_id($bl_id);
+    if (!$bl) {
+        return ['ok' => false, 'error' => 'Facture introuvable.'];
+    }
+    if (!empty($bl['archived'])) {
+        return ['ok' => true];
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE bons_livraison
+            SET archived = 1,
+                date_archivage = NOW(),
+                archived_by_admin_id = :admin_id
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            'id' => $bl_id,
+            'admin_id' => $admin_id !== null ? (int) $admin_id : null,
+        ]);
+        return ['ok' => true];
+    } catch (PDOException $e) {
+        error_log('[archive_bl] ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Impossible d\'archiver la facture.'];
+    }
+}
+
+/**
+ * Désarchive une facture BL (admin uniquement côté contrôleur).
+ *
+ * @return array{ok:bool,error?:string}
+ */
+function unarchive_bl($bl_id) {
+    global $db;
+    if (!bl_tables_available() || !bl_archived_column_ok()) {
+        return ['ok' => false, 'error' => 'Désarchivage indisponible.'];
+    }
+    $bl_id = (int) $bl_id;
+    if ($bl_id < 1) {
+        return ['ok' => false, 'error' => 'Facture invalide.'];
+    }
+    try {
+        $stmt = $db->prepare('
+            UPDATE bons_livraison
+            SET archived = 0,
+                date_archivage = NULL,
+                archived_by_admin_id = NULL
+            WHERE id = :id
+        ');
+        $stmt->execute(['id' => $bl_id]);
+        return ['ok' => true];
+    } catch (PDOException $e) {
+        error_log('[unarchive_bl] ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'Impossible de désarchiver la facture.'];
+    }
+}
+
+/**
  * Colonnes TVA sur bons_livraison (migration add_devis_bl_factures_tva)
  */
 function bl_tva_columns_ok() {
@@ -480,17 +603,19 @@ function bl_exists_for_devis($devis_id) {
     }
 }
 
-function get_all_bl_with_clients() {
+function get_all_bl_with_clients($archive_mode = 'active') {
     global $db;
     if (!bl_tables_available()) {
         return [];
     }
+    $archive_sql = bl_sql_archived_clause('b', $archive_mode);
     try {
         $stmt = $db->query('
             SELECT b.*, c.raison_sociale, c.telephone AS client_telephone, c.email AS client_email,
                    b.statut AS bl_statut
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
+            WHERE 1=1' . $archive_sql . '
             ORDER BY b.date_creation DESC
         ');
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
@@ -505,14 +630,17 @@ function get_all_bl_with_clients() {
 
 /**
  * Nombre total de factures (bons de livraison) enregistrées.
+ *
+ * @param string $archive_mode active|archived|all
  */
-function count_all_bl_invoices() {
+function count_all_bl_invoices($archive_mode = 'active') {
     global $db;
     if (!bl_tables_available()) {
         return 0;
     }
+    $archive_sql = bl_sql_archived_clause('bons_livraison', $archive_mode);
     try {
-        $stmt = $db->query('SELECT COUNT(*) FROM bons_livraison');
+        $stmt = $db->query('SELECT COUNT(*) FROM bons_livraison WHERE 1=1' . $archive_sql);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;
@@ -524,7 +652,7 @@ function count_all_bl_invoices() {
  *
  * @return list<array<string, mixed>>
  */
-function get_all_bl_paginated($page = 1, $per_page = 40) {
+function get_all_bl_paginated($page = 1, $per_page = 40, $archive_mode = 'active') {
     global $db;
     if (!bl_tables_available()) {
         return [];
@@ -532,12 +660,14 @@ function get_all_bl_paginated($page = 1, $per_page = 40) {
     $page = max(1, (int) $page);
     $per_page = max(1, min(100, (int) $per_page));
     $offset = ($page - 1) * $per_page;
+    $archive_sql = bl_sql_archived_clause('b', $archive_mode);
     try {
         $stmt = $db->prepare('
             SELECT b.*, c.raison_sociale, c.telephone AS client_telephone, c.email AS client_email,
                    b.statut AS bl_statut
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
+            WHERE 1=1' . $archive_sql . '
             ORDER BY b.date_creation DESC, b.id DESC
             LIMIT :lim OFFSET :off
         ');
@@ -721,7 +851,7 @@ function get_all_bl_for_client_b2b($client_b2b_id, $exclure_bl_lies_facture_mens
             FROM bons_livraison b
             INNER JOIN clients_b2b c ON b.client_b2b_id = c.id
             WHERE b.client_b2b_id = :cid
-        ';
+        ' . bl_sql_archived_clause('b', 'active');
         if ($exclure) {
             $sql .= ' AND NOT EXISTS (
                 SELECT 1 FROM facture_mensuelle_bl fmb WHERE fmb.bl_id = b.id
@@ -1461,6 +1591,7 @@ function get_bl_compta_par_mois($annee, $mois) {
             INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
             WHERE YEAR(b.date_bl) = :a AND MONTH(b.date_bl) = :m
               AND b.statut IN (\'valide\', \'paye\')
+              ' . bl_sql_archived_clause('b', 'active') . '
             ORDER BY b.date_bl DESC, b.id DESC
         ');
         $stmt->execute(['a' => $annee, 'm' => $mois]);
@@ -1642,7 +1773,7 @@ function bl_sql_rapport_filtre_payee($alias = 'b')
 /**
  * @return list<array<string, mixed>>
  */
-function get_bl_factures_payees_annee($annee)
+function get_bl_factures_payees_annee($annee, $archive_mode = 'active')
 {
     global $db;
     $annee = (int) $annee;
@@ -1650,7 +1781,7 @@ function get_bl_factures_payees_annee($annee)
         return [];
     }
     $date_ref = bl_sql_rapport_date_ref('b');
-    $filtre = bl_sql_rapport_filtre_payee('b');
+    $filtre = bl_sql_rapport_filtre_payee('b') . bl_sql_archived_clause('b', $archive_mode);
     try {
         $stmt = $db->prepare('
             SELECT b.*, c.raison_sociale
@@ -1699,9 +1830,9 @@ function bl_rapport_mois_labels()
  *
  * @return array{mois: list<array{mois:int,label:string,nb_clients:int,nb_factures:int,montant:float}>,total: array{nb_clients:int,nb_factures:int,montant:float}}
  */
-function get_rapport_mensuel_factures_payees($annee)
+function get_rapport_mensuel_factures_payees($annee, $archive_mode = 'active')
 {
-    $rows = get_bl_factures_payees_annee($annee);
+    $rows = get_bl_factures_payees_annee($annee, $archive_mode);
     $labels = bl_rapport_mois_labels();
     $par_mois = [];
     for ($m = 1; $m <= 12; $m++) {
@@ -1757,9 +1888,9 @@ function get_rapport_mensuel_factures_payees($annee)
  *
  * @return list<array{client_id:int,client_label:string,nb_factures:int,montant:float}>
  */
-function get_rapport_clients_factures_payees($annee)
+function get_rapport_clients_factures_payees($annee, $archive_mode = 'active')
 {
-    $rows = get_bl_factures_payees_annee($annee);
+    $rows = get_bl_factures_payees_annee($annee, $archive_mode);
     $par_client = [];
     foreach ($rows as $bl) {
         $cid = (int) ($bl['client_b2b_id'] ?? 0);
@@ -1793,7 +1924,7 @@ function get_rapport_clients_factures_payees($annee)
  *
  * @return list<array{article_label:string,nb_factures:int,quantite:float,montant:float}>
  */
-function get_rapport_articles_factures_payees($annee)
+function get_rapport_articles_factures_payees($annee, $archive_mode = 'active')
 {
     global $db;
     $annee = (int) $annee;
@@ -1801,7 +1932,7 @@ function get_rapport_articles_factures_payees($annee)
         return [];
     }
     $date_ref = bl_sql_rapport_date_ref('b');
-    $filtre = bl_sql_rapport_filtre_payee('b');
+    $filtre = bl_sql_rapport_filtre_payee('b') . bl_sql_archived_clause('b', $archive_mode);
     try {
         $stmt = $db->prepare('
             SELECT l.designation, l.produit_id, l.quantite, l.prix_unitaire, l.total_ligne,

@@ -1,0 +1,2 @@
+# Interdire l'accès HTTP aux files d'attente et secrets
+Require all denied

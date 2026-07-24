@@ -77,9 +77,6 @@ $firebase_notify_type = 'user';
             <i class="fas fa-home"></i> Bienvenue, <?php echo htmlspecialchars($user['prenom'] . ' ' . $user['nom']); ?>
         </h1>
         <div class="content-header-actions">
-            <button type="button" id="btn-enable-notifications" class="btn-voir-produits btn-enable-notifications" data-notify-type="user">
-                <i class="fas fa-bell-slash"></i> Activer les notifications
-            </button>
             <a href="/index.php" class="btn-voir-produits">
                 <i class="fas fa-store"></i> Voir tous les produits
             </a>
@@ -88,6 +85,10 @@ $firebase_notify_type = 'user';
 
     <div id="notify-help-panel" class="notify-help-panel" hidden aria-live="polite">
         <h4><i class="fas fa-circle-info"></i> Autoriser les notifications manuellement</h4>
+        <p style="margin:0 0 10px;font-size:14px;color:#555;">
+            Ouvrez le menu → <strong>Notifications</strong>, puis autorisez les alertes pour recevoir
+            les mises à jour de commande sur ce navigateur (et dans l’application Sugar Paper).
+        </p>
         <ol>
             <li>Cliquez sur le <strong>cadenas</strong> (à gauche de l'adresse)</li>
             <li><strong>Notifications</strong> → choisissez <strong>Autoriser</strong></li>

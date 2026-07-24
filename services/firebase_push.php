@@ -357,6 +357,14 @@ function firebase_send_notification($tokens, $title, $body, $data = []) {
     if (empty($tokens)) {
         return ['success' => 0, 'failed' => 0, 'errors' => []];
     }
+    if (!is_array($tokens)) {
+        $tokens = [$tokens];
+    }
+    $tokens = array_values(array_unique(array_filter(array_map('strval', $tokens))));
+    if (empty($tokens)) {
+        return ['success' => 0, 'failed' => 0, 'errors' => []];
+    }
+
     $config = _firebase_get_config();
     $credentials_path = $config['credentials_path'];
     $project_id = _firebase_get_project_id($credentials_path);
@@ -366,4 +374,70 @@ function firebase_send_notification($tokens, $title, $body, $data = []) {
         return $result;
     }
     return _firebase_send_native($credentials_path, $project_id, $tokens, $title, $body, $data);
+}
+
+/**
+ * Envoie une notification push à chaque admin éligible individuellement
+ * (un envoi par compte, sur tous ses appareils)
+ *
+ * @param string $title
+ * @param string $body
+ * @param array $data
+ * @return array ['success'=>int,'failed'=>int,'admins_notified'=>int,'admins_total'=>int,'errors'=>array,'details'=>array]
+ */
+function firebase_send_notification_to_all_admins($title, $body, $data = []) {
+    if (!function_exists('get_fcm_admin_token_groups')) {
+        require_once __DIR__ . '/../models/model_fcm.php';
+    }
+
+    $groups = get_fcm_admin_token_groups();
+    $total_success = 0;
+    $total_failed = 0;
+    $admins_notified = 0;
+    $errors = [];
+    $details = [];
+
+    foreach ($groups as $group) {
+        $admin_id = (int) $group['admin_id'];
+        $tokens = $group['tokens'];
+        if (empty($tokens)) {
+            continue;
+        }
+
+        // Tag unique par admin pour éviter qu'un navigateur ne fusionne les alertes multi-comptes
+        $payload = is_array($data) ? $data : [];
+        $base_tag = isset($payload['tag']) ? (string) $payload['tag'] : ('admin-alert-' . time());
+        $payload['tag'] = $base_tag . '-a' . $admin_id;
+        $payload['admin_id'] = (string) $admin_id;
+
+        $result = firebase_send_notification($tokens, $title, $body, $payload);
+        $ok = (int) ($result['success'] ?? 0);
+        $ko = (int) ($result['failed'] ?? 0);
+        $total_success += $ok;
+        $total_failed += $ko;
+        if ($ok > 0) {
+            $admins_notified++;
+        }
+        if (!empty($result['errors'])) {
+            foreach ($result['errors'] as $err) {
+                $errors[] = 'admin#' . $admin_id . ': ' . $err;
+            }
+        }
+        $details[] = [
+            'admin_id' => $admin_id,
+            'email' => $group['email'] ?? '',
+            'tokens' => count($tokens),
+            'success' => $ok,
+            'failed' => $ko,
+        ];
+    }
+
+    return [
+        'success' => $total_success,
+        'failed' => $total_failed,
+        'admins_notified' => $admins_notified,
+        'admins_total' => count($groups),
+        'errors' => $errors,
+        'details' => $details,
+    ];
 }

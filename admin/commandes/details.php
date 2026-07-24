@@ -29,6 +29,7 @@ require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
 require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
 require_once __DIR__ . '/../../includes/geo_location.php';
+require_once __DIR__ . '/../../includes/admin_permissions.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
@@ -51,8 +52,8 @@ if (empty($_SESSION['admin_csrf'])) {
 }
 $admin_csrf = (string) $_SESSION['admin_csrf'];
 
-// Suppression définitive de la commande
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_commande'])) {
+// Archivage / désarchivage de la commande
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['archiver_commande']) || isset($_POST['desarchiver_commande']))) {
     $token = $_POST['csrf_token'] ?? '';
     if ($token === '' || !hash_equals($admin_csrf, (string) $token)) {
         $_SESSION['error_message'] = 'Jeton de sécurité invalide. Rechargez la page et réessayez.';
@@ -60,14 +61,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_commande'])
         exit;
     }
 
-    $result = delete_commande($commande_id);
+    if (isset($_POST['desarchiver_commande'])) {
+        if (!admin_is_full_admin()) {
+            $_SESSION['error_message'] = 'Seul un administrateur peut désarchiver une commande.';
+            header('Location: details.php?id=' . $commande_id);
+            exit;
+        }
+        $result = unarchive_commande($commande_id);
+        if (!empty($result['success'])) {
+            $_SESSION['success_message'] = $result['message'];
+            header('Location: details.php?id=' . $commande_id);
+            exit;
+        }
+        $_SESSION['error_message'] = $result['message'] ?? 'Impossible de désarchiver la commande.';
+        header('Location: details.php?id=' . $commande_id);
+        exit;
+    }
+
+    $result = archive_commande($commande_id, (int) ($_SESSION['admin_id'] ?? 0));
     if (!empty($result['success'])) {
         $_SESSION['success_message'] = $result['message'];
         header('Location: index.php');
         exit;
     }
 
-    $_SESSION['error_message'] = $result['message'] ?? 'Impossible de supprimer la commande.';
+    $_SESSION['error_message'] = $result['message'] ?? 'Impossible d\'archiver la commande.';
     header('Location: details.php?id=' . $commande_id);
     exit;
 }
@@ -76,9 +94,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_commande'])
 $is_annulee = $commande['statut'] === 'annulee';
 $is_livree = $commande['statut'] === 'livree';
 $is_paye = $commande['statut'] === 'paye';
+$is_archivee = commande_est_archivee($commande);
+$can_desarchiver = admin_is_full_admin() && $is_archivee;
 
-// Traiter les actions de statut (uniquement si la commande n'est pas annulée)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
+// Traiter les actions de statut (uniquement si la commande n'est pas annulée ni archivée)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
     $statut_mis_a_jour = null;
 
     if (isset($_POST['prendre_en_charge'])) {
@@ -182,13 +202,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                 <i class="fas fa-map-location-dot"></i> Suivre la livraison
             </a>
             <?php endif; ?>
-            <a href="index.php" class="btn-back">
+            <a href="<?php echo $is_archivee && admin_is_full_admin() ? 'archives.php' : 'index.php'; ?>" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
-            <button type="button" class="btn-delete btn-secondary-style" id="btn-open-delete-commande"
-                title="Supprimer définitivement cette commande">
-                <i class="fas fa-trash-alt"></i> Supprimer
+            <?php if ($can_desarchiver): ?>
+            <button type="button" class="btn-secondary" id="btn-open-delete-commande"
+                title="Désarchiver cette commande">
+                <i class="fas fa-box-open"></i> Désarchiver
             </button>
+            <?php elseif (!$is_archivee): ?>
+            <button type="button" class="btn-secondary" id="btn-open-delete-commande"
+                title="Archiver cette commande">
+                <i class="fas fa-box-archive"></i> Archiver
+            </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -386,7 +413,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
             <h2><i class="fas fa-tasks"></i> Statut de la commande</h2>
         </div>
 
-        <?php if ($is_annulee): ?>
+        <?php if ($is_archivee): ?>
+            <div class="alert-annulee">
+                <h3><i class="fas fa-box-archive"></i> Commande archivée</h3>
+                <p>Cette commande est archivée. Les modifications de statut sont désactivées.
+                    <?php if ($can_desarchiver): ?>Vous pouvez la désarchiver via le bouton en haut de page.<?php endif; ?>
+                </p>
+            </div>
+        <?php elseif ($is_annulee): ?>
             <div class="alert-annulee">
                 <h3><i class="fas fa-ban"></i> Commande Annulée</h3>
                 <p>Cette commande a été annulée. Les actions de modification ne sont pas disponibles. Vous pouvez uniquement
@@ -483,22 +517,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
         <div class="modal-content commande-delete-modal">
             <div class="modal-header">
                 <h2 class="modal-title" id="modal-delete-commande-title">
-                    <i class="fas fa-trash-alt"></i> Supprimer la commande
+                    <i class="fas <?php echo $can_desarchiver ? 'fa-box-open' : 'fa-box-archive'; ?>"></i>
+                    <?php echo $can_desarchiver ? 'Désarchiver la commande' : 'Archiver la commande'; ?>
                 </h2>
                 <button type="button" class="modal-close" id="btn-close-delete-commande" aria-label="Fermer">
                     &times;
                 </button>
             </div>
+            <?php if ($can_desarchiver): ?>
             <p class="commande-delete-modal__lead">
-                Êtes-vous sûr de vouloir supprimer définitivement la commande
+                Désarchiver la commande
+                <strong>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></strong> ?
+                Elle réapparaîtra dans la liste des commandes actives.
+            </p>
+            <form method="POST" action="" class="commande-delete-modal__form" id="form-delete-commande">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
+                <div class="commande-delete-modal__actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-delete-commande">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" name="desarchiver_commande" class="btn-primary">
+                        <i class="fas fa-box-open"></i> Désarchiver
+                    </button>
+                </div>
+            </form>
+            <?php else: ?>
+            <p class="commande-delete-modal__lead">
+                Archiver la commande
                 <strong>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></strong> ?
             </p>
             <div class="commande-delete-modal__warning">
-                <p><i class="fas fa-exclamation-triangle"></i> Cette action est <strong>irréversible</strong>.</p>
-                <p>La commande, ses lignes produits<?php echo $facture ? ' et la facture associée' : ''; ?> seront effacées de la base de données.</p>
-                <?php if ($is_paye): ?>
-                    <p>Le stock des produits sera réintégré automatiquement (commande payée).</p>
-                <?php endif; ?>
+                <p><i class="fas fa-info-circle"></i> La commande disparaîtra de la liste active mais ne sera pas supprimée.</p>
+                <p>Seul un administrateur pourra la consulter et la désarchiver depuis les Archives.</p>
             </div>
             <form method="POST" action="" class="commande-delete-modal__form" id="form-delete-commande">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
@@ -506,11 +556,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee) {
                     <button type="button" class="btn-secondary" id="btn-cancel-delete-commande">
                         <i class="fas fa-times"></i> Annuler
                     </button>
-                    <button type="submit" name="supprimer_commande" class="btn-delete">
-                        <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                    <button type="submit" name="archiver_commande" class="btn-primary">
+                        <i class="fas fa-box-archive"></i> Archiver
                     </button>
                 </div>
             </form>
+            <?php endif; ?>
         </div>
     </div>
 

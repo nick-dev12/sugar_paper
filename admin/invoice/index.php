@@ -18,6 +18,16 @@ if (!admin_can_invoice_hub()) {
     exit;
 }
 
+$invoice_archive_mode = !empty($INVOICE_ARCHIVE_MODE);
+$invoice_archive_sql_mode = $invoice_archive_mode ? 'archived' : 'active';
+if ($invoice_archive_mode && !admin_is_full_admin()) {
+    header('Location: index.php');
+    exit;
+}
+$invoice_hub_self = $invoice_archive_mode ? 'archives.php' : 'index.php';
+$invoice_hub_qs_base = $invoice_archive_mode ? 'archives.php?' : 'index.php?';
+
+
 require_once __DIR__ . '/../../models/model_devis.php';
 require_once __DIR__ . '/../../models/model_zones_livraison.php';
 require_once __DIR__ . '/../../models/model_bl.php';
@@ -40,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_contact'])) {
     } else {
         $_SESSION['contacts_error'] = 'Erreur lors de l\'ajout du contact.';
     }
-    header('Location: index.php?' . $contacts_redirect_qs);
+    header('Location: ' . $invoice_hub_self . '?' . $contacts_redirect_qs);
     exit;
 }
 
@@ -57,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_contact'])) {
     } else {
         $_SESSION['contacts_error'] = 'Erreur lors de la modification.';
     }
-    header('Location: index.php?' . $contacts_redirect_qs);
+    header('Location: ' . $invoice_hub_self . '?' . $contacts_redirect_qs);
     exit;
 }
 
@@ -84,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_contacts'])) {
     } else {
         $_SESSION['contacts_error'] = 'Aucun contact à importer.';
     }
-    header('Location: index.php?' . $contacts_redirect_qs);
+    header('Location: ' . $invoice_hub_self . '?' . $contacts_redirect_qs);
     exit;
 }
 
@@ -103,9 +113,9 @@ $devis_total_count = admin_can_devis() ? count_all_devis() : 0;
 $devis_list = admin_can_devis() ? get_all_devis() : [];
 
 $bl_tables_ok = bl_tables_available();
-$facture_total_count = ($bl_tables_ok && admin_can_bl_retours_b2b()) ? count_all_bl_invoices() : 0;
+$facture_total_count = ($bl_tables_ok && admin_can_bl_retours_b2b()) ? count_all_bl_invoices($invoice_archive_sql_mode) : 0;
 $facture_list = ($bl_tables_ok && admin_can_bl_retours_b2b())
-    ? get_all_bl_with_clients()
+    ? get_all_bl_with_clients($invoice_archive_sql_mode)
     : [];
 
 if ($bl_tables_ok) {
@@ -252,9 +262,9 @@ if (!in_array($rapport_annee, $rapport_annees, true)) {
     $rapport_annees[] = $rapport_annee;
     rsort($rapport_annees, SORT_NUMERIC);
 }
-$rapport_mensuel = $bl_tables_ok ? get_rapport_mensuel_factures_payees($rapport_annee) : ['mois' => [], 'total' => ['nb_clients' => 0, 'nb_factures' => 0, 'montant' => 0]];
-$rapport_clients = $bl_tables_ok ? get_rapport_clients_factures_payees($rapport_annee) : [];
-$rapport_articles = $bl_tables_ok ? get_rapport_articles_factures_payees($rapport_annee) : [];
+$rapport_mensuel = $bl_tables_ok ? get_rapport_mensuel_factures_payees($rapport_annee, $invoice_archive_sql_mode) : ['mois' => [], 'total' => ['nb_clients' => 0, 'nb_factures' => 0, 'montant' => 0]];
+$rapport_clients = $bl_tables_ok ? get_rapport_clients_factures_payees($rapport_annee, $invoice_archive_sql_mode) : [];
+$rapport_articles = $bl_tables_ok ? get_rapport_articles_factures_payees($rapport_annee, $invoice_archive_sql_mode) : [];
 
 /** Texte de recherche pour filtrage client (onglets devis / facture / contacts). */
 function invoice_tab_search_blob(...$parts)
@@ -273,10 +283,10 @@ $bp = is_array($bl_post) ? $bl_post : [];
 $devis_page_has_alert = isset($_SESSION['success_message']) || !empty($bl_erreur) || !empty($devis_erreur);
 
 $invoice_hub_titles = [
-    'facture' => ['label' => 'Factures', 'icon' => 'fa-file-invoice-dollar'],
+    'facture' => ['label' => $invoice_archive_mode ? 'Factures archivées' : 'Factures', 'icon' => $invoice_archive_mode ? 'fa-box-archive' : 'fa-file-invoice-dollar'],
     'devis' => ['label' => 'Devis', 'icon' => 'fa-file-invoice'],
     'contacts' => ['label' => 'Clients', 'icon' => 'fa-address-book'],
-    'rapports' => ['label' => 'Rapports', 'icon' => 'fa-chart-bar'],
+    'rapports' => ['label' => $invoice_archive_mode ? 'Rapports (archives)' : 'Rapports', 'icon' => 'fa-chart-bar'],
 ];
 $invoice_hub_title = $invoice_hub_titles[$active_tab] ?? $invoice_hub_titles['facture'];
 
@@ -308,7 +318,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
     <?php include __DIR__ . '/../../includes/favicon.php'; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice — Administration</title>
+    <title><?php echo $invoice_archive_mode ? 'Archives Invoice' : 'Invoice'; ?> — Administration</title>
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
@@ -328,6 +338,17 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
             </h1>
         </div>
         <div class="header-actions">
+            <?php if (admin_is_full_admin()): ?>
+                <?php if ($invoice_archive_mode): ?>
+                <a href="index.php?tab=facture" class="btn-secondary">
+                    <i class="fas fa-file-invoice-dollar"></i> Invoice active
+                </a>
+                <?php else: ?>
+                <a href="archives.php?tab=facture" class="btn-secondary">
+                    <i class="fas fa-box-archive"></i> Archives
+                </a>
+                <?php endif; ?>
+            <?php endif; ?>
             <?php include __DIR__ . '/../includes/btn_retour_site.php'; ?>
         </div>
     </div>
@@ -500,10 +521,12 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         <?php else: ?>
         <?php if (!admin_is_restricted_admin_account()): ?>
         <div class="admin-devis-bl-panel-actions">
+            <?php if (!$invoice_archive_mode): ?>
             <button type="button" class="btn-primary invoice-panel-fab invoice-panel-fab--facture" id="btn-nouveau-bl" aria-label="Créer une nouvelle facture">
                 <i class="fas fa-plus" aria-hidden="true"></i>
                 <span class="invoice-fab-label">Nouvelle facture</span>
             </button>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
         <div class="invoice-facture-kpis" id="facture-kpis" aria-label="Montants totaux des factures">
@@ -535,8 +558,8 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                     <span class="bl-empty-state__ring"></span>
                     <i class="fas fa-file-invoice"></i>
                 </div>
-                <h3 class="bl-empty-state__title">Aucune facture</h3>
-                <p class="bl-empty-state__text">Créez une première facture avec « Nouvelle facture ».</p>
+                <h3 class="bl-empty-state__title"><?php echo $invoice_archive_mode ? 'Aucune facture archivée' : 'Aucune facture'; ?></h3>
+                <p class="bl-empty-state__text"><?php echo $invoice_archive_mode ? 'Les factures archivées apparaîtront ici.' : 'Créez une première facture avec « Nouvelle facture ».'; ?></p>
             </div>
         <?php else: ?>
                 <div class="invoice-panel-toolbar">

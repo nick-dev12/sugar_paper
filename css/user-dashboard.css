@@ -125,6 +125,25 @@ body::before {
     transform: translateX(5px);
 }
 
+button.menu-item {
+    width: 100%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+}
+
+#btn-enable-notifications.notifications-enabled {
+    color: var(--couleur-dominante);
+    border-left-color: var(--couleur-dominante);
+    background: rgba(229, 72, 138, 0.08);
+}
+
+#btn-enable-notifications.notifications-enabled i {
+    color: var(--couleur-dominante);
+}
+
 /* Bouton menu mobile */
 .mobile-menu-toggle {
     display: none;

@@ -57,6 +57,8 @@ $token_rows = $db->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $eligible_count = count(get_all_fcm_tokens_admin());
+$fcm_groups = get_fcm_admin_token_groups();
+$admins_with_tokens = count($fcm_groups);
 $notify_pending = count(glob(NOTIFY_QUEUE_PENDING_DIR . '/*.json') ?: []);
 $email_pending = count(glob(EMAIL_QUEUE_PENDING_DIR . '/*.json') ?: []);
 $email_failed = count(glob(EMAIL_QUEUE_FAILED_DIR . '/*.json') ?: []);
@@ -103,7 +105,8 @@ $worker_url = rtrim(get_site_base_url(), '/') . get_public_root_uri_path() . '/a
     <?php endif; ?>
 
     <div class="fcm-diag-grid">
-        <div class="fcm-diag-card"><span>Tokens admin éligibles</span><strong><?php echo (int) $eligible_count; ?></strong></div>
+        <div class="fcm-diag-card"><span>Tokens appareils</span><strong><?php echo (int) $eligible_count; ?></strong></div>
+        <div class="fcm-diag-card"><span>Admins avec push actif</span><strong><?php echo (int) $admins_with_tokens; ?></strong></div>
         <div class="fcm-diag-card"><span>Jobs notify en attente</span><strong><?php echo (int) $notify_pending; ?></strong></div>
         <div class="fcm-diag-card"><span>Emails en attente</span><strong><?php echo (int) $email_pending; ?></strong></div>
         <div class="fcm-diag-card"><span>Emails en échec</span><strong><?php echo (int) $email_failed; ?></strong></div>
@@ -127,28 +130,50 @@ $worker_url = rtrim(get_site_base_url(), '/') . get_public_root_uri_path() . '/a
         </form>
     </div>
 
-    <h2 style="margin:0 0 12px;font-size:1.1rem;">Cron HTTP (production)</h2>
-    <p style="font-size:14px;color:#666;margin:0 0 8px;">Toutes les 1–2 minutes sur le serveur :</p>
+    <h2 style="margin:0 0 12px;font-size:1.1rem;">Cron emails (production Webuzo)</h2>
+    <p style="font-size:14px;color:#666;margin:0 0 8px;">
+        Après une commande : les <strong>push</strong> partent tout de suite, les <strong>emails</strong> sont mis en file
+        (<code>storage/email_queue/pending</code>) et traités par le cron ci-dessous (toutes les 1–2 min).
+    </p>
+    <p style="font-size:14px;color:#666;margin:0 0 8px;"><strong>Option A — CLI (recommandé) :</strong></p>
+    <div class="fcm-diag-url">/usr/bin/php /home/jomas/public_html/scripts/process_queues_cron.php</div>
+    <p style="font-size:13px;color:#888;margin:6px 0 12px;">
+        Adaptez le chemin si le site est dans un sous-dossier (ex. <code>/home/jomas/sugar-paper.com/scripts/...</code>).
+        Minute = <code>*</code> (chaque minute).
+    </p>
+    <p style="font-size:14px;color:#666;margin:0 0 8px;"><strong>Option B — HTTP :</strong></p>
     <div class="fcm-diag-url"><?php echo htmlspecialchars($worker_url); ?></div>
+    <p style="font-size:13px;color:#888;margin:6px 0 20px;">
+        Commande cron : <code>curl -fsS "<?php echo htmlspecialchars($worker_url); ?>" >/dev/null 2>&amp;1</code>
+    </p>
 
     <h2 style="margin:24px 0 12px;font-size:1.1rem;">Comptes admin</h2>
     <table class="fcm-diag-table">
-        <thead><tr><th>ID</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Éligible push</th></tr></thead>
+        <thead><tr><th>ID</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Éligible push</th><th>Tokens liés</th></tr></thead>
         <tbody>
         <?php foreach ($admins as $a):
             $role = normalize_admin_role($a['role'] ?? '');
             $ok = ($a['statut'] ?? '') === 'actif' && in_array($role, fcm_notify_admin_roles_eligible(), true);
+            $aid = (int) $a['id'];
+            $tok_n = isset($fcm_groups[$aid]) ? count($fcm_groups[$aid]['tokens']) : 0;
         ?>
             <tr>
-                <td><?php echo (int) $a['id']; ?></td>
+                <td><?php echo $aid; ?></td>
                 <td><?php echo htmlspecialchars($a['email']); ?></td>
                 <td><?php echo htmlspecialchars($role); ?></td>
                 <td><?php echo htmlspecialchars($a['statut']); ?></td>
                 <td class="<?php echo $ok ? 'badge-ok' : 'badge-ko'; ?>"><?php echo $ok ? 'Oui' : 'Non'; ?></td>
+                <td class="<?php echo $tok_n > 0 ? 'badge-ok' : 'badge-ko'; ?>"><?php echo (int) $tok_n; ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
     </table>
+
+    <p style="font-size:13px;color:#666;margin:8px 0 20px;">
+        <i class="fas fa-info-circle"></i>
+        Chaque compte admin/utilisateur doit activer les notifications <strong>sur son propre appareil / navigateur</strong>.
+        Un même navigateur ne peut lier le token qu’à <strong>un seul</strong> compte à la fois.
+    </p>
 
     <h2 style="margin:24px 0 12px;font-size:1.1rem;">Tokens FCM enregistrés (type admin)</h2>
     <table class="fcm-diag-table">

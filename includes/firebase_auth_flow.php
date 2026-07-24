@@ -109,6 +109,7 @@ function firebase_auth_set_user_session(array $user)
     $_SESSION['user_email'] = (string) ($user['email'] ?? '');
     $_SESSION['user_telephone'] = $user['telephone'];
     $_SESSION['user_statut'] = $user['statut'];
+    $_SESSION['fcm_resync_user'] = 1;
 }
 
 function firebase_auth_set_admin_session(array $admin)
@@ -127,6 +128,7 @@ function firebase_auth_set_admin_session(array $admin)
     $_SESSION['admin_email'] = $admin['email'] ?? '';
     $_SESSION['admin_statut'] = $admin['statut'];
     $_SESSION['admin_role'] = normalize_admin_role($admin['role'] ?? 'admin');
+    $_SESSION['fcm_resync_admin'] = 1;
 }
 
 function firebase_auth_find_admin(array $profile)

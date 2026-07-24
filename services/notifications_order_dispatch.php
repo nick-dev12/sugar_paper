@@ -1,10 +1,12 @@
 <?php
 /**
- * Envoi immédiat des notifications post-commande (sans file d'attente).
+ * Dispatch post-commande :
+ * - Push FCM : synchrone (premier plan)
+ * - Emails SMTP : file d'attente async (cron / worker)
  */
 
 /**
- * Push + emails admin/client après commande classique.
+ * Push immédiat + emails mis en file après commande classique.
  *
  * @param array<string, mixed> $result Retour de process_create_commande()
  */
@@ -13,7 +15,8 @@ function notifications_dispatch_after_commande(array $result) {
         return;
     }
 
-    @set_time_limit(120);
+    // Push FCM uniquement — les emails partent en file async
+    @set_time_limit(45);
 
     if (!empty($result['email_data']) && is_array($result['email_data'])) {
         $d = $result['email_data'];
@@ -52,7 +55,7 @@ function notifications_dispatch_after_commande(array $result) {
 }
 
 /**
- * Push + emails admin/client après commande personnalisée.
+ * Push immédiat + emails mis en file après commande personnalisée.
  *
  * @param array<string, mixed> $notify_data
  */
@@ -61,7 +64,7 @@ function notifications_dispatch_after_commande_personnalisee(array $notify_data)
         return;
     }
 
-    @set_time_limit(120);
+    @set_time_limit(45);
 
     require_once __DIR__ . '/send_commande_personnalisee_notification.php';
 
