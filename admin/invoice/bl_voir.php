@@ -106,7 +106,7 @@ $can_desarchiver = admin_is_full_admin() && $bl_est_archive;
             <i class="fas fa-file-invoice"></i> Facture <?php echo htmlspecialchars($bl['numero_bl'] ?? ''); ?>
         </h1>
         <div class="header-actions header-actions--primary-row">
-            <a href="bl_facture.php?id=<?php echo (int) $bl_id; ?>" class="btn-primary" target="_blank">
+            <a href="bl_facture.php?id=<?php echo (int) $bl_id; ?>" class="btn-primary">
                 <i class="fas fa-file-invoice"></i> Voir la facture
             </a>
             <?php if ($bl_livraison_suivable): ?>

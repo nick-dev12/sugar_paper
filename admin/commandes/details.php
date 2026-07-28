@@ -190,7 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
         </h1>
         <div class="header-actions header-actions--primary-row">
             <?php if ($facture): ?>
-                <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary" target="_blank">
+                <a href="facture.php?id=<?php echo (int) $facture['id']; ?>" class="btn-primary">
                     <i class="fas fa-file-invoice"></i> Voir la facture
                 </a>
             <?php else: ?>

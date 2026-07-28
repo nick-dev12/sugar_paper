@@ -103,7 +103,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
         <h1><i class="fas fa-palette"></i> Demande #<?php echo $cp['id']; ?></h1>
         <div class="header-actions">
             <?php if ($facture_cp): ?>
-                <a href="facture.php?id=<?php echo (int) $facture_cp['id']; ?>" class="btn-primary" target="_blank">
+                <a href="facture.php?id=<?php echo (int) $facture_cp['id']; ?>" class="btn-primary">
                     <i class="fas fa-file-invoice"></i> Voir la facture
                 </a>
                 <?php

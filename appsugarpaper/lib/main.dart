@@ -733,26 +733,39 @@ class _WebViewScreenState extends State<WebViewScreen>
       final url = (map['url'] ?? '').toString();
 
       var shareText = text.trim();
-      if (url.isNotEmpty && shareText.contains(url)) {
+      // Message multi-lignes (ex. facture) : WhatsApp iOS/Android ignore le texte
+      // si on ne partage que l'URI via Share.shareUri / url seule.
+      final isRichMessage = shareText.contains('\n') || shareText.length > 100;
+      if (!isRichMessage && url.isNotEmpty && shareText.contains(url)) {
         shareText = shareText.replaceAll(url, '').replaceAll(RegExp(r'\s*:\s*$'), '').trim();
       }
 
-      final shareBody = [shareText, url]
-          .where((s) => s.trim().isNotEmpty)
-          .join(shareText.contains(url) || url.isEmpty ? '' : '\n')
-          .trim();
-
-      final shareValue = url.isNotEmpty
-          ? url
-          : (shareBody.isNotEmpty ? shareBody : title.trim());
+      late final String shareValue;
+      if (isRichMessage) {
+        if (url.isNotEmpty && !shareText.contains(url)) {
+          shareValue = '$shareText\n$url'.trim();
+        } else {
+          shareValue = shareText.isNotEmpty ? shareText : url;
+        }
+      } else {
+        final parts = <String>[];
+        if (shareText.isNotEmpty) {
+          parts.add(shareText);
+        }
+        if (url.isNotEmpty && !shareText.contains(url)) {
+          parts.add(url);
+        }
+        final body = parts.join('\n').trim();
+        shareValue = body.isNotEmpty ? body : (url.isNotEmpty ? url : title.trim());
+      }
       if (shareValue.isEmpty) {
         return {'success': false, 'error': 'Contenu de partage vide'};
       }
 
       final origin = _sharePositionOrigin();
 
-      // iOS (surtout iPad) exige une ancre valide pour UIActivityViewController.
-      if (!kIsWeb && Platform.isIOS && url.isNotEmpty) {
+      // Share.shareUri n'envoie QUE le lien — uniquement pour un partage sans message texte.
+      if (!kIsWeb && Platform.isIOS && url.isNotEmpty && !isRichMessage && shareText.isEmpty) {
         final uri = Uri.tryParse(url);
         if (uri != null) {
           final uriResult = await Share.shareUri(

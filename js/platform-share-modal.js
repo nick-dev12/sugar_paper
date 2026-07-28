@@ -61,18 +61,31 @@
         return text;
     }
 
+    function isRichShareMessage(message) {
+        message = (message || '').trim();
+        return message.indexOf('\n') !== -1 || message.length > 100;
+    }
+
     /**
      * Construit la charge utile commune au partage natif.
+     * Messages riches (factures) : tout dans `text` (détails + URL), sans `url` séparée —
+     * sinon WhatsApp iOS/Android n'affiche que l'aperçu du lien.
      */
     function buildSharePayload(opts) {
         var url = (opts.url || '').trim();
         var title = (opts.title || opts.modalTitle || 'Partager').trim();
-        var text = buildShareText(opts);
-        /* Partage de lien : texte court sans URL (le champ url suffit — évite duplication Facebook/WhatsApp) */
-        if (url) {
-            if (text === url || text.indexOf(url) !== -1) {
-                text = title;
+        var message = (opts.message || '').trim();
+        var text = message || title;
+
+        if (isRichShareMessage(message)) {
+            if (url && text.indexOf(url) === -1) {
+                text = text.replace(/\s+$/, '') + '\n' + url;
             }
+            return { title: title, text: text, url: '' };
+        }
+
+        text = buildShareText(opts);
+        if (url) {
             return { title: title, text: text, url: url };
         }
         return { title: title, text: text || title, url: '' };
@@ -126,10 +139,13 @@
      * Déclenche la feuille de partage native du système (app Flutter ou navigateur mobile).
      */
     function tryNativeShare(opts) {
-        if (!opts || !opts.url) {
+        if (!opts || (!opts.url && !opts.message)) {
             return Promise.resolve(false);
         }
         var payload = buildSharePayload(opts);
+        if (!payload.text && !payload.url) {
+            return Promise.resolve(false);
+        }
         return nativeShareViaBridge(payload).then(function (bridgeOk) {
             if (bridgeOk) {
                 return true;
