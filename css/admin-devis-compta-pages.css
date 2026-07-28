@@ -1674,6 +1674,26 @@
   .page-devis-admin .invoice-data-table {
     min-width: 0;
     table-layout: fixed;
+    font-size: clamp(0.8rem, 3vw, 0.92rem);
+  }
+
+  .page-devis-admin .invoice-data-table thead th {
+    font-size: clamp(0.68rem, 2.6vw, 0.78rem);
+  }
+
+  .page-devis-admin .invoice-cell-primary {
+    font-size: clamp(0.82rem, 3vw, 0.94rem);
+    line-height: 1.28;
+  }
+
+  .page-devis-admin .invoice-cell-sub {
+    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+    line-height: 1.25;
+  }
+
+  .page-devis-admin .invoice-date-statut-line {
+    font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+    line-height: 1.25;
   }
 
   .page-devis-admin .invoice-data-table col.invoice-col-client {
@@ -1702,14 +1722,22 @@
 
   .page-devis-admin .invoice-action-statut,
   .page-devis-admin .invoice-row-statut {
-    font-size: min(11px, 2.8vw);
+    font-size: clamp(0.7rem, 2.5vw, 0.8rem);
   }
 }
 
 @media (max-width: 400px) {
   .page-devis-admin .invoice-data-table th,
   .page-devis-admin .invoice-data-table td {
-    padding: 8px 6px;
+    padding: 9px 7px;
+  }
+
+  .page-devis-admin .invoice-data-table {
+    font-size: clamp(0.78rem, 3.2vw, 0.88rem);
+  }
+
+  .page-devis-admin .invoice-data-table thead th {
+    font-size: clamp(0.66rem, 2.8vw, 0.74rem);
   }
 
   .page-devis-admin .invoice-data-table col.invoice-col-client {

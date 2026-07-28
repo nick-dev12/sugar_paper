@@ -19,10 +19,12 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 }
 
 require_once __DIR__ . '/../models/model_commandes_admin.php';
+require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/site_url.php';
 
 $enable_firebase_notifications = true;
 $firebase_notify_type = 'admin';
@@ -62,6 +64,58 @@ if (!empty($produits)) {
     }));
 }
 
+$produits_plus_vendus = [];
+if (!empty($produits)) {
+    foreach ($produits as $produit) {
+        $qte_vendue = get_quantite_vendue_produit((int) ($produit['id'] ?? 0));
+        if ($qte_vendue <= 0) {
+            continue;
+        }
+        $produit['quantite_vendue'] = (int) $qte_vendue;
+        $produits_plus_vendus[] = $produit;
+    }
+
+    usort($produits_plus_vendus, function ($a, $b) {
+        $qa = (int) ($a['quantite_vendue'] ?? 0);
+        $qb = (int) ($b['quantite_vendue'] ?? 0);
+        if ($qa === $qb) {
+            return strcmp((string) ($a['nom'] ?? ''), (string) ($b['nom'] ?? ''));
+        }
+        return $qb <=> $qa;
+    });
+}
+$produits = $produits_plus_vendus;
+$total_produits_plus_vendus = count($produits);
+$produits_par_page = 15;
+$page_produits = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
+$total_pages_produits = $total_produits_plus_vendus > 0
+    ? (int) ceil($total_produits_plus_vendus / $produits_par_page)
+    : 1;
+if ($page_produits > $total_pages_produits) {
+    $page_produits = $total_pages_produits;
+}
+$offset_produits = ($page_produits - 1) * $produits_par_page;
+$produits_page = array_slice($produits, $offset_produits, $produits_par_page);
+$produits_affichage_debut = $total_produits_plus_vendus > 0 ? $offset_produits + 1 : 0;
+$produits_affichage_fin = min($offset_produits + count($produits_page), $total_produits_plus_vendus);
+
+$dashboard_produits_page_url = function ($page) use ($recherche, $categorie_id) {
+    $params = [];
+    if ($page > 1) {
+        $params['page'] = (int) $page;
+    }
+    if ($recherche !== '') {
+        $params['recherche'] = $recherche;
+    }
+    if ($categorie_id > 0) {
+        $params['categorie_id'] = (int) $categorie_id;
+    }
+    $qs = http_build_query($params);
+    return 'dashboard.php' . ($qs !== '' ? '?' . $qs : '');
+};
+
+$base_site_url = rtrim(get_site_base_url(), '/');
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -75,6 +129,7 @@ if (!empty($produits)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-produits-index.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body class="page-dashboard-admin">
@@ -185,51 +240,18 @@ if (!empty($produits)) {
         </div>
 
         <!-- Lien rapide vers les commandes -->
-        <?php if ($en_attente > 0 || $prise_en_charge > 0): ?>
-            <div class="alert-box">
-                <p>
-                    <i class="fas fa-exclamation-circle"></i>
-                    <?php if ($en_attente > 0): ?>
-                        <?php echo $en_attente; ?> commande<?php echo $en_attente > 1 ? 's' : ''; ?> en attente de prise en
-                        charge
-                    <?php elseif ($prise_en_charge > 0): ?>
-                        <?php echo $prise_en_charge; ?> commande<?php echo $prise_en_charge > 1 ? 's' : ''; ?>
-                        prise<?php echo $prise_en_charge > 1 ? 's' : ''; ?> en charge,
-                        prête<?php echo $prise_en_charge > 1 ? 's' : ''; ?> à être
-                        expédiée<?php echo $prise_en_charge > 1 ? 's' : ''; ?>
-                    <?php endif; ?>
-                </p>
-                <a href="commandes/index.php" class="btn-alert">
-                    <i class="fas fa-arrow-right"></i> Gérer les commandes
-                </a>
-            </div>
-        <?php endif; ?>
-
-        <?php if ($commandes_perso_en_attente > 0): ?>
-            <div class="alert-box" style="margin-top: 15px;">
-                <p>
-                    <i class="fas fa-palette"></i>
-                    <?php echo $commandes_perso_en_attente; ?>
-                    commande<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?>
-                    personnalisée<?php echo $commandes_perso_en_attente > 1 ? 's' : ''; ?> en attente
-                </p>
-                <a href="commandes-personnalisees/index.php" class="btn-alert">
-                    <i class="fas fa-arrow-right"></i> Voir les commandes personnalisées
-                </a>
-            </div>
-        <?php endif; ?>
-
         <!-- Section produits -->
         <section class="produits-section">
             <div class="section-title">
-                <h2><i class="fas fa-box"></i> Mes Produits (<?php echo count($produits); ?>)</h2>
+                <h2><i class="fas fa-fire"></i> Produits les plus vendus</h2>
+                <span class="section-title-count"><?php echo (int) $total_produits_plus_vendus; ?></span>
             </div>
 
             <form method="GET" action="" class="admin-filters-bar admin-filters-bar--produits">
                 <div class="admin-filters-fields-row">
                     <div class="admin-filter-field admin-filter-field--search">
                         <label for="recherche">Recherche</label>
-                        <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
+                        <input type="text" id="recherche" name="recherche" placeholder="Nom, description, catégorie..."
                             value="<?php echo htmlspecialchars($recherche); ?>">
                     </div>
                     <div class="admin-filter-field admin-filter-field--categorie">
@@ -258,7 +280,7 @@ if (!empty($produits)) {
             <?php if (empty($produits)): ?>
                 <div class="empty-state">
                     <i class="fas fa-box-open"></i>
-                    <p>Aucun produit enregistré pour le moment.</p>
+                    <p>Aucun produit vendu pour le moment.</p>
                     <a href="produits/ajouter.php" class="btn-primary">
                         <i class="fas fa-plus"></i> Ajouter le premier produit
                     </a>
@@ -266,19 +288,28 @@ if (!empty($produits)) {
             <?php else: ?>
                 <!-- Grille de produits -->
                 <div class="produits-grid">
-                    <?php foreach ($produits as $produit): ?>
+                    <?php foreach ($produits_page as $produit): ?>
                         <?php
-                        $statut_class = 'statut-actif';
-                        if ($produit['statut'] == 'inactif') {
-                            $statut_class = 'statut-inactif';
-                        } elseif ($produit['statut'] == 'rupture_stock') {
-                            $statut_class = 'statut-rupture';
-                        }
-                        $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
+                        $share_url = $base_site_url . '/produit.php?id=' . (int) $produit['id'];
+                        $share_title = (string) ($produit['nom'] ?? 'Produit');
+                        $share_price_value = (!empty($produit['prix_promotion']) && (float) $produit['prix_promotion'] > 0)
+                            ? (float) $produit['prix_promotion']
+                            : (float) ($produit['prix'] ?? 0);
+                        $share_price = number_format($share_price_value, 0, ',', ' ') . ' FCFA';
+                        $share_text = 'Découvrez ce produit : ' . $share_title . ' — ' . $share_price . '.';
                         ?>
                         <div class="produit-card produit-card-linkable"
                             data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
-                            <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
+                            <button type="button"
+                                class="produit-card-share js-platform-share"
+                                aria-label="Partager <?php echo htmlspecialchars($share_title, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-modal-title="Partager le produit"
+                                data-share-title="<?php echo htmlspecialchars($share_title, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-url="<?php echo htmlspecialchars($share_url, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-text="<?php echo htmlspecialchars($share_text, ENT_QUOTES, 'UTF-8'); ?>"
+                                data-share-hint="Partagez ce lien pour que vos clients consultent le produit.">
+                                <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                            </button>
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
                                 onerror="this.src='/image/produit1.jpg'">
@@ -298,7 +329,9 @@ if (!empty($produits)) {
                                 </p>
                                 <p class="produit-card-stock">
                                     Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
-
+                                </p>
+                                <p class="produit-card-sales">
+                                    Vendus: <span class="stock-value"><?php echo (int) ($produit['quantite_vendue'] ?? 0); ?></span>
                                 </p>
                                 <div class="produit-card-actions">
                                     <a href="produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">
@@ -314,6 +347,39 @@ if (!empty($produits)) {
                         </div>
                     <?php endforeach; ?>
                 </div>
+
+                <?php if ($total_pages_produits > 1): ?>
+                <nav class="dashboard-produits-pagination" aria-label="Pagination des produits les plus vendus">
+                    <?php if ($page_produits > 1): ?>
+                    <a href="<?php echo htmlspecialchars($dashboard_produits_page_url($page_produits - 1)); ?>" class="dashboard-produits-pagination__btn">
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i> Précédent
+                    </a>
+                    <?php endif; ?>
+                    <div class="dashboard-produits-pagination__pages" role="group" aria-label="Numéros de page">
+                        <?php for ($i = 1; $i <= $total_pages_produits; $i++): ?>
+                            <?php if ($i === $page_produits): ?>
+                                <span class="dashboard-produits-pagination__page is-active"><?php echo $i; ?></span>
+                            <?php else: ?>
+                                <a href="<?php echo htmlspecialchars($dashboard_produits_page_url($i)); ?>" class="dashboard-produits-pagination__page"><?php echo $i; ?></a>
+                            <?php endif; ?>
+                        <?php endfor; ?>
+                    </div>
+                    <?php if ($page_produits < $total_pages_produits): ?>
+                    <a href="<?php echo htmlspecialchars($dashboard_produits_page_url($page_produits + 1)); ?>" class="dashboard-produits-pagination__btn">
+                        Suivant <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                    <?php endif; ?>
+                    <p class="dashboard-produits-pagination__info">
+                        Affichage <?php echo (int) $produits_affichage_debut; ?>–<?php echo (int) $produits_affichage_fin; ?>
+                        sur <?php echo (int) $total_produits_plus_vendus; ?> produit<?php echo $total_produits_plus_vendus > 1 ? 's' : ''; ?>
+                        (page <?php echo (int) $page_produits; ?> / <?php echo (int) $total_pages_produits; ?>)
+                    </p>
+                </nav>
+                <?php elseif ($total_produits_plus_vendus > 0): ?>
+                <p class="dashboard-produits-pagination__info dashboard-produits-pagination__info--solo">
+                    <?php echo (int) $total_produits_plus_vendus; ?> produit<?php echo $total_produits_plus_vendus > 1 ? 's' : ''; ?> affiché<?php echo $total_produits_plus_vendus > 1 ? 's' : ''; ?>
+                </p>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
     </div>
@@ -364,4 +430,6 @@ if (!empty($produits)) {
             }
         });
     </script>
+    <?php include __DIR__ . '/../includes/partials/platform_share_modal.php'; ?>
+    <script src="/js/platform-share-modal.js<?php echo asset_version_query(); ?>" defer></script>
     <?php include 'includes/footer.php'; ?>

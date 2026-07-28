@@ -208,8 +208,8 @@ function send_commande_personnalisee_confirmation_to_client($user_id, $cp_id, $u
         return;
     }
 
-    $title = 'Demande personnalisée enregistrée';
-    $body = "Votre demande #{$cp_id} a bien été reçue. Nous vous recontacterons rapidement.";
+    $title = 'Demande envoyée avec succès';
+    $body = "Votre demande personnalisée #{$cp_id} a bien été envoyée. Nous vous recontacterons rapidement.";
 
     $base_url = get_site_base_url();
     $link = $base_url . '/user/commande-personnalisee-details.php?id=' . $cp_id;

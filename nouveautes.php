@@ -37,7 +37,6 @@ $seo_canonical = $base . '/nouveautes.php';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css">
     <style>
         .page-header {
             background: var(--couleur-dominante);
@@ -154,7 +153,7 @@ $seo_canonical = $base . '/nouveautes.php';
                         <a href="index.php"><i class="fas fa-arrow-left"></i> Retour à l'accueil</a>
                     </div>
                 <?php else: ?>
-                    <article data-aos="fade-up" class="articles carousel11">
+                    <article class="articles carousel11">
                         <?php foreach ($produits as $produit): ?>
                             <?php
                             $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
@@ -225,8 +224,6 @@ $seo_canonical = $base . '/nouveautes.php';
     </div>
 
     <?php include('footer.php'); ?>
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>AOS.init();</script>
 </body>
 
 </html>

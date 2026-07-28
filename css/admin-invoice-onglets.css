@@ -2026,14 +2026,14 @@ button.invoice-facture-kpi--impaye.is-active {
 }
 
 .invoice-facture-kpi__label {
-    font-size: clamp(0.68rem, 2.4vw, 0.78rem);
+    font-size: clamp(0.76rem, 2.5vw, 0.9rem);
     color: #6b7280;
     font-weight: 500;
     line-height: 1.2;
 }
 
 .invoice-facture-kpi__value {
-    font-size: clamp(0.82rem, 3vw, 1rem);
+    font-size: clamp(0.96rem, 3.2vw, 1.12rem);
     color: #111827;
     font-weight: 700;
     line-height: 1.2;
@@ -2048,88 +2048,92 @@ button.invoice-facture-kpi--impaye.is-active {
     }
 
     .invoice-facture-kpi {
-        padding: 10px 8px;
+        padding: 11px 10px;
         gap: 8px;
         border-radius: 10px;
     }
 
     .invoice-facture-kpi__icon {
-        width: 30px;
-        height: 30px;
-        font-size: 0.85rem;
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
         border-radius: 8px;
     }
 
     .invoice-facture-kpi__label {
-        font-size: 0.68rem;
+        font-size: 0.82rem;
     }
 
     .invoice-facture-kpi__value {
-        font-size: 0.82rem;
+        font-size: 1rem;
     }
 }
 
 @media (max-width: 640px) {
     .invoice-facture-kpis {
-        gap: 6px;
+        gap: 8px;
     }
 
     .invoice-facture-kpi {
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 8px 4px;
-        gap: 5px;
+        padding: 10px 8px;
+        gap: 6px;
     }
 
     .invoice-facture-kpi__body {
         align-items: center;
-        gap: 2px;
+        gap: 4px;
     }
 
     .invoice-facture-kpi__icon {
-        width: 26px;
-        height: 26px;
-        font-size: 0.75rem;
+        width: 30px;
+        height: 30px;
+        font-size: 0.88rem;
     }
 
     .invoice-facture-kpi__label {
-        font-size: 0.62rem;
-        line-height: 1.15;
+        font-size: 0.74rem;
+        line-height: 1.2;
     }
 
     .invoice-facture-kpi__value {
-        font-size: 0.72rem;
+        font-size: 0.89rem;
         word-break: normal;
     }
 }
 
 @media (max-width: 480px) {
     .invoice-facture-kpis {
-        gap: 4px;
+        gap: 6px;
         margin-bottom: 10px;
     }
 
     .invoice-facture-kpi {
-        padding: 6px 3px;
-        gap: 4px;
+        padding: 9px 6px;
+        gap: 5px;
         border-radius: 8px;
     }
 
+    .invoice-facture-kpi__body {
+        gap: 3px;
+    }
+
     .invoice-facture-kpi__icon {
-        width: 22px;
-        height: 22px;
-        font-size: 0.65rem;
+        width: 28px;
+        height: 28px;
+        font-size: 0.82rem;
         border-radius: 6px;
     }
 
     .invoice-facture-kpi__label {
-        font-size: 0.55rem;
-        line-height: 1.1;
+        font-size: 0.7rem;
+        line-height: 1.15;
     }
 
     .invoice-facture-kpi__value {
-        font-size: 0.62rem;
+        font-size: 0.84rem;
         font-weight: 700;
     }
 }

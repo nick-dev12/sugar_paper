@@ -24,7 +24,7 @@ $seo_canonical = $base . '/';
 
 
 <!DOCTYPE html>
-<html lang="fr" class="aos-not-ready">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
@@ -37,16 +37,6 @@ $seo_canonical = $base . '/';
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
-    <style>
-    /* AOS masque [data-aos] avant init JS — affichage immédiat au chargement */
-    html.aos-not-ready [data-aos] {
-        opacity: 1 !important;
-        transform: none !important;
-        filter: none !important;
-        pointer-events: auto !important;
-    }
-    </style>
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
@@ -153,7 +143,7 @@ $seo_canonical = $base . '/';
                 <p>Réception en temps record</p>
             </div>
         </div>
-        <div class="commande-perso-showcase home-reveal" data-aos="fade-up" data-aos-duration="700">
+        <div class="commande-perso-showcase home-reveal">
             <div class="commande-perso-showcase-inner">
                 <div class="commande-perso-content">
                     <div class="commande-perso-main">
@@ -261,9 +251,7 @@ $seo_canonical = $base . '/';
 
 
         <div class="carousel-produits-outer">
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel1 carousel1-flex-mode" id="carousel-nouveaux">
+            <article class="articles carousel1 carousel1-flex-mode" id="carousel-nouveaux">
                 <?php if (empty($produits_nouveaux)): ?>
                 <!-- Message si aucun produit -->
                 <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
@@ -524,9 +512,7 @@ $seo_canonical = $base . '/';
 
 
         <div class="carousel-produits-outer">
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel1 carousel1-flex-mode" id="carousel-populaires">
+            <article class="articles carousel1 carousel1-flex-mode" id="carousel-populaires">
                 <?php if (empty($produits_populaires)): ?>
                 <!-- Message si aucun produit -->
                 <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
@@ -667,9 +653,7 @@ $seo_canonical = $base . '/';
                 <h1>Tous nos produits</h1>
             </div>
 
-            <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                class="articles carousel11" id="produits-container">
+            <article class="articles carousel11" id="produits-container">
                 <?php if (empty($produits_tous)): ?>
                 <!-- Message si aucun produit -->
                 <div class="message-vide"
@@ -741,7 +725,6 @@ $seo_canonical = $base . '/';
 
     <?php include('footer.php') ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js" defer></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
     <script src="/js/owl.animate.js"></script>
@@ -874,38 +857,6 @@ $seo_canonical = $base . '/';
     });
     </script>
 
-    <script>
-    (function () {
-        function finishAos() {
-            document.documentElement.classList.remove('aos-not-ready');
-        }
-
-        function runAos() {
-            if (typeof AOS === 'undefined') {
-                finishAos();
-                return;
-            }
-            AOS.init({
-                duration: 650,
-                once: true,
-                offset: 20,
-                easing: 'ease-out-cubic',
-                disable: function () {
-                    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                }
-            });
-            requestAnimationFrame(function () {
-                requestAnimationFrame(finishAos);
-            });
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', runAos);
-        } else {
-            runAos();
-        }
-    })();
-    </script>
 
     <script>
     // Slider vidéo simple en JavaScript vanilla

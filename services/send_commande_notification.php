@@ -114,7 +114,7 @@ function notify_client_livreur_en_route($commande_id) {
 
     $numero = (string) ($commande['numero_commande'] ?? $commande_id);
     $title = 'Livreur en route';
-    $body = "Votre commande #{$numero} est en cours de livraison. Suivez-la depuis votre espace client.";
+    $body = "Un livreur a pris en charge votre commande #{$numero}. Suivez la livraison depuis votre espace client.";
     $link = rtrim(get_site_base_url(), '/') . '/user/mes-commandes.php';
 
     $tokens = get_fcm_tokens_by_user($user_id);
@@ -126,7 +126,7 @@ function notify_client_livreur_en_route($commande_id) {
         'link' => $link,
         'statut' => 'livraison_en_cours',
         'numero_commande' => $numero,
-        'tag' => 'livreur-en-route-' . $numero,
+        'tag' => 'livreur-prise-' . $numero,
     ]);
 
     return ((int) ($result['success'] ?? 0)) > 0;

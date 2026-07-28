@@ -61,7 +61,6 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
@@ -105,9 +104,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
                     </a>
                 </div>
             <?php else: ?>
-                <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                    data-aos-mirror="true" data-aos-once="false" data-aos-anchor-placement="top-bottom"
-                    class="articles  carousel11">
+                <article class="articles  carousel11">
                     <?php foreach ($produits as $produit): ?>
                         <?php
                         // Vérifier si promotion disponible
@@ -163,7 +160,6 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
 
     <?php include('footer.php') ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
     <script src="/js/owl.animate.js"></script>
@@ -171,13 +167,12 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
 
     <script>
         $(document).ready(function () {
-            AOS.init();
+            // Aucun traitement AOS pour garder un scroll fluide.
         });
     </script>
 
     <script>
         // ..
-        AOS.init();
     </script>
 
 </body>

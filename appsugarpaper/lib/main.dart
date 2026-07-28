@@ -96,21 +96,13 @@ String resolveRelativeMarketUrl(String href) {
   return '$base$path';
 }
 
-// Handler pour les notifications en arrière-plan
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  print(
-    '📬 Notification reçue en arrière-plan: ${message.notification?.title}',
-  );
-}
-
 void main() {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   print('🔥 Démarrage de l\'application...');
 
+  // Handler complet (canal Android MAX + data-only) défini dans fcm_service.dart
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   ensureFirebaseInitialized();
 

@@ -56,7 +56,6 @@ $seo_canonical = $base . '/produits.php';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <style>
         .produits-page-header {
             background: var(--couleur-dominante);
@@ -204,9 +203,7 @@ $seo_canonical = $base . '/produits.php';
     <div class="produits-container-wrapper">
         <section class="section00">
             <section class="produit_vedetes">
-                <article data-aos="fade-up" data-aos-delay="0" data-aos-duration="1000" data-aos-easing="ease-in-out"
-                    data-aos-mirror="true" data-aos-once="true" data-aos-anchor-placement="top-bottom"
-                    class="articles carousel11" id="produits-container">
+                <article class="articles carousel11" id="produits-container">
                     <?php if (empty($produits_tous)): ?>
                         <!-- Message si aucun produit -->
                         <div style="text-align: center; padding: 40px; color: #666; width: 100%;">
@@ -279,10 +276,7 @@ $seo_canonical = $base . '/produits.php';
 
     <?php include('footer.php'); ?>
 
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
     <script>
-        AOS.init();
-
         let offsetActuel = 20; // On a déjà affiché les 20 premiers
         const limit = 20;
         const totalProduits = <?php echo $total_produits; ?>;

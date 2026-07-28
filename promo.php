@@ -37,7 +37,6 @@ $seo_canonical = $base . '/promo.php';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css">
     <style>
         .page-header {
             background: linear-gradient(135deg, var(--accent-promo) 0%, rgba(247, 127, 0, 0.85) 100%);
@@ -154,7 +153,7 @@ $seo_canonical = $base . '/promo.php';
                         <a href="produits.php"><i class="fas fa-box"></i> Voir tous les produits</a>
                     </div>
                 <?php else: ?>
-                    <article data-aos="fade-up" class="articles carousel11">
+                    <article class="articles carousel11">
                         <?php foreach ($produits as $produit): ?>
                             <?php
                             $pourcentage = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
@@ -220,8 +219,6 @@ $seo_canonical = $base . '/promo.php';
     </div>
 
     <?php include('footer.php'); ?>
-    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
-    <script>AOS.init();</script>
 </body>
 
 </html>

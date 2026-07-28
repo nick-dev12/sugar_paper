@@ -1014,9 +1014,15 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id, $require_toda
         $db->commit();
 
         require_once __DIR__ . '/model_commandes_admin.php';
+        require_once __DIR__ . '/../services/send_commande_notification.php';
+        $statut_avant = (string) ($commande['statut'] ?? '');
         $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];
-        if (in_array($commande['statut'] ?? '', $statuts_avant_livraison, true)) {
+        if (in_array($statut_avant, $statuts_avant_livraison, true)) {
+            // Passe en livraison_en_cours → push client via update_commande_statut
             update_commande_statut($commande_id, 'livraison_en_cours');
+        } else {
+            // Déjà en livraison (ou autre) : push dédié pour informer le client de la prise
+            notify_client_livreur_en_route($commande_id);
         }
 
         return [
@@ -1336,15 +1342,12 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
         $db->commit();
 
         require_once __DIR__ . '/model_commandes_admin.php';
-        require_once __DIR__ . '/../services/send_commande_notification.php';
         $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];
         if (in_array($commande['statut'] ?? '', $statuts_avant_livraison, true)) {
-            // Passe en livraison_en_cours → notify_client via update_commande_statut (Livreur en route)
+            // Première transition vers livraison_en_cours → 1 push client (évite le double envoi)
             update_commande_statut($commande_id, 'livraison_en_cours');
-        } elseif (($commande['statut'] ?? '') === 'livraison_en_cours') {
-            // Déjà en livraison (prise préalable) : push dédié au démarrage réel
-            notify_client_livreur_en_route($commande_id);
         }
+        // Si déjà livraison_en_cours (prise préalable), pas de 2e push : déjà notifié à la prise.
 
         return [
             'ok' => true,

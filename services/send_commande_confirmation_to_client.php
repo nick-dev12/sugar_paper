@@ -22,8 +22,8 @@ function send_new_commande_confirmation_to_client($user_id, $numero_commande, $m
     }
 
     $montant_aff = number_format((float) $montant_total, 0, ',', ' ') . ' FCFA';
-    $title = 'Commande confirmée';
-    $body = "Commande #{$numero_commande} enregistrée — {$montant_aff}";
+    $title = 'Commande envoyée avec succès';
+    $body = "Votre commande #{$numero_commande} a bien été envoyée — {$montant_aff}. Nous la traitons rapidement.";
 
     $base_url = get_site_base_url();
     $link = $base_url . '/user/mes-commandes.php';
