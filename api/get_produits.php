@@ -9,6 +9,7 @@ header('Content-Type: application/json');
 session_start_persistent();
 
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_produits.php';
 
 // Récupérer les paramètres
@@ -53,7 +54,10 @@ foreach ($produits as $produit) {
         'stock' => $produit['stock'],
         'poids' => $produit['poids'] ?? '',
         'categorie_nom' => $produit['categorie_nom'] ?? '',
-        'image_principale' => $produit['image_principale'] ?? 'produit1.jpg'
+        'image_principale' => $produit['image_principale'] ?? 'produit1.jpg',
+        'image_url' => !empty($produit['image_principale'])
+            ? upload_image_url($produit['image_principale'], 'md')
+            : '/image/produit1.jpg'
     ];
 }
 

@@ -201,7 +201,7 @@ $categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id
                                 galerie)</small></label>
                         <div class="file-input-wrapper file-input-single"
                             onclick="document.getElementById('images_produit').click()">
-                            <input type="file" id="images_produit" name="images_produit[]" accept="image/*" multiple required
+                            <input type="file" id="images_produit" name="images_produit[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" multiple required
                                 class="file-input" style="display: none;">
                         <label class="file-input-label" style="cursor: pointer; margin: 0;">
                             <i class="fas fa-cloud-upload-alt"></i>
@@ -240,7 +240,7 @@ $categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id
                                     step="0.01" class="variante-prix-promo">
                                 <div class="variante-image-wrap">
                                     <div class="variante-image-area">
-                                        <input type="file" name="variantes_image[]" accept="image/*"
+                                        <input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                                             class="variante-image-input">
                                         <span class="variante-image-label"><i class="fas fa-image"></i> Image</span>
                                         <img class="variante-preview-img" src="" alt="" style="display: none;">
@@ -938,7 +938,7 @@ $categorie_id_prefill = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id
                     '<input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo">' +
                     '<div class="variante-image-wrap">' +
                     '<div class="variante-image-area">' +
-                    '<input type="file" name="variantes_image[]" accept="image/*" class="variante-image-input">' +
+                    '<input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="variante-image-input">' +
                     '<span class="variante-image-label"><i class="fas fa-image"></i> Image</span>' +
                     '<img class="variante-preview-img" src="" alt="" style="display: none;">' +
                     '</div></div>' +

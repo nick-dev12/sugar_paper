@@ -23,6 +23,7 @@ if ($categorie_id <= 0) {
 
 // Récupérer la catégorie
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $categorie = get_categorie_by_id($categorie_id);
 
 if (!$categorie) {
@@ -166,12 +167,12 @@ if (isset($result['success']) && $result['success']) {
                 <label for="image">Image de la catégorie</label>
                 <?php if ($categorie['image']): ?>
                     <div>
-                        <img src="../../upload/<?php echo htmlspecialchars($categorie['image']); ?>" 
+                        <img src="<?php echo htmlspecialchars(upload_image_url($categorie['image'] ?? '', 'md')); ?>" 
                              alt="Image actuelle" class="current-image">
                         <p style="font-size: 12px; color: #666; margin-top: 5px;">Image actuelle (laisser vide pour conserver)</p>
                     </div>
                 <?php endif; ?>
-                <input type="file" id="image" name="image" accept="image/*">
+                <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
                 <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats acceptés: JPG, PNG, GIF, WEBP (max 5MB)</small>
             </div>
 

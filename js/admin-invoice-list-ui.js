@@ -1,6 +1,6 @@
 /**
 
- * Filtrage temps réel + période + affichage progressif (30 lignes) — onglets Invoice admin.
+ * Filtrage temps réel + période + pagination factures (30/page) — onglets Invoice admin.
 
  */
 
@@ -381,7 +381,7 @@
     }
 
     function updateFactureKpis(matching, config) {
-        if (!config.kpiPayeEl && !config.kpiImpayeEl && !config.kpiLivraisonEl) {
+        if (!config.kpiPayeEl && !config.kpiImpayeEl && !config.kpiLivraisonEl && !config.kpiToutEl) {
             return;
         }
         var paye = 0;
@@ -401,6 +401,7 @@
         var payeEl = config.kpiPayeEl ? document.querySelector(config.kpiPayeEl) : null;
         var impayeEl = config.kpiImpayeEl ? document.querySelector(config.kpiImpayeEl) : null;
         var livraisonEl = config.kpiLivraisonEl ? document.querySelector(config.kpiLivraisonEl) : null;
+        var toutEl = config.kpiToutEl ? document.querySelector(config.kpiToutEl) : null;
         if (payeEl) {
             payeEl.textContent = formatFcfa(paye);
         }
@@ -409,6 +410,9 @@
         }
         if (livraisonEl) {
             livraisonEl.textContent = formatFcfa(livraison);
+        }
+        if (toutEl) {
+            toutEl.textContent = formatFcfa(paye + impaye);
         }
     }
 
@@ -452,6 +456,13 @@
 
 
         var visibleLimit = PAGE_SIZE;
+        var currentPage = 1;
+        var usePagination = !!config.usePagination;
+        var paginationRoot = config.paginationRoot ? document.querySelector(config.paginationRoot) : null;
+        var paginationPages = config.paginationPages ? document.querySelector(config.paginationPages) : null;
+        var paginationPrev = config.paginationPrev ? document.querySelector(config.paginationPrev) : null;
+        var paginationNext = config.paginationNext ? document.querySelector(config.paginationNext) : null;
+        var paginationInfo = config.paginationInfo ? document.querySelector(config.paginationInfo) : null;
 
         var filterQuery = '';
 
@@ -588,45 +599,121 @@
 
 
 
-        function updateLoadMoreButton(matchingCount) {
-
-            if (!loadMoreBtn) {
-
-                return;
-
-            }
-
-            var remaining = matchingCount - visibleLimit;
-
-            if (remaining > 0) {
-
-                loadMoreBtn.hidden = false;
-
-                if (loadMoreWrap) {
-
-                    loadMoreWrap.hidden = false;
-
-                }
-
-                var nextBatch = Math.min(PAGE_SIZE, remaining);
-
-                loadMoreBtn.textContent = 'Voir plus (' + nextBatch + ')';
-
-            } else {
-
-                loadMoreBtn.hidden = true;
-
-                if (loadMoreWrap) {
-
-                    loadMoreWrap.hidden = true;
-
-                }
-
-            }
-
+        function getTotalPages(matchingCount) {
+            return Math.max(1, Math.ceil(matchingCount / PAGE_SIZE));
         }
 
+        function updateLoadMoreButton(matchingCount) {
+            if (!loadMoreBtn) {
+                return;
+            }
+            var remaining = matchingCount - visibleLimit;
+            if (remaining > 0) {
+                loadMoreBtn.hidden = false;
+                if (loadMoreWrap) {
+                    loadMoreWrap.hidden = false;
+                }
+                var nextBatch = Math.min(PAGE_SIZE, remaining);
+                loadMoreBtn.textContent = 'Voir plus (' + nextBatch + ')';
+            } else {
+                loadMoreBtn.hidden = true;
+                if (loadMoreWrap) {
+                    loadMoreWrap.hidden = true;
+                }
+            }
+        }
 
+        function buildPageNumbers(totalPages, page) {
+            var pages = [];
+            if (totalPages <= 7) {
+                for (var i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+                return pages;
+            }
+            pages.push(1);
+            var start = Math.max(2, page - 1);
+            var endNum = Math.min(totalPages - 1, page + 1);
+            if (start > 2) {
+                pages.push('…');
+            }
+            for (var j = start; j <= endNum; j++) {
+                pages.push(j);
+            }
+            if (endNum < totalPages - 1) {
+                pages.push('…');
+            }
+            pages.push(totalPages);
+            return pages;
+        }
+
+        function updatePagination(matchingCount) {
+            if (!usePagination || !paginationRoot) {
+                return;
+            }
+            var totalPages = getTotalPages(matchingCount);
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+            /* Afficher la pagination seulement s'il y a plus de 30 factures filtrées */
+            if (matchingCount === 0 || matchingCount <= PAGE_SIZE) {
+                paginationRoot.hidden = true;
+                return;
+            }
+            paginationRoot.hidden = false;
+
+            if (paginationPrev) {
+                paginationPrev.disabled = currentPage <= 1;
+            }
+            if (paginationNext) {
+                paginationNext.disabled = currentPage >= totalPages;
+            }
+
+            if (paginationPages) {
+                paginationPages.innerHTML = '';
+                var nums = buildPageNumbers(totalPages, currentPage);
+                for (var i = 0; i < nums.length; i++) {
+                    var n = nums[i];
+                    if (n === '…') {
+                        var dots = document.createElement('span');
+                        dots.className = 'invoice-list-pagination__ellipsis';
+                        dots.textContent = '…';
+                        dots.setAttribute('aria-hidden', 'true');
+                        paginationPages.appendChild(dots);
+                        continue;
+                    }
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'invoice-list-pagination__page' + (n === currentPage ? ' is-active' : '');
+                    btn.textContent = String(n);
+                    btn.setAttribute('aria-label', 'Page ' + n);
+                    if (n === currentPage) {
+                        btn.setAttribute('aria-current', 'page');
+                    }
+                    btn.setAttribute('data-page', String(n));
+                    paginationPages.appendChild(btn);
+                }
+            }
+
+            if (paginationInfo) {
+                var start = (currentPage - 1) * PAGE_SIZE + 1;
+                var endIdx = Math.min(currentPage * PAGE_SIZE, matchingCount);
+                paginationInfo.textContent = start + '–' + endIdx + ' sur ' + matchingCount + ' · Page ' + currentPage + ' / ' + totalPages;
+            }
+        }
+
+        function goToPage(page) {
+            var matchingCount = getMatchingItems().length;
+            var totalPages = getTotalPages(matchingCount);
+            currentPage = Math.min(Math.max(1, page), totalPages);
+            apply();
+            if (tableWrap && typeof tableWrap.scrollIntoView === 'function') {
+                tableWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
 
         function apply() {
 
@@ -646,18 +733,28 @@
 
 
 
-            matching.forEach(function (el, index) {
-
-                if (index < visibleLimit) {
-
-                    el.hidden = false;
-
-                    el.classList.add('invoice-list-item--visible');
-
-                    shown++;
-
+            var startIndex = 0;
+            var endIndex = matching.length;
+            if (usePagination) {
+                var totalPagesApply = getTotalPages(matching.length);
+                if (currentPage > totalPagesApply) {
+                    currentPage = totalPagesApply;
                 }
+                if (currentPage < 1) {
+                    currentPage = 1;
+                }
+                startIndex = (currentPage - 1) * PAGE_SIZE;
+                endIndex = startIndex + PAGE_SIZE;
+            } else {
+                endIndex = visibleLimit;
+            }
 
+            matching.forEach(function (el, index) {
+                if (index >= startIndex && index < endIndex) {
+                    el.hidden = false;
+                    el.classList.add('invoice-list-item--visible');
+                    shown++;
+                }
             });
 
 
@@ -690,7 +787,11 @@
 
 
 
-            updateLoadMoreButton(matching.length);
+            if (usePagination) {
+                updatePagination(matching.length);
+            } else {
+                updateLoadMoreButton(matching.length);
+            }
 
             updateFactureKpis(getBaseMatchingItems(), config);
 
@@ -703,25 +804,46 @@
         searchInput.addEventListener('input', function () {
 
             filterQuery = normalizeQuery(searchInput.value);
-
             visibleLimit = PAGE_SIZE;
-
+            currentPage = 1;
             apply();
 
         });
 
 
 
-        if (loadMoreBtn) {
-
+        if (loadMoreBtn && !usePagination) {
             loadMoreBtn.addEventListener('click', function () {
-
                 visibleLimit += PAGE_SIZE;
-
                 apply();
-
             });
+        }
 
+        if (usePagination) {
+            if (paginationPrev) {
+                paginationPrev.addEventListener('click', function () {
+                    if (currentPage > 1) {
+                        goToPage(currentPage - 1);
+                    }
+                });
+            }
+            if (paginationNext) {
+                paginationNext.addEventListener('click', function () {
+                    goToPage(currentPage + 1);
+                });
+            }
+            if (paginationPages) {
+                paginationPages.addEventListener('click', function (e) {
+                    var btn = e.target.closest('[data-page]');
+                    if (!btn) {
+                        return;
+                    }
+                    var page = parseInt(btn.getAttribute('data-page') || '0', 10);
+                    if (page > 0) {
+                        goToPage(page);
+                    }
+                });
+            }
         }
 
 
@@ -731,11 +853,9 @@
             initPeriodFilter(config, function (range) {
 
                 dateFrom = range.from;
-
                 dateTo = range.to;
-
                 visibleLimit = PAGE_SIZE;
-
+                currentPage = 1;
                 apply();
 
             });
@@ -746,6 +866,8 @@
 
         if (config.enablePaymentKpiFilter) {
 
+            var kpiToutBtn = config.kpiToutCard ? document.querySelector(config.kpiToutCard) : null;
+
             var kpiPayeBtn = config.kpiPayeCard ? document.querySelector(config.kpiPayeCard) : null;
 
             var kpiImpayeBtn = config.kpiImpayeCard ? document.querySelector(config.kpiImpayeCard) : null;
@@ -753,6 +875,16 @@
 
 
             function setPaymentKpiActive() {
+
+                var isAll = paymentFilter === null;
+
+                if (kpiToutBtn) {
+
+                    kpiToutBtn.classList.toggle('is-active', isAll);
+
+                    kpiToutBtn.setAttribute('aria-pressed', isAll ? 'true' : 'false');
+
+                }
 
                 if (kpiPayeBtn) {
 
@@ -774,25 +906,31 @@
 
 
 
-            function togglePaymentFilter(nextFilter) {
-
-                paymentFilter = paymentFilter === nextFilter ? null : nextFilter;
-
+            function setPaymentFilter(nextFilter) {
+                paymentFilter = nextFilter;
                 visibleLimit = PAGE_SIZE;
-
+                currentPage = 1;
                 setPaymentKpiActive();
-
                 apply();
-
             }
 
 
+
+            if (kpiToutBtn) {
+
+                kpiToutBtn.addEventListener('click', function () {
+
+                    setPaymentFilter(null);
+
+                });
+
+            }
 
             if (kpiPayeBtn) {
 
                 kpiPayeBtn.addEventListener('click', function () {
 
-                    togglePaymentFilter('1');
+                    setPaymentFilter('1');
 
                 });
 
@@ -802,11 +940,13 @@
 
                 kpiImpayeBtn.addEventListener('click', function () {
 
-                    togglePaymentFilter('0');
+                    setPaymentFilter('0');
 
                 });
 
             }
+
+            setPaymentKpiActive();
 
         }
 
@@ -897,8 +1037,12 @@
 
             searchInput: '#search-facture',
 
-            loadMoreBtn: '#facture-load-more',
-            loadMoreWrap: '#facture-load-more-wrap',
+            usePagination: true,
+            paginationRoot: '#facture-pagination',
+            paginationPages: '#facture-pagination-pages',
+            paginationPrev: '#facture-page-prev',
+            paginationNext: '#facture-page-next',
+            paginationInfo: '#facture-pagination-info',
 
             noResults: '#facture-no-results',
 
@@ -928,8 +1072,10 @@
             emptyPayeText: 'Aucune facture payée pour cette période.',
             emptyImpayeText: 'Aucune facture impayée pour cette période.',
             enablePaymentKpiFilter: true,
+            kpiToutCard: '.invoice-facture-kpi--tout',
             kpiPayeCard: '.invoice-facture-kpi--paye',
             kpiImpayeCard: '.invoice-facture-kpi--impaye',
+            kpiToutEl: '#facture-kpi-tout',
             kpiPayeEl: '#facture-kpi-paye',
             kpiImpayeEl: '#facture-kpi-impaye',
             kpiLivraisonEl: '#facture-kpi-livraison'
@@ -956,6 +1102,54 @@
 
             countMatchingEl: '#contacts-count-matching'
 
+        });
+
+        initInvoiceList({
+            container: '#commandes-a-traiter-body',
+            itemSelector: '.invoice-list-item',
+            searchInput: '#search-commandes-a-traiter',
+            usePagination: true,
+            paginationRoot: '#commandes-a-traiter-pagination',
+            paginationPages: '#commandes-a-traiter-pagination-pages',
+            paginationPrev: '#commandes-a-traiter-page-prev',
+            paginationNext: '#commandes-a-traiter-page-next',
+            paginationInfo: '#commandes-a-traiter-pagination-info',
+            noResults: '#commandes-a-traiter-no-results',
+            noResultsText: '#commandes-a-traiter-no-results-text',
+            tableWrap: '#commandes-a-traiter-table-wrap',
+            emptySearchText: 'Aucune commande ne correspond à votre recherche.'
+        });
+
+        initInvoiceList({
+            container: '#commandes-livrees-body',
+            itemSelector: '.invoice-list-item',
+            searchInput: '#search-commandes-livrees',
+            usePagination: true,
+            paginationRoot: '#commandes-livrees-pagination',
+            paginationPages: '#commandes-livrees-pagination-pages',
+            paginationPrev: '#commandes-livrees-page-prev',
+            paginationNext: '#commandes-livrees-page-next',
+            paginationInfo: '#commandes-livrees-pagination-info',
+            noResults: '#commandes-livrees-no-results',
+            noResultsText: '#commandes-livrees-no-results-text',
+            tableWrap: '#commandes-livrees-table-wrap',
+            emptySearchText: 'Aucune commande livrée ne correspond à votre recherche.'
+        });
+
+        initInvoiceList({
+            container: '#commandes-annulees-body',
+            itemSelector: '.invoice-list-item',
+            searchInput: '#search-commandes-annulees',
+            usePagination: true,
+            paginationRoot: '#commandes-annulees-pagination',
+            paginationPages: '#commandes-annulees-pagination-pages',
+            paginationPrev: '#commandes-annulees-page-prev',
+            paginationNext: '#commandes-annulees-page-next',
+            paginationInfo: '#commandes-annulees-pagination-info',
+            noResults: '#commandes-annulees-no-results',
+            noResultsText: '#commandes-annulees-no-results-text',
+            tableWrap: '#commandes-annulees-table-wrap',
+            emptySearchText: 'Aucune commande annulée ne correspond à votre recherche.'
         });
 
     });

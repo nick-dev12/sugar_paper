@@ -6,6 +6,7 @@
 
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
  * Récupère la configuration de la section4
@@ -129,13 +130,9 @@ function delete_section4_image($image_name) {
     if (empty($image_name)) {
         return false;
     }
-    
-    $upload_dir = __DIR__ . '/../upload/section4/';
-    $image_path = $upload_dir . $image_name;
-    
-    if (file_exists($image_path)) {
-        return unlink($image_path);
-    }
-    
-    return false;
+
+    $image_path = __DIR__ . '/../upload/section4/' . $image_name;
+    $existed = is_file($image_path);
+    image_optimizer_delete_with_variants('section4/' . $image_name);
+    return $existed && !is_file($image_path);
 }

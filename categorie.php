@@ -3,6 +3,7 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 // Inclusion des modèles
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_categories.php';
 require_once __DIR__ . '/models/model_produits.php';
 
@@ -121,7 +122,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
                         <div class="carousel">
                             <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                 <div class="image-wrapper">
-                                    <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                         alt="<?php echo htmlspecialchars($produit['nom']); ?>"
                                         onerror="this.src='/image/produit1.jpg'">
                                 </div>

@@ -636,7 +636,7 @@ $categories = get_all_categories();
                                 value="<?php echo $var['prix_promotion'] ? htmlspecialchars($var['prix_promotion']) : ''; ?>">
                             <div class="variante-image-wrap">
                                 <div class="variante-image-area">
-                                    <input type="file" name="variantes_image[]" accept="image/*"
+                                    <input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                                         class="variante-image-input">
                                     <span class="variante-image-label"
                                         <?php echo $var['image'] ? 'style="display: none;"' : ''; ?>><i
@@ -663,7 +663,7 @@ $categories = get_all_categories();
                                 step="0.01" class="variante-prix-promo">
                             <div class="variante-image-wrap">
                                 <div class="variante-image-area">
-                                    <input type="file" name="variantes_image[]" accept="image/*"
+                                    <input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                                         class="variante-image-input">
                                     <span class="variante-image-label"><i class="fas fa-image"></i> Image</span>
                                     <img class="variante-preview-img" src="" alt="" style="display: none;">
@@ -827,7 +827,7 @@ $categories = get_all_categories();
                     style="display: inline-block; margin-top: 10px; cursor: pointer; padding: 10px 16px; background: #f0f0f0; border-radius: 8px;">
                     <i class="fas fa-plus"></i> Ajouter des images à la galerie
                 </label>
-                <input type="file" id="images_supplementaires" name="images_supplementaires[]" accept="image/*" multiple
+                <input type="file" id="images_supplementaires" name="images_supplementaires[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" multiple
                     style="display: none;" onchange="previewMultipleImages(this, 'preview-supplementaires')">
                 <div id="preview-supplementaires" class="image-preview-grid"></div>
                 <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Formats: JPG, PNG, GIF,
@@ -1100,7 +1100,7 @@ $categories = get_all_categories();
                     '<input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo">' +
                     '<div class="variante-image-wrap">' +
                     '<div class="variante-image-area">' +
-                    '<input type="file" name="variantes_image[]" accept="image/*" class="variante-image-input">' +
+                    '<input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="variante-image-input">' +
                     '<span class="variante-image-label"><i class="fas fa-image"></i> Image</span>' +
                     '<img class="variante-preview-img" src="" alt="" style="display: none;">' +
                     '</div></div>' +

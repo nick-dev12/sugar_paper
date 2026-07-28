@@ -10,6 +10,7 @@ session_start_persistent();
 require_once __DIR__ . '/includes/guest_client.php';
 require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/includes/asset_version.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 $is_guest_checkout = !isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0;
 
@@ -61,11 +62,81 @@ if ($commande_success && $commande_numero !== '') {
     }
     $whatsapp_raw = $social_config['whatsapp'] ?? '221773292123';
     $whatsapp_clean = preg_replace('/[^0-9]/', '', (string) $whatsapp_raw);
-    $whatsapp_url = $whatsapp_clean !== '' ? 'https://wa.me/' . $whatsapp_clean : 'https://wa.me/221773292123';
+    if ($whatsapp_clean === '') {
+        $whatsapp_clean = '221773292123';
+    }
     $whatsapp_display = '+221 77 329 2123';
     if (strlen($whatsapp_clean) >= 12 && strpos($whatsapp_clean, '221') === 0) {
         $whatsapp_display = '+221 ' . substr($whatsapp_clean, 3, 2) . ' ' . substr($whatsapp_clean, 5, 3) . ' ' . substr($whatsapp_clean, 8, 4);
     }
+
+    // Détails commande pour le message WhatsApp prérempli
+    require_once __DIR__ . '/models/model_commandes.php';
+    $commande_details = get_commande_by_numero($commande_numero);
+    $commande_produits = [];
+    if ($commande_details && !empty($commande_details['id'])) {
+        $commande_produits = get_produits_by_commande((int) $commande_details['id']);
+        if (!is_array($commande_produits)) {
+            $commande_produits = [];
+        }
+    }
+
+    $client_nom = '';
+    if ($commande_details) {
+        $client_nom = trim(
+            ($commande_details['user_prenom'] ?? '') . ' ' . ($commande_details['user_nom'] ?? '')
+        );
+        if ($client_nom === '') {
+            $client_nom = trim((string) ($commande_details['client_prenom'] ?? '') . ' ' . (string) ($commande_details['client_nom'] ?? ''));
+        }
+    }
+    $client_tel = '';
+    if ($commande_details) {
+        $client_tel = trim((string) ($commande_details['user_telephone'] ?? $commande_details['telephone_livraison'] ?? $commande_details['client_telephone'] ?? ''));
+    }
+    $adresse = $commande_details ? trim((string) ($commande_details['adresse_livraison'] ?? '')) : '';
+    $montant = $commande_details && isset($commande_details['montant_total'])
+        ? number_format((float) $commande_details['montant_total'], 0, ',', ' ') . ' FCFA'
+        : '';
+
+    $wa_lines = [];
+    $wa_lines[] = 'Bonjour Sugar Paper 👋';
+    $wa_lines[] = '';
+    $wa_lines[] = 'Je viens de passer une commande sur le site.';
+    $wa_lines[] = '';
+    $wa_lines[] = '📦 Numéro : ' . $commande_numero;
+    if ($client_nom !== '') {
+        $wa_lines[] = '👤 Client : ' . $client_nom;
+    }
+    if ($client_tel !== '') {
+        $wa_lines[] = '📞 Téléphone : ' . $client_tel;
+    }
+    if ($adresse !== '') {
+        $wa_lines[] = '📍 Adresse : ' . $adresse;
+    }
+    if ($montant !== '') {
+        $wa_lines[] = '💰 Montant : ' . $montant;
+    }
+    if (!empty($commande_produits)) {
+        $wa_lines[] = '';
+        $wa_lines[] = '🛒 Produits :';
+        foreach ($commande_produits as $prod) {
+            $nom_prod = trim((string) ($prod['produit_nom'] ?? $prod['nom'] ?? 'Produit'));
+            $qty = (int) ($prod['quantite'] ?? 1);
+            $prix_l = isset($prod['prix_total'])
+                ? number_format((float) $prod['prix_total'], 0, ',', ' ') . ' FCFA'
+                : '';
+            $ligne = '- ' . $nom_prod . ' × ' . $qty;
+            if ($prix_l !== '') {
+                $ligne .= ' (' . $prix_l . ')';
+            }
+            $wa_lines[] = $ligne;
+        }
+    }
+    $wa_lines[] = '';
+    $wa_lines[] = 'Merci !';
+    $whatsapp_message = implode("\n", $wa_lines);
+    $whatsapp_url = 'https://wa.me/' . $whatsapp_clean . '?text=' . rawurlencode($whatsapp_message);
 
     include 'nav_bar.php';
     ?>
@@ -79,34 +150,50 @@ if ($commande_success && $commande_numero !== '') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <style>
         body.commande-success-page {
             margin: 0;
             min-height: 100vh;
             background:
-                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(145, 138, 68, 0.22), transparent 60%),
-                radial-gradient(ellipse 60% 50% at 100% 100%, rgba(194, 102, 56, 0.12), transparent 55%),
-                linear-gradient(165deg, #fffaf7 0%, #ffffff 45%, #f9f6f0 100%);
-            font-family: var(--font-corps, 'Segoe UI', system-ui, sans-serif);
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(229, 72, 138, 0.14), transparent 60%),
+                linear-gradient(165deg, #fffafc 0%, #ffffff 45%, #fff7fb 100%);
+            font-family: var(--font-corps, 'Poppins', system-ui, sans-serif);
             color: #1a1a1a;
         }
 
+        body.commande-success-page .footer {
+            margin-top: 2rem;
+            min-height: 0;
+            padding: 36px 16px 18px;
+        }
+
+        body.commande-success-page .footer_logo_img {
+            max-height: 48px !important;
+            max-width: 140px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+        }
+
+        body.commande-success-page .footer_container {
+            gap: 28px;
+            padding-bottom: 24px;
+        }
+
         .commande-success-wrap {
-            max-width: 640px;
+            max-width: 560px;
             margin: 0 auto;
-            padding: 48px 20px 72px;
+            padding: 28px 16px 40px;
         }
 
         .commande-success-card {
             position: relative;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(145, 138, 68, 0.25);
-            border-radius: 24px;
-            padding: 40px 32px 36px;
-            box-shadow:
-                0 24px 60px rgba(107, 47, 32, 0.08),
-                0 8px 24px rgba(0, 0, 0, 0.04);
+            background: #ffffff;
+            border: 1px solid rgba(229, 72, 138, 0.16);
+            border-radius: 18px;
+            padding: 28px 24px 24px;
+            box-shadow: 0 14px 36px rgba(42, 26, 34, 0.07);
             text-align: center;
             overflow: hidden;
         }
@@ -118,15 +205,15 @@ if ($commande_success && $commande_numero !== '') {
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #918a44, #c26638, #918a44);
+            background: linear-gradient(90deg, #e5488a, #c23a72, #e5488a);
         }
 
         .commande-success-icon {
-            width: 88px;
-            height: 88px;
-            margin: 0 auto 24px;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(145, 138, 68, 0.18), rgba(194, 102, 56, 0.12));
+            background: linear-gradient(135deg, rgba(229, 72, 138, 0.16), rgba(194, 58, 114, 0.1));
             display: flex;
             align-items: center;
             justify-content: center;
@@ -134,8 +221,8 @@ if ($commande_success && $commande_numero !== '') {
         }
 
         .commande-success-icon i {
-            font-size: 42px;
-            color: #918a44;
+            font-size: 30px;
+            color: #e5488a;
         }
 
         @keyframes successPop {
@@ -145,181 +232,77 @@ if ($commande_success && $commande_numero !== '') {
 
         .commande-success-eyebrow {
             display: inline-block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: #c26638;
-            margin-bottom: 10px;
+            color: #e5488a;
+            margin-bottom: 8px;
         }
 
         .commande-success-title {
-            font-family: var(--font-titres, Georgia, serif);
-            font-size: clamp(1.6rem, 4vw, 2rem);
+            font-family: var(--font-titres, 'Poppins', sans-serif);
+            font-size: clamp(1.25rem, 3.5vw, 1.6rem);
             font-weight: 700;
-            color: #6b2f20;
-            margin: 0 0 12px;
+            color: #2a1a22;
+            margin: 0 0 8px;
             line-height: 1.25;
         }
 
         .commande-success-lead {
-            font-size: 16px;
-            color: #555;
-            margin: 0 0 28px;
-            line-height: 1.6;
+            font-size: 14px;
+            color: #666;
+            margin: 0 0 18px;
+            line-height: 1.55;
         }
 
         .commande-success-numero {
             display: inline-flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            padding: 18px 28px;
-            background: linear-gradient(135deg, rgba(145, 138, 68, 0.1), rgba(194, 102, 56, 0.06));
-            border: 1px dashed rgba(145, 138, 68, 0.45);
-            border-radius: 14px;
-            margin-bottom: 28px;
+            gap: 4px;
+            padding: 12px 20px;
+            background: rgba(229, 72, 138, 0.07);
+            border: 1px dashed rgba(229, 72, 138, 0.35);
+            border-radius: 12px;
+            margin-bottom: 16px;
         }
 
         .commande-success-numero__label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #918a44;
+            color: #e5488a;
         }
 
         .commande-success-numero__value {
-            font-size: clamp(1.1rem, 3.5vw, 1.35rem);
+            font-size: clamp(0.95rem, 3vw, 1.15rem);
             font-weight: 800;
             color: #000;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.03em;
             font-family: ui-monospace, 'Cascadia Code', monospace;
-        }
-
-        .commande-success-steps {
-            list-style: none;
-            margin: 0 0 32px;
-            padding: 0;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .commande-success-steps li {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-            padding: 14px 16px;
-            background: #faf9f6;
-            border-radius: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .commande-success-steps li.is-done .commande-success-step-icon {
-            background: rgba(145, 138, 68, 0.2);
-            color: #918a44;
-        }
-
-        .commande-success-step-icon {
-            flex-shrink: 0;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            background: rgba(194, 102, 56, 0.12);
-            color: #c26638;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 15px;
-        }
-
-        .commande-success-step-text strong {
-            display: block;
-            font-size: 14px;
-            color: #6b2f20;
-            margin-bottom: 2px;
-        }
-
-        .commande-success-step-text span {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.45;
-        }
-
-        .commande-success-step-text a {
-            color: #918a44;
-            font-weight: 600;
-            text-decoration: none;
-        }
-
-        .commande-success-step-text a:hover {
-            color: #6b2f20;
-            text-decoration: underline;
-        }
-
-        .commande-success-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
-        }
-
-        .commande-success-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 24px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .commande-success-btn--primary {
-            background: linear-gradient(135deg, #918a44, #7a7340);
-            color: #fff;
-            box-shadow: 0 4px 16px rgba(145, 138, 68, 0.35);
-        }
-
-        .commande-success-btn--primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(145, 138, 68, 0.4);
-            color: #fff;
-        }
-
-        .commande-success-btn--secondary {
-            background: #fff;
-            color: #6b2f20;
-            border: 1px solid rgba(107, 47, 32, 0.2);
-        }
-
-        .commande-success-btn--secondary:hover {
-            background: #faf9f6;
-            color: #6b2f20;
+            word-break: break-all;
         }
 
         .commande-success-contact {
             display: inline-flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
-            max-width: 320px;
-            margin: 0 auto 26px;
-            padding: 14px 18px;
+            max-width: 300px;
+            margin: 0 auto 18px;
+            padding: 12px 14px;
             background: #fff;
-            border: 1px solid rgba(145, 138, 68, 0.28);
+            border: 1px solid rgba(37, 211, 102, 0.28);
             border-radius: 12px;
         }
 
         .commande-success-contact__label {
             font-size: 12px;
             font-weight: 600;
-            color: #6b2f20;
+            color: #2a1a22;
             margin: 0;
         }
 
@@ -327,19 +310,19 @@ if ($commande_success && $commande_numero !== '') {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 1.05rem;
+            font-size: 0.98rem;
             font-weight: 700;
             color: #25d366;
             text-decoration: none;
             letter-spacing: 0.02em;
-            padding: 8px 14px;
+            padding: 7px 12px;
             border-radius: 999px;
             background: rgba(37, 211, 102, 0.1);
             transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
 
         .commande-success-contact__phone i {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: #25d366;
         }
 
@@ -349,111 +332,117 @@ if ($commande_success && $commande_numero !== '') {
             transform: translateY(-1px);
         }
 
-        @media (max-width: 768px) {
-            .commande-success-wrap {
-                padding: 32px 16px 56px;
-            }
-
-            .commande-success-card {
-                padding: 28px 22px 24px;
-                border-radius: 18px;
-            }
-
-            .commande-success-icon {
-                width: 68px;
-                height: 68px;
-                margin-bottom: 18px;
-            }
-
-            .commande-success-icon i {
-                font-size: 32px;
-            }
-
-            .commande-success-eyebrow {
-                font-size: 10px;
-                margin-bottom: 8px;
-            }
-
-            .commande-success-title {
-                font-size: 1.35rem;
-                margin-bottom: 10px;
-            }
-
-            .commande-success-lead {
-                font-size: 14px;
-                margin-bottom: 20px;
-            }
-
-            .commande-success-numero {
-                padding: 14px 20px;
-                margin-bottom: 20px;
-            }
-
-            .commande-success-numero__value {
-                font-size: 1rem;
-            }
-
-            .commande-success-contact {
-                max-width: 100%;
-                padding: 12px 14px;
-                margin-bottom: 20px;
-            }
-
-            .commande-success-contact__phone {
-                font-size: 0.95rem;
-            }
-
-            .commande-success-steps {
-                gap: 10px;
-                margin-bottom: 24px;
-            }
-
-            .commande-success-steps li {
-                gap: 10px;
-                padding: 10px 12px;
-                border-radius: 10px;
-            }
-
-            .commande-success-step-icon {
-                width: 30px;
-                height: 30px;
-                font-size: 13px;
-                border-radius: 8px;
-            }
-
-            .commande-success-step-text strong {
-                font-size: 13px;
-            }
-
-            .commande-success-step-text span {
-                font-size: 12px;
-            }
-
-            .commande-success-btn {
-                padding: 12px 18px;
-                font-size: 14px;
-                border-radius: 10px;
-            }
+        .commande-success-steps {
+            list-style: none;
+            margin: 0 0 18px;
+            padding: 0;
+            text-align: left;
         }
 
-        @media (max-width: 480px) {
+        .commande-success-steps li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #faf8fa;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .commande-success-step-icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(229, 72, 138, 0.12);
+            color: #e5488a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .commande-success-step-text strong {
+            display: block;
+            font-size: 13px;
+            color: #2a1a22;
+            margin-bottom: 2px;
+        }
+
+        .commande-success-step-text span {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.45;
+        }
+
+        .commande-success-step-text a {
+            color: #e5488a;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .commande-success-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .commande-success-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 11px 18px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .commande-success-btn--primary {
+            background: linear-gradient(135deg, #e5488a, #c23a72);
+            color: #fff !important;
+            box-shadow: 0 6px 18px rgba(229, 72, 138, 0.3);
+            border: none;
+        }
+
+        .commande-success-btn--primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(229, 72, 138, 0.38);
+            color: #fff !important;
+        }
+
+        .commande-success-btn--secondary {
+            background: #fff;
+            color: #e5488a !important;
+            border: 1.5px solid rgba(229, 72, 138, 0.45);
+        }
+
+        .commande-success-btn--secondary:hover {
+            background: rgba(229, 72, 138, 0.08);
+            color: #c23a72 !important;
+        }
+
+        @media (max-width: 768px) {
             .commande-success-wrap {
-                padding: 24px 12px 48px;
+                padding: 16px 12px 28px;
             }
 
             .commande-success-card {
-                padding: 22px 16px 20px;
+                padding: 20px 14px 18px;
                 border-radius: 14px;
             }
 
             .commande-success-icon {
-                width: 56px;
-                height: 56px;
-                margin-bottom: 14px;
+                width: 52px;
+                height: 52px;
+                margin-bottom: 12px;
             }
 
             .commande-success-icon i {
-                font-size: 26px;
+                font-size: 24px;
             }
 
             .commande-success-title {
@@ -462,60 +451,34 @@ if ($commande_success && $commande_numero !== '') {
 
             .commande-success-lead {
                 font-size: 13px;
-                margin-bottom: 16px;
-                line-height: 1.5;
+                margin-bottom: 14px;
             }
 
             .commande-success-numero {
-                padding: 12px 16px;
-                margin-bottom: 16px;
-                border-radius: 10px;
-            }
-
-            .commande-success-numero__label {
-                font-size: 10px;
+                padding: 10px 14px;
+                margin-bottom: 12px;
             }
 
             .commande-success-numero__value {
-                font-size: 0.88rem;
+                font-size: 0.9rem;
             }
 
             .commande-success-contact {
+                max-width: 100%;
                 padding: 10px 12px;
-                margin-bottom: 16px;
-                gap: 6px;
-            }
-
-            .commande-success-contact__label {
-                font-size: 11px;
+                margin-bottom: 14px;
             }
 
             .commande-success-contact__phone {
-                font-size: 0.88rem;
-                gap: 6px;
+                font-size: 0.9rem;
             }
 
             .commande-success-steps {
-                gap: 8px;
-                margin-bottom: 20px;
+                margin-bottom: 14px;
             }
 
             .commande-success-steps li {
-                padding: 8px 10px;
-            }
-
-            .commande-success-step-icon {
-                width: 26px;
-                height: 26px;
-                font-size: 11px;
-            }
-
-            .commande-success-step-text strong {
-                font-size: 12px;
-            }
-
-            .commande-success-step-text span {
-                font-size: 11px;
+                padding: 10px 12px;
             }
 
             .commande-success-actions {
@@ -525,8 +488,77 @@ if ($commande_success && $commande_numero !== '') {
 
             .commande-success-btn {
                 width: 100%;
-                padding: 11px 16px;
+                padding: 11px 14px;
                 font-size: 13px;
+            }
+
+            body.commande-success-page .footer {
+                padding: 28px 14px 16px;
+            }
+
+            body.commande-success-page .footer_logo_img {
+                max-height: 40px !important;
+                max-width: 120px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .commande-success-wrap {
+                padding: 12px 10px 24px;
+            }
+
+            .commande-success-card {
+                padding: 16px 12px 14px;
+                border-radius: 12px;
+            }
+
+            .commande-success-icon {
+                width: 44px;
+                height: 44px;
+                margin-bottom: 10px;
+            }
+
+            .commande-success-icon i {
+                font-size: 20px;
+            }
+
+            .commande-success-eyebrow {
+                font-size: 10px;
+            }
+
+            .commande-success-title {
+                font-size: 1.05rem;
+            }
+
+            .commande-success-lead {
+                font-size: 12px;
+                margin-bottom: 12px;
+            }
+
+            .commande-success-numero {
+                padding: 8px 12px;
+                margin-bottom: 10px;
+            }
+
+            .commande-success-numero__value {
+                font-size: 0.82rem;
+            }
+
+            .commande-success-contact__label {
+                font-size: 11px;
+            }
+
+            .commande-success-contact__phone {
+                font-size: 0.84rem;
+                padding: 6px 10px;
+            }
+
+            .commande-success-step-text strong {
+                font-size: 12px;
+            }
+
+            .commande-success-step-text span {
+                font-size: 11px;
             }
         }
     </style>
@@ -554,27 +586,13 @@ if ($commande_success && $commande_numero !== '') {
                    target="_blank"
                    rel="noopener noreferrer"
                    class="commande-success-contact__phone"
-                   title="Contactez-nous sur WhatsApp">
+                   title="Envoyer les détails de la commande sur WhatsApp">
                     <i class="fab fa-whatsapp" aria-hidden="true"></i>
                     <?php echo htmlspecialchars($whatsapp_display); ?>
                 </a>
             </div>
 
             <ul class="commande-success-steps">
-                <li class="is-done">
-                    <span class="commande-success-step-icon"><i class="fas fa-clipboard-check"></i></span>
-                    <div class="commande-success-step-text">
-                        <strong>Commande reçue</strong>
-                        <span>Votre demande a été transmise à notre équipe.</span>
-                    </div>
-                </li>
-                <li>
-                    <span class="commande-success-step-icon"><i class="fas fa-box-open"></i></span>
-                    <div class="commande-success-step-text">
-                        <strong>Préparation</strong>
-                        <span>Nous préparons vos produits avec soin.</span>
-                    </div>
-                </li>
                 <li>
                     <span class="commande-success-step-icon"><i class="fas fa-truck"></i></span>
                     <div class="commande-success-step-text">
@@ -1391,7 +1409,7 @@ include 'nav_bar.php';
                         $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : $item['image_principale'];
                         ?>
                     <div class="panier-item-summary">
-                        <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
+                        <img src="<?php echo htmlspecialchars(upload_image_url($item_img ?? '', 'sm')); ?>"
                             alt="<?php echo htmlspecialchars($item['nom']); ?>"
                             onerror="this.src='/image/produit1.jpg'">
                         <div class="panier-item-summary-info">

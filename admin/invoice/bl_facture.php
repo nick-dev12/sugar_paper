@@ -201,8 +201,6 @@ if ($bl_facture_token) {
     $facture_url = rtrim($base_url, '/') . '/facture-bl.php?token=' . rawurlencode($bl_facture_token);
     $facture_share_url = $facture_url;
     $facture_share_title = 'Facture ' . $facture_numero_affichage;
-    $facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . $facture_numero_affichage
-        . ' — ' . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA.';
 }
 
 require __DIR__ . '/../../includes/facture_content.php';

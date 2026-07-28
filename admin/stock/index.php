@@ -20,6 +20,7 @@ if (isset($_SESSION['success_message'])) {
 }
 
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $categories = get_all_categories();
 ?>
 <!DOCTYPE html>
@@ -77,7 +78,7 @@ $categories = get_all_categories();
                     <div class="categorie-card">
                         <div class="categorie-card-image-wrap">
                             <?php if ($categorie['image']): ?>
-                                <img src="/upload/<?php echo htmlspecialchars($categorie['image']); ?>"
+                                <img src="<?php echo htmlspecialchars(upload_image_url($categorie['image'] ?? '', 'sm')); ?>"
                                     alt="<?php echo htmlspecialchars($categorie['nom']); ?>" class="categorie-image"
                                     onerror="this.src='/image/produit1.jpg'">
                             <?php else: ?>

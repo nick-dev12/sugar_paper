@@ -22,6 +22,7 @@ require_once __DIR__ . '/../models/model_commandes_admin.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 $enable_firebase_notifications = true;
 $firebase_notify_type = 'admin';
@@ -278,7 +279,7 @@ if (!empty($produits)) {
                         <div class="produit-card produit-card-linkable"
                             data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                             <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
                                 onerror="this.src='/image/produit1.jpg'">
                             <div class="produit-card-body">

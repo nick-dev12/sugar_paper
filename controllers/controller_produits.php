@@ -8,6 +8,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../models/model_variantes.php';
 require_once __DIR__ . '/../models/model_mouvements_stock.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
  * Upload une image de produit
@@ -19,33 +20,17 @@ function upload_produit_image($file, $field_name = 'image') {
     if (!isset($file[$field_name]) || $file[$field_name]['error'] !== UPLOAD_ERR_OK) {
         return false;
     }
-    
+
     $upload_dir = __DIR__ . '/../upload/produits/';
-    
-    // Créer le dossier s'il n'existe pas
     if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
+        mkdir($upload_dir, 0755, true);
     }
-    
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    
-    $file_info = $file[$field_name];
-    
-    // Vérifier le type
-    if (!in_array($file_info['type'], $allowed_types)) {
-        return false;
+
+    $result = upload_optimize_image_file($file[$field_name], $upload_dir, 'produits', 'produit_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('produit_', true) . '.' . $extension;
-    $filepath = $upload_dir . $filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
-        return 'produits/' . $filename;
-    }
-    
+
     return false;
 }
 
@@ -418,9 +403,8 @@ function process_update_produit($produit_id) {
             $message = 'Produit modifié avec succès !';
             // Supprimer du disque les images retirées par l'utilisateur
             foreach ($removed_images as $old_path) {
-                $full_path = __DIR__ . '/../upload/' . $old_path;
-                if ($old_path && file_exists($full_path)) {
-                    @unlink($full_path);
+                if ($old_path) {
+                    image_optimizer_delete_with_variants($old_path);
                 }
             }
             // Gestion des variantes
@@ -505,9 +489,19 @@ function process_delete_produit($produit_id) {
         return ['success' => false, 'message' => 'Produit introuvable.'];
     }
     
-    // Supprimer l'image si elle existe
-    if ($produit['image_principale'] && file_exists(__DIR__ . '/../upload/' . $produit['image_principale'])) {
-        @unlink(__DIR__ . '/../upload/' . $produit['image_principale']);
+    // Supprimer toutes les images et leurs variantes.
+    $images = [];
+    if (!empty($produit['images'])) {
+        $decoded = json_decode($produit['images'], true);
+        if (is_array($decoded)) {
+            $images = $decoded;
+        }
+    }
+    if (!empty($produit['image_principale'])) {
+        $images[] = $produit['image_principale'];
+    }
+    foreach (array_unique($images) as $image_path) {
+        image_optimizer_delete_with_variants($image_path);
     }
     
     // Supprimer le produit

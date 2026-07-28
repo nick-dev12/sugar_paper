@@ -15,6 +15,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 
 // Récupérer la configuration actuelle
 require_once __DIR__ . '/../../models/model_section4.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $config = get_section4_config();
 
 // Traiter le formulaire uniquement si c'est une requête POST
@@ -125,7 +126,7 @@ if (isset($_SESSION['success_message'])) {
                     <?php if (!empty($config['image_fond'])): ?>
                         <div class="current-image">
                             <strong>Image actuelle:</strong>
-                            <img src="/upload/section4/<?php echo htmlspecialchars($config['image_fond']); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_subdir_image_url('section4', $config['image_fond'] ?? '', 'md')); ?>"
                                 alt="Image de fond actuelle"
                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <p style="display: none; color: var(--texte-fonce); margin-top: 10px;">

@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_categories.php';
 
 /**
@@ -23,29 +24,10 @@ function upload_categorie_image($file) {
         mkdir($upload_dir, 0777, true);
     }
     
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    $max_size = 5 * 1024 * 1024; // 5MB
-    
     $file_info = $file['image'];
-    
-    // Vérifier le type
-    if (!in_array($file_info['type'], $allowed_types)) {
-        return false;
-    }
-    
-    // Vérifier la taille
-    if ($file_info['size'] > $max_size) {
-        return false;
-    }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file_info['name'], PATHINFO_EXTENSION);
-    $filename = uniqid('categorie_', true) . '.' . $extension;
-    $filepath = $upload_dir . $filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file_info['tmp_name'], $filepath)) {
-        return 'categories/' . $filename;
+    $result = upload_optimize_image_file($file_info, $upload_dir, 'categories', 'categorie_');
+    if (!empty($result['success']) && !empty($result['relative_path'])) {
+        return (string) $result['relative_path'];
     }
     
     return false;
@@ -157,8 +139,8 @@ function process_update_categorie($categorie_id) {
         $new_image = upload_categorie_image($_FILES);
         if ($new_image) {
             // Supprimer l'ancienne image si elle existe
-            if ($image && file_exists(__DIR__ . '/../upload/' . $image)) {
-                @unlink(__DIR__ . '/../upload/' . $image);
+            if ($image) {
+                image_optimizer_delete_with_variants($image);
             }
             $image = $new_image;
         }
@@ -200,8 +182,8 @@ function process_delete_categorie($categorie_id) {
     }
     
     // Supprimer l'image si elle existe
-    if ($categorie['image'] && file_exists(__DIR__ . '/../upload/' . $categorie['image'])) {
-        @unlink(__DIR__ . '/../upload/' . $categorie['image']);
+    if ($categorie['image']) {
+        image_optimizer_delete_with_variants($categorie['image']);
     }
     
     // Supprimer la catégorie

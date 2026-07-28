@@ -406,6 +406,14 @@
             if (!data.url && !data.message) {
                 return;
             }
+            /* Bouton WhatsApp facture : sur desktop, ouvrir WhatsApp directement avec le message complet. */
+            if ((btn.getAttribute('data-share-prefer') || '') === 'wa' && !shouldUseNativeShare()) {
+                state.url = data.url || '';
+                state.title = data.title || 'Partager';
+                state.message = data.message || data.title || '';
+                openExternal(channelHttpsUrl('wa'));
+                return;
+            }
             openModal({
                 modalTitle: data.modalTitle || data.title || 'Partager',
                 title: data.title,

@@ -23,6 +23,7 @@ if ($produit_id <= 0) {
 
 // Récupérer le produit
 require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $produit = get_produit_by_id($produit_id);
 
 if (!$produit) {
@@ -149,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
 
         <div class="produit-info">
             <?php if ($produit['image_principale']): ?>
-                <img src="../../upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
+                <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>" 
                      alt="<?php echo htmlspecialchars($produit['nom']); ?>">
             <?php endif; ?>
             <h3><?php echo htmlspecialchars($produit['nom']); ?></h3>

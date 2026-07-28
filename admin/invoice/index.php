@@ -530,14 +530,21 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         </div>
         <?php endif; ?>
         <div class="invoice-facture-kpis" id="facture-kpis" aria-label="Montants totaux des factures">
-            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--paye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures payées">
+            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--tout invoice-facture-kpi--filter is-active" aria-pressed="true" aria-label="Afficher toutes les factures" data-payment-filter="all">
+                <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-layer-group"></i></span>
+                <div class="invoice-facture-kpi__body">
+                    <span class="invoice-facture-kpi__label">Tout</span>
+                    <strong class="invoice-facture-kpi__value" id="facture-kpi-tout"><?php echo number_format($facture_montant_paye + $facture_montant_impaye, 0, ',', ' '); ?> FCFA</strong>
+                </div>
+            </button>
+            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--paye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures payées" data-payment-filter="1">
                 <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-check-circle"></i></span>
                 <div class="invoice-facture-kpi__body">
                     <span class="invoice-facture-kpi__label">Factures payées</span>
                     <strong class="invoice-facture-kpi__value" id="facture-kpi-paye"><?php echo number_format($facture_montant_paye, 0, ',', ' '); ?> FCFA</strong>
                 </div>
             </button>
-            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--impaye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures impayées">
+            <button type="button" class="invoice-facture-kpi invoice-facture-kpi--impaye invoice-facture-kpi--filter" aria-pressed="false" aria-label="Afficher les factures impayées" data-payment-filter="0">
                 <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
                 <div class="invoice-facture-kpi__body">
                     <span class="invoice-facture-kpi__label">Factures impayées</span>
@@ -681,9 +688,18 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                     </table>
                 </div>
                 <p class="invoice-list-no-results" id="facture-no-results" hidden><i class="fas fa-search"></i> <span id="facture-no-results-text">Aucune facture ne correspond à votre recherche.</span></p>
-                <div class="invoice-list-load-more-wrap" id="facture-load-more-wrap" hidden>
-                    <button type="button" class="btn-secondary invoice-list-load-more" id="facture-load-more" hidden>Voir plus</button>
-                </div>
+                <nav class="invoice-list-pagination" id="facture-pagination" hidden aria-label="Pagination des factures">
+                    <button type="button" class="btn-secondary invoice-list-pagination__btn" id="facture-page-prev" aria-label="Page précédente">
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                        <span>Précédent</span>
+                    </button>
+                    <div class="invoice-list-pagination__pages" id="facture-pagination-pages" role="group" aria-label="Numéros de page"></div>
+                    <button type="button" class="btn-secondary invoice-list-pagination__btn" id="facture-page-next" aria-label="Page suivante">
+                        <span>Suivant</span>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                    <p class="invoice-list-pagination__info" id="facture-pagination-info" aria-live="polite"></p>
+                </nav>
         <?php endif; ?>
         <?php endif; ?>
         </div>

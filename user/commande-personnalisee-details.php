@@ -18,6 +18,7 @@ if ($cp_id <= 0) {
 }
 
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 $cp = get_commande_personnalisee_by_id($cp_id);
 
 if (!$cp || $cp['user_id'] != $_SESSION['user_id']) {
@@ -69,9 +70,9 @@ $cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
                     <div class="cp-user-images-grid">
                         <?php foreach ($cp_images as $img_index => $img_path): ?>
                         <button type="button" class="cp-user-image-trigger"
-                            data-image-src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                            data-image-src="<?php echo htmlspecialchars(upload_image_url($img_path, 'original')); ?>"
                             aria-label="Agrandir l'image <?php echo (int) $img_index + 1; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($img_path, 'sm')); ?>"
                                 alt="Image d'inspiration <?php echo (int) $img_index + 1; ?>"
                                 loading="lazy"
                                 onerror="this.src='/image/produit1.jpg'">
@@ -119,7 +120,7 @@ $cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
                 <p>Demande #<?php echo (int) $cp['id']; ?></p>
             </div>
             <div class="cp-user-image-modal-body">
-                <img id="cpUserImageModalPreview" src="/upload/<?php echo htmlspecialchars($cp_images[0]); ?>"
+                <img id="cpUserImageModalPreview" src="<?php echo htmlspecialchars(upload_image_url($cp_images[0], 'original')); ?>"
                     alt="Image d'inspiration de la demande personnalisée"
                     onerror="this.src='/image/produit1.jpg'">
             </div>

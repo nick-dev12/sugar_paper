@@ -3,6 +3,7 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 // Inclusion des modèles et contrôleurs
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
@@ -1421,7 +1422,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 }
                 ?>
                 <div class="produit-gallery-main">
-                    <img src="/upload/<?php echo htmlspecialchars($galerie_images[0] ?? $produit['image_principale']); ?>"
+                    <img src="<?php echo htmlspecialchars(upload_image_url($galerie_images[0] ?? ($produit['image_principale'] ?? ''), 'original')); ?>"
                         alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main"
                         id="produit-image-main" onerror="this.src='/image/produit1.jpg'">
                 </div>
@@ -1434,8 +1435,8 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             <?php foreach ($galerie_images as $idx => $img_path): ?>
                                 <button type="button" class="gallery-thumb <?php echo $idx === 0 ? 'active' : ''; ?>"
                                     data-index="<?php echo $idx; ?>"
-                                    data-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
-                                    <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                                    data-src="<?php echo htmlspecialchars(upload_image_url($img_path, 'original')); ?>">
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($img_path, 'sm')); ?>"
                                         alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
                                 </button>
                             <?php endforeach; ?>
@@ -1547,10 +1548,11 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                                         data-prix-promo="<?php echo $base_prix_promo; ?>"
                                         data-pourcentage="<?php echo $base_pct; ?>"
                                         data-nom="<?php echo htmlspecialchars($produit['nom']); ?>"
-                                        data-image="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>">
+                                        data-image="<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>"
+                                        data-image-url="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'original')); ?>">
                                         <input type="radio" name="option_variante_radio" value="" checked required>
                                         <?php if (!empty($produit['image_principale'])): ?><img
-                                                src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                                                src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'], 'sm')); ?>"
                                                 alt="" class="variante-thumb"
                                                 onerror="this.style.display='none'"><?php endif; ?>
                                         <span class="variante-nom"><?php echo htmlspecialchars($produit['nom']); ?></span>
@@ -1568,10 +1570,11 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                                             data-prix="<?php echo $vp; ?>" data-prix-original="<?php echo $v_prix_orig; ?>"
                                             data-prix-promo="<?php echo $vp; ?>" data-pourcentage="<?php echo $v_pct; ?>"
                                             data-nom="<?php echo htmlspecialchars($var['nom']); ?>"
-                                            data-image="<?php echo htmlspecialchars($var['image'] ?? ''); ?>">
+                                            data-image="<?php echo htmlspecialchars($var['image'] ?? ''); ?>"
+                                            data-image-url="<?php echo htmlspecialchars(upload_image_url($var['image'] ?? '', 'original')); ?>">
                                             <input type="radio" name="option_variante_radio" value="<?php echo $var['id']; ?>">
                                             <?php if (!empty($var['image'])): ?><img
-                                                    src="/upload/<?php echo htmlspecialchars($var['image']); ?>" alt=""
+                                                    src="<?php echo htmlspecialchars(upload_image_url($var['image'], 'sm')); ?>" alt=""
                                                     class="variante-thumb" onerror="this.style.display='none'"><?php endif; ?>
                                             <span class="variante-nom"><?php echo htmlspecialchars($var['nom']); ?></span>
                                             <span class="variante-prix"><?php echo number_format($vp, 0, ',', ' '); ?>
@@ -1795,7 +1798,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                             <div class="carousel">
                                 <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($similaire['image_principale']); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($similaire['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
                                             onerror="this.src='/image/produit1.jpg'">
                                     </div>
@@ -1915,9 +1918,10 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                 if (hnom) hnom.value = el.dataset.nom || '';
                 if (himg) himg.value = el.dataset.image || '';
                 var mainImg = document.getElementById('produit-image-main');
-                if (mainImg && el.dataset.image) mainImg.src = '/upload/' + el.dataset.image;
+                if (mainImg && el.dataset.imageUrl) mainImg.src = el.dataset.imageUrl;
+                else if (mainImg && el.dataset.image) mainImg.src = '/upload/' + el.dataset.image;
                 else if (mainImg && !el.dataset.id) mainImg.src =
-                    '/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>';
+                    '<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'original'), ENT_QUOTES); ?>';
                 updatePrixTotal();
                 if (typeof updatePrixEtNomAffichage === 'function') updatePrixEtNomAffichage();
             });

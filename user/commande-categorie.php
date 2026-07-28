@@ -7,6 +7,7 @@
 
 require_once __DIR__ . '/../includes/session_user.php';
 session_start_persistent();
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
@@ -370,7 +371,7 @@ $all_categories = get_all_categories();
                             ?>
                             <div class="produit-card-commande">
                                 <div class="produit-card-header">
-                                    <img src="/upload/<?php echo htmlspecialchars($produit_image); ?>"
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($produit_image ?? '', 'md')); ?>"
                                         alt="<?php echo htmlspecialchars($produit_nom_affichage); ?>" class="produit-card-image"
                                         onerror="this.src='/image/produit1.jpg'">
                                     <div class="produit-card-info">

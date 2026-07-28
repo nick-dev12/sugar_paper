@@ -15,6 +15,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 
 // Récupérer la configuration actuelle
 require_once __DIR__ . '/../../models/model_trending.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $config = get_trending_config();
 
 // Traiter le formulaire uniquement si c'est une requête POST
@@ -130,7 +131,7 @@ if (isset($_SESSION['success_message'])) {
                         <div class="current-image">
                             <strong>Image actuelle:</strong>
                             <?php if ($config['image'] !== 'speaker.png'): ?>
-                                <img src="/upload/trending/<?php echo htmlspecialchars($config['image']); ?>" 
+                                <img src="<?php echo htmlspecialchars(upload_subdir_image_url('trending', $config['image'] ?? '', 'md')); ?>" 
                                      alt="Image actuelle"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <?php else: ?>

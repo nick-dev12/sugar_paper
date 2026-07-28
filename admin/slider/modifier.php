@@ -198,9 +198,9 @@ if (isset($result['success']) && $result['success']) {
 
             <div class="form-group">
                 <label for="image">Nouvelle image (laisser vide pour garder l'actuelle)</label>
-                <input type="file" id="image" name="image" accept="image/*">
+                <input type="file" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
                 <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
-                    Formats acceptés: JPEG, JPG, PNG, GIF, WEBP, AVIF (Max: 50MB - Images 4K acceptées)
+                    Formats acceptés: JPEG, JPG, PNG, GIF, WEBP (Max: 50MB - Images 4K acceptées)
                 </small>
             </div>
 

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
 
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
@@ -161,7 +162,7 @@ $seo_canonical = $base . '/promo.php';
                             <div class="carousel">
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom']); ?>"
                                             onerror="this.src='/image/produit1.jpg'">
                                     </div>

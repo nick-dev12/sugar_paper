@@ -21,6 +21,7 @@ if ($cp_id <= 0) {
 require_once __DIR__ . '/../../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../../models/model_factures_personnalisees.php';
 require_once __DIR__ . '/../../includes/site_url.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $cp = get_commande_personnalisee_by_id($cp_id);
 $facture_cp = get_facture_personnalisee_by_cp($cp_id);
 
@@ -216,8 +217,8 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <label>Images de référence (<?php echo count($cp_images); ?>)</label>
                 <div class="cp-images-grid">
                     <?php foreach ($cp_images as $img_index => $img_path): ?>
-                    <button type="button" class="cp-image-trigger" data-image-src="/upload/<?php echo htmlspecialchars($img_path); ?>">
-                        <img src="/upload/<?php echo htmlspecialchars($img_path); ?>"
+                    <button type="button" class="cp-image-trigger" data-image-src="<?php echo htmlspecialchars(upload_image_url($img_path, 'original')); ?>">
+                        <img src="<?php echo htmlspecialchars(upload_image_url($img_path, 'sm')); ?>"
                             alt="Image de référence <?php echo (int) $img_index + 1; ?>"
                             onerror="this.src='/image/produit1.jpg'">
                         <span class="cp-image-trigger-caption">
@@ -324,7 +325,7 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <p>Demande personnalisée #<?php echo (int) $cp['id']; ?></p>
             </div>
             <div class="cp-image-modal-body">
-                <img id="cpImageModalPreview" src="/upload/<?php echo htmlspecialchars($cp_images[0]); ?>"
+                <img id="cpImageModalPreview" src="<?php echo htmlspecialchars(upload_image_url($cp_images[0], 'original')); ?>"
                     alt="Image de référence de la demande personnalisée"
                     onerror="this.src='/image/produit1.jpg'">
             </div>

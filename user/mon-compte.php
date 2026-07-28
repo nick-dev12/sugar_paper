@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../includes/session_user.php';
 session_start_persistent();
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
@@ -159,7 +160,7 @@ $firebase_notify_type = 'user';
                     ?>
                     <div class="produit-card">
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
                             onerror="this.src='/image/produit1.jpg'">
                         <div class="produit-card-body">

@@ -964,6 +964,155 @@
     padding: 10px 24px;
 }
 
+.invoice-list-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 10px;
+    margin: 18px 0 10px;
+    padding: 12px 10px;
+    background: #fff;
+    border: 1px solid rgba(229, 72, 138, 0.12);
+    border-radius: 14px;
+}
+
+.invoice-list-pagination[hidden] {
+    display: none !important;
+}
+
+.invoice-list-pagination__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.invoice-list-pagination__btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.invoice-list-pagination__pages {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.invoice-list-pagination__page {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 8px;
+    border: 1px solid rgba(229, 72, 138, 0.35);
+    border-radius: 10px;
+    background: #fff;
+    color: #e5488a;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.invoice-list-pagination__page:hover {
+    border-color: #e5488a;
+    background: rgba(229, 72, 138, 0.08);
+}
+
+.invoice-list-pagination__page.is-active {
+    background: linear-gradient(135deg, #e5488a 0%, #c93a72 100%);
+    border-color: #e5488a;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(229, 72, 138, 0.3);
+}
+
+.invoice-list-pagination__ellipsis {
+    min-width: 24px;
+    text-align: center;
+    color: #e5488a;
+    font-weight: 700;
+}
+
+.invoice-list-pagination__info {
+    width: 100%;
+    margin: 2px 0 0;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e5488a;
+}
+
+/* Tablette : pagination plus compacte */
+@media (max-width: 992px) {
+    .invoice-list-pagination {
+        gap: 6px 8px;
+        margin: 12px 0 8px;
+        padding: 8px;
+        border-radius: 12px;
+    }
+
+    .invoice-list-pagination__btn {
+        min-height: 34px;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+    }
+
+    .invoice-list-pagination__page {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.78rem;
+        border-radius: 8px;
+    }
+
+    .invoice-list-pagination__info {
+        font-size: 0.7rem;
+    }
+}
+
+/* Mobile : icônes seules, tailles réduites */
+@media (max-width: 640px) {
+    .invoice-list-pagination {
+        gap: 4px 6px;
+        margin: 10px 0 6px;
+        padding: 6px;
+        border-radius: 10px;
+    }
+
+    .invoice-list-pagination__btn span {
+        display: none;
+    }
+
+    .invoice-list-pagination__btn {
+        min-width: 32px;
+        min-height: 30px;
+        justify-content: center;
+        padding: 5px 8px;
+        font-size: 0.72rem;
+    }
+
+    .invoice-list-pagination__page {
+        min-width: 28px;
+        height: 28px;
+        padding: 0 5px;
+        font-size: 0.72rem;
+    }
+
+    .invoice-list-pagination__ellipsis {
+        min-width: 16px;
+        font-size: 0.72rem;
+    }
+
+    .invoice-list-pagination__info {
+        font-size: 0.64rem;
+        margin-top: 0;
+    }
+}
+
 .invoice-contacts-panel .invoice-contacts-toolbar {
     align-items: stretch;
 }
@@ -1777,10 +1926,10 @@
     }
 }
 
-/* ——— Mini-cartes totaux factures (payées / impayées / livraison) ——— */
+/* ——— Mini-cartes totaux factures (tout / payées / impayées / livraison) ——— */
 .invoice-facture-kpis {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
     margin: 0 0 14px;
 }
@@ -1820,6 +1969,12 @@ button.invoice-facture-kpi.is-active {
     box-shadow: 0 0 0 2px rgba(145, 138, 68, 0.2);
 }
 
+button.invoice-facture-kpi--tout.is-active {
+    border-color: #6b2f20;
+    box-shadow: 0 0 0 2px rgba(107, 47, 32, 0.16);
+    background: rgba(107, 47, 32, 0.04);
+}
+
 button.invoice-facture-kpi--paye.is-active {
     border-color: #15803d;
     box-shadow: 0 0 0 2px rgba(21, 128, 61, 0.18);
@@ -1841,6 +1996,11 @@ button.invoice-facture-kpi--impaye.is-active {
     align-items: center;
     justify-content: center;
     font-size: 0.95rem;
+}
+
+.invoice-facture-kpi--tout .invoice-facture-kpi__icon {
+    background: rgba(107, 47, 32, 0.12);
+    color: #6b2f20;
 }
 
 .invoice-facture-kpi--paye .invoice-facture-kpi__icon {
@@ -1882,7 +2042,7 @@ button.invoice-facture-kpi--impaye.is-active {
 
 @media (max-width: 900px) {
     .invoice-facture-kpis {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 8px;
         margin-bottom: 12px;
     }

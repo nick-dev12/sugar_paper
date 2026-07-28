@@ -23,6 +23,7 @@ if ($categorie_id <= 0) {
 
 // Récupérer la catégorie
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $categorie = get_categorie_by_id($categorie_id);
 
 if (!$categorie) {
@@ -95,7 +96,7 @@ $produits = get_produits_by_categorie($categorie_id);
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="../../upload/<?php echo htmlspecialchars($produit['image_principale']); ?>" 
+                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>" 
                              alt="<?php echo htmlspecialchars($produit['nom']); ?>" 
                              class="produit-card-image"
                              onerror="this.src='../../image/produit1.jpg'">

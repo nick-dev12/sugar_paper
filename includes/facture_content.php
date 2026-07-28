@@ -57,17 +57,66 @@ if (!isset($facture_share_title)) {
 } else {
     $facture_share_title = (string) $facture_share_title;
 }
-if (!isset($facture_share_message)) {
-    $facture_share_message = 'Bonjour'
-        . ($client_nom !== '' ? ' ' . $client_nom : '')
-        . ', voici votre facture n°'
-        . ($facture_numero_affichage ?? $facture['numero_facture'] ?? '')
-        . ' — '
-        . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ')
-        . ' CFA.';
-} else {
-    $facture_share_message = (string) $facture_share_message;
+
+/* Message de partage enrichi (WhatsApp / partage natif / desktop) */
+$facture_share_numero = trim((string) ($facture_numero_affichage ?? $facture['numero_facture'] ?? ''));
+$facture_share_montant = number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA';
+$facture_share_client = trim((string) $client_nom);
+$facture_share_tel = trim((string) $client_telephone);
+$facture_share_ref = trim((string) ($commande['numero_commande'] ?? ''));
+if ($facture_share_ref === '' && isset($devis) && is_array($devis)) {
+    $facture_share_ref = trim((string) ($devis['numero_devis'] ?? ''));
 }
+if ($facture_share_ref === '' && isset($bl) && is_array($bl)) {
+    $bl_ref = trim((string) ($bl['numero_bl'] ?? ''));
+    if ($bl_ref !== '' && $bl_ref !== $facture_share_numero) {
+        $facture_share_ref = $bl_ref;
+    }
+}
+
+$facture_share_lines = [];
+$facture_share_lines[] = 'Bonjour' . ($facture_share_client !== '' ? ' ' . $facture_share_client : '') . ',';
+$facture_share_lines[] = '';
+$facture_share_lines[] = 'Voici votre facture' . ($facture_share_numero !== '' ? ' n°' . $facture_share_numero : '') . '.';
+if ($facture_share_ref !== '') {
+    $facture_share_lines[] = 'Référence : #' . $facture_share_ref;
+}
+if ($date_facture_aff !== '') {
+    $facture_share_lines[] = 'Date : ' . $date_facture_aff;
+}
+if ($facture_share_tel !== '') {
+    $facture_share_lines[] = 'Téléphone : ' . $facture_share_tel;
+}
+$facture_share_lines[] = '';
+if (!empty($produits)) {
+    $facture_share_lines[] = 'Détail des articles :';
+    foreach ($produits as $p_share) {
+        $nom_share = trim((string) ($p_share['produit_nom'] ?? $p_share['nom'] ?? $p_share['nom_produit'] ?? 'Article'));
+        $qte_share = (int) ($p_share['quantite'] ?? 0);
+        $total_share = (float) ($p_share['prix_total'] ?? 0);
+        if ($total_share <= 0) {
+            $total_share = (float) ($p_share['prix_unitaire'] ?? 0) * $qte_share;
+        }
+        $ligne_share = '- ' . $nom_share;
+        if ($qte_share > 0) {
+            $ligne_share .= ' × ' . $qte_share;
+        }
+        if ($total_share > 0) {
+            $ligne_share .= ' — ' . number_format($total_share, 0, ',', ' ') . ' CFA';
+        }
+        $facture_share_lines[] = $ligne_share;
+    }
+    $facture_share_lines[] = '';
+}
+$facture_share_lines[] = 'Montant total : ' . $facture_share_montant;
+$facture_share_lines[] = 'Statut : ' . ($facture_est_payee ? 'Payée' : 'Solde dû');
+$facture_share_lines[] = '';
+$facture_share_lines[] = 'Consultez votre facture en ligne :';
+$facture_share_lines[] = '';
+$facture_share_lines[] = 'Cordialement,';
+$facture_share_lines[] = 'Sugar Paper';
+$facture_share_message = implode("\n", $facture_share_lines);
+
 $facture_share_hint = isset($facture_share_hint) && (string) $facture_share_hint !== ''
     ? (string) $facture_share_hint
     : 'Le client pourra consulter la facture en ligne sans compte administrateur.';
@@ -504,18 +553,30 @@ if ($facture_can_share && !function_exists('asset_version_query')) {
             gap: 8px;
             padding: 10px 20px;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 999px;
+            font-weight: 700;
             font-size: 14px;
             white-space: nowrap;
             cursor: pointer;
             color: #fff;
-            background: linear-gradient(135deg, #e5488a 0%, #c26638 100%);
-            box-shadow: 0 4px 14px rgba(229, 72, 138, 0.28);
+            background: #25D366;
+            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+            transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+        }
+
+        .facture-actions .btn-facture-share i {
+            font-size: 1.15rem;
+            line-height: 1;
         }
 
         .facture-actions .btn-facture-share:hover {
-            background: linear-gradient(135deg, #d63d7d 0%, #b85a30 100%);
+            background: #1da851;
+            box-shadow: 0 6px 18px rgba(37, 211, 102, 0.42);
+            transform: translateY(-1px);
+        }
+
+        .facture-actions .btn-facture-share:active {
+            transform: translateY(0);
         }
 
         @media print {
@@ -660,17 +721,18 @@ if ($facture_can_share && !function_exists('asset_version_query')) {
                     class="btn-facture-share js-platform-share"
                     aria-haspopup="dialog"
                     aria-controls="platformShareModal"
+                    data-share-prefer="wa"
                     data-share-modal-title="Envoyer la facture"
                     data-share-title="<?php echo htmlspecialchars($facture_share_title, ENT_QUOTES, 'UTF-8'); ?>"
                     data-share-url="<?php echo htmlspecialchars($facture_share_url, ENT_QUOTES, 'UTF-8'); ?>"
                     data-share-text="<?php echo htmlspecialchars($facture_share_message, ENT_QUOTES, 'UTF-8'); ?>"
                     data-share-hint="<?php echo htmlspecialchars($facture_share_hint, ENT_QUOTES, 'UTF-8'); ?>">
-                    <i class="fas fa-paper-plane" aria-hidden="true"></i> Envoyer la facture
+                    <i class="fab fa-whatsapp" aria-hidden="true"></i> Envoyer sur WhatsApp
                 </button>
             <?php elseif (!empty($whatsapp_url)): ?>
                 <a href="<?php echo htmlspecialchars($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer"
                     class="btn-whatsapp">
-                    <i class="fab fa-whatsapp"></i> Envoyer la facture sur WhatsApp
+                    <i class="fab fa-whatsapp"></i> Envoyer sur WhatsApp
                 </a>
             <?php endif; ?>
         </div>

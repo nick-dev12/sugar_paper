@@ -231,6 +231,40 @@ function get_commande_by_id($commande_id, $user_id = null) {
 }
 
 /**
+ * Récupère une commande par son numéro
+ * @param string $numero_commande
+ * @return array|false
+ */
+function get_commande_by_numero($numero_commande) {
+    global $db;
+
+    $numero_commande = trim((string) $numero_commande);
+    if ($numero_commande === '') {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT c.*,
+                   COALESCE(u.nom, c.client_nom) as user_nom,
+                   COALESCE(u.prenom, c.client_prenom) as user_prenom,
+                   COALESCE(u.email, c.client_email) as user_email,
+                   COALESCE(u.telephone, c.client_telephone, c.telephone_livraison) as user_telephone
+            FROM commandes c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.numero_commande = :numero
+            LIMIT 1
+        ");
+        $stmt->execute(['numero' => $numero_commande]);
+        $commande = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $commande ? $commande : false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Récupère les produits d'une commande
  * @param int $commande_id L'ID de la commande
  * @return array|false Tableau des produits ou False en cas d'erreur

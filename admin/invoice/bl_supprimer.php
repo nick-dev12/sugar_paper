@@ -31,11 +31,13 @@ if ($token === '' || !hash_equals((string) $expected, (string) $token)) {
 $bl_id = (int) ($_POST['bl_id'] ?? 0);
 require_once __DIR__ . '/../../models/model_bl.php';
 
+$redirect = 'index.php?tab=facture';
+
 if ($bl_id > 0 && delete_bl($bl_id)) {
-    $_SESSION['success_message'] = 'Bon de livraison supprimé.';
+    $_SESSION['success_message'] = 'Facture impayée supprimée.';
 } else {
-    $_SESSION['bl_erreur'] = 'Suppression impossible (BL introuvable, lié à une facture, ou déjà validé).';
+    $_SESSION['bl_erreur'] = 'Suppression impossible (facture introuvable, déjà payée, ou liée à une contrainte).';
 }
 
-header('Location: index.php');
+header('Location: ' . $redirect);
 exit;

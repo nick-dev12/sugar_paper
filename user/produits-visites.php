@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../includes/session_user.php';
 session_start_persistent();
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
     header('Location: connexion.php');
@@ -130,7 +131,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                                         <?php echo date('d/m/Y', strtotime($produit['date_visite'])); ?>
                                     </span>
                                     <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             onerror="this.src='/image/produit1.jpg'">
                                     </div>

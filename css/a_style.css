@@ -919,8 +919,10 @@ ul {
   font-size: 1.5rem;
 }
 .footer_logo_img {
-  max-height: 48px;
-  width: auto;
+  max-height: 48px !important;
+  max-width: 160px !important;
+  width: auto !important;
+  height: auto !important;
   object-fit: contain;
   display: block;
 }

@@ -12,6 +12,8 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../../includes/image_optimizer.php';
+
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 if ($produit_id <= 0) {
     header('Location: index.php');
@@ -383,7 +385,7 @@ if (isset($_SESSION['success_message'])) {
     <?php endif; ?>
 
     <div class="produit-preview">
-        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? ''); ?>" alt=""
+        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>" alt=""
             onerror="this.src='/image/produit1.jpg'">
         <div class="produit-preview-info">
             <h3><?php echo htmlspecialchars($produit['nom']); ?></h3>

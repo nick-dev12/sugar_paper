@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
+require_once __DIR__ . '/includes/image_optimizer.php';
 
 
 // Inclusion du fichier de connexion à la BDD
@@ -53,192 +54,8 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
     <style>
-    .commande-perso-showcase {
-        margin-top: 20px;
-        padding: 20px 24px;
-        background: #ffffff;
-        border-radius: 12px;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-    }
-
-    .commande-perso-showcase-inner {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-    }
-
-    .commande-perso-content {
-        flex: 1;
-        min-width: 260px;
-    }
-
-    .commande-perso-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        border-radius: 999px;
-        background: rgba(229, 72, 138, 0.1);
-        color: var(--couleur-dominante);
-        font-size: 12px;
-        font-weight: 600;
-        margin-bottom: 10px;
-    }
-
-    .commande-perso-title {
-        margin: 0 0 8px;
-        font-size: clamp(18px, 2.5vw, 22px);
-        line-height: 1.3;
-        color: var(--titres);
-        font-family: var(--font-titres);
-    }
-
-    .commande-perso-text {
-        margin: 0 0 14px;
-        font-size: 14px;
-        line-height: 1.6;
-        color: var(--texte-fonce);
-    }
-
-    .commande-perso-features {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin: 0 0 14px;
-        padding: 0;
-        list-style: none;
-    }
-
-    .commande-perso-features li {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: #f8f8f8;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-        color: var(--titres);
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    .commande-perso-features i {
-        color: var(--couleur-dominante);
-        font-size: 12px;
-    }
-
-    .commande-perso-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .btn-commande-perso {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        background: var(--couleur-dominante);
-        color: #fff !important;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 14px;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .btn-commande-perso:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(229, 72, 138, 0.3);
-    }
-
-    .commande-perso-note {
-        font-size: 12px;
-        color: var(--texte-fonce);
-        opacity: 0.85;
-    }
-
-    .commande-perso-visual {
-        flex-shrink: 0;
-    }
-
-    .commande-perso-card {
-        padding: 16px 20px;
-        border-radius: 10px;
-        background: #fafafa;
-        border: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    .commande-perso-card-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(229, 72, 138, 0.1);
-        color: var(--couleur-dominante);
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-
-    .commande-perso-card h3 {
-        margin: 0 0 8px;
-        color: var(--titres);
-        font-size: 16px;
-        font-family: var(--font-titres);
-    }
-
-    .commande-perso-card p {
-        margin: 0 0 12px;
-        color: var(--texte-fonce);
-        line-height: 1.5;
-        font-size: 13px;
-    }
-
-    .commande-perso-steps {
-        display: grid;
-        gap: 8px;
-    }
-
-    .commande-perso-step {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-    }
-
-    .commande-perso-step-number {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(229, 72, 138, 0.12);
-        color: var(--couleur-dominante);
-        font-size: 12px;
-        font-weight: 700;
-    }
-
-    .commande-perso-step strong {
-        display: block;
-        margin-bottom: 2px;
-        color: var(--titres);
-        font-size: 13px;
-    }
-
-    .commande-perso-step span {
-        color: var(--texte-fonce);
-        font-size: 12px;
-        line-height: 1.45;
-    }
-
     /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
     .carousel-produits-outer {
         position: relative;
@@ -248,89 +65,12 @@ $seo_canonical = $base . '/';
     .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel:nth-child(n+7) {
         display: none !important;
     }
-
-    @media (max-width: 650px) {
-        .commande-perso-showcase {
-            margin-top: 12px;
-            padding: 12px 14px;
-        }
-
-        .commande-perso-showcase-inner {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-        }
-
-        .commande-perso-content {
-            min-width: 0;
-        }
-
-        .commande-perso-badge {
-            font-size: 10px;
-            padding: 4px 10px;
-            margin-bottom: 6px;
-        }
-
-        .commande-perso-title {
-            font-size: 16px;
-            margin-bottom: 6px;
-        }
-
-        .commande-perso-text {
-            font-size: 11px;
-            line-height: 1.45;
-            margin-bottom: 10px;
-        }
-
-        .commande-perso-features {
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-
-        .commande-perso-features li {
-            padding: 4px 8px;
-            font-size: 10px;
-            gap: 4px;
-        }
-
-        .commande-perso-features i {
-            font-size: 10px;
-        }
-
-        .commande-perso-visual {
-            order: -1;
-        }
-
-        .commande-perso-actions {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 6px;
-        }
-
-        .btn-commande-perso {
-            justify-content: center;
-            padding: 8px 12px;
-            font-size: 11px;
-            gap: 6px;
-            border-radius: 7px;
-        }
-
-        .btn-commande-perso i {
-            font-size: 11px;
-        }
-
-        .commande-perso-note {
-            font-size: 10px;
-            text-align: center;
-        }
-    }
-
     </style>
 
 </head>
 
 
-<body>
+<body class="page-home">
 
     <?php include('nav_bar.php') ?>
 
@@ -351,7 +91,7 @@ $seo_canonical = $base . '/';
         <?php else: ?>
         <?php foreach ($slides as $slide): ?>
         <div class="slider-item">
-            <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
+            <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'original')); ?>"
                 alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
 
         </div>
@@ -360,26 +100,22 @@ $seo_canonical = $base . '/';
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
-    <div class="commande-perso-success"
-        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+    <div class="home-alert home-alert--success">
         <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
     </div>
     <?php endif; ?>
     <?php if (isset($_GET['compte_supprime']) && $_GET['compte_supprime'] == '1'): ?>
-    <div class="commande-perso-success"
-        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(145, 138, 68, 0.15); border-left: 4px solid #918a44; border-radius: 8px; color: var(--titres);">
+    <div class="home-alert home-alert--info">
         <i class="fas fa-check-circle"></i> Votre compte a été supprimé définitivement. Merci d'avoir utilisé Sugar Paper.
     </div>
     <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
-    <div class="commande-perso-success"
-        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
+    <div class="home-alert home-alert--error">
         <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
     </div>
     <?php endif; ?>
     <?php if (isset($_SESSION['commande_perso_success'])): ?>
-    <div class="commande-perso-success"
-        style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+    <div class="home-alert home-alert--success">
         <i class="fas fa-check-circle"></i>
         <?php echo htmlspecialchars($_SESSION['commande_perso_success']); unset($_SESSION['commande_perso_success']); ?>
     </div>
@@ -417,31 +153,37 @@ $seo_canonical = $base . '/';
                 <p>Réception en temps record</p>
             </div>
         </div>
-        <div class="commande-perso-showcase" data-aos="fade-up" data-aos-duration="900">
+        <div class="commande-perso-showcase home-reveal" data-aos="fade-up" data-aos-duration="700">
             <div class="commande-perso-showcase-inner">
                 <div class="commande-perso-content">
-                    <span class="commande-perso-badge"><i class="fas fa-palette"></i> Sur mesure</span>
-                    <h2 class="commande-perso-title">Commande personnalisée</h2>
-                    <p class="commande-perso-text">Décrivez votre besoin, joignez une image d'inspiration si vous en
-                        avez. Notre équipe vous recontacte rapidement.</p>
-                    <ul class="commande-perso-features">
-                        <li><i class="fas fa-pen"></i> Formulaire simple</li>
-                        <li><i class="fas fa-image"></i> Image de référence</li>
-                        <li><i class="fas fa-headset"></i> Accompagnement</li>
-                    </ul>
-                    <div class="commande-perso-actions">
-                        <a href="commande-personnalisee.php" class="btn-commande-perso">
-                            <i class="fas fa-palette"></i> Faire une demande
-                        </a>
-                        <span class="commande-perso-note">Réponse rapide</span>
+                    <div class="commande-perso-main">
+                        <span class="commande-perso-badge"><i class="fas fa-palette"></i> Sur mesure</span>
+                        <h2 class="commande-perso-title">Commande personnalisée</h2>
+                        <p class="commande-perso-text">Décrivez votre besoin et joignez une image d'inspiration. Réponse rapide.</p>
                     </div>
+                    <ol class="commande-perso-steps" aria-label="Étapes">
+                        <li class="commande-perso-step">
+                            <span class="commande-perso-step-number">1</span>
+                            <span class="commande-perso-step-label">Décrivez</span>
+                        </li>
+                        <li class="commande-perso-step">
+                            <span class="commande-perso-step-number">2</span>
+                            <span class="commande-perso-step-label">Inspirez</span>
+                        </li>
+                        <li class="commande-perso-step">
+                            <span class="commande-perso-step-number">3</span>
+                            <span class="commande-perso-step-label">Recevez</span>
+                        </li>
+                    </ol>
+                    <a href="commande-personnalisee.php" class="btn-commande-perso">
+                        <i class="fas fa-palette"></i> Faire une demande
+                    </a>
                 </div>
-
             </div>
         </div>
     </section>
 
-
+    <main class="home-main">
 
     <?php
     // Récupérer les catégories depuis la base de données
@@ -452,6 +194,16 @@ $seo_canonical = $base . '/';
         $categories = is_array($categories_result) ? $categories_result : [];
     }
     ?>
+
+    <section class="home-section home-reveal" id="home-categories">
+        <div class="home-section-head">
+            <div>
+                <span class="home-section-kicker">Explorer</span>
+                <h2 class="home-section-title">Nos catégories</h2>
+                <p class="home-section-desc">Trouvez rapidement le matériel idéal pour sublimer vos gâteaux.</p>
+            </div>
+            <a href="produits.php" class="home-section-cta">Voir le catalogue <i class="fas fa-arrow-right"></i></a>
+        </div>
 
     <section class="categorie owl-carousel">
         <?php if (empty($categories)): ?>
@@ -464,7 +216,7 @@ $seo_canonical = $base . '/';
         <a href="categorie.php?id=<?php echo $categorie['id']; ?>" style="text-decoration: none; color: inherit;">
             <div class="item">
                 <?php if ($categorie['image']): ?>
-                <img class="img" src="/upload/<?php echo htmlspecialchars($categorie['image']); ?>"
+                <img class="img" src="<?php echo htmlspecialchars(upload_image_url($categorie['image'], 'sm')); ?>"
                     alt="<?php echo htmlspecialchars($categorie['nom']); ?>" onerror="this.src='/image/produit1.jpg'">
                 <?php else: ?>
                 <img class="img" src="/image/produit1.jpg" alt="<?php echo htmlspecialchars($categorie['nom']); ?>">
@@ -476,6 +228,7 @@ $seo_canonical = $base . '/';
         </a>
         <?php endforeach; ?>
         <?php endif; ?>
+    </section>
     </section>
 
 
@@ -490,8 +243,16 @@ $seo_canonical = $base . '/';
     }
     ?>
 
-    <section class="produit_vedete">
-        <div class="box1">
+    <section class="produit_vedete home-reveal" id="home-nouveautes">
+        <div class="home-section-head">
+            <div>
+                <span class="home-section-kicker">Juste arrivés</span>
+                <h2 class="home-section-title">Nouveaux produits</h2>
+                <p class="home-section-desc">Les dernières pépites pour vos créations pâtissières.</p>
+            </div>
+            <a href="nouveautes.php" class="home-section-cta">Toutes les nouveautés <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="box1" hidden aria-hidden="true">
             <span></span>
             <h1>NOUVEAUX PRODUITS</h1>
             <span></span>
@@ -521,7 +282,7 @@ $seo_canonical = $base . '/';
                 <div class="carousel">
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 onerror="this.src='/image/produit1.jpg'">
                         </div>
@@ -585,15 +346,15 @@ $seo_canonical = $base . '/';
     // Chemin de l'image de fond
     $image_fond_path = '/image/market.png';
     if (!empty($section4_config['image_fond'])) {
-        $upload_path = '/upload/section4/' . htmlspecialchars($section4_config['image_fond']);
-        $file_path = __DIR__ . '/upload/section4/' . $section4_config['image_fond'];
-        if (file_exists($file_path)) {
-            $image_fond_path = $upload_path;
+        $resolved_fond = upload_subdir_image_url('section4', $section4_config['image_fond'], 'original');
+        $fond_relative = ltrim(str_replace('/upload/', '', $resolved_fond), '/');
+        if (is_file(__DIR__ . '/upload/' . $fond_relative)) {
+            $image_fond_path = $resolved_fond;
         }
     }
     ?>
     <?php if ($section4_actif): ?>
-    <section class="section4">
+    <section class="section4 home-reveal">
         <div class="slider" style="background-image: url('<?php echo $image_fond_path; ?>');">
             <?php if ($section4_titre !== ''): ?>
             <div class="box">
@@ -620,7 +381,7 @@ $seo_canonical = $base . '/';
     // Afficher la section seulement s'il y a des vidéos
     if (!empty($videos)):
     ?>
-    <section class="galerie-creations">
+    <section class="galerie-creations home-reveal" id="home-creations">
         <div class="galerie-creations-container">
             <header class="galerie-header">
                 <span class="galerie-surtitre">Découvrez</span>
@@ -745,8 +506,16 @@ $seo_canonical = $base . '/';
     }
     ?>
 
-    <section class="produit_vedete">
-        <div class="box1">
+    <section class="produit_vedete home-reveal" id="home-populaires">
+        <div class="home-section-head">
+            <div>
+                <span class="home-section-kicker">Coups de cœur</span>
+                <h2 class="home-section-title">Produits populaires</h2>
+                <p class="home-section-desc">Les indispensables plébiscités par nos clients.</p>
+            </div>
+            <a href="produits.php" class="home-section-cta">Voir plus <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="box1" hidden aria-hidden="true">
             <span></span>
             <h1>PRODUITS POPULAIRES</h1>
             <span></span>
@@ -776,7 +545,7 @@ $seo_canonical = $base . '/';
                 <div class="carousel">
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 onerror="this.src='/image/produit1.jpg'">
                         </div>
@@ -828,7 +597,14 @@ $seo_canonical = $base . '/';
     }
     ?>
 
-    <section class="section5">
+    <section class="section5 home-reveal" id="home-top-categories">
+        <div class="home-section-head">
+            <div>
+                <span class="home-section-kicker">Sélection</span>
+                <h2 class="home-section-title">Top catégories</h2>
+                <p class="home-section-desc">Les univers les plus consultés du moment.</p>
+            </div>
+        </div>
         <h1>Top Categorie</h1>
         <div class="container">
             <?php if (empty($top_categories)): ?>
@@ -842,10 +618,10 @@ $seo_canonical = $base . '/';
                     // Déterminer le chemin de l'image
                     $categorie_image_path = '/image/produit1.jpg'; // Par défaut
                     if (!empty($categorie['image'])) {
-                        $upload_path = '/upload/' . htmlspecialchars($categorie['image']);
-                        $file_path = __DIR__ . '/upload/' . $categorie['image'];
-                        if (file_exists($file_path)) {
-                            $categorie_image_path = $upload_path;
+                        $resolved_cat = upload_image_url($categorie['image'], 'md');
+                        $cat_relative = ltrim(str_replace('/upload/', '', $resolved_cat), '/');
+                        if (is_file(__DIR__ . '/upload/' . $cat_relative)) {
+                            $categorie_image_path = $resolved_cat;
                         }
                     }
                     ?>
@@ -853,8 +629,8 @@ $seo_canonical = $base . '/';
                 <img src="<?php echo $categorie_image_path; ?>" alt="<?php echo htmlspecialchars($categorie['nom']); ?>"
                     onerror="this.src='/image/produit1.jpg'">
                 <div class="box">
-                    <h4><?php echo htmlspecialchars(strtoupper($categorie['nom'])); ?></h4>
-                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>">Voir cette categorie ></a>
+                    <h4><?php echo htmlspecialchars($categorie['nom']); ?></h4>
+                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>">Découvrir <i class="fas fa-arrow-right"></i></a>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -875,9 +651,19 @@ $seo_canonical = $base . '/';
     }
     ?>
 
-    <section class="section00">
+    <section class="section00 home-reveal" id="home-catalogue">
         <section class="produit_vedetes">
-            <div class="box1">
+            <div class="home-section-head">
+                <div>
+                    <span class="home-section-kicker">Boutique</span>
+                    <h2 class="home-section-title">Tous nos produits</h2>
+                    <p class="home-section-desc">Parcourez une sélection de notre catalogue Sugar Paper.</p>
+                </div>
+                <?php if (!empty($produits_tous) && $total_produits > 20): ?>
+                <a href="produits.php" class="home-section-cta">Catalogue complet <i class="fas fa-arrow-right"></i></a>
+                <?php endif; ?>
+            </div>
+            <div class="box1" hidden aria-hidden="true">
                 <h1>Tous nos produits</h1>
             </div>
 
@@ -903,7 +689,7 @@ $seo_canonical = $base . '/';
                 <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
-                            <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                 onerror="this.src='/image/produit1.jpg'">
                         </div>
@@ -951,8 +737,7 @@ $seo_canonical = $base . '/';
         </section>
     </section>
 
-
-
+    </main>
 
     <?php include('footer.php') ?>
 

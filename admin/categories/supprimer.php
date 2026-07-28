@@ -23,6 +23,7 @@ if ($categorie_id <= 0) {
 
 // Récupérer la catégorie
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $categorie = get_categorie_by_id($categorie_id);
 
 if (!$categorie) {
@@ -149,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
 
         <div class="categorie-info">
             <?php if ($categorie['image']): ?>
-                <img src="../../upload/<?php echo htmlspecialchars($categorie['image']); ?>" 
+                <img src="<?php echo htmlspecialchars(upload_image_url($categorie['image'] ?? '', 'md')); ?>" 
                      alt="<?php echo htmlspecialchars($categorie['nom']); ?>">
             <?php endif; ?>
             <h3><?php echo htmlspecialchars($categorie['nom']); ?></h3>

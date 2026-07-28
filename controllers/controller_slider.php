@@ -4,6 +4,7 @@
  * Programmation procédurale uniquement
  */
 
+require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../models/model_slider.php';
 
 /**
@@ -25,35 +26,18 @@ function upload_slider_image($file_input_name, $current_image = null) {
         mkdir($upload_dir, 0755, true);
     }
     
-    // Vérifier le type de fichier
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
-    $file_type = $file['type'];
-    
-    if (!in_array($file_type, $allowed_types)) {
-        $_SESSION['upload_error'] = 'Type de fichier non autorisé. Formats acceptés: JPEG, JPG, PNG, GIF, WEBP, AVIF';
-        return false;
-    }
-    
-    // Vérifier la taille (max 50MB pour permettre les images 4K)
-    if ($file['size'] > 52428800) { // 50MB
-        $_SESSION['upload_error'] = 'Le fichier est trop volumineux. Taille maximale: 50MB';
-        return false;
-    }
-    
-    // Générer un nom unique
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $new_filename = 'slider_' . time() . '_' . uniqid() . '.' . $extension;
-    $target_path = $upload_dir . $new_filename;
-    
-    // Déplacer le fichier
-    if (move_uploaded_file($file['tmp_name'], $target_path)) {
-        // Supprimer l'ancienne image si elle existe
-        if ($current_image && file_exists($upload_dir . $current_image)) {
-            unlink($upload_dir . $current_image);
+    $result = upload_optimize_image_file($file, $upload_dir, 'slider', 'slider_');
+    if (!empty($result['success']) && !empty($result['filename'])) {
+        if ($current_image) {
+            image_optimizer_delete_with_variants('slider/' . $current_image);
         }
-        return $new_filename;
+        return (string) $result['filename'];
     }
-    
+
+    if (empty($result['success'])) {
+        $_SESSION['upload_error'] = (string) ($result['message'] ?? 'Échec de l’optimisation de l’image.');
+    }
+
     return false;
 }
 
@@ -214,10 +198,7 @@ function process_delete_slide($slide_id) {
     // Supprimer le slide
     if (delete_slide($slide_id)) {
         // Supprimer l'image
-        $image_path = __DIR__ . '/../upload/slider/' . $slide['image'];
-        if (file_exists($image_path)) {
-            unlink($image_path);
-        }
+        image_optimizer_delete_with_variants('slider/' . $slide['image']);
         
         return ['success' => true, 'message' => 'Slide supprimé avec succès.'];
     }

@@ -75,6 +75,30 @@ $en_attente = count_commandes_by_statut('en_attente', $commandes_archive_sql_mod
 $montant_total_a_traiter = array_sum(array_column($commandes_a_traiter, 'montant_total'));
 $montant_total_livrees = get_montant_total_commandes('livree', $commandes_archive_sql_mode) + get_montant_total_commandes('paye', $commandes_archive_sql_mode);
 $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_archive_sql_mode);
+
+function commandes_tab_search_blob(...$parts)
+{
+    $s = implode(' ', array_map('strval', $parts));
+    return htmlspecialchars(mb_strtolower($s, 'UTF-8'), ENT_QUOTES, 'UTF-8');
+}
+
+function commandes_statut_label($statut)
+{
+    $map = [
+        'en_attente' => 'En attente',
+        'confirmee' => 'Confirmée',
+        'prise_en_charge' => 'Prise en charge',
+        'en_preparation' => 'En préparation',
+        'expediee' => 'Expédiée',
+        'livraison_en_cours' => 'Livraison en cours',
+        'livree' => 'Livrée',
+        'paye' => 'Payée',
+        'annulee' => 'Annulée',
+    ];
+    $s = (string) $statut;
+    return $map[$s] ?? ucfirst(str_replace('_', ' ', $s));
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -130,50 +154,70 @@ $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_arch
 
     <div class="admin-devis-bl-tabs commandes-hub-tabs" role="tablist" aria-label="Statuts des commandes">
         <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=a_traiter"
-            class="admin-tab <?php echo $active_tab === 'a_traiter' ? 'is-active' : ''; ?>"
+            class="admin-tab admin-tab--inbox <?php echo $active_tab === 'a_traiter' ? 'is-active' : ''; ?>"
             role="tab" aria-selected="<?php echo $active_tab === 'a_traiter' ? 'true' : 'false'; ?>">
             <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-inbox"></i></span>
-            <span class="admin-tab__txt">Reçues / non traitées (<?php echo (int) $count_a_traiter; ?>)</span>
+            <span class="admin-tab__txt">
+                <span class="admin-tab__txt-full">Reçues / non traitées</span>
+                <span class="admin-tab__txt-short">Reçues</span>
+                <span class="admin-tab__count">(<?php echo (int) $count_a_traiter; ?>)</span>
+            </span>
         </a>
         <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees<?php echo $jours_precedents ? '&amp;jours_precedents=1' : ''; ?>"
-            class="admin-tab <?php echo $active_tab === 'livrees' ? 'is-active' : ''; ?>"
+            class="admin-tab admin-tab--done <?php echo $active_tab === 'livrees' ? 'is-active' : ''; ?>"
             role="tab" aria-selected="<?php echo $active_tab === 'livrees' ? 'true' : 'false'; ?>">
             <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-check-circle"></i></span>
-            <span class="admin-tab__txt">Livrées (<?php echo (int) $count_livrees; ?>)</span>
+            <span class="admin-tab__txt">
+                <span class="admin-tab__txt-full">Livrées</span>
+                <span class="admin-tab__txt-short">Livrées</span>
+                <span class="admin-tab__count">(<?php echo (int) $count_livrees; ?>)</span>
+            </span>
         </a>
         <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=annulees"
-            class="admin-tab <?php echo $active_tab === 'annulees' ? 'is-active' : ''; ?>"
+            class="admin-tab admin-tab--cancel <?php echo $active_tab === 'annulees' ? 'is-active' : ''; ?>"
             role="tab" aria-selected="<?php echo $active_tab === 'annulees' ? 'true' : 'false'; ?>">
             <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-ban"></i></span>
-            <span class="admin-tab__txt">Annulées (<?php echo (int) $count_annulees; ?>)</span>
+            <span class="admin-tab__txt">
+                <span class="admin-tab__txt-full">Annulées</span>
+                <span class="admin-tab__txt-short">Annulées</span>
+                <span class="admin-tab__count">(<?php echo (int) $count_annulees; ?>)</span>
+            </span>
         </a>
     </div>
 
     <?php if ($active_tab === 'a_traiter'): ?>
-    <div class="commandes-stats commandes-stats--compact">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
+    <div class="invoice-facture-kpis commandes-hub-kpis" aria-label="Indicateurs commandes à traiter">
+        <div class="invoice-facture-kpi invoice-facture-kpi--tout">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-shopping-bag"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Total commandes</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $total_commandes; ?></strong>
+            </div>
         </div>
-        <div class="stat-box">
-            <h3>En Attente</h3>
-            <div class="stat-value"><?php echo $en_attente; ?></div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--impaye">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">En attente</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $en_attente; ?></strong>
+            </div>
         </div>
-    </div>
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes à traiter</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--livraison commandes-hub-kpi--montant">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-calculator"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Montant à traiter</span>
+                <strong class="invoice-facture-kpi__value"><?php echo number_format($montant_total_a_traiter, 0, ',', ' '); ?> FCFA</strong>
+            </div>
+        </div>
     </div>
 
-    <section class="content-section">
+    <section class="content-section page-commandes-section">
         <div class="section-header">
             <div class="section-title">
-                <h2><i class="fas fa-list"></i> Commandes à traiter (<?php echo count($commandes_a_traiter); ?>)</h2>
+                <h2><i class="fas fa-list"></i> Commandes à traiter</h2>
             </div>
             <?php if (!$commandes_archive_mode): ?>
             <div class="form-actions commandes-section-actions">
-                <button type="button" class="btn-primary" id="btn-commande-manuelle"
-                    aria-label="Ajouter une commande manuellement">
+                <button type="button" class="btn-primary" id="btn-commande-manuelle" aria-label="Ajouter une commande manuellement">
                     <i class="fas fa-plus-circle"></i> Ajouter une commande
                 </button>
             </div>
@@ -187,77 +231,116 @@ $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_arch
             <p><?php echo $commandes_archive_mode ? 'Aucune commande archivée dans cette catégorie.' : 'Toutes les commandes ont été traitées et livrées.'; ?></p>
         </div>
         <?php else: ?>
-        <div class="commandes-table-wrap">
-            <table class="data-table commandes-data-table">
+        <div class="invoice-panel-toolbar">
+            <div class="invoice-panel-toolbar-main">
+                <div class="invoice-panel-search-bar">
+                    <label class="sr-only" for="search-commandes-a-traiter">Rechercher une commande</label>
+                    <div class="invoice-panel-search-wrap">
+                        <i class="fas fa-search invoice-panel-search-ic" aria-hidden="true"></i>
+                        <input type="search" id="search-commandes-a-traiter" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-a-traiter-table-wrap">
+            <table class="data-table invoice-data-table commandes-data-table">
                 <colgroup>
-                    <col class="commandes-col-client">
-                    <col class="commandes-col-montant">
-                    <col class="commandes-col-actions">
+                    <col class="invoice-col-client">
+                    <col class="invoice-col-num">
                 </colgroup>
                 <thead>
                     <tr>
                         <th>Client</th>
-                        <th class="commandes-col-montant">Montant</th>
-                        <th class="commandes-col-actions">Actions</th>
+                        <th class="invoice-col-num">Montant</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="commandes-a-traiter-body">
                     <?php foreach ($commandes_a_traiter as $commande): ?>
                     <?php
                     $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? '')) ?: '—';
                     $telephone_aff = trim($commande['telephone_livraison'] ?? '') ?: '—';
-                    $date_aff = date('d/m/Y H:i', strtotime($commande['date_commande']));
+                    $numero_cmd = (string) ($commande['numero_commande'] ?? '');
+                    $date_iso = !empty($commande['date_commande']) ? date('Y-m-d', strtotime($commande['date_commande'])) : '';
+                    $date_aff = !empty($commande['date_commande']) ? date('d/m/Y H:i', strtotime($commande['date_commande'])) : '—';
+                    $montant_txt = number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' ');
+                    $statut_cmd = (string) ($commande['statut'] ?? '');
+                    $statut_label = commandes_statut_label($statut_cmd);
+                    $details_href = 'details.php?id=' . (int) $commande['id'];
+                    $search_blob = commandes_tab_search_blob($client_nom, $telephone_aff, $numero_cmd, $date_aff, $statut_label, $montant_txt, 'fcfa');
                     ?>
-                    <tr>
+                    <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
-                            <span class="commandes-cell-nom"><?php echo htmlspecialchars($client_nom); ?></span>
-                            <span class="commandes-cell-tel"><?php echo htmlspecialchars($telephone_aff); ?></span>
+                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
                         </td>
-                        <td data-label="Montant" class="commandes-col-montant">
-                            <span class="commandes-cell-prix"><?php echo number_format((float) $commande['montant_total'], 0, ',', ' '); ?> FCFA</span>
-                            <span class="commandes-cell-date"><?php echo htmlspecialchars($date_aff); ?></span>
-                        </td>
-                        <td data-label="Actions" class="commandes-col-actions">
-                            <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
-                                <i class="fas fa-eye" aria-hidden="true"></i> Voir
-                            </a>
+                        <td data-label="Montant" class="invoice-col-num">
+                            <div class="invoice-montant-cell">
+                                <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
+                                <span class="invoice-date-statut-line">
+                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
+                                    <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-<?php echo htmlspecialchars($statut_cmd); ?>"><?php echo htmlspecialchars($statut_label); ?></span>
+                                </span>
+                            </div>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
+        <p class="invoice-list-no-results" id="commandes-a-traiter-no-results" hidden><i class="fas fa-search"></i> <span id="commandes-a-traiter-no-results-text">Aucune commande ne correspond à votre recherche.</span></p>
+        <nav class="invoice-list-pagination" id="commandes-a-traiter-pagination" hidden aria-label="Pagination des commandes à traiter">
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-a-traiter-page-prev" aria-label="Page précédente">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <span>Précédent</span>
+            </button>
+            <div class="invoice-list-pagination__pages" id="commandes-a-traiter-pagination-pages" role="group" aria-label="Numéros de page"></div>
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-a-traiter-page-next" aria-label="Page suivante">
+                <span>Suivant</span>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <p class="invoice-list-pagination__info" id="commandes-a-traiter-pagination-info" aria-live="polite"></p>
+        </nav>
         <?php endif; ?>
     </section>
 
     <?php elseif ($active_tab === 'livrees'): ?>
-    <div class="commandes-stats commandes-stats--compact">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
+    <div class="invoice-facture-kpis commandes-hub-kpis" aria-label="Indicateurs commandes livrées">
+        <div class="invoice-facture-kpi invoice-facture-kpi--tout">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-shopping-bag"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Total commandes</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $total_commandes; ?></strong>
+            </div>
         </div>
-        <div class="stat-box">
-            <h3>Commandes Livrées</h3>
-            <div class="stat-value"><?php echo $count_livrees; ?></div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--paye">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-check-circle"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Livrées</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $count_livrees; ?></strong>
+            </div>
+        </div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--livraison commandes-hub-kpi--montant">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-calculator"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Montant livré</span>
+                <strong class="invoice-facture-kpi__value"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?> FCFA</strong>
+            </div>
         </div>
     </div>
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes livrées</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_livrees, 0, ',', ' '); ?> FCFA</div>
-    </div>
-    <section class="content-section">
+
+    <section class="content-section page-commandes-section">
         <div class="section-header">
             <div class="section-title">
-                <h2><i class="fas fa-check-circle"></i> Commandes livrées (<?php echo count($commandes_livrees_affichees); ?>)</h2>
+                <h2><i class="fas fa-check-circle"></i> Commandes livrées</h2>
             </div>
             <?php if (!$commandes_archive_mode): ?>
-            <div class="form-actions">
+            <div class="form-actions commandes-section-actions">
                 <?php if ($jours_precedents): ?>
-                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees" class="btn-link">
+                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees" class="btn-secondary">
                     <i class="fas fa-calendar-day"></i> Uniquement aujourd'hui
                 </a>
                 <?php else: ?>
-                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees&amp;jours_precedents=1" class="btn-link">
+                <a href="<?php echo htmlspecialchars($commandes_hub_self); ?>?tab=livrees&amp;jours_precedents=1" class="btn-secondary">
                     <i class="fas fa-calendar-alt"></i> Inclure les jours précédents
                 </a>
                 <?php endif; ?>
@@ -271,65 +354,108 @@ $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_arch
             <p><?php echo (!$jours_precedents && !$commandes_archive_mode) ? 'Aucune livraison aujourd\'hui.' : 'Aucune commande livrée dans cette liste.'; ?></p>
         </div>
         <?php else: ?>
-        <div class="commandes-grid">
-            <?php foreach ($commandes_livrees_affichees as $commande): ?>
-            <div class="commande-item">
-                <div class="commande-header">
-                    <div class="commande-info">
-                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                        <p>
-                            <strong>Client:</strong>
-                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?><br>
-                            <span class="client-email"><?php echo !empty($commande['user_email']) ? htmlspecialchars($commande['user_email']) : '—'; ?></span>
-                        </p>
-                        <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                    </div>
-                    <span class="commande-statut statut-<?php echo htmlspecialchars($commande['statut']); ?>">
-                        <?php echo $commande['statut'] === 'paye' ? '<i class="fas fa-money-bill-wave"></i> Payée' : '<i class="fas fa-check-circle"></i> Livrée'; ?>
-                    </span>
-                </div>
-                <div class="commande-details">
-                    <div class="detail-item">
-                        <label>Montant total</label>
-                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Adresse</label>
-                        <div class="value small"><?php echo htmlspecialchars(substr((string) ($commande['adresse_livraison'] ?? ''), 0, 40)); ?></div>
-                    </div>
-                    <div class="detail-item">
-                        <label>Téléphone</label>
-                        <div class="value"><?php echo htmlspecialchars($commande['telephone_livraison'] ?? ''); ?></div>
+        <div class="invoice-panel-toolbar">
+            <div class="invoice-panel-toolbar-main">
+                <div class="invoice-panel-search-bar">
+                    <label class="sr-only" for="search-commandes-livrees">Rechercher une commande livrée</label>
+                    <div class="invoice-panel-search-wrap">
+                        <i class="fas fa-search invoice-panel-search-ic" aria-hidden="true"></i>
+                        <input type="search" id="search-commandes-livrees" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
                     </div>
                 </div>
-                <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
-                    <i class="fas fa-eye"></i> Voir les détails
-                </a>
             </div>
-            <?php endforeach; ?>
         </div>
+        <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-livrees-table-wrap">
+            <table class="data-table invoice-data-table commandes-data-table">
+                <colgroup>
+                    <col class="invoice-col-client">
+                    <col class="invoice-col-num">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th class="invoice-col-num">Montant</th>
+                    </tr>
+                </thead>
+                <tbody id="commandes-livrees-body">
+                    <?php foreach ($commandes_livrees_affichees as $commande): ?>
+                    <?php
+                    $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? '')) ?: '—';
+                    $telephone_aff = trim($commande['telephone_livraison'] ?? '') ?: '—';
+                    $numero_cmd = (string) ($commande['numero_commande'] ?? '');
+                    $date_ref = !empty($commande['date_livraison']) ? $commande['date_livraison'] : ($commande['date_commande'] ?? '');
+                    $date_iso = $date_ref !== '' ? date('Y-m-d', strtotime($date_ref)) : '';
+                    $date_aff = $date_ref !== '' ? date('d/m/Y H:i', strtotime($date_ref)) : '—';
+                    $montant_txt = number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' ');
+                    $statut_cmd = (string) ($commande['statut'] ?? '');
+                    $statut_label = $statut_cmd === 'paye' ? 'Payée' : 'Livrée';
+                    $details_href = 'details.php?id=' . (int) $commande['id'];
+                    $search_blob = commandes_tab_search_blob($client_nom, $telephone_aff, $numero_cmd, $date_aff, $statut_label, $montant_txt, 'fcfa');
+                    ?>
+                    <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
+                        <td data-label="Client">
+                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
+                        </td>
+                        <td data-label="Montant" class="invoice-col-num">
+                            <div class="invoice-montant-cell">
+                                <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
+                                <span class="invoice-date-statut-line">
+                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
+                                    <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-<?php echo htmlspecialchars($statut_cmd); ?>"><?php echo htmlspecialchars($statut_label); ?></span>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <p class="invoice-list-no-results" id="commandes-livrees-no-results" hidden><i class="fas fa-search"></i> <span id="commandes-livrees-no-results-text">Aucune commande ne correspond à votre recherche.</span></p>
+        <nav class="invoice-list-pagination" id="commandes-livrees-pagination" hidden aria-label="Pagination des commandes livrées">
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-livrees-page-prev" aria-label="Page précédente">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <span>Précédent</span>
+            </button>
+            <div class="invoice-list-pagination__pages" id="commandes-livrees-pagination-pages" role="group" aria-label="Numéros de page"></div>
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-livrees-page-next" aria-label="Page suivante">
+                <span>Suivant</span>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <p class="invoice-list-pagination__info" id="commandes-livrees-pagination-info" aria-live="polite"></p>
+        </nav>
         <?php endif; ?>
     </section>
 
     <?php else: ?>
-    <div class="commandes-stats commandes-stats--compact">
-        <div class="stat-box">
-            <h3>Total Commandes</h3>
-            <div class="stat-value"><?php echo $total_commandes; ?></div>
+    <div class="invoice-facture-kpis commandes-hub-kpis" aria-label="Indicateurs commandes annulées">
+        <div class="invoice-facture-kpi invoice-facture-kpi--tout">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-shopping-bag"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Total commandes</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $total_commandes; ?></strong>
+            </div>
         </div>
-        <div class="stat-box">
-            <h3>Commandes Annulées</h3>
-            <div class="stat-value"><?php echo $count_annulees; ?></div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--impaye">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-ban"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Annulées</span>
+                <strong class="invoice-facture-kpi__value"><?php echo (int) $count_annulees; ?></strong>
+            </div>
+        </div>
+        <div class="invoice-facture-kpi invoice-facture-kpi--livraison commandes-hub-kpi--montant">
+            <span class="invoice-facture-kpi__icon" aria-hidden="true"><i class="fas fa-calculator"></i></span>
+            <div class="invoice-facture-kpi__body">
+                <span class="invoice-facture-kpi__label">Montant annulé</span>
+                <strong class="invoice-facture-kpi__value"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?> FCFA</strong>
+            </div>
         </div>
     </div>
-    <div class="comptabilite-box">
-        <div class="comptabilite-label"><i class="fas fa-calculator"></i> Montant total des commandes annulées</div>
-        <div class="comptabilite-value"><?php echo number_format($montant_total_annulees, 0, ',', ' '); ?> FCFA</div>
-    </div>
-    <section class="content-section">
+
+    <section class="content-section page-commandes-section">
         <div class="section-header">
             <div class="section-title">
-                <h2><i class="fas fa-ban"></i> Commandes annulées (<?php echo count($commandes_annulees); ?>)</h2>
+                <h2><i class="fas fa-ban"></i> Commandes annulées</h2>
             </div>
         </div>
         <?php if (empty($commandes_annulees)): ?>
@@ -338,32 +464,73 @@ $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_arch
             <h3>Aucune commande annulée</h3>
         </div>
         <?php else: ?>
-        <div class="commandes-grid">
-            <?php foreach ($commandes_annulees as $commande): ?>
-            <div class="commande-item">
-                <div class="commande-header">
-                    <div class="commande-info">
-                        <h3>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h3>
-                        <p>
-                            <strong>Client:</strong>
-                            <?php echo htmlspecialchars(trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? ''))); ?>
-                        </p>
-                        <p class="commande-date">Date: <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?></p>
-                    </div>
-                    <span class="commande-statut statut-annulee"><i class="fas fa-ban"></i> Annulée</span>
-                </div>
-                <div class="commande-details">
-                    <div class="detail-item">
-                        <label>Montant total</label>
-                        <div class="value"><?php echo number_format($commande['montant_total'], 0, ',', ' '); ?> FCFA</div>
+        <div class="invoice-panel-toolbar">
+            <div class="invoice-panel-toolbar-main">
+                <div class="invoice-panel-search-bar">
+                    <label class="sr-only" for="search-commandes-annulees">Rechercher une commande annulée</label>
+                    <div class="invoice-panel-search-wrap">
+                        <i class="fas fa-search invoice-panel-search-ic" aria-hidden="true"></i>
+                        <input type="search" id="search-commandes-annulees" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
                     </div>
                 </div>
-                <a href="details.php?id=<?php echo (int) $commande['id']; ?>" class="btn-view">
-                    <i class="fas fa-eye"></i> Voir les détails
-                </a>
             </div>
-            <?php endforeach; ?>
         </div>
+        <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-annulees-table-wrap">
+            <table class="data-table invoice-data-table commandes-data-table">
+                <colgroup>
+                    <col class="invoice-col-client">
+                    <col class="invoice-col-num">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th class="invoice-col-num">Montant</th>
+                    </tr>
+                </thead>
+                <tbody id="commandes-annulees-body">
+                    <?php foreach ($commandes_annulees as $commande): ?>
+                    <?php
+                    $client_nom = trim(($commande['user_prenom'] ?? '') . ' ' . ($commande['user_nom'] ?? '')) ?: '—';
+                    $telephone_aff = trim($commande['telephone_livraison'] ?? '') ?: '—';
+                    $numero_cmd = (string) ($commande['numero_commande'] ?? '');
+                    $date_iso = !empty($commande['date_commande']) ? date('Y-m-d', strtotime($commande['date_commande'])) : '';
+                    $date_aff = !empty($commande['date_commande']) ? date('d/m/Y H:i', strtotime($commande['date_commande'])) : '—';
+                    $montant_txt = number_format((float) ($commande['montant_total'] ?? 0), 0, ',', ' ');
+                    $details_href = 'details.php?id=' . (int) $commande['id'];
+                    $search_blob = commandes_tab_search_blob($client_nom, $telephone_aff, $numero_cmd, $date_aff, 'annulee', $montant_txt, 'fcfa');
+                    ?>
+                    <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
+                        <td data-label="Client">
+                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
+                        </td>
+                        <td data-label="Montant" class="invoice-col-num">
+                            <div class="invoice-montant-cell">
+                                <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
+                                <span class="invoice-date-statut-line">
+                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
+                                    <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-annulee">Annulée</span>
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <p class="invoice-list-no-results" id="commandes-annulees-no-results" hidden><i class="fas fa-search"></i> <span id="commandes-annulees-no-results-text">Aucune commande ne correspond à votre recherche.</span></p>
+        <nav class="invoice-list-pagination" id="commandes-annulees-pagination" hidden aria-label="Pagination des commandes annulées">
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-annulees-page-prev" aria-label="Page précédente">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <span>Précédent</span>
+            </button>
+            <div class="invoice-list-pagination__pages" id="commandes-annulees-pagination-pages" role="group" aria-label="Numéros de page"></div>
+            <button type="button" class="btn-secondary invoice-list-pagination__btn" id="commandes-annulees-page-next" aria-label="Page suivante">
+                <span>Suivant</span>
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <p class="invoice-list-pagination__info" id="commandes-annulees-pagination-info" aria-live="polite"></p>
+        </nav>
         <?php endif; ?>
     </section>
     <?php endif; ?>
@@ -543,6 +710,7 @@ $montant_total_annulees = get_montant_total_commandes('annulee', $commandes_arch
         </div>
     </div>
 
+    <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
     <?php include '../includes/footer.php'; ?>
 
     <script>

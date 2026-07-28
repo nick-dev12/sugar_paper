@@ -3,6 +3,7 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 // Inclusion des modèles
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
 
 // Récupérer les produits (recherche + filtres ou tous)
@@ -225,7 +226,7 @@ $seo_canonical = $base . '/produits.php';
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
-                                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale'] ?? 'produit1.jpg'); ?>"
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
                                             alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
                                             onerror="this.src='/image/produit1.jpg'">
                                     </div>
@@ -364,7 +365,7 @@ $seo_canonical = $base . '/produits.php';
                             div.innerHTML = `
                                 <a href="produit.php?id=${produit.id}" class="product-card-link">
                                     <div class="image-wrapper">
-                                        <img src="/upload/${produit.image_principale}" 
+                                        <img src="${produit.image_url || '/upload/' + produit.image_principale}" 
                                              alt="${escapeHtml(produit.nom)}"
                                              onerror="this.src='/image/produit1.jpg'">
                                     </div>

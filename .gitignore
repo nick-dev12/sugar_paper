@@ -34,6 +34,7 @@ uploads/
 
 # Logs et cache
 *.log
+scripts/optimize_image_mapping.jsonl
 logs/
 cache/
 tmp/

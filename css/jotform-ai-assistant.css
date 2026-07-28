@@ -1,5 +1,5 @@
 /**
- * Assistant IA JotForm — bas gauche, au-dessus de la bottom nav mobile
+ * Assistant IA JotForm — avatar / launcher masqué (demande produit)
  */
 
 :root {
@@ -13,19 +13,28 @@
     }
 }
 
+/* Masquer entièrement l'avatar / bulle flottante Jotform */
 #JotformAgent-019f778143a0700083020339cfca9d410011,
-[id^="JotformAgent-"] {
-    left: var(--jf-agent-left-offset) !important;
-    right: auto !important;
-    bottom: var(--jf-agent-bottom-offset) !important;
-    top: auto !important;
-    z-index: 10030 !important;
-    pointer-events: auto;
+[id^="JotformAgent-"],
+.ai-agent-chat-avatar-container,
+.ai-agent-avatar-content,
+.ai-agent-chat-avatar,
+.ai-agent-chat-avatar-pulse-wrapper,
+.embedded-agent-container .ai-agent-chat-avatar-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
 }
 
-#JotformAgent-019f778143a0700083020339cfca9d410011 *,
-[id^="JotformAgent-"] * {
-    max-width: none;
+#JotformAgent-019f778143a0700083020339cfca9d410011 img[alt="agent"],
+[id^="JotformAgent-"] img[alt="agent"],
+img[src*="jotform.com/agent/"][alt="agent"] {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 @media (max-width: 600px) {

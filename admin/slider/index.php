@@ -22,6 +22,7 @@ if (isset($_SESSION['success_message'])) {
 
 // Récupérer tous les slides
 require_once __DIR__ . '/../../models/model_slider.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $slides = get_all_slides(null); // Récupérer tous les slides (actifs et inactifs)
 ?>
 <!DOCTYPE html>
@@ -72,7 +73,7 @@ $slides = get_all_slides(null); // Récupérer tous les slides (actifs et inacti
         <div class="slides-grid">
             <?php foreach ($slides as $slide): ?>
             <div class="slide-card">
-                <img src="/upload/slider/<?php echo htmlspecialchars($slide['image']); ?>"
+                <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'md')); ?>"
                     alt="<?php echo htmlspecialchars($slide['titre']); ?>" class="slide-image"
                     onerror="this.src='/image/produit1.jpg'">
                 <div class="slide-body">

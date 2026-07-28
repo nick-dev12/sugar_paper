@@ -59,26 +59,8 @@ $base_url = get_site_base_url();
 $facture_url = $base_url . '/facture.php?token=' . ($token ?? '');
 $facture_share_url = $facture_url;
 $facture_share_title = 'Facture ' . ($facture['numero_facture'] ?? '');
-$facture_share_message = 'Bonjour ' . $client_nom . ', voici votre facture n°' . ($facture['numero_facture'] ?? '')
-    . ' pour la commande #' . ($commande['numero_commande'] ?? '')
-    . ' — ' . number_format((float) ($facture['montant_total'] ?? 0), 0, ',', ' ') . ' CFA.';
-
-// Message WhatsApp enrichi (secours si partage indisponible)
-$lignes_produits = [];
-foreach ($produits as $p) {
-    $nom = $p['produit_nom'] ?? $p['nom'] ?? '';
-    $qte = (int) ($p['quantite'] ?? 0);
-    $lignes_produits[] = '- ' . $nom . ' x' . $qte;
-}
-$msg_whatsapp = "Bonjour " . $client_nom . ",\n\n"
-    . "Votre facture n°" . $facture['numero_facture'] . " pour la commande #" . ($commande['numero_commande'] ?? '') . " est prête.\n\n"
-    . "Produits commandés :\n" . implode("\n", $lignes_produits) . "\n\n"
-    . "Adresse de livraison : " . str_replace(["\r", "\n"], ' ', $adresse_livraison) . "\n\n"
-    . "Montant total : " . number_format($facture['montant_total'], 0, ',', ' ') . " CFA\n"
-    . "Date : " . $date_facture_aff . "\n\n"
-    . "Consultez votre facture en ligne :\n" . $facture_url . "\n\n"
-    . "Cordialement,\nSugar Paper";
-$whatsapp_url = !empty($tel_whatsapp) ? 'https://wa.me/' . $tel_whatsapp . '?text=' . urlencode($msg_whatsapp) : '';
+/* Message détaillé généré dans facture_content.php (partage natif + WhatsApp desktop) */
+$whatsapp_url = '';
 
 $entreprise_nom = 'Sugar Paper';
 $entreprise_rc = 'SN.DKR.2022.A.702';

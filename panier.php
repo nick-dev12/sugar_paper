@@ -3,6 +3,7 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 // Inclusion des modèles et contrôleurs
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
@@ -544,7 +545,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                             : $item['nom'];
                         ?>
                         <div class="panier-item" data-item-id="<?php echo $item['panier_id']; ?>">
-                            <img src="/upload/<?php echo htmlspecialchars($item_img); ?>"
+                            <img src="<?php echo htmlspecialchars(upload_image_url($item_img ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($item_nom); ?>" class="panier-item-image"
                                 onerror="this.src='/image/produit1.jpg'">
 

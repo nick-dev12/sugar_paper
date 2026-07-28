@@ -11,7 +11,7 @@ if (empty($enable_firebase_notifications)) {
     }
 
     $request_path = strtolower(str_replace('\\', '/', (string) ($_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'] ?? '')));
-    $is_admin_area = (strpos($request_path, '/admin/') !== false || preg_match('#/admin($|[?#])#', $request_path));
+    $is_admin_area = (strpos($request_path, '/admin/') !== false || preg_match('~/admin($|[?#])~', $request_path));
     $is_user_area = (strpos($request_path, '/user/') !== false);
 
     // Priorité : zone admin → type admin ; zone client / boutique → type user si session client

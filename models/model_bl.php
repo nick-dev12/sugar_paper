@@ -978,7 +978,11 @@ function delete_bl($bl_id) {
         return false;
     }
     $bl = get_bl_by_id($bl_id);
-    if (!$bl || ($bl['statut'] ?? '') !== 'brouillon') {
+    if (!$bl) {
+        return false;
+    }
+    // Factures payées : on archive, on ne supprime pas
+    if (bl_est_facture_payee($bl)) {
         return false;
     }
     try {

@@ -24,6 +24,7 @@ if ($commande_id <= 0) {
 // Récupérer la commande et ses produits
 require_once __DIR__ . '/../../models/model_commandes_admin.php';
 require_once __DIR__ . '/../../models/model_produits.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 require_once __DIR__ . '/../../models/model_factures.php';
 require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/format_commande_options.php';
@@ -312,7 +313,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                 <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? ''); ?>
                 <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? ''); ?>
                 <div class="produit-item">
-                    <img src="/upload/<?php echo htmlspecialchars($img_src ?? ''); ?>"
+                    <img src="<?php echo htmlspecialchars(upload_image_url($img_src ?? '', 'sm')); ?>"
                         alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
                         onerror="this.src='/image/produit1.jpg'">
                     <div class="produit-info">

@@ -23,6 +23,7 @@ if (isset($_SESSION['success_message'])) {
 // Récupérer tous les produits
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_categories.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 $produits = get_all_produits();
 $categories = get_all_categories();
 $recherche = trim($_GET['recherche'] ?? '');
@@ -148,7 +149,7 @@ if (!empty($produits)) {
                         $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                         ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
-                        <img src="/upload/<?php echo htmlspecialchars($produit['image_principale']); ?>"
+                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
                             onerror="this.src='/image/produit1.jpg'">
                         <div class="produit-card-body">
