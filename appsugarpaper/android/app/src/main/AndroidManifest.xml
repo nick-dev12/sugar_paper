@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Permissions pour les fonctionnalités natives -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
@@ -41,7 +40,7 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustPan"
+            android:windowSoftInputMode="adjustResize"
             android:usesCleartextTraffic="true">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
@@ -89,16 +88,9 @@
             android:name="com.baseflow.geolocator.GeolocatorLocationService"
             android:exported="false"
             android:foregroundServiceType="location" />
-        
-        <!-- Service Firebase Cloud Messaging pour recevoir les notifications -->
-        <service
-            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-            android:exported="true"
-            tools:replace="android:exported">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
+
+        <!-- FCM : laisser le service FlutterFire (ne pas déclarer
+             com.google.firebase.messaging.FirebaseMessagingService — classe abstraite). -->
         
         <!-- Receivers pour flutter_local_notifications -->
         <receiver

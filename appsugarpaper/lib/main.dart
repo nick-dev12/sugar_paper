@@ -481,6 +481,11 @@ class _WebViewScreenState extends State<WebViewScreen>
           );
         }
       });
+      FCMService.setTokenReadyCallback((token) {
+        if (webViewController != null) {
+          unawaited(_registerFCMTokenInWebView());
+        }
+      });
       print('✅ Callback de navigation configuré');
 
       print('🔥 Initialisation de FCMService avec URL: $kMarketplaceBaseUrl');
@@ -1343,7 +1348,8 @@ class _WebViewScreenState extends State<WebViewScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        resizeToAvoidBottomInset: false,
+        // true : le Scaffold se réduit quand le clavier s'ouvre (évite superposition iOS)
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             // WebView masquée pendant le chargement initial (évite flash blanc sous le logo).
@@ -1358,6 +1364,8 @@ class _WebViewScreenState extends State<WebViewScreen>
               },
               child: RepaintBoundary(
                 child: SafeArea(
+                  // Le bas suit le clavier via resizeToAvoidBottomInset (pas SafeArea bottom)
+                  bottom: false,
                   child: InAppWebView(
                   initialUrlRequest: URLRequest(
                     url: WebUri(_marketplaceEntryUrl),
@@ -1409,6 +1417,44 @@ class _WebViewScreenState extends State<WebViewScreen>
       return callNativeWhenReady('requestContactsPermission');
     };
   }
+
+  /* Clavier : remonter le champ focusé + padding bas (iOS WebView) */
+  function sugarPaperKbPad() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty('--native-kb', overlap + 'px');
+    if (document.body) {
+      document.body.style.paddingBottom = overlap > 0 ? (overlap + 'px') : '';
+    }
+  }
+  function sugarPaperScrollFocused(el) {
+    if (!el || !el.scrollIntoView) return;
+    try {
+      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+    } catch (e1) {
+      try { el.scrollIntoView(true); } catch (e2) {}
+    }
+  }
+  document.addEventListener('focusin', function(e) {
+    var t = e.target;
+    if (!t) return;
+    var tag = (t.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !t.isContentEditable) {
+      return;
+    }
+    setTimeout(function() {
+      sugarPaperScrollFocused(t);
+      sugarPaperKbPad();
+    }, 280);
+  }, true);
+  document.addEventListener('focusout', function() {
+    setTimeout(sugarPaperKbPad, 120);
+  }, true);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', sugarPaperKbPad);
+    window.visualViewport.addEventListener('scroll', sugarPaperKbPad);
+  }
 })();
 ''',
                       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
@@ -1451,6 +1497,12 @@ class _WebViewScreenState extends State<WebViewScreen>
                     disableDefaultErrorPage: true,
                     // Latence tactile réduite
                     overScrollMode: OverScrollMode.NEVER,
+                    // iOS : scroll type Safari + clavier
+                    alwaysBounceVertical: true,
+                    decelerationRate: ScrollViewDecelerationRate.NORMAL,
+                    contentInsetAdjustmentBehavior:
+                        ScrollViewContentInsetAdjustmentBehavior.AUTOMATIC,
+                    allowsBackForwardNavigationGestures: true,
                   ),
                   onWebViewCreated: (controller) {
                     webViewController = controller;

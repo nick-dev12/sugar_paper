@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/webview_site_config.dart';
+import '../firebase_options.dart';
 
 /// Canal Android haute priorité — bannière heads-up (popup native).
 /// Nouvel ID obligatoire : Android ne met pas à jour l'importance d'un canal existant.
@@ -24,6 +25,7 @@ class FCMService {
   static String? _fcmToken;
   static String? _serverUrl;
   static Function(String)? _onNotificationTap;
+  static Function(String)? _onTokenReady;
   static bool _handlersReady = false;
 
   /// Extrait l'URL de navigation depuis le payload FCM (web: link, legacy: redirect_url/url)
@@ -186,6 +188,11 @@ class FCMService {
     _onNotificationTap = callback;
   }
 
+  /// Appelé quand un token FCM est disponible (init ou refresh) — pour ré-injecter dans la WebView
+  static void setTokenReadyCallback(Function(String token)? callback) {
+    _onTokenReady = callback;
+  }
+
   /// Initialiser FCM et obtenir le token
   static Future<String?> initialize(String serverUrl) async {
     print('🔥 FCMService.initialize() appelé avec URL: $serverUrl');
@@ -230,6 +237,7 @@ class FCMService {
         await _saveTokenLocally(_fcmToken!);
         await _sendTokenToServer(_fcmToken!);
         _setupMessageHandlers();
+        _onTokenReady?.call(_fcmToken!);
         return _fcmToken;
       }
 
@@ -363,11 +371,15 @@ class FCMService {
     _handlersReady = true;
     print('🔔 Configuration des handlers (bannière native toujours on)...');
 
-    // App ouverte / WebView visible : forcer la popup locale (Android + iOS)
+    // App au premier plan
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       print('📬 Notification premier plan');
       print('   Titre: ${message.notification?.title}');
       print('   Corps: ${message.notification?.body}');
+      // iOS : bannière système déjà via setForegroundNotificationPresentationOptions + AppDelegate
+      if (!kIsWeb && Platform.isIOS && message.notification != null) {
+        return;
+      }
       try {
         await showHeadsUpNotification(message);
       } catch (e) {
@@ -405,6 +417,7 @@ class FCMService {
       _fcmToken = newToken;
       _saveTokenLocally(newToken);
       _sendTokenToServer(newToken);
+      _onTokenReady?.call(newToken);
     });
   }
 }
@@ -412,7 +425,13 @@ class FCMService {
 /// Handler arrière-plan / app tuée (fonction top-level obligatoire)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (_) {
+    // Déjà initialisé dans ce isolate
+  }
 
   print('📬 Notification arrière-plan / terminée');
   print('   Titre: ${message.notification?.title}');

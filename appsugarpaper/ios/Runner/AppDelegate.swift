@@ -48,6 +48,14 @@ import UserNotifications
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 
+  override func application(
+    _ application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: Error
+  ) {
+    NSLog("❌ Échec enregistrement APNs: \(error.localizedDescription)")
+    super.application(application, didFailToRegisterForRemoteNotificationsWithError: error)
+  }
+
   /// Retour OAuth Google Sign-In (obligatoire avec FirebaseAppDelegateProxyEnabled = false).
   override func application(
     _ app: UIApplication,
