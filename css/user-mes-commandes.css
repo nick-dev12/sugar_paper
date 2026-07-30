@@ -257,13 +257,55 @@ body.user-page-mes-commandes .commande-actions {
 
 body.user-page-mes-commandes .btn-view-commande,
 body.user-page-mes-commandes .btn-confirmer-livraison,
-body.user-page-mes-commandes .btn-annuler-commande {
+body.user-page-mes-commandes .btn-annuler-commande,
+body.user-page-mes-commandes .btn-suivi-livreur,
+.commande-categorie-page .btn-suivi-livreur {
   font-size: clamp(0.72rem, 2.2vw, 0.82rem);
   padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 14px);
   border-radius: 10px;
 }
 
-body.user-page-mes-commandes .commande-item-perso {
+body.user-page-mes-commandes .btn-suivi-livreur,
+.commande-categorie-page .btn-suivi-livreur {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(39, 174, 96, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.user-page-mes-commandes .btn-suivi-livreur:hover,
+.commande-categorie-page .btn-suivi-livreur:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(39, 174, 96, 0.35);
+  color: #fff;
+}
+
+body.user-page-mes-commandes .btn-suivi-livreur--pending,
+.commande-categorie-page .btn-suivi-livreur--pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  font-weight: 600;
+  background: rgba(229, 72, 138, 0.1);
+  color: #8b2f55;
+  border: 1px dashed rgba(229, 72, 138, 0.35);
+  cursor: default;
+}
+
+body.user-page-mes-commandes .btn-view-commande,
+body.user-page-mes-commandes .btn-confirmer-livraison,
+body.user-page-mes-commandes .btn-annuler-commande {
   border-left: 4px solid var(--couleur-dominante);
 }
 

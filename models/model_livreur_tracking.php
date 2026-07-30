@@ -1789,6 +1789,12 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
             return ['ok' => false, 'error' => 'Impossible d\'activer le suivi GPS.'];
         }
         livreur_countdown_resume($commande_id, $bl_id);
+
+        if ($commande_id !== null && (int) $commande_id > 0) {
+            require_once __DIR__ . '/../services/send_commande_notification.php';
+            notify_client_suivi_gps_demarre((int) $commande_id);
+        }
+
         return [
             'ok' => true,
             'countdown' => livreur_countdown_state_for_livraison($commande_id, $bl_id),
@@ -1943,8 +1949,10 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
 
             require_once __DIR__ . '/model_commandes_admin.php';
             if (!in_array($row['statut'] ?? '', ['livree', 'paye', 'annulee'], true)) {
-                // Passe en livree → notify_client (Livraison terminée)
                 update_commande_statut((int) $commande_id, 'livree');
+            } else {
+                require_once __DIR__ . '/../services/send_commande_notification.php';
+                notify_client_livraison_terminee((int) $commande_id);
             }
         }
 
@@ -2230,6 +2238,67 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true, $st
     });
 
     return $items;
+}
+
+/**
+ * Le client peut-il suivre le GPS en direct pour cette commande ?
+ *
+ * @param array<string, mixed> $commande
+ */
+function livreur_client_peut_suivre_gps(array $commande) {
+    if (empty($commande['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($commande, 'commande')) {
+        return false;
+    }
+    return (int) ($commande['tracking_active'] ?? 0) === 1;
+}
+
+/**
+ * Un livreur a pris en charge la commande (suivi pas encore GPS ou en cours).
+ *
+ * @param array<string, mixed> $commande
+ */
+function livreur_client_livraison_en_cours(array $commande) {
+    if (empty($commande['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($commande, 'commande')) {
+        return false;
+    }
+    $statut = strtolower(trim((string) ($commande['statut'] ?? '')));
+    return in_array($statut, ['livraison_en_cours', 'expediee', 'en_preparation', 'prise_en_charge', 'confirmee'], true);
+}
+
+/**
+ * Génère un token watch client et retourne l'URL de la carte suivi.
+ *
+ * @return string|false
+ */
+function livreur_client_suivi_map_url($commande_id, $user_id) {
+    require_once __DIR__ . '/model_commandes.php';
+    require_once __DIR__ . '/../includes/site_url.php';
+
+    $commande_id = (int) $commande_id;
+    $user_id = (int) $user_id;
+    if ($commande_id < 1 || $user_id < 1) {
+        return false;
+    }
+
+    $commande = get_commande_by_id($commande_id, $user_id);
+    if (!$commande || !livreur_client_peut_suivre_gps($commande)) {
+        return false;
+    }
+
+    $watch = livreur_create_watch_token($commande_id, 'client', null, $user_id);
+    if (!$watch || empty($watch['token'])) {
+        return false;
+    }
+
+    $base = rtrim(get_site_base_url(), '/');
+    return $base . '/suivi-livraison.php?commande_id=' . $commande_id
+        . '&token=' . rawurlencode($watch['token']);
 }
 
 /**

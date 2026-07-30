@@ -76,6 +76,13 @@ function firebase_get_notification_icon_url() {
  */
 function _firebase_build_mobile_config($title, $body, $dataPayload) {
     $link = $dataPayload['link'] ?? '/';
+    $iosBundleId = 'com.goobridge.sugarpaper';
+    if (file_exists(__DIR__ . '/../config/firebase_config.php')) {
+        $fbCfg = require __DIR__ . '/../config/firebase_config.php';
+        if (!empty($fbCfg['auth']['iosBundleId'])) {
+            $iosBundleId = (string) $fbCfg['auth']['iosBundleId'];
+        }
+    }
     return [
         'android' => [
             'priority' => 'high',
@@ -95,6 +102,7 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
             'headers' => [
                 'apns-priority' => '10',
                 'apns-push-type' => 'alert',
+                'apns-topic' => $iosBundleId,
             ],
             'payload' => [
                 'aps' => [
@@ -104,9 +112,6 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
                     ],
                     'sound' => 'default',
                     'badge' => 1,
-                    'content-available' => 1,
-                    'mutable-content' => 1,
-                    'interruption-level' => 'time-sensitive',
                 ],
                 'link' => (string) $link,
                 'title' => (string) $title,

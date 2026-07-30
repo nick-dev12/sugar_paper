@@ -1,5 +1,9 @@
-# Fichiers sensibles - NE JAMAIS committer
-# Clés privées Firebase (service account)
+# Clés / config Firebase (ne pas versionner les exports locaux)
+GoogleService-Info*.plist
+GoogleService-Info (*).plist
+/GoogleService-Info*.plist
+/GoogleService-Info (*).plist
+
 sugar-paper-*.json
 *-firebase-adminsdk-*.json
 *firebase*credentials*.json
@@ -52,4 +56,7 @@ temp/
 Thumbs.db
 desktop.ini
 
+# Autres projets locaux (exemples / copies — Sugar Paper n'en dépend pas)
+/poid_lourd/
+/Fouta/
 

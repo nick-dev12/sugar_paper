@@ -19,6 +19,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../includes/format_commande_options.php';
 
 $user_id = $_SESSION['user_id'];
@@ -73,6 +74,7 @@ $all_categories = get_all_categories();
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
     <style>
         .categorie-section {
             background: var(--glass-bg);
@@ -306,6 +308,42 @@ $all_categories = get_all_categories();
         .options-lignes .option-ligne:last-child {
             margin-bottom: 0;
         }
+
+        .commande-detail-banner {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .commande-detail-banner h2 {
+            margin: 0 0 8px;
+            font-size: 1.25rem;
+            color: var(--titres);
+        }
+
+        .commande-detail-banner-meta {
+            font-size: 0.9rem;
+            color: var(--texte-fonce);
+            margin-bottom: 14px;
+        }
+
+        .commande-detail-banner-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .commande-detail-alert {
+            margin-bottom: 20px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(229, 72, 138, 0.1);
+            color: #8b2f55;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 
@@ -320,6 +358,34 @@ $all_categories = get_all_categories();
     </div>
 
     <section class="content-section commande-categorie-page">
+        <?php if ($commande_id && isset($commande) && is_array($commande)): ?>
+            <?php if (isset($_GET['suivi']) && $_GET['suivi'] === 'indisponible'): ?>
+                <div class="commande-detail-alert">
+                    <i class="fas fa-info-circle"></i>
+                    Le suivi GPS n'est pas encore actif. Vous serez notifié dès que le livreur démarre la livraison en direct.
+                </div>
+            <?php endif; ?>
+            <div class="commande-detail-banner">
+                <h2>Commande #<?php echo htmlspecialchars($commande['numero_commande']); ?></h2>
+                <div class="commande-detail-banner-meta">
+                    Statut :
+                    <strong><?php echo htmlspecialchars(livreur_statut_label($commande['statut'] ?? '')); ?></strong>
+                    · <?php echo date('d/m/Y à H:i', strtotime($commande['date_commande'])); ?>
+                </div>
+                <div class="commande-detail-banner-actions">
+                    <?php if (livreur_client_peut_suivre_gps($commande)): ?>
+                        <a href="suivi-commande.php?commande_id=<?php echo (int) $commande_id; ?>" class="btn-suivi-livreur">
+                            <i class="fas fa-location-dot"></i> Suivre le livreur en direct
+                        </a>
+                    <?php elseif (livreur_client_livraison_en_cours($commande)): ?>
+                        <span class="btn-suivi-livreur btn-suivi-livreur--pending" aria-disabled="true">
+                            <i class="fas fa-truck"></i> Livreur assigné — en attente du GPS
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <?php if (!$commande_id): ?>
         <!-- Filtre par catégorie -->
         <div class="filter-section">

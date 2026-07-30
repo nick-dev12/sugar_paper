@@ -120,7 +120,8 @@ function notify_client_commande_statut_changed($commande_id, $nouveau_statut)
         $user_id,
         (string) ($commande['numero_commande'] ?? ''),
         $nouveau_statut,
-        trim($commande['user_email'] ?? '')
+        trim($commande['user_email'] ?? ''),
+        (int) $commande_id
     );
 
     return true;

@@ -37,10 +37,12 @@ Firebase **ne permet pas** de changer le Bundle ID d’une app existante → il 
    appsugarpaper/ios/Runner/GoogleService-Info.plist
    ```
 7. Dans Firebase, sur cette **nouvelle** app iOS, renseigner :
-   - **Team ID** : `XA8994VJC6`
-   - **App Store ID** : l’ID numérique App Store Connect (optionnel mais utile)
-8. **Cloud Messaging** → onglet **Apple** → uploader la clé APNs (`.p8`, Key ID `GDH9F8THP9`, Team `XA8994VJC6`)
-9. Mettre à jour `lib/firebase_options.dart` avec le nouveau `GOOGLE_APP_ID` du plist :
+   - **Team ID** : `XA8994VJC6` (Paramètres du projet → app iOS → « Add a Team ID »)
+   - **App Store ID** : l’ID numérique App Store Connect (optionnel)
+8. **Paramètres du projet → Cloud Messaging** (pas Authentication) → section **Apple** :
+   - Uploader la clé APNs `.p8` (Key ID `GDH9F8THP9`, Team `XA8994VJC6`)
+   - ⚠️ La clé Apple dans **Authentication → Apple** sert à la connexion, **pas** aux push
+9. Mettre à jour `lib/firebase_options.dart` avec le `GOOGLE_APP_ID` du plist :
    ```dart
    appId: '1:409713248489:ios:XXXXXXXX',  // valeur GOOGLE_APP_ID du nouveau plist
    iosBundleId: 'com.goobridge.sugarpaper',

@@ -16,6 +16,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 // Récupérer les commandes de l'utilisateur
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
+require_once __DIR__ . '/../models/model_livreur_tracking.php';
 
 // Traitement de la confirmation de livraison
 $success_message = '';
@@ -284,6 +285,17 @@ $statuts_labels = get_statuts_commande_personnalisee();
                                 class="btn-view-categories btn-view-commande">
                                 <i class="fas fa-eye"></i> Voir les produits
                             </a>
+
+                            <?php if (livreur_client_peut_suivre_gps($commande)): ?>
+                                <a href="suivi-commande.php?commande_id=<?php echo (int) $commande['id']; ?>"
+                                    class="btn-suivi-livreur">
+                                    <i class="fas fa-location-dot"></i> Suivre le livreur
+                                </a>
+                            <?php elseif (livreur_client_livraison_en_cours($commande)): ?>
+                                <span class="btn-suivi-livreur btn-suivi-livreur--pending" aria-disabled="true">
+                                    <i class="fas fa-truck"></i> Livreur en route — GPS bientôt disponible
+                                </span>
+                            <?php endif; ?>
 
                             <?php if ($commande['statut'] == 'livraison_en_cours'): ?>
                                 <form method="POST" action="" style="margin: 0;">

@@ -46,14 +46,9 @@ Future<void> _bootstrapFirebase() async {
     if (kIsWeb) {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.web);
     } else {
-      try {
-        await Firebase.initializeApp();
-      } catch (initErr) {
-        print('⚠️ Firebase init native, repli options web: $initErr');
-        await Firebase.initializeApp(
-          options: DefaultFirebaseOptions.currentPlatform,
-        );
-      }
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
     }
     print('✅ Firebase initialisé avec succès');
   } catch (e) {
@@ -1304,15 +1299,29 @@ class _WebViewScreenState extends State<WebViewScreen>
     await webViewController?.evaluateJavascript(source: perfJs);
   }
 
-  // Enregistrer le token FCM dans la WebView (utilise la session authentifiée)
+  // Enregistrer le token FCM (natif iOS prioritaire, JS en secours)
   Future<void> _registerFCMTokenInWebView() async {
     try {
       final fcmToken = FCMService.getToken();
-      if (fcmToken != null) {
-        // Injecter le script pour enregistrer le token via la WebView
+      if (fcmToken == null) {
+        return;
+      }
+
+      final pageContext = Uri.tryParse(_currentUrl ?? '')?.path ?? '/';
+      final cookieHeader = await _getWebViewCookieHeader() ?? '';
+
+      var saved = false;
+      if (cookieHeader.isNotEmpty) {
+        saved = await FCMService.registerTokenWithSession(
+          cookieHeader: cookieHeader,
+          pageContext: pageContext,
+        );
+      }
+
+      if (!saved) {
         final script = FCMService.getTokenRegistrationScript(fcmToken);
         await webViewController?.evaluateJavascript(source: script);
-        print('📤 Token FCM envoyé via WebView');
+        print('📤 Token FCM envoyé via WebView (secours JS)');
       }
     } catch (e) {
       print('❌ Erreur lors de l\'enregistrement du token FCM: $e');

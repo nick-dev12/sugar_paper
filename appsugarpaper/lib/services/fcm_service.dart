@@ -1,9 +1,12 @@
 import 'dart:io';
 
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -216,21 +219,25 @@ class FCMService {
       );
 
       if (!kIsWeb && Platform.isIOS) {
-        String? apnsToken;
-        for (var i = 0; i < 10; i++) {
-          apnsToken = await _messaging.getAPNSToken();
-          if (apnsToken != null && apnsToken.isNotEmpty) {
-            print('🍎 Token APNs obtenu');
-            break;
-          }
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-        }
-        if (apnsToken == null || apnsToken.isEmpty) {
-          print('⚠️ Token APNs indisponible — tentative FCM quand même');
+        final apnsOk = await _waitForApnsToken();
+        if (!apnsOk) {
+          print('⚠️ Token APNs indisponible — FCM iOS peut échouer');
+          print('   Vérifier : Push Notifications dans Xcode + clé APNs (.p8) dans Firebase → Cloud Messaging');
         }
       }
 
       _fcmToken = await _messaging.getToken();
+
+      // iOS : parfois le token FCM n’arrive qu’après APNs (retry court)
+      if (_fcmToken == null && !kIsWeb && Platform.isIOS) {
+        for (var i = 0; i < 6; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 800));
+          _fcmToken = await _messaging.getToken();
+          if (_fcmToken != null) {
+            break;
+          }
+        }
+      }
 
       if (_fcmToken != null) {
         print('📱 Token FCM obtenu: ${_fcmToken!.substring(0, 20)}...');
@@ -256,6 +263,73 @@ class FCMService {
     } catch (e) {
       print('Erreur lors de la sauvegarde locale du token: $e');
     }
+  }
+
+  static Future<bool> _waitForApnsToken() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return true;
+    }
+    for (var i = 0; i < 40; i++) {
+      final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken != null && apnsToken.isNotEmpty) {
+        print('🍎 Token APNs obtenu (${apnsToken.length} car.)');
+        return true;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
+    return false;
+  }
+
+  /// Enregistre le token FCM côté natif (fiable sur iOS WebView)
+  static Future<bool> registerTokenWithSession({
+    required String cookieHeader,
+    required String pageContext,
+  }) async {
+    final token = _fcmToken ?? await _messaging.getToken();
+    if (token == null || token.isEmpty) {
+      print('❌ registerTokenWithSession : pas de token FCM');
+      return false;
+    }
+    _fcmToken = token;
+
+    final serverUrl =
+        (_serverUrl ?? kMarketplaceBaseUrl).replaceAll(RegExp(r'/+$'), '');
+    final path = pageContext.trim();
+    final notifyType = (path.toLowerCase().contains('/admin')) ? 'admin' : 'user';
+    final deviceType = (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
+    final deviceName =
+        (!kIsWeb && Platform.isIOS) ? 'Sugar Paper iOS' : 'Sugar Paper Android';
+
+    try {
+      final response = await http.post(
+        Uri.parse('$serverUrl/api/save_fcm_token.php'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          if (cookieHeader.isNotEmpty) 'Cookie': cookieHeader,
+        },
+        body: jsonEncode({
+          'token': token,
+          'type': notifyType,
+          'page_context': path,
+          'device_type': deviceType,
+          'device_name': deviceName,
+        }),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['success'] == true) {
+          print('✅ Token FCM enregistré (natif, type=$notifyType, device=$deviceType)');
+          return true;
+        }
+        print('⚠️ save_fcm_token : ${data is Map ? data['message'] : response.body}');
+      } else {
+        print('⚠️ save_fcm_token HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ registerTokenWithSession : $e');
+    }
+    return false;
   }
 
   static Future<bool> _sendTokenToServer(String token) async {

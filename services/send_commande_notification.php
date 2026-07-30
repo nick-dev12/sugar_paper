@@ -7,7 +7,7 @@
  * @param string $user_email Email du client (celui de son compte) pour l'envoi de l'email
  * @return void
  */
-function send_commande_status_notification($user_id, $numero_commande, $nouveau_statut, $user_email = '') {
+function send_commande_status_notification($user_id, $numero_commande, $nouveau_statut, $user_email = '', $commande_id = 0) {
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
     require_once __DIR__ . '/notify_helpers.php';
@@ -49,13 +49,20 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
 
     require_once __DIR__ . '/../includes/site_url.php';
     $base_url = get_site_base_url();
-    $link = $base_url . '/user/mes-commandes.php';
+    $commande_id = (int) $commande_id;
+    if ($commande_id > 0 && $nouveau_statut === 'livraison_en_cours') {
+        $link = rtrim($base_url, '/') . '/user/commande-categorie.php?commande_id=' . $commande_id;
+    } elseif ($commande_id > 0 && $nouveau_statut === 'livree') {
+        $link = rtrim($base_url, '/') . '/user/commande-categorie.php?commande_id=' . $commande_id;
+    } else {
+        $link = $base_url . '/user/mes-commandes.php';
+    }
 
     $tokens = get_fcm_tokens_by_user($user_id);
     if (!empty($tokens)) {
         firebase_send_notification($tokens, $title, $body, [
             'link' => $link,
-            'commande_id' => '',
+            'commande_id' => $commande_id > 0 ? (string) $commande_id : '',
             'statut' => $nouveau_statut,
             'numero_commande' => $numero_commande,
             'tag' => 'commande-' . $numero_commande . '-' . $nouveau_statut
@@ -85,7 +92,7 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
 }
 
 /**
- * Push dédié « Livreur en route » (démarrage livraison), même si le statut
+ * Push « Livreur en route » (démarrage livraison), même si le statut
  * était déjà livraison_en_cours (ex. après prise en charge).
  *
  * @param int $commande_id
@@ -114,8 +121,9 @@ function notify_client_livreur_en_route($commande_id) {
 
     $numero = (string) ($commande['numero_commande'] ?? $commande_id);
     $title = 'Livreur en route';
-    $body = "Un livreur a pris en charge votre commande #{$numero}. Suivez la livraison depuis votre espace client.";
-    $link = rtrim(get_site_base_url(), '/') . '/user/mes-commandes.php';
+    $body = "Un livreur a pris en charge votre commande #{$numero}. Vous serez notifié dès que le suivi GPS démarre.";
+    $base = rtrim(get_site_base_url(), '/');
+    $link = $base . '/user/commande-categorie.php?commande_id=' . $commande_id;
 
     $tokens = get_fcm_tokens_by_user($user_id);
     if (empty($tokens)) {
@@ -124,9 +132,59 @@ function notify_client_livreur_en_route($commande_id) {
 
     $result = firebase_send_notification($tokens, $title, $body, [
         'link' => $link,
+        'commande_id' => (string) $commande_id,
         'statut' => 'livraison_en_cours',
         'numero_commande' => $numero,
         'tag' => 'livreur-prise-' . $numero,
+    ]);
+
+    return ((int) ($result['success'] ?? 0)) > 0;
+}
+
+/**
+ * Push « Suivi GPS démarré » — le livreur a activé le suivi en temps réel.
+ *
+ * @param int $commande_id
+ * @return bool
+ */
+function notify_client_suivi_gps_demarre($commande_id) {
+    require_once __DIR__ . '/../models/model_commandes_admin.php';
+    require_once __DIR__ . '/../models/model_fcm.php';
+    require_once __DIR__ . '/firebase_push.php';
+    require_once __DIR__ . '/../includes/site_url.php';
+
+    $commande_id = (int) $commande_id;
+    if ($commande_id < 1) {
+        return false;
+    }
+
+    $commande = get_commande_by_id($commande_id);
+    if (!$commande) {
+        return false;
+    }
+
+    $user_id = (int) ($commande['user_id'] ?? 0);
+    if ($user_id < 1) {
+        return false;
+    }
+
+    $numero = (string) ($commande['numero_commande'] ?? $commande_id);
+    $title = 'Suivez votre livreur';
+    $body = "Le livreur est en route pour votre commande #{$numero}. Suivez sa position en direct.";
+    $base = rtrim(get_site_base_url(), '/');
+    $link = $base . '/user/suivi-commande.php?commande_id=' . $commande_id;
+
+    $tokens = get_fcm_tokens_by_user($user_id);
+    if (empty($tokens)) {
+        return false;
+    }
+
+    $result = firebase_send_notification($tokens, $title, $body, [
+        'link' => $link,
+        'commande_id' => (string) $commande_id,
+        'statut' => 'livraison_en_cours',
+        'numero_commande' => $numero,
+        'tag' => 'suivi-gps-' . $numero,
     ]);
 
     return ((int) ($result['success'] ?? 0)) > 0;
@@ -162,7 +220,7 @@ function notify_client_livraison_terminee($commande_id) {
     $numero = (string) ($commande['numero_commande'] ?? $commande_id);
     $title = 'Livraison terminée';
     $body = "Votre commande #{$numero} a été livrée. Merci pour votre confiance !";
-    $link = rtrim(get_site_base_url(), '/') . '/user/mes-commandes.php';
+    $link = rtrim(get_site_base_url(), '/') . '/user/commande-categorie.php?commande_id=' . $commande_id;
 
     $tokens = get_fcm_tokens_by_user($user_id);
     if (empty($tokens)) {
@@ -171,6 +229,7 @@ function notify_client_livraison_terminee($commande_id) {
 
     $result = firebase_send_notification($tokens, $title, $body, [
         'link' => $link,
+        'commande_id' => (string) $commande_id,
         'statut' => 'livree',
         'numero_commande' => $numero,
         'tag' => 'livraison-terminee-' . $numero,
