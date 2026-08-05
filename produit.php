@@ -1504,16 +1504,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                 }
                 ?>
 
-                <!-- Description (en bas) -->
-                <?php if (!empty($produit['description'])): ?>
-                    <div class="produit-description produit-section-bg">
-                        <h3>Description</h3>
-                        <p>
-                            <?php echo nl2br(htmlspecialchars($produit['description'])); ?>
-                        </p>
-                    </div>
-                <?php endif; ?>
-
                 <!-- Variantes du produit -->
                 <?php if ($has_variantes): ?>
                     <?php $total_variantes = 1 + count($variantes); ?>
@@ -1578,6 +1568,16 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                                 </div>
                             </div>
                         </div>
+                    </div>
+                <?php endif; ?>
+
+                <!-- Description -->
+                <?php if (!empty($produit['description'])): ?>
+                    <div class="produit-description produit-section-bg">
+                        <h3>Description</h3>
+                        <p>
+                            <?php echo nl2br(htmlspecialchars($produit['description'])); ?>
+                        </p>
                     </div>
                 <?php endif; ?>
 
