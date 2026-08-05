@@ -13,7 +13,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../includes/require_access.php';
 
 $role = $_SESSION['admin_role'] ?? '';
-if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur'], true)) {
+if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true)) {
     header('Location: ../../dashboard.php');
     exit;
 }
@@ -118,6 +118,11 @@ foreach ($gains as $gr) {
 
 $bp_sn = 0;
 $titre_page = 'Bulletin de paie — ' . trim(($em['prenom'] ?? '') . ' ' . ($em['nom'] ?? ''));
+$bp_flash_ok = '';
+if (!empty($_SESSION['bp_flash_ok'])) {
+    $bp_flash_ok = (string) $_SESSION['bp_flash_ok'];
+    unset($_SESSION['bp_flash_ok']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -137,6 +142,10 @@ $titre_page = 'Bulletin de paie — ' . trim(($em['prenom'] ?? '') . ' ' . ($em[
                 <span>Retour fiche employé</span>
             </a>
             <div class="bp-toolbar__actions">
+                <a href="bulletin_paie_modifier.php?id=<?php echo (int) $bid; ?>" class="bp-toolbar__btn bp-toolbar__btn--ghost">
+                    <i class="fas fa-pen" aria-hidden="true"></i>
+                    Modifier
+                </a>
                 <button type="button" class="bp-toolbar__btn bp-toolbar__btn--primary" id="bpBtnPrint" title="Imprimer en A4">
                     <i class="fas fa-print" aria-hidden="true"></i>
                     Imprimer (A4)
@@ -144,6 +153,10 @@ $titre_page = 'Bulletin de paie — ' . trim(($em['prenom'] ?? '') . ' ' . ($em[
             </div>
         </div>
     </header>
+
+    <?php if ($bp_flash_ok !== ''): ?>
+    <div class="bp-flash-ok no-print" role="status"><?php echo htmlspecialchars($bp_flash_ok); ?></div>
+    <?php endif; ?>
 
     <div class="bp-canvas no-print-bg">
         <article class="bp-sheet" aria-label="Bulletin de paie">

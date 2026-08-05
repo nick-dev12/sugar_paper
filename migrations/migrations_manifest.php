@@ -116,6 +116,11 @@ return [
         'script' => 'run_alter_admin_roles_trois.php',
     ],
     [
+        'id' => 'admin_role_contable_actif',
+        'label' => 'Rôle contable (Comptable) — accès Employés',
+        'script' => 'run_add_admin_role_contable_actif.php',
+    ],
+    [
         'id' => 'admin_tracabilite_interactions',
         'label' => 'Traçabilité admin (devis, commandes, B2B)',
         'script' => 'run_add_admin_tracabilite_interactions.php',

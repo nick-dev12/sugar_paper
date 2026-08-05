@@ -103,11 +103,11 @@ $admin_bottom_active = '';
 
 if ($is_contable_bottom) {
 
-    if ($is_comptes) {
+    if (strpos($current_dir, '/employes') !== false) {
 
-        $admin_bottom_active = 'comptes';
+        $admin_bottom_active = 'employes';
 
-    } elseif ($is_parametres) {
+    } elseif ($current_page === 'parametres.php' || strpos($current_dir, '/parametres') !== false) {
 
         $admin_bottom_active = 'parametres';
 
@@ -289,13 +289,13 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     <?php elseif ($is_contable_bottom): ?>
 
-    <a href="<?php echo htmlspecialchars($nav_href('comptes/index.php')); ?>"
+    <a href="<?php echo htmlspecialchars($nav_href('comptes/employes/index.php')); ?>"
 
-        class="bottom-nav-item bottom-nav-item--comptes<?php echo $admin_bottom_active === 'comptes' ? ' is-active' : ''; ?>">
+        class="bottom-nav-item bottom-nav-item--employes<?php echo $admin_bottom_active === 'employes' ? ' is-active' : ''; ?>">
 
-        <span class="bottom-nav-icon"><i class="fas fa-user-shield" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon"><i class="fas fa-id-card-clip" aria-hidden="true"></i></span>
 
-        <span class="bottom-nav-label">Comptes</span>
+        <span class="bottom-nav-label">Employés</span>
 
     </a>
 

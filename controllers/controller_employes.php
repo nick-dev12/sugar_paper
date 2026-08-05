@@ -1258,8 +1258,18 @@ function process_employe_suppression($employe_id) {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['supprimer_employe'])) {
         return ['success' => false, 'message' => ''];
     }
+    $employe_id = (int) $employe_id;
+    if ($employe_id <= 0 && isset($_POST['employe_id'])) {
+        $employe_id = (int) $_POST['employe_id'];
+    }
+    if ($employe_id <= 0) {
+        return ['success' => false, 'message' => 'Identifiant employé invalide.'];
+    }
+    if (!get_employe_by_id($employe_id)) {
+        return ['success' => false, 'message' => 'Employé introuvable.'];
+    }
     if (delete_employe($employe_id)) {
-        return ['success' => true, 'message' => 'Fiche supprimée.'];
+        return ['success' => true, 'message' => 'Fiche employé supprimée.'];
     }
     return ['success' => false, 'message' => 'Impossible de supprimer cette fiche.'];
 }

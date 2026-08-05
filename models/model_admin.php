@@ -11,7 +11,7 @@ require_once __DIR__ . '/../conn/conn.php';
  * Rôles autorisés pour les comptes admin
  */
 function admin_roles_valides() {
-    return ['admin', 'utilisateur', 'livreur'];
+    return ['admin', 'utilisateur', 'livreur', 'contable'];
 }
 
 /**
@@ -22,6 +22,7 @@ function admin_role_label($role) {
         'admin' => 'Administrateur',
         'utilisateur' => 'Utilisateur',
         'livreur' => 'Livreur',
+        'contable' => 'Comptable',
         // Anciens rôles (affichage après migration)
         'gestion_stock' => 'Utilisateur',
         'commercial' => 'Utilisateur',
@@ -29,7 +30,6 @@ function admin_role_label($role) {
         'informaticien' => 'Utilisateur',
         'developpeur' => 'Utilisateur',
         'comptabilite' => 'Utilisateur',
-        'contable' => 'Utilisateur',
         'rh' => 'Utilisateur',
         'caissier' => 'Utilisateur',
     ];
@@ -45,7 +45,13 @@ function normalize_admin_role($role) {
     if ($r === 'gestion_stock') {
         return 'utilisateur';
     }
-    if (in_array($r, ['commercial', 'commercial_general', 'informaticien', 'developpeur', 'comptabilite', 'contable', 'rh', 'caissier'], true)) {
+    if ($r === 'comptable') {
+        return 'contable';
+    }
+    if ($r === 'contable') {
+        return 'contable';
+    }
+    if (in_array($r, ['commercial', 'commercial_general', 'informaticien', 'developpeur', 'comptabilite', 'rh', 'caissier'], true)) {
         return 'utilisateur';
     }
     return in_array($r, admin_roles_valides(), true) ? $r : 'utilisateur';

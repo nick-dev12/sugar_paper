@@ -3,17 +3,18 @@
  */
 
 :root {
-  --bp-ink: #1a1a1a;
-  --bp-muted: #5c5c5c;
-  --bp-border: #c8c8c8;
-  --bp-border-light: #e4e4e4;
-  /* Couleur principale site (charte — :root admin / vitrine) */
-  --bp-brand: #3564a6;
-  --bp-brand-ink: #2a5084;
-  --bp-brand-soft: rgba(53, 100, 166, 0.1);
-  --bp-brand-softer: rgba(53, 100, 166, 0.06);
-  --bp-accent: var(--bp-brand);
-  --bp-surface: #fafafa;
+  --bp-ink: #3d2800;
+  --bp-muted: #6b5340;
+  --bp-border: #e0c4d0;
+  --bp-border-light: #f3e4ea;
+  /* Couleurs site Sugar Paper */
+  --bp-brand: #e5488a;
+  --bp-brand-ink: #c73d74;
+  --bp-brand-soft: rgba(229, 72, 138, 0.12);
+  --bp-brand-softer: rgba(229, 72, 138, 0.06);
+  --bp-accent: #e5488a;
+  --bp-accent-2: #f77f00;
+  --bp-surface: #fff8fb;
   --bp-paper: #ffffff;
   --bp-font: 'Poppins', system-ui, -apple-system, sans-serif;
   --bp-radius: 12px;
@@ -90,16 +91,40 @@
   font-family: inherit;
   cursor: pointer;
   border: 1px solid transparent;
+  text-decoration: none;
+}
+
+.bp-toolbar__btn--ghost {
+  background: #fff;
+  color: var(--bp-brand);
+  border-color: rgba(229, 72, 138, 0.35);
+}
+
+.bp-toolbar__btn--ghost:hover {
+  border-color: var(--bp-brand);
+  background: var(--bp-brand-softer);
 }
 
 .bp-toolbar__btn--primary {
   background: var(--bp-accent);
   color: #fff;
-  border-color: #2d5690;
+  border-color: var(--bp-brand-ink);
 }
 
 .bp-toolbar__btn--primary:hover {
-  background: #2d5690;
+  background: var(--bp-brand-ink);
+}
+
+.bp-flash-ok {
+  max-width: 820px;
+  margin: 10px auto 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(229, 72, 138, 0.1);
+  border: 1px solid rgba(229, 72, 138, 0.28);
+  color: var(--bp-brand-ink);
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .bp-canvas {
@@ -525,7 +550,7 @@
   font-weight: 700;
   color: var(--bp-brand-ink);
   background: var(--bp-brand-soft);
-  border-bottom: 1px solid rgba(53, 100, 166, 0.22);
+  border-bottom: 1px solid rgba(229, 72, 138, 0.22);
 }
 
 .bp-data-table tbody td {

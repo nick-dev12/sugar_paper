@@ -13,6 +13,11 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     exit;
 }
 
+require_once __DIR__ . '/../models/model_admin.php';
+$param_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
+$is_contable_params = ($param_role === 'contable');
+$can_bulletin_paie_params = in_array($param_role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true);
+
 // Afficher le message de succès s'il existe
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
@@ -40,7 +45,11 @@ if (isset($_SESSION['success_message'])) {
         <div class="section-title">
             <h2><i class="fas fa-cog"></i> Paramètres et Configurations</h2>
             <p class="section-subtitle">
+                <?php if ($is_contable_params): ?>
+                Configurez les paramètres des bulletins de paie (RH).
+                <?php else: ?>
                 Configurez les différentes sections de votre site web
+                <?php endif; ?>
             </p>
         </div>
 
@@ -51,6 +60,7 @@ if (isset($_SESSION['success_message'])) {
         <?php endif; ?>
 
         <div class="parametres-grid">
+            <?php if (!$is_contable_params): ?>
             <!-- Bannière d'Accueil -->
             <div class="parametre-card">
                 <div class="parametre-icon">
@@ -110,14 +120,8 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-edit"></i> Gérer les vidéos
                 </a>
             </div>
+            <?php endif; ?>
 
-            <?php
-            $param_role = $_SESSION['admin_role'] ?? 'admin';
-            if ($param_role === 'utilisateur') {
-                $param_role = 'gestion_stock';
-            }
-            $can_bulletin_paie_params = in_array($param_role, ['admin', 'rh', 'informaticien', 'developpeur'], true);
-            ?>
             <?php if ($can_bulletin_paie_params): ?>
             <div class="parametre-card">
                 <div class="parametre-icon">

@@ -92,7 +92,7 @@ if (!function_exists('admin_route_relative_path')) {
             case 'comptabilite':
                 return 'comptabilite/index.php';
             case 'contable':
-                return 'comptes/index.php';
+                return 'comptes/employes/index.php';
             case 'rh':
                 return 'contacts/index.php';
             case 'gestion_stock':
@@ -204,9 +204,11 @@ if (!function_exists('admin_route_relative_path')) {
                     || $p === 'caisse/post.php';
 
             case 'contable':
-                return $p === 'comptes/index.php'
+                return $starts('comptes/employes/')
                     || $p === 'parametres.php'
-                    || $p === 'profil.php';
+                    || $p === 'parametres/bulletin_paie.php'
+                    || $p === 'profil.php'
+                    || $p === 'logout.php';
 
             case 'utilisateur':
                 if ($p === 'dashboard.php' || $p === 'livreurs/carte.php' || $p === 'livreurs/suivi.php'

@@ -13,13 +13,39 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../includes/require_access.php';
 
 $role = $_SESSION['admin_role'] ?? '';
-if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur'], true)) {
+if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true)) {
     header('Location: ../../dashboard.php');
     exit;
 }
 
 require_once __DIR__ . '/../../../models/model_employes.php';
+require_once __DIR__ . '/../../../controllers/controller_employes.php';
 require_once __DIR__ . '/../../../includes/site_url.php';
+
+if (empty($_SESSION['admin_csrf'])) {
+    $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
+}
+$csrf_token = $_SESSION['admin_csrf'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_employe'])) {
+    $tok = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
+    if ($tok === '' || !hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), $tok)) {
+        $_SESSION['error_message'] = 'Session expirée. Réessayez.';
+        header('Location: index.php');
+        exit;
+    }
+    $del_id = isset($_POST['employe_id']) ? (int) $_POST['employe_id'] : 0;
+    $result = process_employe_suppression($del_id);
+    if (!empty($result['success'])) {
+        $_SESSION['success_message'] = $result['message'] !== '' ? $result['message'] : 'Fiche employé supprimée.';
+    } else {
+        $_SESSION['error_message'] = ($result['message'] ?? '') !== ''
+            ? $result['message']
+            : 'Impossible de supprimer cette fiche.';
+    }
+    header('Location: index.php');
+    exit;
+}
 
 $upload_public = rtrim(get_request_origin_base_url(), '/') . '/upload/';
 $upload_disk = __DIR__ . '/../../../upload/';
@@ -132,6 +158,7 @@ $fiches_actifs = count(array_filter($fiches, function ($r) {
                     $ph_ok = $ph_rel !== '' && strpos($ph_rel, '..') === false && is_file($upload_disk . str_replace('/', DIRECTORY_SEPARATOR, $ph_rel));
                     $tel_raw = (string) ($f['telephone'] ?? '');
                     $tel_digits = preg_replace('/\D+/', '', $tel_raw);
+                    $nom_complet = trim(($f['prenom'] ?? '') . ' ' . ($f['nom'] ?? ''));
                     $blob_search = mb_strtolower(
                         trim(
                             ($f['prenom'] ?? '') . ' '
@@ -143,6 +170,9 @@ $fiches_actifs = count(array_filter($fiches, function ($r) {
                         ),
                         'UTF-8'
                     );
+                    $delete_confirm_msg = 'Êtes-vous vraiment sûr de vouloir supprimer définitivement la fiche de '
+                        . ($nom_complet !== '' ? $nom_complet : 'cet employé')
+                        . ' ? Cette action est irréversible : la fiche et les fichiers associés seront effacés.';
                     ?>
                     <li class="er-card<?php echo ($f['statut'] ?? '') !== 'actif' ? ' er-card--muted' : ''; ?>" data-er-search="<?php echo htmlspecialchars($blob_search, ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="er-card__head">
@@ -154,7 +184,7 @@ $fiches_actifs = count(array_filter($fiches, function ($r) {
                             <span class="er-card__avatar" aria-hidden="true"><?php echo strtoupper(substr((string) ($f['prenom'] ?? '?'), 0, 1)); ?></span>
                             <?php endif; ?>
                             <div class="er-card__id">
-                                <h2 class="er-card__name"><?php echo htmlspecialchars(trim(($f['prenom'] ?? '') . ' ' . ($f['nom'] ?? ''))); ?></h2>
+                                <h2 class="er-card__name"><?php echo htmlspecialchars($nom_complet); ?></h2>
                                 <span class="er-card__fonction"><?php echo htmlspecialchars(($f['poste'] ?? '') !== '' ? $f['poste'] : '—'); ?></span>
                             </div>
                         </div>
@@ -176,6 +206,18 @@ $fiches_actifs = count(array_filter($fiches, function ($r) {
                                 <span class="er-card-action__ic" aria-hidden="true"><i class="fas fa-pen"></i></span>
                                 <span class="er-card-action__label">Modifier</span>
                             </a>
+                            <form method="post" action="index.php" class="er-card-action-form"
+                                onsubmit='return confirm(<?php echo json_encode(
+                                    $delete_confirm_msg,
+                                    JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+                                ); ?>);'>
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8'); ?>">
+                                <input type="hidden" name="employe_id" value="<?php echo (int) $f['id']; ?>">
+                                <button type="submit" name="supprimer_employe" value="1" class="er-card-action er-card-action--delete">
+                                    <span class="er-card-action__ic" aria-hidden="true"><i class="fas fa-trash-alt"></i></span>
+                                    <span class="er-card-action__label">Supprimer</span>
+                                </button>
+                            </form>
                         </div>
                     </li>
                 <?php endforeach; ?>

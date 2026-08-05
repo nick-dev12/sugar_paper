@@ -13,7 +13,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../includes/require_access.php';
 
 $role = $_SESSION['admin_role'] ?? '';
-if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur'], true)) {
+if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true)) {
     header('Location: ../../dashboard.php');
     exit;
 }
@@ -1034,10 +1034,16 @@ $titre = htmlspecialchars(trim(($f['prenom'] ?? '') . ' ' . ($f['nom'] ?? ''))) 
                                                     <td class="er-bp-td-num"><?php echo htmlspecialchars(number_format((float) ($bl['montant_brut'] ?? 0), 0, ',', ' ')); ?></td>
                                                     <td class="er-bp-td-num er-bp-td-net"><?php echo htmlspecialchars(number_format((float) ($bl['net_a_payer'] ?? 0), 0, ',', ' ')); ?></td>
                                                     <td class="er-bp-td-actions">
-                                                        <a class="er-bp-btn-voir" href="bulletin_paie_voir.php?id=<?php echo (int) ($bl['id'] ?? 0); ?>">
-                                                            <i class="fas fa-file-lines" aria-hidden="true"></i>
-                                                            <span>Voir le bulletin</span>
-                                                        </a>
+                                                        <div class="er-bp-actions-group">
+                                                            <a class="er-bp-btn-voir" href="bulletin_paie_voir.php?id=<?php echo (int) ($bl['id'] ?? 0); ?>">
+                                                                <i class="fas fa-file-lines" aria-hidden="true"></i>
+                                                                <span>Voir</span>
+                                                            </a>
+                                                            <a class="er-bp-btn-edit" href="bulletin_paie_modifier.php?id=<?php echo (int) ($bl['id'] ?? 0); ?>">
+                                                                <i class="fas fa-pen" aria-hidden="true"></i>
+                                                                <span>Modifier</span>
+                                                            </a>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             <?php endforeach; ?>

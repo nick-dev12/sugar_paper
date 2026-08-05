@@ -114,9 +114,6 @@ $photo_profil_ready = admin_has_column('photo_profil');
             <a href="absences.php" class="btn-open-emp-modal page-comptes-cta page-comptes-cta--secondary">
                 <i class="fas fa-calendar-xmark" aria-hidden="true"></i> Gestion des absences
             </a>
-            <a href="employes/index.php" class="btn-open-emp-modal page-comptes-cta page-comptes-cta--employes">
-                <i class="fas fa-id-card-clip" aria-hidden="true"></i> Employés
-            </a>
             <a href="../inscription-admin.php" class="btn-open-emp-modal btn-inscription-admin-link page-comptes-cta">
                 <i class="fas fa-user-plus" aria-hidden="true"></i> Ajouter un compte
             </a>

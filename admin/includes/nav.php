@@ -25,12 +25,14 @@ $is_users = strpos($current_dir, '/users') !== false;
 $is_zones_livraison = strpos($current_dir, '/zones-livraison') !== false;
 $is_livreurs = strpos($current_dir, '/livreurs') !== false;
 $is_comptes = strpos($current_dir, '/comptes') !== false;
+$is_employes_rh = $is_comptes && strpos($current_dir, '/employes') !== false;
 
 $admin_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
 $_SESSION['admin_role'] = $admin_role;
 $can_manage_users = ($admin_role === 'admin');
 $can_manage_comptes = ($admin_role === 'admin');
-$is_contable_nav = false;
+$can_manage_employes_rh = in_array($admin_role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true);
+$is_contable_nav = ($admin_role === 'contable');
 $is_livreur_nav = ($admin_role === 'livreur');
 $is_utilisateur_nav = ($admin_role === 'utilisateur');
 
@@ -92,13 +94,13 @@ $nav_href = function ($path) use ($admin_nav_base) {
         </div>
         <nav class="sidebar-menu">
             <?php if ($is_contable_nav): ?>
-            <a href="<?php echo $nav_href('comptes/index.php'); ?>"
-                class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
-                <i class="fas fa-user-shield"></i>
-                <span>Comptes</span>
+            <a href="<?php echo $nav_href('comptes/employes/index.php'); ?>"
+                class="menu-item <?php echo $is_employes_rh ? 'active' : ''; ?>">
+                <i class="fas fa-id-card-clip"></i>
+                <span>Employés</span>
             </a>
             <a href="<?php echo $nav_href('parametres.php'); ?>"
-                class="menu-item <?php echo ($current_page == 'parametres.php' || strpos($current_dir, '/parametres') !== false) ? 'active' : ''; ?>">
+                class="menu-item <?php echo ($current_page === 'parametres.php' || strpos($current_dir, '/parametres') !== false) ? 'active' : ''; ?>">
                 <i class="fas fa-cog"></i>
                 <span>Paramètres</span>
             </a>
@@ -219,9 +221,16 @@ $nav_href = function ($path) use ($admin_nav_base) {
             <?php endif; ?>
             <?php if ($can_manage_comptes): ?>
                 <a href="<?php echo $nav_href('comptes/index.php'); ?>"
-                    class="menu-item <?php echo $is_comptes ? 'active' : ''; ?>">
+                    class="menu-item <?php echo ($is_comptes && !$is_employes_rh) ? 'active' : ''; ?>">
                     <i class="fas fa-user-shield"></i>
                     <span>Comptes</span>
+                </a>
+            <?php endif; ?>
+            <?php if ($can_manage_employes_rh): ?>
+                <a href="<?php echo $nav_href('comptes/employes/index.php'); ?>"
+                    class="menu-item <?php echo $is_employes_rh ? 'active' : ''; ?>">
+                    <i class="fas fa-id-card-clip"></i>
+                    <span>Employés</span>
                 </a>
             <?php endif; ?>
             <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
@@ -261,7 +270,7 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Mon profil</span>
             </a>
             <?php endif; ?>
-            <?php if (!$is_livreur_nav): ?>
+            <?php if (!$is_livreur_nav && !$is_contable_nav): ?>
             <button type="button" id="btn-enable-notifications" class="menu-item menu-item-notify"
                 data-notify-type="admin"
                 title="Recevoir les alertes de nouvelles commandes sur cet appareil (même site fermé)">

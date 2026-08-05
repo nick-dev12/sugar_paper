@@ -13,7 +13,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
 require_once __DIR__ . '/../../includes/require_access.php';
 
 $role = $_SESSION['admin_role'] ?? '';
-if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur'], true)) {
+if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true)) {
     header('Location: ../../dashboard.php');
     exit;
 }
@@ -28,27 +28,49 @@ if (empty($_SESSION['admin_csrf'])) {
 }
 
 $employe_id = isset($_POST['employe_id']) ? (int) $_POST['employe_id'] : 0;
+$is_edit_bulletin = !empty($_POST['modifier_bulletin_paie']);
+$is_create_bulletin = !empty($_POST['generer_bulletin_paie']);
+$bulletin_edit_id = isset($_POST['bulletin_id']) ? (int) $_POST['bulletin_id'] : 0;
+
+$bp_redirect_err = function ($msg) use ($employe_id, $is_edit_bulletin, $bulletin_edit_id) {
+    $_SESSION['bp_flash_err'] = $msg;
+    if ($is_edit_bulletin && $bulletin_edit_id > 0) {
+        $_SESSION['bp_edit_form'] = $_POST;
+        header('Location: bulletin_paie_modifier.php?id=' . $bulletin_edit_id);
+        exit;
+    }
+    header('Location: details.php?id=' . max(0, $employe_id) . '&tab=bp');
+    exit;
+};
+
 if ($employe_id <= 0) {
     header('Location: index.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['generer_bulletin_paie'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || (!$is_create_bulletin && !$is_edit_bulletin)) {
     header('Location: details.php?id=' . $employe_id . '&tab=bp');
     exit;
 }
 
 $tok = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
 if ($tok === '' || !hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), $tok)) {
-    $_SESSION['bp_flash_err'] = 'Session expirée. Rechargez la page puis réessayez.';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Session expirée. Rechargez la page puis réessayez.');
 }
 
 if (!bp_tables_parametres_disponibles() || !bp_tables_bulletins_disponibles()) {
-    $_SESSION['bp_flash_err'] = 'Tables bulletins absentes — exécutez la migration bulletin de paie.';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Tables bulletins absentes — exécutez la migration bulletin de paie.');
+}
+
+$bulletin_existant = null;
+if ($is_edit_bulletin) {
+    if ($bulletin_edit_id <= 0) {
+        $bp_redirect_err('Bulletin introuvable.');
+    }
+    $bulletin_existant = bp_get_bulletin_by_id($bulletin_edit_id);
+    if (!$bulletin_existant || (int) ($bulletin_existant['employe_id'] ?? 0) !== $employe_id) {
+        $bp_redirect_err('Bulletin introuvable pour cet employé.');
+    }
 }
 
 $emp = get_employe_by_id($employe_id);
@@ -64,24 +86,18 @@ $pct_codes = bp_retenues_codes_taux_brut();
 
 $mois = isset($_POST['mois_paie']) ? trim((string) $_POST['mois_paie']) : '';
 if (!preg_match('/^\d{4}-\d{2}$/', $mois)) {
-    $_SESSION['bp_flash_err'] = 'Mois de paie invalide.';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Mois de paie invalide.');
 }
 
 $dp_raw = isset($_POST['date_paiement']) ? trim((string) $_POST['date_paiement']) : '';
 if ($dp_raw === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dp_raw)) {
-    $_SESSION['bp_flash_err'] = 'Date de paiement obligatoire (format AAAA-MM-JJ).';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Date de paiement obligatoire (format AAAA-MM-JJ).');
 }
 $date_paiement = $dp_raw;
 
 $salaire_base = bp_parse_montant_post($_POST['salaire_base'] ?? null);
 if ($salaire_base <= 0) {
-    $_SESSION['bp_flash_err'] = 'Le salaire de base doit être renseigné (montant supérieur à 0).';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Le salaire de base doit être renseigné (montant supérieur à 0).');
 }
 
 foreach ($pct_codes as $pc) {
@@ -90,9 +106,7 @@ foreach ($pct_codes as $pc) {
     }
     $pctv = (float) ($taux_cfg[$pc] ?? 0);
     if (bp_colonne_retenues_taux_disponible() && $pctv <= 0) {
-        $_SESSION['bp_flash_err'] = 'Paramètres bulletin : renseignez un taux supérieur à 0 % pour chaque retenue en pourcentage activée (IPRES RG, IPRES cadre, CSS).';
-        header('Location: details.php?id=' . $employe_id . '&tab=bp');
-        exit;
+        $bp_redirect_err('Paramètres bulletin : renseignez un taux supérieur à 0 % pour chaque retenue en pourcentage activée (IPRES RG, IPRES cadre, CSS).');
     }
 }
 
@@ -358,17 +372,28 @@ $totaux_insert = [
     'montant_penalites_absence' => $montant_penalites > 0 ? round($montant_penalites, 2) : null,
 ];
 
+$admin_id_save = (int) ($_SESSION['admin_id'] ?? 0);
+
+if ($is_edit_bulletin) {
+    $ok_upd = bp_update_bulletin($bulletin_edit_id, $admin_id_save, $totaux_insert, $snapshot);
+    if (!$ok_upd) {
+        $bp_redirect_err('Modification du bulletin impossible.');
+    }
+    unset($_SESSION['bp_edit_form']);
+    $_SESSION['bp_flash_ok'] = 'Bulletin de paie mis à jour.';
+    header('Location: bulletin_paie_voir.php?id=' . (int) $bulletin_edit_id);
+    exit;
+}
+
 $bid = bp_insert_bulletin(
     $employe_id,
-    (int) ($_SESSION['admin_id'] ?? 0),
+    $admin_id_save,
     $totaux_insert,
     $snapshot
 );
 
 if (!$bid) {
-    $_SESSION['bp_flash_err'] = 'Enregistrement du bulletin impossible.';
-    header('Location: details.php?id=' . $employe_id . '&tab=bp');
-    exit;
+    $bp_redirect_err('Enregistrement du bulletin impossible.');
 }
 
 if (!empty($pen_ids)) {

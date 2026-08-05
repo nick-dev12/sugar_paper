@@ -458,6 +458,7 @@ $is_ajout_par_admin = admin_exists() && isset($_SESSION['admin_id']);
                         <strong>Administrateur</strong> : accès complet.
                         <strong>Utilisateur</strong> : gestion produits et stocks.
                         <strong>Livreur</strong> : suivi des livraisons via l’application mobile.
+                        <strong>Comptable</strong> : accès uniquement à la gestion des employés (RH).
                     </p>
                 </div>
                 <?php endif; ?>

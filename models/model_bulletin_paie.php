@@ -636,6 +636,118 @@ function bp_insert_bulletin($employe_id, $admin_id, array $totaux, array $snapsh
 }
 
 /**
+ * Met à jour un bulletin existant (totaux + snapshot).
+ *
+ * @param int $bulletin_id
+ * @param int $admin_id
+ * @param array{
+ *   mois_paie:string,
+ *   date_paiement:string,
+ *   salaire_base:float,
+ *   montant_brut:float,
+ *   total_retenues:float,
+ *   net_imposable:float,
+ *   net_a_payer:float,
+ *   montant_irpp?:float|null,
+ *   montant_ipres?:float|null,
+ *   montant_css?:float|null,
+ *   montant_penalites_absence?:float|null
+ * } $totaux
+ * @param array<string, mixed> $snapshot
+ */
+function bp_update_bulletin($bulletin_id, $admin_id, array $totaux, array $snapshot) {
+    global $db;
+    $bulletin_id = (int) $bulletin_id;
+    if ($bulletin_id <= 0 || !bp_tables_bulletins_disponibles()) {
+        return false;
+    }
+    $json = json_encode($snapshot, JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
+        return false;
+    }
+    try {
+        if (bp_colonnes_bulletin_montants_disponibles()) {
+            $stmt = $db->prepare('
+                UPDATE employe_bulletins_paie SET
+                    mois_paie = :m,
+                    date_paiement = :dp,
+                    salaire_base = :sb,
+                    montant_brut = :brut,
+                    total_retenues = :retr,
+                    net_imposable = :ni,
+                    net_a_payer = :net,
+                    montant_irpp = :mirpp,
+                    montant_ipres = :mipres,
+                    montant_css = :mcss,
+                    montant_penalites_absence = :mpen,
+                    snapshot_json = :sj,
+                    admin_id = :aid
+                WHERE id = :id
+            ');
+            return $stmt->execute([
+                'id' => $bulletin_id,
+                'm' => $totaux['mois_paie'],
+                'dp' => $totaux['date_paiement'],
+                'sb' => $totaux['salaire_base'],
+                'brut' => $totaux['montant_brut'],
+                'retr' => $totaux['total_retenues'],
+                'ni' => $totaux['net_imposable'],
+                'net' => $totaux['net_a_payer'],
+                'mirpp' => isset($totaux['montant_irpp']) && $totaux['montant_irpp'] !== '' ? round((float) $totaux['montant_irpp'], 2) : null,
+                'mipres' => isset($totaux['montant_ipres']) && $totaux['montant_ipres'] !== '' ? round((float) $totaux['montant_ipres'], 2) : null,
+                'mcss' => isset($totaux['montant_css']) && $totaux['montant_css'] !== '' ? round((float) $totaux['montant_css'], 2) : null,
+                'mpen' => isset($totaux['montant_penalites_absence']) && $totaux['montant_penalites_absence'] !== '' ? round((float) $totaux['montant_penalites_absence'], 2) : null,
+                'sj' => $json,
+                'aid' => $admin_id > 0 ? $admin_id : null,
+            ]);
+        }
+        $stmt = $db->prepare('
+            UPDATE employe_bulletins_paie SET
+                mois_paie = :m,
+                date_paiement = :dp,
+                salaire_base = :sb,
+                montant_brut = :brut,
+                total_retenues = :retr,
+                net_imposable = :ni,
+                net_a_payer = :net,
+                snapshot_json = :sj,
+                admin_id = :aid
+            WHERE id = :id
+        ');
+        return $stmt->execute([
+            'id' => $bulletin_id,
+            'm' => $totaux['mois_paie'],
+            'dp' => $totaux['date_paiement'],
+            'sb' => $totaux['salaire_base'],
+            'brut' => $totaux['montant_brut'],
+            'retr' => $totaux['total_retenues'],
+            'ni' => $totaux['net_imposable'],
+            'net' => $totaux['net_a_payer'],
+            'sj' => $json,
+            'aid' => $admin_id > 0 ? $admin_id : null,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Montant d’une ligne gains/retenues dans un snapshot.
+ */
+function bp_snapshot_ligne_montant(array $lignes, $code) {
+    $code = (string) $code;
+    foreach ($lignes as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        if ((string) ($row['code'] ?? '') === $code) {
+            return (float) ($row['montant'] ?? 0);
+        }
+    }
+    return 0.0;
+}
+
+/**
  * @return array<int, array<string, mixed>>
  */
 function bp_list_bulletins_employe($employe_id) {

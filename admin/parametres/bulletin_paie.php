@@ -14,7 +14,7 @@ require_once __DIR__ . '/../includes/require_access.php';
 require_once __DIR__ . '/../../models/model_bulletin_paie.php';
 
 $role = $_SESSION['admin_role'] ?? '';
-if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur'], true)) {
+if (!in_array($role, ['admin', 'rh', 'informaticien', 'developpeur', 'contable'], true)) {
     header('Location: ../dashboard.php');
     exit;
 }
@@ -25,6 +25,9 @@ if (empty($_SESSION['admin_csrf'])) {
 
 $error_message = '';
 $success_message = '';
+$keep_posted_form = false;
+$posted_rub = null;
+$posted_taux_eff = null;
 
 if (isset($_SESSION['success_message_bp_params'])) {
     $success_message = (string) $_SESSION['success_message_bp_params'];
@@ -38,8 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action_bulletin_paie'] ?? 
     $token = $_POST['csrf_token'] ?? '';
     if ($token === '' || !hash_equals((string) ($_SESSION['admin_csrf'] ?? ''), (string) $token)) {
         $error_message = 'Session expirée ou jeton invalide. Rechargez la page.';
+        $keep_posted_form = true;
     } elseif (!bp_tables_parametres_disponibles()) {
         $error_message = 'Table bulletin_paie_parametres absente — exécutez la migration.';
+        $keep_posted_form = true;
     } else {
         $rub = bp_rubriques_defaut();
         $posted_g = isset($_POST['rub_gain']) && is_array($_POST['rub_gain']) ? $_POST['rub_gain'] : [];
@@ -64,6 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action_bulletin_paie'] ?? 
         $posted_taux = isset($_POST['taux_retenue']) && is_array($_POST['taux_retenue']) ? $_POST['taux_retenue'] : [];
         if (bp_colonne_retenues_taux_disponible()) {
             foreach (bp_retenues_codes_taux_brut() as $tc) {
+                if (array_key_exists($tc, $posted_taux)) {
+                    $taux_eff[$tc] = bp_parse_taux_pct($posted_taux[$tc] ?? null);
+                }
                 if (!empty($rub['retenues'][$tc])) {
                     $taux_eff[$tc] = bp_parse_taux_pct($posted_taux[$tc] ?? null);
                     if ($taux_eff[$tc] <= 0) {
@@ -122,6 +130,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action_bulletin_paie'] ?? 
             }
             $error_message = 'Enregistrement impossible.';
         }
+        if ($error_message !== '') {
+            $keep_posted_form = true;
+            $posted_rub = $rub;
+            $posted_taux_eff = $taux_eff;
+        }
     }
 }
 
@@ -132,6 +145,36 @@ $jp_def_cur = (int) ($cur['jours_presence_defaut'] ?? 0);
 $prime_transport_cur = (float) ($cur['prime_transport_mensuelle'] ?? 0);
 $conges_annuels_cur = (int) ($cur['conges_annuels_global'] ?? 0);
 $forfait_hs_cur = (float) ($cur['forfait_heures_sup_mensuel'] ?? 0);
+
+if ($keep_posted_form && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $cur['employeur_nom'] = trim((string) ($_POST['employeur_nom'] ?? ''));
+    $cur['employeur_adresse'] = trim((string) ($_POST['employeur_adresse'] ?? ''));
+    $cur['employeur_ninea'] = trim((string) ($_POST['employeur_ninea'] ?? ''));
+    $cur['employeur_rc'] = trim((string) ($_POST['employeur_rc'] ?? ''));
+    $cur['employeur_cnss_ref'] = trim((string) ($_POST['employeur_cnss_ref'] ?? ''));
+    if (is_array($posted_rub)) {
+        $rub = $posted_rub;
+    }
+    if (is_array($posted_taux_eff)) {
+        $taux_cur = $posted_taux_eff;
+    } elseif (isset($_POST['taux_retenue']) && is_array($_POST['taux_retenue'])) {
+        foreach ($_POST['taux_retenue'] as $tk => $tv) {
+            $taux_cur[(string) $tk] = bp_parse_taux_pct($tv);
+        }
+    }
+    if (isset($_POST['jours_presence_defaut'])) {
+        $jp_def_cur = (int) $_POST['jours_presence_defaut'];
+    }
+    if (isset($_POST['prime_transport_mensuelle'])) {
+        $prime_transport_cur = bp_parse_montant_post($_POST['prime_transport_mensuelle']);
+    }
+    if (isset($_POST['conges_annuels_global'])) {
+        $conges_annuels_cur = (int) $_POST['conges_annuels_global'];
+    }
+    if (isset($_POST['forfait_heures_sup_mensuel'])) {
+        $forfait_hs_cur = bp_parse_montant_post($_POST['forfait_heures_sup_mensuel']);
+    }
+}
 $csrf = (string) $_SESSION['admin_csrf'];
 $pct_ret_codes = bp_retenues_codes_taux_brut();
 ?>
