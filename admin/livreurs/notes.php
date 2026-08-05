@@ -17,8 +17,8 @@ require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_livreur_notes.php';
 require_once __DIR__ . '/../../models/model_admin.php';
 
-if (!admin_can_manage_livreurs()) {
-    header('Location: index.php');
+if (!admin_can_view_livreur_notes()) {
+    header('Location: ' . (admin_can_livreur_gps() ? 'index.php' : '../dashboard.php'));
     exit;
 }
 
@@ -51,7 +51,11 @@ function livreur_notes_avatar_initials($prenom, $nom)
 <div class="content-header content-header--livreurs">
     <h1><i class="fas fa-star" aria-hidden="true"></i> Notes des clients</h1>
     <div class="header-actions">
+        <?php if (admin_can_livreur_gps()): ?>
         <a href="index.php" class="btn-secondary"><i class="fas fa-motorcycle"></i> Livraisons</a>
+        <?php else: ?>
+        <a href="../dashboard.php" class="btn-secondary"><i class="fas fa-arrow-left"></i> Tableau de bord</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -64,7 +68,11 @@ function livreur_notes_avatar_initials($prenom, $nom)
 <div class="empty-state">
     <i class="fas fa-star"></i>
     <p>Aucun livreur ou aucune note enregistrée pour le moment.</p>
+    <?php if (admin_can_livreur_gps()): ?>
     <a href="index.php" class="btn-primary"><i class="fas fa-motorcycle"></i> Voir les livraisons</a>
+    <?php else: ?>
+    <a href="../dashboard.php" class="btn-primary"><i class="fas fa-arrow-left"></i> Tableau de bord</a>
+    <?php endif; ?>
 </div>
 <?php else: ?>
 <section class="livreur-card livreur-card--wide">

@@ -25,6 +25,7 @@ if (!admin_can_livreur_gps()) {
 $admin_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
 $is_livreur = ($admin_role === 'livreur');
 $is_admin = admin_can_manage_livreurs();
+$can_view_livreur_notes = admin_can_view_livreur_notes();
 $admin_session_id = (int) $_SESSION['admin_id'];
 
 $tables_ready = livreur_tracking_tables_ready();
@@ -129,7 +130,7 @@ foreach ($factures_liste as $facture_row) {
 
 <div class="content-header content-header--livreurs">
     <h1><i class="fas fa-motorcycle" aria-hidden="true"></i> <?php echo $is_livreur ? 'Livraisons du jour' : 'Livreurs GPS'; ?></h1>
-    <?php if ($is_admin): ?>
+    <?php if ($can_view_livreur_notes): ?>
     <div class="header-actions">
         <a href="notes.php" class="btn-secondary"><i class="fas fa-star"></i> Notes clients</a>
     </div>

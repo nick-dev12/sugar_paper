@@ -17,8 +17,8 @@ require_once __DIR__ . '/../../includes/admin_permissions.php';
 require_once __DIR__ . '/../../models/model_livreur_notes.php';
 require_once __DIR__ . '/../../models/model_admin.php';
 
-if (!admin_can_manage_livreurs()) {
-    header('Location: index.php');
+if (!admin_can_view_livreur_notes()) {
+    header('Location: ' . (admin_can_livreur_gps() ? 'index.php' : '../dashboard.php'));
     exit;
 }
 

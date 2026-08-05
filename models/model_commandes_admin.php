@@ -621,6 +621,13 @@ function delete_commande($commande_id) {
             /* table optionnelle */
         }
 
+        try {
+            $stmt = $db->prepare('DELETE FROM livreur_notes_client WHERE commande_id = :id');
+            $stmt->execute(['id' => $commande_id]);
+        } catch (PDOException $e) {
+            /* table optionnelle */
+        }
+
         $stmt = $db->prepare('DELETE FROM commande_produits WHERE commande_id = :id');
         $stmt->execute(['id' => $commande_id]);
 

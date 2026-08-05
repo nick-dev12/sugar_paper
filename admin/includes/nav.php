@@ -166,6 +166,13 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Map</span>
             </a>
             <?php endif; ?>
+            <?php if (admin_can_view_livreur_notes()): ?>
+            <a href="<?php echo $nav_href('livreurs/notes.php'); ?>"
+                class="menu-item <?php echo $is_livreurs_notes ? 'active' : ''; ?>">
+                <i class="fas fa-star"></i>
+                <span>Notes clients</span>
+            </a>
+            <?php endif; ?>
             <a href="<?php echo $nav_href('profil.php'); ?>"
                 class="menu-item <?php echo $current_page == 'profil.php' ? 'active' : ''; ?>">
                 <i class="fas fa-user"></i>
@@ -229,12 +236,14 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 <span>Livreurs GPS</span>
             </a>
             <?php endif; ?>
-            <?php if (admin_can_manage_livreurs()): ?>
+            <?php if (admin_can_view_livreurs_map()): ?>
             <a href="<?php echo $nav_href('livreurs/carte.php'); ?>"
                 class="menu-item <?php echo $is_livreurs_carte ? 'active' : ''; ?>">
                 <i class="fas fa-map-location-dot"></i>
                 <span>Map</span>
             </a>
+            <?php endif; ?>
+            <?php if (admin_can_view_livreur_notes()): ?>
             <a href="<?php echo $nav_href('livreurs/notes.php'); ?>"
                 class="menu-item <?php echo $is_livreurs_notes ? 'active' : ''; ?>">
                 <i class="fas fa-star"></i>

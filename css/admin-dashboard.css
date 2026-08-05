@@ -4879,6 +4879,21 @@ body.page-dashboard-admin .dashboard-produits-pagination__info--solo {
   color: #fff;
 }
 
+.commande-delete-modal__actions .btn-delete {
+  background: #c26638;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.commande-delete-modal__actions .btn-delete:hover {
+  background: #6b2f20;
+  color: #fff;
+}
+
 /* ——— Tableau de bord utilisateur boutique ——— */
 .dashboard-quick-links {
   margin: 0 0 24px;

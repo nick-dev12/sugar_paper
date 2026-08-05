@@ -40,6 +40,14 @@ if (!function_exists('admin_current_role')) {
     }
 
     /**
+     * Notes clients livreurs — admin et comptes utilisateur boutique.
+     */
+    function admin_can_view_livreur_notes() {
+        $r = admin_current_role();
+        return $r === 'admin' || $r === 'utilisateur';
+    }
+
+    /**
      * Hub Invoice (contacts, rapports) — utilisateur boutique inclus.
      */
     function admin_can_invoice_hub() {

@@ -53,6 +53,30 @@ if (empty($_SESSION['admin_csrf'])) {
 }
 $admin_csrf = (string) $_SESSION['admin_csrf'];
 
+// Suppression définitive (admin uniquement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['supprimer_commande'])) {
+    $token = $_POST['csrf_token'] ?? '';
+    if ($token === '' || !hash_equals($admin_csrf, (string) $token)) {
+        $_SESSION['error_message'] = 'Jeton de sécurité invalide. Rechargez la page et réessayez.';
+        header('Location: details.php?id=' . $commande_id);
+        exit;
+    }
+    if (!admin_is_full_admin()) {
+        $_SESSION['error_message'] = 'Seul un administrateur peut supprimer une commande.';
+        header('Location: details.php?id=' . $commande_id);
+        exit;
+    }
+    $result = delete_commande($commande_id);
+    if (!empty($result['success'])) {
+        $_SESSION['success_message'] = $result['message'];
+        header('Location: index.php');
+        exit;
+    }
+    $_SESSION['error_message'] = $result['message'] ?? 'Impossible de supprimer la commande.';
+    header('Location: details.php?id=' . $commande_id);
+    exit;
+}
+
 // Archivage / désarchivage de la commande
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['archiver_commande']) || isset($_POST['desarchiver_commande']))) {
     $token = $_POST['csrf_token'] ?? '';
@@ -97,6 +121,7 @@ $is_livree = $commande['statut'] === 'livree';
 $is_paye = $commande['statut'] === 'paye';
 $is_archivee = commande_est_archivee($commande);
 $can_desarchiver = admin_is_full_admin() && $is_archivee;
+$can_supprimer_commande = admin_is_full_admin();
 
 // Traiter les actions de statut (uniquement si la commande n'est pas annulée ni archivée)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
@@ -207,14 +232,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
             <?php if ($can_desarchiver): ?>
-            <button type="button" class="btn-secondary" id="btn-open-delete-commande"
+            <button type="button" class="btn-secondary" id="btn-open-archive-commande"
                 title="Désarchiver cette commande">
                 <i class="fas fa-box-open"></i> Désarchiver
             </button>
             <?php elseif (!$is_archivee): ?>
-            <button type="button" class="btn-secondary" id="btn-open-delete-commande"
+            <button type="button" class="btn-secondary" id="btn-open-archive-commande"
                 title="Archiver cette commande">
                 <i class="fas fa-box-archive"></i> Archiver
+            </button>
+            <?php endif; ?>
+            <?php if ($can_supprimer_commande): ?>
+            <button type="button" class="btn-delete" id="btn-open-supprimer-commande"
+                title="Supprimer définitivement cette commande">
+                <i class="fas fa-trash-alt"></i> Supprimer
             </button>
             <?php endif; ?>
         </div>
@@ -513,15 +544,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
         <?php endif; ?>
     </section>
 
-    <div id="modal-delete-commande" class="modal-overlay commande-delete-modal-overlay" role="dialog"
-        aria-modal="true" aria-labelledby="modal-delete-commande-title" aria-hidden="true">
+    <div id="modal-archive-commande" class="modal-overlay commande-delete-modal-overlay" role="dialog"
+        aria-modal="true" aria-labelledby="modal-archive-commande-title" aria-hidden="true">
         <div class="modal-content commande-delete-modal">
             <div class="modal-header">
-                <h2 class="modal-title" id="modal-delete-commande-title">
+                <h2 class="modal-title" id="modal-archive-commande-title">
                     <i class="fas <?php echo $can_desarchiver ? 'fa-box-open' : 'fa-box-archive'; ?>"></i>
                     <?php echo $can_desarchiver ? 'Désarchiver la commande' : 'Archiver la commande'; ?>
                 </h2>
-                <button type="button" class="modal-close" id="btn-close-delete-commande" aria-label="Fermer">
+                <button type="button" class="modal-close" id="btn-close-archive-commande" aria-label="Fermer">
                     &times;
                 </button>
             </div>
@@ -531,10 +562,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                 <strong>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></strong> ?
                 Elle réapparaîtra dans la liste des commandes actives.
             </p>
-            <form method="POST" action="" class="commande-delete-modal__form" id="form-delete-commande">
+            <form method="POST" action="" class="commande-delete-modal__form" id="form-archive-commande">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
                 <div class="commande-delete-modal__actions">
-                    <button type="button" class="btn-secondary" id="btn-cancel-delete-commande">
+                    <button type="button" class="btn-secondary" id="btn-cancel-archive-commande">
                         <i class="fas fa-times"></i> Annuler
                     </button>
                     <button type="submit" name="desarchiver_commande" class="btn-primary">
@@ -551,10 +582,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                 <p><i class="fas fa-info-circle"></i> La commande disparaîtra de la liste active mais ne sera pas supprimée.</p>
                 <p>Seul un administrateur pourra la consulter et la désarchiver depuis les Archives.</p>
             </div>
-            <form method="POST" action="" class="commande-delete-modal__form" id="form-delete-commande">
+            <form method="POST" action="" class="commande-delete-modal__form" id="form-archive-commande">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
                 <div class="commande-delete-modal__actions">
-                    <button type="button" class="btn-secondary" id="btn-cancel-delete-commande">
+                    <button type="button" class="btn-secondary" id="btn-cancel-archive-commande">
                         <i class="fas fa-times"></i> Annuler
                     </button>
                     <button type="submit" name="archiver_commande" class="btn-primary">
@@ -566,41 +597,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
         </div>
     </div>
 
+    <?php if ($can_supprimer_commande): ?>
+    <div id="modal-supprimer-commande" class="modal-overlay commande-delete-modal-overlay" role="dialog"
+        aria-modal="true" aria-labelledby="modal-supprimer-commande-title" aria-hidden="true">
+        <div class="modal-content commande-delete-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-supprimer-commande-title">
+                    <i class="fas fa-trash-alt"></i> Supprimer la commande
+                </h2>
+                <button type="button" class="modal-close" id="btn-close-supprimer-commande" aria-label="Fermer">
+                    &times;
+                </button>
+            </div>
+            <p class="commande-delete-modal__lead">
+                Supprimer définitivement la commande
+                <strong>#<?php echo htmlspecialchars($commande['numero_commande'] ?? ''); ?></strong> ?
+            </p>
+            <div class="commande-delete-modal__warning">
+                <p><i class="fas fa-exclamation-triangle"></i> Cette action est irréversible.</p>
+                <p>La commande, ses produits associés et la facture liée seront définitivement effacés.</p>
+            </div>
+            <form method="POST" action="" class="commande-delete-modal__form" id="form-supprimer-commande">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($admin_csrf); ?>">
+                <div class="commande-delete-modal__actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-supprimer-commande">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" name="supprimer_commande" class="btn-delete">
+                        <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script>
         (function () {
-            var modal = document.getElementById('modal-delete-commande');
-            var openBtn = document.getElementById('btn-open-delete-commande');
-            var closeBtn = document.getElementById('btn-close-delete-commande');
-            var cancelBtn = document.getElementById('btn-cancel-delete-commande');
-            if (!modal || !openBtn) return;
+            function bindConfirmModal(modalId, openBtnId, closeBtnId, cancelBtnId) {
+                var modal = document.getElementById(modalId);
+                var openBtn = document.getElementById(openBtnId);
+                var closeBtn = document.getElementById(closeBtnId);
+                var cancelBtn = document.getElementById(cancelBtnId);
+                if (!modal || !openBtn) return;
 
-            function openModal() {
-                modal.classList.add('active');
-                modal.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden';
+                function openModal() {
+                    modal.classList.add('active');
+                    modal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeModal() {
+                    modal.classList.remove('active');
+                    modal.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = '';
+                }
+
+                openBtn.addEventListener('click', openModal);
+                if (closeBtn) closeBtn.addEventListener('click', closeModal);
+                if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+                modal.addEventListener('click', function (event) {
+                    if (event.target === modal) {
+                        closeModal();
+                    }
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && modal.classList.contains('active')) {
+                        closeModal();
+                    }
+                });
             }
 
-            function closeModal() {
-                modal.classList.remove('active');
-                modal.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = '';
-            }
-
-            openBtn.addEventListener('click', openModal);
-            if (closeBtn) closeBtn.addEventListener('click', closeModal);
-            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
-
-            modal.addEventListener('click', function (event) {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape' && modal.classList.contains('active')) {
-                    closeModal();
-                }
-            });
+            bindConfirmModal(
+                'modal-archive-commande',
+                'btn-open-archive-commande',
+                'btn-close-archive-commande',
+                'btn-cancel-archive-commande'
+            );
+            bindConfirmModal(
+                'modal-supprimer-commande',
+                'btn-open-supprimer-commande',
+                'btn-close-supprimer-commande',
+                'btn-cancel-supprimer-commande'
+            );
         })();
     </script>
 
