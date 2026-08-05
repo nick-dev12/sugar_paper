@@ -33,6 +33,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/produit_share.php';
 $base = get_site_base_url();
 $seo_title = 'Produits décoratifs pour gâteaux - Sugar Paper';
 $seo_description = 'Catalogue de produits décoratifs pour gâteaux : gâteaux d\'anniversaire, mariage, cérémonies. Décoration comestible et non comestible. Personnalisation à grande échelle.';
@@ -56,6 +57,7 @@ $seo_canonical = $base . '/produits.php';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         .produits-page-header {
             background: var(--couleur-dominante);
@@ -221,6 +223,7 @@ $seo_canonical = $base . '/produits.php';
                             $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
+                                <?php echo produit_share_button_html($produit); ?>
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
                                         <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -275,6 +278,7 @@ $seo_canonical = $base . '/produits.php';
     </div>
 
     <?php include('footer.php'); ?>
+    <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>"></script>
 
     <script>
         let offsetActuel = 20; // On a déjà affiché les 20 premiers
@@ -356,7 +360,11 @@ $seo_canonical = $base . '/produits.php';
 
                             const returnUrl = (window.location.pathname + window.location.search).replace(/&/g,
                                 '&amp;').replace(/"/g, '&quot;');
+                            const shareBtnHtml = (typeof buildProduitShareButtonHtml === 'function')
+                                ? buildProduitShareButtonHtml(produit)
+                                : '';
                             div.innerHTML = `
+                                ${shareBtnHtml}
                                 <a href="produit.php?id=${produit.id}" class="product-card-link">
                                     <div class="image-wrapper">
                                         <img src="${produit.image_url || '/upload/' + produit.image_principale}" 
@@ -417,6 +425,7 @@ $seo_canonical = $base . '/produits.php';
             return div.innerHTML;
         }
     </script>
+    <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 </body>
 
 </html>

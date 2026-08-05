@@ -582,6 +582,24 @@ function livreur_livraison_terminee_column_ok() {
 }
 
 /**
+ * Colonne livraison_arrivee_at (migration run_add_livraison_arrivee.php).
+ */
+function livreur_livraison_arrivee_column_ok() {
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $db->query('SELECT livraison_arrivee_at FROM commandes LIMIT 1');
+        $ok = true;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
  * Indique si une livraison a été terminée par le livreur (plus de reprise GPS).
  *
  * @param 'commande'|'facture' $type
@@ -871,6 +889,16 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
         }
 
         $db->commit();
+
+        if ($current_livreur === null) {
+            require_once __DIR__ . '/../services/livreur_push_notifications.php';
+            notify_admins_livreur_prise_en_charge(
+                'facture',
+                $bl_id,
+                $admin_livreur_id,
+                (string) ($facture['numero_bl'] ?? '')
+            );
+        }
 
         return [
             'ok' => true,
@@ -1348,6 +1376,17 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
             update_commande_statut($commande_id, 'livraison_en_cours');
         }
         // Si déjà livraison_en_cours (prise préalable), pas de 2e push : déjà notifié à la prise.
+
+        /* Push admin uniquement à la première prise (pas à chaque re-démarrage) */
+        if ($current_livreur === null) {
+            require_once __DIR__ . '/../services/livreur_push_notifications.php';
+            notify_admins_livreur_prise_en_charge(
+                'commande',
+                $commande_id,
+                $admin_livreur_id,
+                (string) ($commande['numero_commande'] ?? '')
+            );
+        }
 
         return [
             'ok' => true,
@@ -1896,6 +1935,84 @@ function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null
  *
  * @return array{ok:bool,error?:string}
  */
+/**
+ * Le livreur confirme être arrivé chez le client (notifications admin + client).
+ *
+ * @return array{ok:bool,already?:bool,error?:string,arrivee_at?:string}
+ */
+function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) {
+    global $db;
+
+    $admin_id = (int) $admin_id;
+    if ($admin_id < 1) {
+        return ['ok' => false, 'error' => 'Compte invalide.'];
+    }
+
+    if ($bl_id !== null && (int) $bl_id > 0) {
+        $row = livreur_get_facture_tracking((int) $bl_id);
+        $type = 'facture';
+        $livraison_id = (int) $bl_id;
+        $numero = (string) ($row['numero_bl'] ?? $bl_id);
+    } elseif ($commande_id !== null && (int) $commande_id > 0) {
+        $row = livreur_get_commande_tracking((int) $commande_id);
+        $type = 'commande';
+        $livraison_id = (int) $commande_id;
+        $numero = (string) ($row['numero_commande'] ?? $commande_id);
+    } else {
+        return ['ok' => false, 'error' => 'Livraison introuvable.'];
+    }
+
+    if (!$row || (int) ($row['livreur_id'] ?? 0) !== $admin_id) {
+        return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
+    }
+    if (livreur_livraison_est_terminee($row, $type)) {
+        return ['ok' => false, 'error' => 'Cette livraison est déjà terminée.'];
+    }
+
+    if (livreur_livraison_arrivee_column_ok() && !empty($row['livraison_arrivee_at'])) {
+        return [
+            'ok' => true,
+            'already' => true,
+            'arrivee_at' => (string) $row['livraison_arrivee_at'],
+        ];
+    }
+
+    try {
+        if (livreur_livraison_arrivee_column_ok()) {
+            if ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
+                $stmt = $db->prepare('
+                    UPDATE bons_livraison
+                    SET livraison_arrivee_at = NOW()
+                    WHERE id = :id AND livreur_id = :livreur_id
+                      AND (livraison_arrivee_at IS NULL OR livraison_arrivee_at = \'\')
+                ');
+                $stmt->execute(['id' => $livraison_id, 'livreur_id' => $admin_id]);
+            } else {
+                $stmt = $db->prepare('
+                    UPDATE commandes
+                    SET livraison_arrivee_at = NOW()
+                    WHERE id = :id AND livreur_id = :livreur_id
+                      AND (livraison_arrivee_at IS NULL OR livraison_arrivee_at = \'\')
+                ');
+                $stmt->execute(['id' => $livraison_id, 'livreur_id' => $admin_id]);
+            }
+        }
+
+        require_once __DIR__ . '/../services/livreur_push_notifications.php';
+        notify_admins_livreur_arrive($type, $livraison_id, $admin_id, $numero);
+        if ($type === 'commande') {
+            notify_client_livreur_arrive($livraison_id);
+        }
+
+        return [
+            'ok' => true,
+            'arrivee_at' => date('Y-m-d H:i:s'),
+        ];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'error' => 'Erreur lors de la confirmation d\'arrivée.'];
+    }
+}
+
 function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = null) {
     global $db;
 

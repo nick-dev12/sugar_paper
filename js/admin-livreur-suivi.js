@@ -13,7 +13,14 @@
     var statusEl = document.getElementById('livreur-suivi-status-sub');
     var mapEl = document.getElementById('livreur-tracking-map');
     var startBtn = document.getElementById('livreur-suivi-start-tracking');
+    var arriveBtn = document.getElementById('livreur-suivi-arrive');
     var stopBtn = document.getElementById('livreur-suivi-stop-tracking');
+    var confirmArriveEl = document.getElementById('livreur-suivi-confirm-arrive');
+    var confirmArriveYesBtn = document.getElementById('livreur-suivi-confirm-arrive-yes');
+    var confirmArriveNoBtn = document.getElementById('livreur-suivi-confirm-arrive-no');
+    var confirmStopEl = document.getElementById('livreur-suivi-confirm-stop');
+    var confirmStopYesBtn = document.getElementById('livreur-suivi-confirm-stop-yes');
+    var confirmStopNoBtn = document.getElementById('livreur-suivi-confirm-stop-no');
     var etaBlock = document.getElementById('livreur-suivi-eta');
     var etaRangeEl = document.getElementById('livreur-suivi-eta-range');
     var etaLabelEl = document.getElementById('livreur-suivi-eta-label');
@@ -25,9 +32,6 @@
     var alertCloseBtn = document.getElementById('livreur-suivi-alert-close');
     var loadingOverlayEl = document.getElementById('livreur-suivi-loading');
     var loadingMessageEl = document.getElementById('livreur-suivi-loading-message');
-    var confirmStopEl = document.getElementById('livreur-suivi-confirm-stop');
-    var confirmStopYesBtn = document.getElementById('livreur-suivi-confirm-stop-yes');
-    var confirmStopNoBtn = document.getElementById('livreur-suivi-confirm-stop-no');
     var topbarEl = document.querySelector('.livreur-suivi-topbar');
     var topbarTitleEl = document.getElementById('livreur-topbar-title');
     var topbarCountdownEl = document.getElementById('livreur-topbar-countdown');
@@ -37,6 +41,7 @@
     var autostartFailed = false;
     var autostartInProgress = false;
     var manualDeliveryConfirmed = false;
+    var arriveeConfirmed = !!(cfg.arriveeConfirmed);
     if (!mapEl) {
         return;
     }
@@ -2143,8 +2148,14 @@
             startBtn.hidden = hideStart;
             startBtn.disabled = autostartInProgress;
         }
+        var deliveryRunning = manualDeliveryConfirmed && (deliveryActive || realtimeConnected);
+        if (arriveBtn) {
+            arriveBtn.hidden = !deliveryRunning || arriveeConfirmed;
+            arriveBtn.disabled = false;
+        }
         if (stopBtn) {
-            stopBtn.hidden = !manualDeliveryConfirmed || !(deliveryActive || realtimeConnected);
+            /* Terminer visible seulement après confirmation d'arrivée */
+            stopBtn.hidden = !deliveryRunning || !arriveeConfirmed;
         }
     }
 
@@ -2815,9 +2826,78 @@
             });
         }
         bindStopConfirmation();
+        bindArriveConfirmation();
         setDeliveryActive(false);
         realtimeConnected = false;
         updateTrackingButtons();
+    }
+
+    function bindArriveConfirmation() {
+        if (!arriveBtn || !confirmArriveEl) {
+            return;
+        }
+
+        function closeConfirmArrive() {
+            confirmArriveEl.hidden = true;
+            document.body.classList.remove('livreur-suivi-confirm-open');
+        }
+
+        arriveBtn.addEventListener('click', function () {
+            confirmArriveEl.hidden = false;
+            document.body.classList.add('livreur-suivi-confirm-open');
+        });
+
+        if (confirmArriveNoBtn) {
+            confirmArriveNoBtn.addEventListener('click', closeConfirmArrive);
+        }
+        confirmArriveEl.querySelectorAll('[data-livreur-arrive-close]').forEach(function (el) {
+            el.addEventListener('click', closeConfirmArrive);
+        });
+        if (confirmArriveYesBtn) {
+            confirmArriveYesBtn.addEventListener('click', function () {
+                closeConfirmArrive();
+                confirmArrivee();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && confirmArriveEl && !confirmArriveEl.hidden) {
+                closeConfirmArrive();
+            }
+        });
+    }
+
+    function confirmArrivee() {
+        if (!cfg.canManage || arriveeConfirmed) {
+            return;
+        }
+        if (arriveBtn) {
+            arriveBtn.setAttribute('disabled', 'disabled');
+        }
+        setStatus('Confirmation de votre arrivée…', 'pending');
+        showLoadingOverlay('Notification en cours…');
+
+        callWebApi({ action: 'arrive' })
+            .then(function (data) {
+                arriveeConfirmed = true;
+                cfg.arriveeConfirmed = true;
+                updateTrackingButtons();
+                setStatus(
+                    data && data.already
+                        ? 'Arrivée déjà confirmée — vous pouvez terminer la livraison'
+                        : 'Arrivée confirmée — admin et client notifiés',
+                    'live'
+                );
+            })
+            .catch(function (err) {
+                showTrackingAlertFromError(err);
+                setStatus(err.message || 'Erreur lors de la confirmation', 'error');
+            })
+            .finally(function () {
+                hideLoadingOverlay();
+                if (arriveBtn) {
+                    arriveBtn.removeAttribute('disabled');
+                }
+            });
     }
 
     function bindStopConfirmation() {

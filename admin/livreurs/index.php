@@ -129,6 +129,11 @@ foreach ($factures_liste as $facture_row) {
 
 <div class="content-header content-header--livreurs">
     <h1><i class="fas fa-motorcycle" aria-hidden="true"></i> <?php echo $is_livreur ? 'Livraisons du jour' : 'Livreurs GPS'; ?></h1>
+    <?php if ($is_admin): ?>
+    <div class="header-actions">
+        <a href="notes.php" class="btn-secondary"><i class="fas fa-star"></i> Notes clients</a>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php if (!$tables_ready): ?>

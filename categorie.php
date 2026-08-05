@@ -41,6 +41,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/produit_share.php';
 $base = get_site_base_url();
 $seo_title = $categorie_nom . ' - Sugar Paper';
 $desc_cat = !empty($categorie['description']) ? strip_tags($categorie['description']) : 'Produits décoratifs pour gâteaux ' . $categorie_nom . ' : anniversaire, mariage, cérémonies. Sugar Paper - Personnalisez vos gâteaux.';
@@ -69,6 +70,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         /* Styles personnalisés pour les cartes produits */
     </style>
@@ -117,6 +119,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
                         }
                         ?>
                         <div class="carousel">
+                            <?php echo produit_share_button_html($produit); ?>
                             <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                 <div class="image-wrapper">
                                     <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -159,6 +162,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
     </section>
 
     <?php include('footer.php') ?>
+    <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>

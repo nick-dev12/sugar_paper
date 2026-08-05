@@ -19,6 +19,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/produit_share.php';
 $base = get_site_base_url();
 $seo_title = 'Nouveautés décoration gâteaux - Sugar Paper';
 $seo_description = 'Découvrez les derniers produits décoratifs pour gâteaux : décoration d\'anniversaire, mariage, cérémonies. Comestible et non comestible.';
@@ -37,6 +38,7 @@ $seo_canonical = $base . '/nouveautes.php';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         .page-header {
             background: var(--couleur-dominante);
@@ -161,6 +163,7 @@ $seo_canonical = $base . '/nouveautes.php';
                             $pourcentage = $has_promo ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                             ?>
                             <div class="carousel">
+                                <?php echo produit_share_button_html($produit); ?>
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
                                         <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -224,6 +227,7 @@ $seo_canonical = $base . '/nouveautes.php';
     </div>
 
     <?php include('footer.php'); ?>
+    <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 </body>
 
 </html>

@@ -10,6 +10,7 @@ session_start_persistent();
 
 require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/produit_share.php';
 require_once __DIR__ . '/../models/model_produits.php';
 
 // Récupérer les paramètres
@@ -43,6 +44,8 @@ foreach ($produits as $produit) {
     $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
     
+    $share_data = produit_share_build_data($produit);
+    
     $produits_formatted[] = [
         'id' => $produit['id'],
         'nom' => $produit['nom'],
@@ -57,7 +60,11 @@ foreach ($produits as $produit) {
         'image_principale' => $produit['image_principale'] ?? 'produit1.jpg',
         'image_url' => !empty($produit['image_principale'])
             ? upload_image_url($produit['image_principale'], 'md')
-            : '/image/produit1.jpg'
+            : '/image/produit1.jpg',
+        'share_url' => $share_data['share_url'] ?? '',
+        'share_title' => $share_data['share_title'] ?? ($produit['nom'] ?? ''),
+        'share_text' => $share_data['share_text'] ?? '',
+        'share_image' => $share_data['share_image'] ?? '',
     ];
 }
 

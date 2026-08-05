@@ -156,4 +156,14 @@ return [
         'label' => 'Photo de profil comptes admin',
         'script' => 'run_add_admin_photo_profil.php',
     ],
+    [
+        'id' => 'livraison_arrivee',
+        'label' => 'Confirmation arrivée livreur',
+        'script' => 'run_add_livraison_arrivee.php',
+    ],
+    [
+        'id' => 'livreur_notes_client',
+        'label' => 'Notes clients sur livreurs',
+        'script' => 'run_add_livreur_notes_client.php',
+    ],
 ];

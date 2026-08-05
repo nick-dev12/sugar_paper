@@ -14,6 +14,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 }
 
 require_once __DIR__ . '/../models/model_visites.php';
+require_once __DIR__ . '/../includes/produit_share.php';
 $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
 ?>
 <!DOCTYPE html>
@@ -31,6 +32,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/platform_share_head.php'; ?>
     <style>
         .produits-visites-page {
             max-width: 1400px;
@@ -124,6 +126,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                             $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
                             ?>
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
+                                <?php echo produit_share_button_html($produit); ?>
                                 <a href="/produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                                     <span class="date-visite-badge"
                                         title="Consulté le <?php echo date('d/m/Y à H:i', strtotime($produit['date_visite'])); ?>">
@@ -178,6 +181,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
     </div>
 
     <?php include 'includes/user_footer.php'; ?>
+    <?php include __DIR__ . '/../includes/platform_share_footer.php'; ?>
 </body>
 
 </html>

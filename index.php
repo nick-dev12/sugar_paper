@@ -14,6 +14,7 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/produit_share.php';
 $base = get_site_base_url();
 $seo_title = 'Sugar Paper - Décoration de gâteaux personnalisée';
 $seo_description = 'Sugar Paper : produits décoratifs pour gâteaux d\'anniversaire, mariage et cérémonies. Décoration comestible et non comestible à grande échelle. Personnalisez vos gâteaux !';
@@ -45,6 +46,7 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
     /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
     .carousel-produits-outer {
@@ -268,6 +270,7 @@ $seo_canonical = $base . '/';
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                     ?>
                 <div class="carousel">
+                    <?php echo produit_share_button_html($produit); ?>
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -529,6 +532,7 @@ $seo_canonical = $base . '/';
                     $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                     ?>
                 <div class="carousel">
+                    <?php echo produit_share_button_html($produit); ?>
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -671,6 +675,7 @@ $seo_canonical = $base . '/';
                         $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
                         ?>
                 <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
+                    <?php echo produit_share_button_html($produit); ?>
                     <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
                         <div class="image-wrapper">
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
@@ -724,6 +729,7 @@ $seo_canonical = $base . '/';
     </main>
 
     <?php include('footer.php') ?>
+    <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>

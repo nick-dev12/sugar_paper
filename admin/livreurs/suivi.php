@@ -80,6 +80,7 @@ $can_manage_livraison = $livraison && livreur_web_can_manage_livraison((int) $_S
 $can_start_livraison = $can_manage_livraison && !$regarder_mode;
 $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
 $tracking_active_initial = $livraison ? (int) ($livraison['tracking_active'] ?? 0) : 0;
+$arrivee_confirmed_initial = $livraison && !empty($livraison['livraison_arrivee_at']);
 $initial_countdown = $livraison
     ? livreur_countdown_state_from_row($livraison)
     : null;
@@ -287,6 +288,13 @@ if ($initial_watch_payload !== null) {
                         <span class="livreur-suivi-sheet__cta-sub"><?php echo $geo_ready ? 'Activez le GPS et partagez votre position' : 'Itinéraire non configuré'; ?></span>
                     </button>
                     <button type="button"
+                        class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--arrive"
+                        id="livreur-suivi-arrive"
+                        hidden>
+                        <span class="livreur-suivi-sheet__cta-main">Arrivé</span>
+                        <span class="livreur-suivi-sheet__cta-sub">Confirmer votre arrivée chez le client</span>
+                    </button>
+                    <button type="button"
                         class="livreur-suivi-sheet__cta livreur-suivi-sheet__cta--stop"
                         id="livreur-suivi-stop-tracking"
                         hidden>
@@ -382,6 +390,21 @@ if ($initial_watch_payload !== null) {
         </div>
     </div>
 
+    <div id="livreur-suivi-confirm-arrive" class="livreur-suivi-alert livreur-suivi-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="livreur-suivi-confirm-arrive-title">
+        <div class="livreur-suivi-alert__backdrop" data-livreur-arrive-close></div>
+        <div class="livreur-suivi-alert__panel livreur-suivi-confirm__panel">
+            <div class="livreur-suivi-alert__icon livreur-suivi-confirm__icon" aria-hidden="true">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <h3 class="livreur-suivi-alert__title" id="livreur-suivi-confirm-arrive-title">Vous êtes arrivé ?</h3>
+            <p class="livreur-suivi-alert__message">Confirmez-vous être arrivé chez le client ? Une notification sera envoyée à l’administration et au client.</p>
+            <div class="livreur-suivi-confirm__actions">
+                <button type="button" class="btn-secondary" id="livreur-suivi-confirm-arrive-no" data-livreur-arrive-close>Non</button>
+                <button type="button" class="btn-primary livreur-suivi-confirm__yes" id="livreur-suivi-confirm-arrive-yes">Oui, je suis arrivé</button>
+            </div>
+        </div>
+    </div>
+
     <div id="livreur-suivi-confirm-stop" class="livreur-suivi-alert livreur-suivi-confirm" hidden role="alertdialog" aria-modal="true" aria-labelledby="livreur-suivi-confirm-stop-title">
         <div class="livreur-suivi-alert__backdrop" data-livreur-confirm-close></div>
         <div class="livreur-suivi-alert__panel livreur-suivi-confirm__panel">
@@ -424,6 +447,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     geoReady: <?php echo $geo_ready ? 'true' : 'false'; ?>,
     realtimeConfigured: <?php echo $realtime_configured ? 'true' : 'false'; ?>,
     trackingActive: <?php echo $tracking_active_initial ? 'true' : 'false'; ?>,
+    arriveeConfirmed: <?php echo !empty($arrivee_confirmed_initial) ? 'true' : 'false'; ?>,
     initialCountdown: <?php echo $initial_countdown !== null
         ? json_encode($initial_countdown, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         : 'null'; ?>,

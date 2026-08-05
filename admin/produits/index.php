@@ -24,6 +24,7 @@ if (isset($_SESSION['success_message'])) {
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../includes/image_optimizer.php';
+require_once __DIR__ . '/../../includes/produit_share.php';
 $produits = get_all_produits();
 $categories = get_all_categories();
 $recherche = trim($_GET['recherche'] ?? '');
@@ -70,6 +71,7 @@ if (!empty($produits)) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-produits-index.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../../includes/platform_share_head.php'; ?>
 </head>
 
 <body class="page-produits-index">
@@ -139,6 +141,7 @@ if (!empty($produits)) {
                 <?php foreach ($produits as $produit): ?>
                     <div class="produit-card produit-card-linkable"
                         data-href="ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
+                        <?php echo produit_share_button_html($produit); ?>
                         <?php
                         $statut_class = 'statut-actif';
                         if ($produit['statut'] == 'inactif') {
@@ -202,3 +205,4 @@ if (!empty($produits)) {
             });
         });
     </script>
+    <?php include __DIR__ . '/../../includes/platform_share_footer.php'; ?>

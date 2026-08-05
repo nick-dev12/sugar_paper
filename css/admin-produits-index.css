@@ -359,3 +359,44 @@ body.page-dashboard-admin .content-header .header-actions {
     grid-template-columns: 1fr;
   }
 }
+
+/* Bouton partage sur cartes produit (admin) */
+body.page-produits-index .produit-card-share,
+body.page-dashboard-admin .produit-card-share {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--couleur-dominante, #e5488a);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+body.page-produits-index .produit-card-share:hover,
+body.page-dashboard-admin .produit-card-share:hover {
+  transform: scale(1.06);
+  background: #fff;
+  color: #c26638;
+}
+
+body.page-produits-index .produit-card-share:focus-visible,
+body.page-dashboard-admin .produit-card-share:focus-visible {
+  outline: 2px solid #918a44;
+  outline-offset: 2px;
+}
+
+body.page-produits-index .produit-card-share i,
+body.page-dashboard-admin .produit-card-share i {
+  font-size: 0.85rem;
+  line-height: 1;
+}

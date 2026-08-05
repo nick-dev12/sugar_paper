@@ -25,6 +25,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../includes/site_url.php';
+require_once __DIR__ . '/../includes/produit_share.php';
 
 $enable_firebase_notifications = true;
 $firebase_notify_type = 'admin';
@@ -289,27 +290,9 @@ $base_site_url = rtrim(get_site_base_url(), '/');
                 <!-- Grille de produits -->
                 <div class="produits-grid">
                     <?php foreach ($produits_page as $produit): ?>
-                        <?php
-                        $share_url = $base_site_url . '/produit.php?id=' . (int) $produit['id'];
-                        $share_title = (string) ($produit['nom'] ?? 'Produit');
-                        $share_price_value = (!empty($produit['prix_promotion']) && (float) $produit['prix_promotion'] > 0)
-                            ? (float) $produit['prix_promotion']
-                            : (float) ($produit['prix'] ?? 0);
-                        $share_price = number_format($share_price_value, 0, ',', ' ') . ' FCFA';
-                        $share_text = 'Découvrez ce produit : ' . $share_title . ' — ' . $share_price . '.';
-                        ?>
                         <div class="produit-card produit-card-linkable"
                             data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
-                            <button type="button"
-                                class="produit-card-share js-platform-share"
-                                aria-label="Partager <?php echo htmlspecialchars($share_title, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-share-modal-title="Partager le produit"
-                                data-share-title="<?php echo htmlspecialchars($share_title, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-share-url="<?php echo htmlspecialchars($share_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-share-text="<?php echo htmlspecialchars($share_text, ENT_QUOTES, 'UTF-8'); ?>"
-                                data-share-hint="Partagez ce lien pour que vos clients consultent le produit.">
-                                <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
-                            </button>
+                            <?php echo produit_share_button_html($produit); ?>
                             <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                                 alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
                                 onerror="this.src='/image/produit1.jpg'">

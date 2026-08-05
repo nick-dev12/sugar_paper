@@ -89,16 +89,10 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';
 }
 
-// Meta SEO
+// Meta SEO + Open Graph (aperçu riche WhatsApp / réseaux sociaux)
 require_once __DIR__ . '/includes/site_url.php';
-$base = get_site_base_url();
-$seo_title = $produit['nom'] . ' - Sugar Paper';
-$desc = !empty($produit['description']) ? strip_tags($produit['description']) : $produit['nom'] . ' - Produit décoratif pour gâteau Sugar Paper. Décoration comestible et non comestible.';
-$seo_description = mb_substr($desc, 0, 160);
-$seo_canonical = $base . '/produit.php?id=' . (int) $produit['id'];
-$seo_og_type = 'product';
-$img = !empty($produit['image_principale']) ? $produit['image_principale'] : '';
-$seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.png';
+require_once __DIR__ . '/includes/produit_share.php';
+extract(produit_share_seo_vars($produit, $prix_affichage));
 ?>
 
 <!DOCTYPE html>
@@ -122,6 +116,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <?php if (!$user_logged_in): ?>
         <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <?php endif; ?>
@@ -1795,6 +1790,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
                                 : $similaire['prix'];
                             ?>
                             <div class="carousel">
+                                <?php echo produit_share_button_html($similaire); ?>
                                 <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
                                     <div class="image-wrapper">
                                         <img src="<?php echo htmlspecialchars(upload_image_url($similaire['image_principale'] ?? '', 'md')); ?>"
@@ -1826,6 +1822,7 @@ $seo_image = $img ? $base . '/' . ltrim($img, '/') : $base . '/icons/icon-512.pn
     </div>
 
     <?php include('footer.php') ?>
+    <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 
     <script>
         // Calcul automatique du prix total (variante + surcoûts)

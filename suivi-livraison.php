@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/includes/tracking_config.php';
 require_once __DIR__ . '/models/model_livreur_tracking.php';
+require_once __DIR__ . '/models/model_livreur_notes.php';
 require_once __DIR__ . '/includes/asset_version.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
@@ -79,6 +80,18 @@ $initial_countdown = livreur_countdown_state_from_row($livraison);
 $livreur_profile = livreur_photo_profile_for_livraison($livraison);
 $livreur_photo_url = $livreur_profile['photo_url'];
 $livreur_initials = $livreur_profile['initials'];
+$livreur_nom_affichage = trim((string) ($livraison['livreur_prenom'] ?? '') . ' ' . (string) ($livraison['livreur_nom'] ?? ''));
+
+$existing_rating = livreur_notes_tables_ready()
+    ? livreur_note_get_for_livraison(
+        $commande_id > 0 ? $commande_id : null,
+        $bl_id > 0 ? $bl_id : null
+    )
+    : null;
+$can_rate_livreur = livreur_note_peut_noter($livraison, $livraison_type);
+$rating_state = $existing_rating ? 'rated' : ($can_rate_livreur ? 'ready' : 'pending');
+$existing_rating_value = $existing_rating ? (int) ($existing_rating['note'] ?? 0) : 0;
+$livreur_id_rating = (int) ($livraison['livreur_id'] ?? 0);
 
 $last = null;
 if (!empty($livraison['livreur_id'])) {
@@ -186,6 +199,48 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
                     <strong class="livreur-suivi-sheet__eta-range" id="livreur-suivi-eta-range">—</strong>
                 </div>
             </div>
+            <section id="livreur-rating-section" class="livreur-rating" data-state="<?php echo htmlspecialchars($rating_state, ENT_QUOTES, 'UTF-8'); ?>" aria-label="Notation du livreur">
+                <h3 class="livreur-rating__title">Notez votre livreur</h3>
+                <div class="livreur-rating__livreur">
+                    <?php if ($livreur_photo_url !== ''): ?>
+                    <img src="<?php echo htmlspecialchars($livreur_photo_url, ENT_QUOTES, 'UTF-8'); ?>" alt="" class="livreur-rating__avatar livreur-rating__avatar--photo" onerror="this.hidden=true;this.nextElementSibling.hidden=false;">
+                    <?php endif; ?>
+                    <span class="livreur-rating__avatar livreur-rating__avatar--initials"<?php echo $livreur_photo_url !== '' ? ' hidden' : ''; ?>><?php echo htmlspecialchars($livreur_initials ?: 'L', ENT_QUOTES, 'UTF-8'); ?></span>
+                    <span class="livreur-rating__name"><?php echo htmlspecialchars($livreur_nom_affichage !== '' ? $livreur_nom_affichage : 'Votre livreur', ENT_QUOTES, 'UTF-8'); ?></span>
+                </div>
+                <div class="livreur-rating__stars-wrap">
+                    <div class="livreur-rating__stars" id="livreur-rating-stars" role="radiogroup" aria-label="Note sur 5 étoiles">
+                        <?php for ($s = 1; $s <= 5; $s++): ?>
+                        <button type="button" class="livreur-rating__star" data-star="<?php echo $s; ?>" aria-label="<?php echo $s; ?> étoile<?php echo $s > 1 ? 's' : ''; ?>"<?php echo ($rating_state !== 'ready') ? ' disabled' : ''; ?>>
+                            <i class="fa-star<?php echo ($existing_rating_value >= $s) ? ' fas livreur-rating__star--filled' : ' far'; ?>" aria-hidden="true"></i>
+                        </button>
+                        <?php endfor; ?>
+                    </div>
+                    <p class="livreur-rating__hint" id="livreur-rating-hint">
+                        <?php if ($rating_state === 'rated'): ?>
+                            Merci ! Votre note est enregistrée.
+                        <?php elseif ($can_rate_livreur): ?>
+                            Touchez une étoile pour noter la livraison.
+                        <?php else: ?>
+                            Disponible dès l'arrivée du livreur chez vous.
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="livreur-rating__thanks" id="livreur-rating-thanks" hidden aria-live="polite">
+                    <div class="livreur-rating__thanks-burst" aria-hidden="true">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="livreur-rating__thanks-title">Merci pour votre confiance !</p>
+                    <p class="livreur-rating__thanks-text">Votre avis compte beaucoup pour nous.</p>
+                </div>
+                <div class="livreur-rating__frozen" id="livreur-rating-frozen"<?php echo $rating_state === 'rated' ? '' : ' hidden'; ?>>
+                    <p class="livreur-rating__frozen-label">Votre note</p>
+                    <div class="livreur-rating__frozen-stars" id="livreur-rating-frozen-stars">
+                        <?php echo livreur_note_format_stars_html($existing_rating_value); ?>
+                    </div>
+                    <p class="livreur-rating__frozen-value"><strong id="livreur-rating-frozen-value"><?php echo $existing_rating_value > 0 ? (int) $existing_rating_value : '—'; ?></strong> / 5</p>
+                </div>
+            </section>
             <p class="livreur-suivi-sheet__watch-note"><i class="fas fa-satellite-dish"></i> Suivi en direct de la livraison</p>
         </div>
     </section>
@@ -241,7 +296,16 @@ window.LIVREUR_TRACKING_CONFIG = {
         JSON_UNESCAPED_UNICODE
     ); ?>,
     livreurPhotoUrl: <?php echo json_encode($livreur_photo_url, JSON_UNESCAPED_SLASHES); ?>,
-    livreurInitials: <?php echo json_encode($livreur_initials, JSON_UNESCAPED_UNICODE); ?>
+    livreurInitials: <?php echo json_encode($livreur_initials, JSON_UNESCAPED_UNICODE); ?>,
+    ratingApiUrl: '/api/tracking/rate-livreur.php',
+    ratingToken: <?php echo json_encode($token, JSON_UNESCAPED_UNICODE); ?>,
+    ratingState: <?php echo json_encode($rating_state, JSON_UNESCAPED_UNICODE); ?>,
+    existingRating: <?php echo (int) $existing_rating_value; ?>,
+    canRateLivreur: <?php echo $can_rate_livreur ? 'true' : 'false'; ?>,
+    livreurId: <?php echo (int) $livreur_id_rating; ?>,
+    arriveeAt: <?php echo !empty($livraison['livraison_arrivee_at'])
+        ? json_encode($livraison['livraison_arrivee_at'], JSON_UNESCAPED_UNICODE)
+        : 'null'; ?>
 };
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -251,6 +315,7 @@ window.LIVREUR_TRACKING_CONFIG = {
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 <?php endif; ?>
 <script src="/js/admin-livreur-suivi.js?v=<?php echo (int) @filemtime(__DIR__ . '/js/admin-livreur-suivi.js'); ?>"></script>
+<script src="/js/livreur-rating.js<?php echo asset_version_query(); ?>"></script>
 <?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>
 </html>

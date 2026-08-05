@@ -7,6 +7,7 @@
 require_once __DIR__ . '/../includes/session_user.php';
 session_start_persistent();
 require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/produit_share.php';
 
 // Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
@@ -52,6 +53,7 @@ $firebase_notify_type = 'user';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mon-compte.css<?php echo asset_version_query(); ?>">
+    <?php include __DIR__ . '/../includes/platform_share_head.php'; ?>
 </head>
 
 <body class="user-page-mon-compte">
@@ -159,6 +161,7 @@ $firebase_notify_type = 'user';
                     $statut_label = ucfirst(str_replace('_', ' ', $produit['statut']));
                     ?>
                     <div class="produit-card">
+                        <?php echo produit_share_button_html($produit); ?>
                         <span class="statut-badge <?php echo $statut_class; ?>"><?php echo $statut_label; ?></span>
                         <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
                             alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
@@ -202,3 +205,4 @@ $firebase_notify_type = 'user';
     </section>
 
     <?php include 'includes/user_footer.php'; ?>
+    <?php include __DIR__ . '/../includes/platform_share_footer.php'; ?>
