@@ -39,11 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         require_once __DIR__ . '/services/notifications_order_dispatch.php';
         notifications_dispatch_after_commande($result);
 
-        if (!empty($result['is_guest'])) {
-            header('Location: /commande.php?success=1&numero=' . urlencode($result['numero_commande']));
-        } else {
-            header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
-        }
+        header('Location: /user/mes-commandes.php?success=1&numero=' . urlencode($result['numero_commande']));
         exit;
     } else {
         $message = $result['message'];
@@ -619,15 +615,12 @@ if ($commande_success && $commande_numero !== '') {
     exit;
 }
 
-if ($is_guest_checkout && !guest_client_has_info()) {
-    header('Location: /panier.php');
+if (!isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0) {
+    header('Location: /panier.php?need_identity=1');
     exit;
 }
 
-$user = null;
-if (!$is_guest_checkout) {
-    $user = get_user_by_id((int) $_SESSION['user_id']);
-}
+$user = get_user_by_id((int) $_SESSION['user_id']);
 
 // Récupérer les produits du panier
 $panier_items = panier_get_items_courant();
@@ -1378,9 +1371,6 @@ include 'nav_bar.php';
                                     echo htmlspecialchars($_POST['telephone_livraison']);
                                 } elseif ($user) {
                                     echo htmlspecialchars($user['telephone'] ?? '');
-                                } elseif ($is_guest_checkout) {
-                                    $gc = guest_client_get();
-                                    echo htmlspecialchars($gc['telephone'] ?? '');
                                 }
                             ?>">
                         <small>Numéro pour vous contacter au sujet de votre commande</small>
@@ -1483,7 +1473,10 @@ include 'nav_bar.php';
         </div>
     </div>
 
-    <?php include 'footer.php'; ?>
+    <?php
+    $enable_firebase_notifications = true;
+    include 'footer.php';
+    ?>
 
     <script src="/js/commande-geo.js<?php echo asset_version_query(); ?>"></script>
     <script>

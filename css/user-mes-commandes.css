@@ -1,271 +1,685 @@
-/**
- * Page user/mes-commandes.php — liste commandes client
+﻿/**
+ * Page user/mes-commandes.php — design moderne aligné mon-compte
+ * Palette Sugar Paper + responsive compact
  */
 
 body.user-page-mes-commandes .user-content {
-  padding: clamp(16px, 3vw, 30px);
+  padding: clamp(12px, 2.5vw, 28px);
 }
 
-/* Bannière achats */
-body.user-page-mes-commandes .continue-shopping-banner {
-  background: linear-gradient(135deg, rgba(229, 72, 138, 0.92), rgba(107, 47, 32, 0.95));
-  border-radius: 16px;
-  padding: clamp(14px, 3vw, 20px) clamp(16px, 3vw, 24px);
-  margin: 0 0 clamp(16px, 3vw, 22px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: var(--ombre-gourmande);
-  max-width: none;
+.mc-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 2.5vw, 22px);
 }
 
-body.user-page-mes-commandes .continue-shopping-content {
+/* ---------- Hero ---------- */
+.mc-hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: clamp(12px, 2.5vw, 20px);
-  flex-wrap: wrap;
+  padding: clamp(16px, 3vw, 28px);
+  border-radius: clamp(14px, 2vw, 20px);
+  background: var(--couleur-dominante, #E5488A);
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(229, 72, 138, 0.18);
 }
 
-body.user-page-mes-commandes .continue-shopping-icon {
-  width: clamp(42px, 10vw, 52px);
-  height: clamp(42px, 10vw, 52px);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
+.mc-hero::before {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto 55%;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+
+.mc-hero__identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 16px);
+  min-width: 0;
+  flex: 1;
+}
+
+.mc-hero__avatar {
+  flex-shrink: 0;
+  width: clamp(44px, 10vw, 64px);
+  height: clamp(44px, 10vw, 64px);
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  font-size: clamp(0.95rem, 3vw, 1.25rem);
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.mc-hero__eyebrow {
+  margin: 0 0 2px;
+  font-size: clamp(0.65rem, 2vw, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.mc-hero__title {
+  margin: 0;
+  font-family: var(--font-titres);
+  font-size: clamp(1.05rem, 3.6vw, 1.65rem);
+  font-weight: 700;
+  line-height: 1.25;
   color: #fff;
+}
+
+.mc-hero__subtitle {
+  margin: 4px 0 0;
+  font-size: clamp(0.72rem, 2.2vw, 0.9rem);
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.mc-hero__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-body.user-page-mes-commandes .continue-shopping-text {
-  flex: 1;
-  min-width: min(100%, 180px);
-}
-
-body.user-page-mes-commandes .continue-shopping-text h2 {
-  color: #fff;
-  font-size: clamp(1rem, 3.2vw, 1.15rem);
-  font-weight: 600;
-  margin: 0 0 4px;
-  font-family: var(--font-titres);
-}
-
-body.user-page-mes-commandes .continue-shopping-text p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: clamp(0.78rem, 2.4vw, 0.88rem);
-  line-height: 1.45;
-}
-
-body.user-page-mes-commandes .continue-shopping-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-}
-
-body.user-page-mes-commandes .continue-shopping-btn {
+/* ---------- Boutons ---------- */
+.mc-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: clamp(10px, 2.5vw, 12px) clamp(14px, 3vw, 18px);
-  background: #fff;
-  color: #6b2f20;
-  text-decoration: none;
+  gap: 6px;
+  padding: clamp(8px, 1.8vw, 11px) clamp(12px, 2.4vw, 18px);
   border-radius: 10px;
+  border: 1px solid transparent;
+  font-size: clamp(0.72rem, 2.1vw, 0.88rem);
   font-weight: 600;
-  font-size: clamp(0.78rem, 2.4vw, 0.88rem);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
   white-space: nowrap;
-}
-
-body.user-page-mes-commandes .continue-shopping-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-  color: #6b2f20;
-}
-
-body.user-page-mes-commandes .continue-shopping-btn--secondary {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-}
-
-body.user-page-mes-commandes .continue-shopping-btn--secondary:hover {
-  background: rgba(255, 255, 255, 0.28);
-  color: #fff;
-}
-
-/* En-tête */
-body.user-page-mes-commandes .content-header {
-  padding: clamp(16px, 3vw, 24px);
-  margin-bottom: clamp(16px, 3vw, 20px);
-  border-radius: 16px;
-}
-
-body.user-page-mes-commandes .content-header h1 {
-  font-size: clamp(1.05rem, 3.8vw, 1.65rem);
-  line-height: 1.3;
-}
-
-/* Stats résumé */
-body.user-page-mes-commandes .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(10px, 2vw, 14px);
-  margin-bottom: clamp(16px, 3vw, 22px);
-}
-
-body.user-page-mes-commandes .stat-card {
-  background: #ffffff;
-  color: var(--titres);
-  padding: clamp(12px, 2.8vw, 16px);
-  border-radius: 14px;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--ombre-douce);
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-body.user-page-mes-commandes .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--ombre-gourmande);
-}
-
-body.user-page-mes-commandes .stat-card .stat-icon {
-  width: clamp(34px, 9vw, 40px);
-  height: clamp(34px, 9vw, 40px);
-  margin: 0 auto clamp(6px, 1.5vw, 8px);
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(0.9rem, 3vw, 1.05rem);
-}
-
-body.user-page-mes-commandes .stat-card--actives .stat-icon {
-  background: rgba(229, 72, 138, 0.12);
-  color: var(--couleur-dominante);
-}
-
-body.user-page-mes-commandes .stat-card--perso .stat-icon {
-  background: rgba(32, 197, 199, 0.14);
-  color: var(--turquoise);
-}
-
-body.user-page-mes-commandes .stat-card .stat-value {
-  font-size: clamp(1.15rem, 4.5vw, 1.45rem);
-  font-weight: 800;
-  color: var(--titres);
-  margin-bottom: 2px;
+  font-family: inherit;
   line-height: 1.2;
 }
 
-body.user-page-mes-commandes .stat-card .stat-label {
-  font-size: clamp(0.65rem, 2.2vw, 0.78rem);
-  color: var(--texte-fonce);
-  line-height: 1.25;
+.mc-btn:hover {
+  transform: translateY(-1px);
 }
 
-/* Section principale */
-body.user-page-mes-commandes .content-section {
-  padding: clamp(16px, 3vw, 26px);
-  border-radius: 16px;
-  margin-bottom: clamp(16px, 3vw, 24px);
+.mc-btn--primary {
+  background: #fff;
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
-body.user-page-mes-commandes .section-title {
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: clamp(14px, 2.5vw, 18px);
-  padding-bottom: clamp(10px, 2vw, 14px);
+.mc-btn--primary:hover {
+  background: #faf8f2;
+  color: var(--accent-promo, #F77F00);
 }
 
-body.user-page-mes-commandes .section-title h2 {
-  font-size: clamp(0.92rem, 3vw, 1.25rem);
-  line-height: 1.3;
+.mc-btn--ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
-body.user-page-mes-commandes .section-title--spaced {
-  margin-top: clamp(24px, 4vw, 36px);
+.mc-btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 
-body.user-page-mes-commandes .btn-view-categories {
-  font-size: clamp(0.72rem, 2.2vw, 0.85rem);
-  padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 16px);
+.mc-section .mc-btn--primary,
+.mc-empty .mc-btn--primary {
+  background: var(--couleur-dominante, #E5488A);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(247, 127, 0, 0.25);
+}
+
+.mc-section .mc-btn--primary:hover,
+.mc-empty .mc-btn--primary:hover {
+  filter: brightness(1.05);
+  color: #fff;
+}
+
+.mc-section .mc-btn--ghost,
+.mc-empty .mc-btn--ghost {
+  background: #fff;
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  border-color: rgba(229, 72, 138, 0.18);
+}
+
+.mc-section .mc-btn--ghost:hover,
+.mc-empty .mc-btn--ghost:hover {
+  border-color: var(--accent-promo, #F77F00);
+  color: var(--accent-promo, #F77F00);
+}
+
+.mc-btn--sm {
+  padding: 7px 10px;
+  font-size: clamp(0.65rem, 1.9vw, 0.75rem);
+  border-radius: 8px;
+}
+
+.mc-btn--track {
+  background: var(--turquoise, #20C5C7) !important;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 4px 12px rgba(32, 197, 199, 0.28);
+}
+
+.mc-btn--track:hover {
+  color: #fff !important;
+  filter: brightness(1.05);
+}
+
+.mc-btn--pending {
+  background: rgba(247, 127, 0, 0.1) !important;
+  color: var(--accent-promo, #F77F00) !important;
+  border: 1px dashed rgba(247, 127, 0, 0.4) !important;
+  cursor: default;
+  box-shadow: none;
+}
+
+.mc-btn--pending:hover {
+  transform: none;
+}
+
+.mc-btn--success {
+  background: var(--couleur-dominante, #E5488A) !important;
+  color: #fff !important;
+  border: none;
+}
+
+.mc-btn--danger {
+  background: #fff !important;
+  color: #a33 !important;
+  border: 1px solid rgba(170, 51, 51, 0.28) !important;
+}
+
+.mc-btn--danger:hover {
+  background: rgba(170, 51, 51, 0.06) !important;
+}
+
+/* ---------- Stats ---------- */
+.mc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 1.8vw, 14px);
+}
+
+.mc-stats--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: clamp(10px, 2.2vw, 16px) clamp(6px, 1.5vw, 12px);
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(229, 72, 138, 0.08);
+}
+
+.mc-stat__icon {
+  width: clamp(30px, 7vw, 40px);
+  height: clamp(30px, 7vw, 40px);
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.8rem, 2.5vw, 1rem);
+}
+
+.mc-stat--commandes .mc-stat__icon {
+  background: rgba(229, 72, 138, 0.15);
+  color: var(--couleur-dominante, #E5488A);
+}
+
+.mc-stat--perso .mc-stat__icon,
+.mc-stat--livrees .mc-stat__icon {
+  background: rgba(247, 127, 0, 0.14);
+  color: var(--accent-promo, #F77F00);
+}
+
+a.mc-stat {
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+a.mc-stat:hover,
+a.mc-stat.is-active {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(229, 72, 138, 0.14);
+  border-color: rgba(229, 72, 138, 0.35);
+}
+
+a.mc-stat.is-active {
+  border-color: var(--accent-promo, #F77F00);
+}
+
+/* ---------- Tabs ---------- */
+.mc-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: clamp(12px, 2.2vw, 18px);
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(229, 72, 138, 0.08);
+  border: 1px solid rgba(229, 72, 138, 0.14);
+}
+
+.mc-tabs__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: clamp(10px, 2vw, 12px) clamp(10px, 2vw, 14px);
   border-radius: 10px;
+  text-decoration: none;
+  font-size: clamp(0.75rem, 2.1vw, 0.88rem);
+  font-weight: 650;
+  color: var(--texte-fonce, #3d2800);
+  background: transparent;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mc-tabs__btn i {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.mc-tabs__btn em {
+  font-style: normal;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72em;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+}
+
+.mc-tabs__btn:hover {
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--titres, var(--texte-fonce, #3d2800));
+}
+
+.mc-tabs__btn.is-active {
+  background: #fff;
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  box-shadow: 0 4px 14px rgba(229, 72, 138, 0.16);
+}
+
+.mc-tabs__btn.is-active em {
+  background: rgba(247, 127, 0, 0.14);
+  color: var(--accent-promo, #F77F00);
+}
+
+.mc-order--livree {
+  border-color: rgba(229, 72, 138, 0.22);
+}
+
+.mc-stat__value {
+  font-size: clamp(1.05rem, 3.8vw, 1.45rem);
+  font-weight: 800;
+  color: #000;
+  line-height: 1.15;
+}
+
+.mc-stat__label {
+  font-size: clamp(0.62rem, 1.9vw, 0.75rem);
+  color: var(--texte-fonce, #3d2800);
+  opacity: 0.85;
+}
+
+/* ---------- Section ---------- */
+.mc-section {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: clamp(14px, 2vw, 18px);
+  padding: clamp(14px, 2.8vw, 22px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.mc-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: clamp(12px, 2.2vw, 18px);
+  padding-bottom: clamp(8px, 1.8vw, 12px);
+  border-bottom: 1px solid rgba(229, 72, 138, 0.18);
+}
+
+.mc-section__head h2 {
+  margin: 0;
+  font-size: clamp(0.9rem, 2.8vw, 1.2rem);
+  font-weight: 700;
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mc-section__head h2 i {
+  color: var(--couleur-dominante, #E5488A);
+  font-size: 0.95em;
+}
+
+.mc-section__link {
+  font-size: clamp(0.68rem, 2vw, 0.8rem);
+  font-weight: 600;
+  color: var(--accent-promo, #F77F00);
+  text-decoration: none;
   white-space: nowrap;
 }
 
-body.user-page-mes-commandes .message.success,
-body.user-page-mes-commandes .message.error {
-  font-size: clamp(0.82rem, 2.4vw, 0.92rem);
-  padding: clamp(12px, 2.5vw, 14px) clamp(14px, 3vw, 16px);
+.mc-section__link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Alerts ---------- */
+.mc-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: clamp(10px, 2vw, 14px);
   border-radius: 12px;
   margin-bottom: 14px;
+  font-size: clamp(0.78rem, 2.2vw, 0.9rem);
+  line-height: 1.4;
 }
 
-/* Grille commandes */
-body.user-page-mes-commandes .commandes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: clamp(12px, 2.5vw, 18px);
-  margin-top: 0;
+.mc-alert--success {
+  background: rgba(229, 72, 138, 0.12);
+  color: var(--texte-fonce, #3d2800);
+  border: 1px solid rgba(229, 72, 138, 0.28);
 }
 
-body.user-page-mes-commandes .commande-item {
-  max-width: none;
-  width: 100%;
-  padding: clamp(14px, 3vw, 18px);
-  border-radius: 14px;
+.mc-alert--error {
+  background: rgba(170, 51, 51, 0.08);
+  color: #8a2a2a;
+  border: 1px solid rgba(170, 51, 51, 0.22);
 }
 
-body.user-page-mes-commandes .commande-info h3 {
-  font-size: clamp(0.88rem, 2.8vw, 1rem);
-  line-height: 1.3;
-  margin-bottom: 4px;
+.mc-alert i {
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-body.user-page-mes-commandes .commande-info p {
-  font-size: clamp(0.72rem, 2.2vw, 0.8rem);
+/* ---------- Empty ---------- */
+.mc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: clamp(22px, 5vw, 40px) 12px;
+  color: var(--texte-fonce, #3d2800);
 }
 
-body.user-page-mes-commandes .commande-statut {
-  font-size: clamp(0.62rem, 2vw, 0.72rem);
-  padding: clamp(5px, 1.5vw, 7px) clamp(8px, 2vw, 12px);
+.mc-empty i {
+  font-size: clamp(1.6rem, 6vw, 2.4rem);
+  color: var(--couleur-dominante, #E5488A);
+  opacity: 0.75;
 }
 
-body.user-page-mes-commandes .detail-item {
-  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
-  padding: 4px 0;
+.mc-empty p {
+  margin: 0;
+  font-size: clamp(0.78rem, 2.2vw, 0.92rem);
 }
 
-body.user-page-mes-commandes .detail-item label {
-  font-size: clamp(0.68rem, 2vw, 0.75rem);
-}
-
-body.user-page-mes-commandes .detail-item .value {
-  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
-}
-
-body.user-page-mes-commandes .commande-actions {
+.mc-empty__actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 12px;
+  justify-content: center;
+  margin-top: 4px;
 }
 
-body.user-page-mes-commandes .btn-view-commande,
-body.user-page-mes-commandes .btn-confirmer-livraison,
-body.user-page-mes-commandes .btn-annuler-commande,
-body.user-page-mes-commandes .btn-suivi-livreur,
-.commande-categorie-page .btn-suivi-livreur {
-  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
-  padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 14px);
+/* ---------- Orders ---------- */
+.mc-orders {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: clamp(10px, 2vw, 16px);
+}
+
+.mc-order {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: clamp(12px, 2.2vw, 16px);
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(229, 72, 138, 0.16);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.mc-order:hover {
+  box-shadow: 0 8px 22px rgba(229, 72, 138, 0.12);
+  transform: translateY(-1px);
+}
+
+.mc-order--perso {
+  border-color: rgba(247, 127, 0, 0.22);
+  background: #ffffff;
+}
+
+.mc-order__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mc-order__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mc-order__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 8px;
+  margin-bottom: 2px;
+  border-radius: 999px;
+  font-size: clamp(0.58rem, 1.7vw, 0.65rem);
+  font-weight: 700;
+  background: rgba(247, 127, 0, 0.12);
+  color: var(--accent-promo, #F77F00);
+}
+
+.mc-order__numero {
+  font-size: clamp(0.78rem, 2.2vw, 0.92rem);
+  font-weight: 700;
+  color: #000;
+  word-break: break-all;
+}
+
+.mc-order__date {
+  font-size: clamp(0.65rem, 1.9vw, 0.75rem);
+  color: var(--texte-fonce, #3d2800);
+  opacity: 0.85;
+}
+
+.mc-order__statut {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: clamp(0.58rem, 1.7vw, 0.68rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(229, 72, 138, 0.14);
+  color: var(--texte-fonce, #3d2800);
+}
+
+.mc-order__statut.statut-en_attente {
+  background: rgba(247, 127, 0, 0.14);
+  color: #b85a00;
+}
+
+.mc-order__statut.statut-confirmee,
+.mc-order__statut.statut-prise_en_charge,
+.mc-order__statut.statut-en_preparation {
+  background: rgba(32, 197, 199, 0.14);
+  color: #0e7f81;
+}
+
+.mc-order__statut.statut-expediee,
+.mc-order__statut.statut-livraison_en_cours {
+  background: rgba(247, 127, 0, 0.14);
+  color: var(--accent-promo, #F77F00);
+}
+
+.mc-order__statut.statut-livree,
+.mc-order__statut.statut-paye,
+.mc-order__statut.statut-terminee {
+  background: rgba(229, 72, 138, 0.18);
+  color: var(--texte-fonce, #3d2800);
+}
+
+.mc-order__statut.statut-annulee,
+.mc-order__statut.statut-refusee {
+  background: rgba(0, 0, 0, 0.08);
+  color: #555;
+}
+
+.mc-order__thumbs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mc-order__thumbs img {
+  width: clamp(36px, 8vw, 46px);
+  height: clamp(36px, 8vw, 46px);
+  object-fit: cover;
   border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #f5f5f5;
 }
 
-body.user-page-mes-commandes .btn-suivi-livreur,
+.mc-order__more {
+  width: clamp(36px, 8vw, 46px);
+  height: clamp(36px, 8vw, 46px);
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--titres, var(--texte-fonce, #3d2800));
+  background: rgba(229, 72, 138, 0.12);
+}
+
+.mc-order__details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mc-order__detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(229, 72, 138, 0.1);
+}
+
+.mc-order__detail span {
+  font-size: clamp(0.58rem, 1.7vw, 0.68rem);
+  color: var(--texte-fonce, #3d2800);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.mc-order__detail strong {
+  font-size: clamp(0.72rem, 2vw, 0.85rem);
+  color: #000;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.mc-order__perso-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mc-order__perso-body p {
+  margin: 0;
+  font-size: clamp(0.72rem, 2.1vw, 0.82rem);
+  line-height: 1.45;
+  color: var(--texte-fonce, #3d2800);
+}
+
+.mc-order__type {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: clamp(0.58rem, 1.7vw, 0.68rem);
+  font-weight: 600;
+  background: rgba(229, 72, 138, 0.12);
+  color: var(--texte-fonce, #3d2800);
+}
+
+.mc-order__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(229, 72, 138, 0.25);
+}
+
+.mc-order__form {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.mc-order__form .mc-btn {
+  width: 100%;
+}
+
+.mc-order__actions > .mc-btn {
+  flex: 1 1 auto;
+}
+
+/* Compat suivi livreur hors page (commande-categorie) */
 .commande-categorie-page .btn-suivi-livreur {
   display: inline-flex;
   align-items: center;
@@ -276,20 +690,21 @@ body.user-page-mes-commandes .btn-suivi-livreur,
   border: none;
   cursor: pointer;
   font-weight: 700;
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  background: var(--turquoise, #20C5C7);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(39, 174, 96, 0.28);
+  box-shadow: 0 4px 14px rgba(32, 197, 199, 0.28);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 14px);
+  border-radius: 10px;
+  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
 }
 
-body.user-page-mes-commandes .btn-suivi-livreur:hover,
 .commande-categorie-page .btn-suivi-livreur:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(39, 174, 96, 0.35);
+  box-shadow: 0 6px 18px rgba(32, 197, 199, 0.35);
   color: #fff;
 }
 
-body.user-page-mes-commandes .btn-suivi-livreur--pending,
 .commande-categorie-page .btn-suivi-livreur--pending {
   display: inline-flex;
   align-items: center;
@@ -297,129 +712,174 @@ body.user-page-mes-commandes .btn-suivi-livreur--pending,
   gap: 8px;
   width: 100%;
   font-weight: 600;
-  background: rgba(229, 72, 138, 0.1);
-  color: #8b2f55;
-  border: 1px dashed rgba(229, 72, 138, 0.35);
+  background: rgba(247, 127, 0, 0.1);
+  color: var(--accent-promo, #F77F00);
+  border: 1px dashed rgba(247, 127, 0, 0.35);
   cursor: default;
-}
-
-body.user-page-mes-commandes .btn-view-commande,
-body.user-page-mes-commandes .btn-confirmer-livraison,
-body.user-page-mes-commandes .btn-annuler-commande {
-  border-left: 4px solid var(--couleur-dominante);
-}
-
-body.user-page-mes-commandes .commande-type-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  margin-bottom: 6px;
-}
-
-body.user-page-mes-commandes .commande-type-badge--perso {
-  background: rgba(229, 72, 138, 0.12);
-  color: #b8326a;
-}
-
-body.user-page-mes-commandes .btn-primary--outline {
-  background: transparent;
-  color: var(--couleur-dominante);
-  border: 2px solid var(--couleur-dominante);
-}
-
-body.user-page-mes-commandes .empty-state,
-body.user-page-mes-commandes .empty-state-compact {
-  padding: clamp(24px, 5vw, 36px);
-}
-
-body.user-page-mes-commandes .empty-state i,
-body.user-page-mes-commandes .empty-state-compact i {
-  font-size: clamp(2rem, 8vw, 2.6rem);
-}
-
-body.user-page-mes-commandes .empty-state p,
-body.user-page-mes-commandes .empty-state-compact p {
-  font-size: clamp(0.85rem, 2.6vw, 0.95rem);
-}
-
-body.user-page-mes-commandes .btn-primary {
-  font-size: clamp(0.78rem, 2.4vw, 0.88rem);
-  padding: clamp(10px, 2.5vw, 12px) clamp(16px, 3vw, 20px);
+  padding: clamp(8px, 2vw, 10px) clamp(12px, 2.5vw, 14px);
   border-radius: 10px;
+  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
 }
 
+/* ---------- Responsive ---------- */
 @media (max-width: 768px) {
-  body.user-page-mes-commandes .continue-shopping-actions {
-    flex-direction: column;
+  body.user-page-mes-commandes .user-content {
+    padding: 12px 10px 18px;
   }
 
-  body.user-page-mes-commandes .continue-shopping-btn {
-    width: 100%;
+  .mc-page {
+    gap: 12px;
   }
 
-  body.user-page-mes-commandes .section-title {
+  .mc-hero {
     flex-direction: column;
     align-items: stretch;
+    padding: 14px;
+    border-radius: 14px;
   }
 
-  body.user-page-mes-commandes .btn-view-categories {
+  .mc-hero__actions {
     width: 100%;
-    text-align: center;
-    justify-content: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
   }
 
-  body.user-page-mes-commandes .commandes-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .mc-hero__actions .mc-btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+  }
+
+  .mc-hero__avatar {
+    width: 42px;
+    height: 42px;
+    font-size: 0.9rem;
+  }
+
+  .mc-hero__title {
+    font-size: 1.05rem;
+  }
+
+  .mc-hero__subtitle {
+    font-size: 0.72rem;
+  }
+
+  .mc-stats {
+    gap: 6px;
+  }
+
+  .mc-stat {
+    padding: 8px 4px;
+    border-radius: 12px;
+    gap: 2px;
+  }
+
+  .mc-stat__icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .mc-stat__value {
+    font-size: 1rem;
+  }
+
+  .mc-stat__label {
+    font-size: 0.58rem;
+  }
+
+  .mc-section {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .mc-section__head {
+    flex-wrap: wrap;
+  }
+
+  .mc-section__head h2 {
+    font-size: 0.9rem;
+  }
+
+  .mc-orders {
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  body.user-page-mes-commandes .stat-card {
-    padding: 10px 8px;
-  }
-
-  body.user-page-mes-commandes .stat-card .stat-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 0.85rem;
-  }
-
-  body.user-page-mes-commandes .stat-card .stat-value {
-    font-size: clamp(1rem, 4vw, 1.2rem);
-  }
-
-  body.user-page-mes-commandes .stat-card .stat-label {
-    font-size: 10px;
-  }
-
-  body.user-page-mes-commandes .commande-item {
-    padding: 12px 10px;
-  }
-
-  body.user-page-mes-commandes .commande-header {
+  .mc-order {
+    padding: 12px;
     gap: 8px;
   }
-}
 
-@media (max-width: 520px) {
-  body.user-page-mes-commandes .commandes-grid {
-    grid-template-columns: 1fr;
+  .mc-order__details {
+    gap: 6px;
+  }
+
+  .mc-order__detail {
+    padding: 6px;
+  }
+
+  .mc-tabs {
+    gap: 6px;
+    padding: 5px;
+    margin-bottom: 12px;
+  }
+
+  .mc-tabs__btn {
+    padding: 9px 8px;
+    font-size: 0.72rem;
+    gap: 5px;
+  }
+
+  .mc-tabs__btn em {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.68em;
+  }
+
+  .mc-btn {
+    padding: 8px 12px;
+    font-size: 0.72rem;
+  }
+
+  .mc-btn--sm {
+    padding: 7px 9px;
+    font-size: 0.68rem;
+  }
+
+  .mc-empty__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .mc-empty__actions .mc-btn {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   body.user-page-mes-commandes .user-content {
-    padding: 14px 10px 20px;
+    padding: 10px 8px 16px;
   }
 
-  body.user-page-mes-commandes .stats-grid {
-    gap: 8px;
+  .mc-hero__actions .mc-btn span {
+    font-size: 0.68rem;
+  }
+
+  .mc-hero__actions .mc-btn--ghost span {
+    display: none;
+  }
+
+  .mc-hero__actions .mc-btn--ghost {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+  }
+
+  .mc-order__thumbs img,
+  .mc-order__more {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mc-order__actions {
+    gap: 5px;
   }
 }

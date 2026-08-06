@@ -52,8 +52,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-shopping-cart"></i>
                 <span>Mon panier</span>
             </a>
-            <a href="mes-commandes.php"
-                class="menu-item <?php echo $current_page == 'mes-commandes.php' ? 'active' : ''; ?>">
+            <a href="mes-commandes.php<?php echo (isset($_GET['onglet']) && $_GET['onglet'] === 'recues') ? '' : '?onglet=en_cours'; ?>"
+                class="menu-item <?php echo ($current_page == 'mes-commandes.php' && (!isset($_GET['onglet']) || $_GET['onglet'] !== 'recues')) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-bag"></i>
                 <span>Mes commandes</span>
             </a>
@@ -62,8 +62,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <i class="fas fa-ban"></i>
                 <span>Commandes annulées</span>
             </a>
-            <a href="produits-livres.php"
-                class="menu-item <?php echo $current_page == 'produits-livres.php' ? 'active' : ''; ?>">
+            <a href="mes-commandes.php?onglet=recues"
+                class="menu-item <?php echo ($current_page == 'produits-livres.php' || ($current_page == 'mes-commandes.php' && isset($_GET['onglet']) && $_GET['onglet'] === 'recues')) ? 'active' : ''; ?>">
                 <i class="fas fa-check-circle"></i>
                 <span>Produits livrés</span>
             </a>

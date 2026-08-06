@@ -48,12 +48,18 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
     }
 
     require_once __DIR__ . '/../includes/site_url.php';
-    $base_url = get_site_base_url();
+    require_once __DIR__ . '/../models/model_livreur_tracking.php';
+    $base_url = rtrim(get_site_base_url(), '/');
     $commande_id = (int) $commande_id;
     if ($commande_id > 0 && $nouveau_statut === 'livraison_en_cours') {
-        $link = rtrim($base_url, '/') . '/user/commande-categorie.php?commande_id=' . $commande_id;
+        // Lien public tokenisé → ouvre directement la carte de suivi au clic sur la push
+        $public = livreur_client_public_suivi_url($commande_id, (int) $user_id, false);
+        $link = $public !== false
+            ? $public
+            : ($base_url . '/user/suivi-commande.php?commande_id=' . $commande_id);
+        $body = "Votre commande #{$numero_commande} est en cours de livraison. Suivez le livreur en direct.";
     } elseif ($commande_id > 0 && $nouveau_statut === 'livree') {
-        $link = rtrim($base_url, '/') . '/user/commande-categorie.php?commande_id=' . $commande_id;
+        $link = $base_url . '/user/commande-categorie.php?commande_id=' . $commande_id;
     } else {
         $link = $base_url . '/user/mes-commandes.php';
     }
@@ -77,7 +83,8 @@ function send_commande_status_notification($user_id, $numero_commande, $nouveau_
         $body_html .= '<p>Bonjour,</p>';
         $body_html .= '<p>' . htmlspecialchars($body) . '</p>';
         $body_html .= '<p><strong>Statut :</strong> <span style="color: #6b2f20; font-weight: 600;">' . htmlspecialchars($label) . '</span></p>';
-        $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #e5488a; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Voir mes commandes</a></p>';
+        $cta_label = ($nouveau_statut === 'livraison_en_cours') ? 'Suivre la livraison' : 'Voir mes commandes';
+        $body_html .= '<p style="margin-top: 25px;"><a href="' . htmlspecialchars($link) . '" style="display: inline-block; padding: 12px 24px; background: #e5488a; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">' . htmlspecialchars($cta_label) . '</a></p>';
         $body_html .= '<hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">';
         $body_html .= '<p style="font-size: 12px; color: #999;">Sugar Paper</p>';
         $body_html .= '</div>';
@@ -168,11 +175,16 @@ function notify_client_suivi_gps_demarre($commande_id) {
         return false;
     }
 
+    require_once __DIR__ . '/../models/model_livreur_tracking.php';
+
     $numero = (string) ($commande['numero_commande'] ?? $commande_id);
     $title = 'Suivez votre livreur';
     $body = "Le livreur est en route pour votre commande #{$numero}. Suivez sa position en direct.";
     $base = rtrim(get_site_base_url(), '/');
-    $link = $base . '/user/suivi-commande.php?commande_id=' . $commande_id;
+    $public = livreur_client_public_suivi_url($commande_id, $user_id, true);
+    $link = $public !== false
+        ? $public
+        : ($base . '/user/suivi-commande.php?commande_id=' . $commande_id);
 
     $tokens = get_fcm_tokens_by_user($user_id);
     if (empty($tokens)) {

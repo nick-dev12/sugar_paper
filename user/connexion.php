@@ -479,10 +479,10 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="pin"><i class="fas fa-lock"></i> Mot de passe *</label>
+                    <label for="pin"><i class="fas fa-lock"></i> Code PIN (4 ou 6 chiffres) *</label>
                     <div class="input-wrapper password-wrapper">
-                        <input type="password" id="pin" name="pin" placeholder="Votre mot de passe ou code PIN"
-                            autocomplete="current-password"
+                        <input type="password" id="pin" name="pin" placeholder="Votre code PIN"
+                            inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="current-password"
                             value="<?php echo isset($_POST['pin']) ? htmlspecialchars($_POST['pin']) : ''; ?>">
                         <button type="button" class="password-toggle" onclick="togglePassword('pin', this)" aria-label="Afficher le mot de passe">
                             <i class="fas fa-eye"></i>

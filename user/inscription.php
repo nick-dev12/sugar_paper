@@ -370,10 +370,10 @@ if (isset($result['success']) && $result['success']) {
                 </div>
 
                 <div class="form-group">
-                    <label for="pin"><i class="fas fa-key"></i> Code PIN (6 chiffres) *</label>
+                    <label for="pin"><i class="fas fa-key"></i> Code PIN (4 chiffres) *</label>
                     <div class="input-wrapper password-wrapper">
                         <input type="password" id="pin" name="pin" class="pin-input" inputmode="numeric"
-                            pattern="[0-9]*" maxlength="6" placeholder="••••••" required autocomplete="new-password">
+                            pattern="[0-9]*" maxlength="4" placeholder="••••" required autocomplete="new-password">
                         <button type="button" class="password-toggle" onclick="togglePassword('pin', this)" aria-label="Afficher le code PIN">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -384,7 +384,7 @@ if (isset($result['success']) && $result['success']) {
                     <label for="pin_confirm"><i class="fas fa-key"></i> Confirmer le code PIN *</label>
                     <div class="input-wrapper password-wrapper">
                         <input type="password" id="pin_confirm" name="pin_confirm" class="pin-input" inputmode="numeric"
-                            pattern="[0-9]*" maxlength="6" placeholder="••••••" required autocomplete="new-password">
+                            pattern="[0-9]*" maxlength="4" placeholder="••••" required autocomplete="new-password">
                         <button type="button" class="password-toggle" onclick="togglePassword('pin_confirm', this)" aria-label="Afficher le code PIN">
                             <i class="fas fa-eye"></i>
                         </button>

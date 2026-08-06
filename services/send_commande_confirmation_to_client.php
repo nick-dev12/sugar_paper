@@ -12,6 +12,9 @@ require_once __DIR__ . '/notify_helpers.php';
  * @param string $user_email
  */
 function send_new_commande_confirmation_to_client($user_id, $numero_commande, $montant_total, $user_email = '') {
+    if (!notifications_db_bootstrap()) {
+        throw new RuntimeException('Connexion BDD indisponible (confirmation client)');
+    }
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';
     require_once __DIR__ . '/../includes/site_url.php';
@@ -38,6 +41,9 @@ function send_new_commande_confirmation_to_client($user_id, $numero_commande, $m
     }
 
     $user_email = trim((string) $user_email);
+    if (strpos($user_email, '@guest.sugarpaper.local') !== false) {
+        $user_email = '';
+    }
     if ($user_email === '' || !filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
         return;
     }
@@ -58,4 +64,62 @@ function send_new_commande_confirmation_to_client($user_id, $numero_commande, $m
         'numero_commande' => $numero_commande,
         'user_id' => $user_id,
     ]);
+}
+
+/**
+ * Renvoie la confirmation push si le token FCM arrive après la création de commande
+ * (checkout invité : token enregistré sur la page succès).
+ *
+ * @param int $user_id
+ * @param int $max_age_seconds
+ */
+function notifications_send_recent_order_confirmation_on_token_save($user_id, $max_age_seconds = 7200) {
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !notifications_db_bootstrap()) {
+        return;
+    }
+
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT numero_commande, montant_total
+            FROM commandes
+            WHERE user_id = :uid
+              AND date_commande >= DATE_SUB(NOW(), INTERVAL :sec SECOND)
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $stmt->bindValue(':uid', $user_id, PDO::PARAM_INT);
+        $stmt->bindValue(':sec', max(60, (int) $max_age_seconds), PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['numero_commande'])) {
+            return;
+        }
+
+        $numero = (string) $row['numero_commande'];
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        $session_key = 'fcm_confirm_sent_' . $numero;
+        if (!empty($_SESSION[$session_key])) {
+            return;
+        }
+
+        require_once __DIR__ . '/../models/model_users.php';
+        $user = get_user_by_id($user_id);
+        $email = trim($user['email'] ?? '');
+
+        send_new_commande_confirmation_to_client(
+            $user_id,
+            $numero,
+            (float) ($row['montant_total'] ?? 0),
+            $email
+        );
+
+        $_SESSION[$session_key] = 1;
+    } catch (PDOException $e) {
+        error_log('[notifications_send_recent_order_confirmation_on_token_save] ' . $e->getMessage());
+    }
 }

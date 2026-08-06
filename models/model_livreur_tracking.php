@@ -2389,26 +2389,44 @@ function livreur_client_livraison_en_cours(array $commande) {
 }
 
 /**
- * Génère un token watch client et retourne l'URL de la carte suivi.
+ * URL publique de suivi GPS (token) pour une commande.
+ * Utilisée par les push FCM et la redirection client connecté.
  *
+ * @param int $commande_id
+ * @param int|null $user_id Si fourni, vérifie l'appartenance de la commande
+ * @param bool $require_tracking Si true, exige tracking_active=1 (GPS démarré)
  * @return string|false
  */
-function livreur_client_suivi_map_url($commande_id, $user_id) {
-    require_once __DIR__ . '/model_commandes.php';
+function livreur_client_public_suivi_url($commande_id, $user_id = null, $require_tracking = false) {
+    require_once __DIR__ . '/model_commandes_admin.php';
     require_once __DIR__ . '/../includes/site_url.php';
 
     $commande_id = (int) $commande_id;
-    $user_id = (int) $user_id;
-    if ($commande_id < 1 || $user_id < 1) {
+    if ($commande_id < 1) {
         return false;
     }
 
-    $commande = get_commande_by_id($commande_id, $user_id);
-    if (!$commande || !livreur_client_peut_suivre_gps($commande)) {
+    $uid = $user_id !== null ? (int) $user_id : 0;
+    $commande = $uid > 0
+        ? get_commande_by_id($commande_id, $uid)
+        : get_commande_by_id($commande_id);
+
+    if (!$commande || empty($commande['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($commande, 'commande')) {
+        return false;
+    }
+    if ($require_tracking && (int) ($commande['tracking_active'] ?? 0) !== 1) {
         return false;
     }
 
-    $watch = livreur_create_watch_token($commande_id, 'client', null, $user_id);
+    $token_user_id = $uid > 0 ? $uid : (int) ($commande['user_id'] ?? 0);
+    if ($token_user_id < 1) {
+        $token_user_id = null;
+    }
+
+    $watch = livreur_create_watch_token($commande_id, 'client', null, $token_user_id);
     if (!$watch || empty($watch['token'])) {
         return false;
     }
@@ -2416,6 +2434,15 @@ function livreur_client_suivi_map_url($commande_id, $user_id) {
     $base = rtrim(get_site_base_url(), '/');
     return $base . '/suivi-livraison.php?commande_id=' . $commande_id
         . '&token=' . rawurlencode($watch['token']);
+}
+
+/**
+ * Génère un token watch client et retourne l'URL de la carte suivi (GPS actif).
+ *
+ * @return string|false
+ */
+function livreur_client_suivi_map_url($commande_id, $user_id) {
+    return livreur_client_public_suivi_url($commande_id, $user_id, true);
 }
 
 /**

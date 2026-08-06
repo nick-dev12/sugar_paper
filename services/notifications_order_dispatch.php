@@ -30,11 +30,11 @@ function notifications_dispatch_after_commande(array $result) {
     }
 
     if (empty($result['is_guest']) && !empty($result['numero_commande'])) {
-        $user_id = 0;
-        if (session_status() !== PHP_SESSION_ACTIVE) {
+        $user_id = (int) ($result['user_id'] ?? 0);
+        if ($user_id < 1 && session_status() !== PHP_SESSION_ACTIVE) {
             @session_start();
         }
-        if (!empty($_SESSION['user_id'])) {
+        if ($user_id < 1 && !empty($_SESSION['user_id'])) {
             $user_id = (int) $_SESSION['user_id'];
         }
         if ($user_id > 0) {

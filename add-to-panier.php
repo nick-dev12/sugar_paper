@@ -16,9 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['produit_id'])) {
 
 $result = process_add_to_panier();
 
+$user_logged_in = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+
 if ($result['success']) {
     header('Location: /panier.php?added=1');
 } else {
+    if (!$user_logged_in) {
+        header('Location: /panier.php?need_identity=1');
+        exit;
+    }
     $return_url = isset($_POST['return_url']) && $_POST['return_url'] !== '' ? $_POST['return_url'] : '/panier.php';
     $separator = (strpos($return_url, '?') !== false) ? '&' : '?';
     header('Location: ' . $return_url . $separator . 'error=' . urlencode($result['message']));

@@ -19,6 +19,14 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
         define('NOTIFY_QUEUE_IN_WORKER', true);
     }
 
+    require_once __DIR__ . '/notify_helpers.php';
+    if (!notifications_db_bootstrap()) {
+        return [
+            'notify' => ['processed' => 0, 'errors' => ['Connexion BDD indisponible pour le worker notify'], 'retried' => 0],
+            'email' => ['processed' => 0, 'sent' => 0, 'failed' => 0],
+        ];
+    }
+
     $result = [
         'notify' => ['processed' => 0, 'errors' => [], 'retried' => 0],
         'email' => ['processed' => 0, 'sent' => 0, 'failed' => 0],

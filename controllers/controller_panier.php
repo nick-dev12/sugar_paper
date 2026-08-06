@@ -22,19 +22,16 @@ function process_add_to_panier()
 
     $user_connecte = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
     $user_id = $user_connecte ? (int) $_SESSION['user_id'] : 0;
-    $produit_id = (int) $_POST['produit_id'];
-    $quantite = (int) $_POST['quantite'];
 
     if (!$user_connecte) {
-        $guest_nom = isset($_POST['guest_nom']) ? trim($_POST['guest_nom']) : '';
-        $guest_telephone = isset($_POST['guest_telephone']) ? trim($_POST['guest_telephone']) : '';
-        if ($guest_nom !== '' && $guest_telephone !== '') {
-            guest_client_save($guest_nom, $guest_telephone);
-        } elseif (!guest_client_has_info()) {
-            return ['success' => false, 'message' => 'Veuillez renseigner votre nom et votre numéro de téléphone.'];
-        }
+        return [
+            'success' => false,
+            'message' => 'Veuillez vous identifier avec votre numéro et votre code PIN pour commander.',
+        ];
     }
 
+    $produit_id = (int) $_POST['produit_id'];
+    $quantite = (int) $_POST['quantite'];
     $option_couleur = isset($_POST['option_couleur']) ? trim($_POST['option_couleur']) : '';
     $option_poids = isset($_POST['option_poids']) ? trim($_POST['option_poids']) : '';
     $option_taille = isset($_POST['option_taille']) ? trim($_POST['option_taille']) : '';
@@ -110,15 +107,7 @@ function process_add_to_panier()
     $vnom = $variante ? $variante['nom'] : $option_variante_nom;
     $vimg = $variante ? $variante['image'] : $option_variante_image;
 
-    if ($user_connecte) {
-        if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
-            $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
-            return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
-        }
-        return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];
-    }
-
-    if (panier_invite_add_line($produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
+    if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
         $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
         return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
     }

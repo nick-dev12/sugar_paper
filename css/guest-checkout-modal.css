@@ -1,0 +1,388 @@
+/**
+ * Modal checkout invité — 2 étapes (coordonnées + PIN)
+ * Responsive compact mobile / tablette
+ */
+
+.guest-info-modal {
+  --gim-rose: var(--rose, #E5488A);
+  --gim-turquoise: var(--turquoise, #20C5C7);
+  --gim-orange: var(--orange, #F77F00);
+  --gim-texte: var(--texte-fonce, #3d2800);
+  --gim-fond: #ffffff;
+  --gim-radius: 16px;
+  --gim-pad: clamp(14px, 3.2vw, 22px);
+  --gim-gap: clamp(8px, 2vw, 14px);
+  --gim-title: clamp(1rem, 3.6vw, 1.25rem);
+  --gim-sub: clamp(0.75rem, 2.4vw, 0.875rem);
+  --gim-label: clamp(0.72rem, 2.2vw, 0.8125rem);
+  --gim-input: clamp(0.8125rem, 2.5vw, 0.9375rem);
+  --gim-btn: clamp(0.78rem, 2.4vw, 0.9rem);
+  --gim-input-pad-y: clamp(9px, 2.2vw, 12px);
+  --gim-input-pad-x: clamp(10px, 2.4vw, 14px);
+  --gim-btn-pad-y: clamp(9px, 2.2vw, 12px);
+
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  font-family: var(--font-corps, 'Poppins', sans-serif);
+}
+
+.guest-info-modal[hidden] {
+  display: none !important;
+}
+
+.guest-info-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(61, 40, 0, 0.45);
+}
+
+.guest-info-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  max-height: min(92vh, 640px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--gim-fond);
+  border-radius: var(--gim-radius);
+  padding: var(--gim-pad);
+  box-shadow: 0 16px 48px rgba(61, 40, 0, 0.18);
+  border: 1px solid rgba(229, 72, 138, 0.18);
+  animation: guestModalIn 0.28s ease-out;
+}
+
+@keyframes guestModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.guest-info-modal__brand {
+  font-size: clamp(0.65rem, 2vw, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gim-rose);
+  margin: 0 0 10px;
+}
+
+.guest-info-modal__steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.guest-info-modal__step-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--gim-texte);
+  background: rgba(229, 72, 138, 0.1);
+  border: 1px solid rgba(229, 72, 138, 0.2);
+}
+
+.guest-info-modal__step-dot.is-active {
+  background: var(--gim-rose);
+  border-color: var(--gim-rose);
+  color: #fff;
+}
+
+.guest-info-modal__step-dot.is-done {
+  background: var(--gim-turquoise);
+  border-color: var(--gim-turquoise);
+  color: #fff;
+}
+
+.guest-info-modal__step-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(229, 72, 138, 0.18);
+  border-radius: 2px;
+}
+
+.guest-info-modal__title {
+  font-size: var(--gim-title);
+  font-weight: 700;
+  color: var(--gim-texte);
+  margin: 0 0 4px;
+  line-height: 1.25;
+}
+
+.guest-info-modal__subtitle {
+  font-size: var(--gim-sub);
+  color: rgba(61, 40, 0, 0.75);
+  margin: 0 0 var(--gim-gap);
+  line-height: 1.4;
+}
+
+.guest-info-modal__step[hidden] {
+  display: none !important;
+}
+
+.guest-info-modal__field {
+  margin-bottom: var(--gim-gap);
+}
+
+.guest-info-modal__field label {
+  display: block;
+  font-weight: 600;
+  font-size: var(--gim-label);
+  color: var(--gim-texte);
+  margin-bottom: 5px;
+}
+
+.guest-info-modal__field input[type="text"],
+.guest-info-modal__field input[type="tel"],
+.guest-info-modal__field input[type="password"],
+.guest-info-modal__field--pin input {
+  width: 100%;
+  padding: var(--gim-input-pad-y) var(--gim-input-pad-x);
+  border: 1px solid rgba(61, 40, 0, 0.16);
+  border-radius: 10px;
+  font-size: var(--gim-input);
+  font-family: inherit;
+  color: var(--gim-texte);
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.guest-info-modal__field input:focus {
+  outline: none;
+  border-color: var(--gim-rose);
+  box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.15);
+}
+
+.guest-info-modal__field--pin input {
+  text-align: center;
+  letter-spacing: 0.35em;
+  font-size: clamp(1.05rem, 4vw, 1.25rem);
+  font-weight: 700;
+  padding-left: 0.5em;
+  max-width: 220px;
+  margin: 0 auto;
+  display: block;
+  -webkit-text-security: none;
+}
+
+.guest-info-modal__field--pin label {
+  text-align: center;
+}
+
+.guest-info-modal__help {
+  margin: 6px 0 0;
+  text-align: center;
+  font-size: clamp(0.65rem, 2vw, 0.72rem);
+  color: rgba(61, 40, 0, 0.55);
+  line-height: 1.35;
+}
+
+.guest-info-modal__checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0 0;
+  font-size: clamp(0.7rem, 2.1vw, 0.78rem);
+  line-height: 1.35;
+  color: rgba(61, 40, 0, 0.8);
+}
+
+.guest-info-modal__checkbox input {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--gim-rose);
+}
+
+.guest-info-modal__checkbox a {
+  color: var(--gim-rose);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.guest-info-modal__error {
+  background: rgba(229, 72, 138, 0.08);
+  color: var(--gim-texte);
+  border: 1px solid rgba(229, 72, 138, 0.35);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: clamp(0.7rem, 2.1vw, 0.78rem);
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.guest-info-modal__error[hidden] {
+  display: none !important;
+}
+
+.guest-info-modal__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: clamp(12px, 3vw, 18px);
+}
+
+.guest-info-modal__btn {
+  flex: 1;
+  padding: var(--gim-btn-pad-y) 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: var(--gim-btn);
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.guest-info-modal__btn--cancel {
+  background: rgba(61, 40, 0, 0.06);
+  color: var(--gim-texte);
+}
+
+.guest-info-modal__btn--cancel:hover {
+  background: rgba(61, 40, 0, 0.1);
+}
+
+.guest-info-modal__btn--submit {
+  background: var(--gim-rose);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(229, 72, 138, 0.28);
+}
+
+.guest-info-modal__btn--submit:hover {
+  filter: brightness(1.05);
+}
+
+.guest-info-modal__btn--back {
+  background: transparent;
+  color: var(--gim-texte);
+  border: 1px solid rgba(61, 40, 0, 0.18);
+}
+
+.guest-info-modal__btn--back:hover {
+  border-color: var(--gim-rose);
+  color: var(--gim-rose);
+}
+
+.guest-info-modal__existing-hint {
+  font-size: clamp(0.7rem, 2.1vw, 0.78rem);
+  color: var(--gim-texte);
+  background: rgba(32, 197, 199, 0.1);
+  border: 1px solid rgba(32, 197, 199, 0.28);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+.guest-info-modal__existing-hint[hidden] {
+  display: none !important;
+}
+
+/* Intl-tel-input dans le modal */
+.guest-info-modal .iti {
+  width: 100%;
+}
+
+.guest-info-modal .iti__country-list {
+  z-index: 10000;
+  max-height: 220px;
+}
+
+/* —— Tablette —— */
+@media (max-width: 900px) {
+  .guest-info-modal {
+    --gim-pad: 16px;
+    --gim-gap: 10px;
+  }
+
+  .guest-info-modal__panel {
+    max-width: 380px;
+  }
+
+  .guest-info-modal__step-dot {
+    width: 20px;
+    height: 20px;
+    font-size: 0.62rem;
+  }
+}
+
+/* —— Mobile —— */
+@media (max-width: 600px) {
+  .guest-info-modal {
+    align-items: flex-end;
+    padding: 0;
+    --gim-pad: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    --gim-gap: 8px;
+    --gim-input-pad-y: 10px;
+    --gim-btn-pad-y: 10px;
+  }
+
+  .guest-info-modal__panel {
+    max-width: 100%;
+    max-height: min(88vh, 560px);
+    border-radius: 16px 16px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    animation: guestModalSheet 0.3s ease-out;
+  }
+
+  @keyframes guestModalSheet {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .guest-info-modal__brand {
+    margin-bottom: 8px;
+  }
+
+  .guest-info-modal__steps {
+    margin-bottom: 10px;
+  }
+
+  .guest-info-modal__field--pin input {
+    max-width: 180px;
+    letter-spacing: 0.28em;
+  }
+
+  .guest-info-modal__actions {
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .guest-info-modal__btn {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 380px) {
+  .guest-info-modal {
+    --gim-pad: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .guest-info-modal__help {
+    display: none;
+  }
+}

@@ -12,6 +12,9 @@
 function send_new_commande_to_admin($numero_commande, $montant_total, $nombre_articles, $telephone_livraison = '', $adresse_livraison = '', $produits = [])
 {
     require_once __DIR__ . '/notify_helpers.php';
+    if (!notifications_db_bootstrap()) {
+        throw new RuntimeException('Connexion BDD indisponible (notify admin commande)');
+    }
     require_once __DIR__ . '/../models/model_admin.php';
     require_once __DIR__ . '/../models/model_fcm.php';
     require_once __DIR__ . '/firebase_push.php';

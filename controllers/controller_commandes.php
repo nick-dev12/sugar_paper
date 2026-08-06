@@ -22,18 +22,15 @@ if (file_exists($autoload)) {
  */
 function process_create_commande() {
     $user_connecte = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
-    $user_id = $user_connecte ? (int) $_SESSION['user_id'] : null;
-    $guest_client = null;
 
     if (!$user_connecte) {
-        $guest_client = guest_client_get();
-        if (!$guest_client) {
-            return [
-                'success' => false,
-                'message' => 'Veuillez renseigner votre nom et votre numéro de téléphone avant de commander.'
-            ];
-        }
+        return [
+            'success' => false,
+            'message' => 'Connectez-vous avec votre numéro et votre code PIN pour finaliser la commande.',
+        ];
     }
+
+    $user_id = (int) $_SESSION['user_id'];
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         return [
@@ -55,8 +52,8 @@ function process_create_commande() {
     }
     $geo_address = trim((string) ($_POST['geo_address'] ?? ''));
 
-    if (empty($telephone_livraison) && $guest_client) {
-        $telephone_livraison = $guest_client['telephone'];
+    if (empty($telephone_livraison) && !empty($_SESSION['user_telephone'])) {
+        $telephone_livraison = trim((string) $_SESSION['user_telephone']);
     }
 
     if (empty($telephone_livraison)) {
@@ -174,8 +171,8 @@ function process_create_commande() {
         $choix[$panier_id] = ['couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
     }
 
-    $client_nom = $guest_client ? $guest_client['nom'] : null;
-    $client_telephone = $guest_client ? $guest_client['telephone'] : null;
+    $client_nom = null;
+    $client_telephone = null;
 
     $result = create_commande(
         $user_id,
@@ -207,12 +204,8 @@ function process_create_commande() {
     }
 
     if ($result['success']) {
-        if ($user_connecte) {
-            clear_panier($user_id);
-        } else {
-            panier_invite_clear();
-            guest_client_clear();
-        }
+        clear_panier($user_id);
+        panier_invite_clear();
 
         $sous_total = 0;
         $nombre_articles = 0;
@@ -250,7 +243,8 @@ function process_create_commande() {
             'message' => 'Votre commande a été créée avec succès ! Numéro de commande: ' . $result['numero_commande'],
             'commande_id' => $result['commande_id'],
             'numero_commande' => $result['numero_commande'],
-            'is_guest' => !$user_connecte,
+            'user_id' => $user_id,
+            'is_guest' => false,
             'email_data' => [
                 'numero_commande' => $result['numero_commande'],
                 'montant_total' => $montant_total,

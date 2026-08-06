@@ -4,6 +4,25 @@
  */
 
 /**
+ * Garantit $db en portée globale (requis pour le worker notify en CLI / shutdown).
+ * conn.php inclus dans une fonction ne remplit pas global $db sans cela.
+ *
+ * @return bool
+ */
+function notifications_db_bootstrap()
+{
+    global $db;
+
+    if (isset($db) && $db instanceof PDO) {
+        return true;
+    }
+
+    require_once __DIR__ . '/../conn/conn.php';
+
+    return isset($db) && $db instanceof PDO;
+}
+
+/**
  * Charge PHPMailer et le service mail si nécessaire
  */
 function notifications_ensure_mail_loaded()

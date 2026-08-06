@@ -104,6 +104,9 @@ if (save_fcm_token($token, $type, $user_id, $admin_id, $device_type, $device_nam
     // Relier aussi d'éventuels orphelins du même token
     if ($type === 'admin') {
         fcm_relink_orphan_admin_token($admin_id, $token);
+    } elseif ($type === 'user') {
+        require_once __DIR__ . '/../services/send_commande_confirmation_to_client.php';
+        notifications_send_recent_order_confirmation_on_token_save($user_id);
     }
 
     $response['success'] = true;

@@ -165,27 +165,97 @@ function users_normalize_phone_digits($telephone) {
 }
 
 /**
- * Récupère un utilisateur par téléphone (chiffres uniquement).
+ * Variantes de recherche pour un même numéro (local vs indicatif pays).
+ *
+ * @return string[]
+ */
+function users_phone_lookup_variants($telephone) {
+    $digits = users_normalize_phone_digits($telephone);
+    if ($digits === '') {
+        return [];
+    }
+
+    $variants = [$digits];
+
+    // Sénégal : 221 + 9 chiffres (70, 76, 77, 78…)
+    if (strlen($digits) === 12 && strpos($digits, '221') === 0) {
+        $local = substr($digits, 3);
+        if (strlen($local) === 9) {
+            $variants[] = $local;
+            $variants[] = '0' . $local;
+        }
+    }
+    if (strlen($digits) === 9 && preg_match('/^[67]/', $digits)) {
+        $variants[] = '221' . $digits;
+    }
+    if (strlen($digits) === 10 && $digits[0] === '0' && preg_match('/^0[67]/', $digits)) {
+        $variants[] = substr($digits, 1);
+        $variants[] = '221' . substr($digits, 1);
+    }
+
+    // France : 33 + 9 chiffres
+    if (strlen($digits) === 11 && strpos($digits, '33') === 0) {
+        $local = substr($digits, 2);
+        if (strlen($local) === 9) {
+            $variants[] = $local;
+            $variants[] = '0' . $local;
+        }
+    }
+    if (strlen($digits) === 10 && $digits[0] === '0') {
+        $variants[] = '33' . substr($digits, 1);
+    }
+
+    return array_values(array_unique(array_filter($variants)));
+}
+
+/**
+ * Expression SQL : téléphone normalisé (chiffres uniquement).
+ */
+function users_phone_normalized_sql($column = 'telephone') {
+    return "REPLACE(REPLACE(REPLACE(REPLACE(COALESCE({$column},''), ' ', ''), '-', ''), '+', ''), '.', '')";
+}
+
+/**
+ * Email placeholder pour comptes créés sans email (colonne NOT NULL).
+ */
+function users_phone_placeholder_email($tel_digits) {
+    $tel_digits = users_normalize_phone_digits($tel_digits);
+    $base = 'tel+' . $tel_digits . '@guest.sugarpaper.local';
+    if (!user_email_exists($base)) {
+        return $base;
+    }
+    return 'tel+' . $tel_digits . '+' . bin2hex(random_bytes(4)) . '@guest.sugarpaper.local';
+}
+
+/**
+ * Récupère un utilisateur par téléphone (formats locaux ou internationaux).
  */
 function get_user_by_telephone($telephone) {
     global $db;
 
-    $digits = users_normalize_phone_digits($telephone);
-    if ($digits === '') {
+    $variants = users_phone_lookup_variants($telephone);
+    if (empty($variants)) {
         return false;
     }
 
-    try {
-        $stmt = $db->prepare("
-            SELECT * FROM users
-            WHERE telephone IS NOT NULL AND TRIM(telephone) != ''
-              AND REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telephone,''), ' ', ''), '-', ''), '+', ''), '.', '') = :d
-            LIMIT 1
-        ");
-        $stmt->execute(['d' => $digits]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $norm = users_phone_normalized_sql('telephone');
 
-        return $user ? $user : false;
+    try {
+        foreach ($variants as $variant) {
+            $stmt = $db->prepare("
+                SELECT * FROM users
+                WHERE telephone IS NOT NULL AND TRIM(telephone) != ''
+                  AND {$norm} = :d
+                LIMIT 1
+            ");
+            $stmt->execute(['d' => $variant]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return false;
     } catch (PDOException $e) {
         return false;
     }
@@ -223,6 +293,10 @@ function create_user($nom, $prenom, $email, $telephone, $password_hash) {
     $tel_digits = users_normalize_phone_digits($telephone);
     if ($tel_digits === '') {
         return false;
+    }
+
+    if ($email_bind === null) {
+        $email_bind = users_phone_placeholder_email($tel_digits);
     }
     
     try {

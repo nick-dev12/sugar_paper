@@ -618,103 +618,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             position: relative;
         }
 
-        .guest-info-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .guest-info-modal[hidden] {
-            display: none !important;
-        }
-
-        .guest-info-modal__backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.55);
-        }
-
-        .guest-info-modal__panel {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 420px;
-            background: #ffffff;
-            border-radius: 14px;
-            padding: 24px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(145, 138, 68, 0.35);
-        }
-
-        .guest-info-modal__title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #6b2f20;
-            margin: 0 0 8px;
-        }
-
-        .guest-info-modal__subtitle {
-            font-size: 14px;
-            color: #333;
-            margin: 0 0 20px;
-        }
-
-        .guest-info-modal__field {
-            margin-bottom: 16px;
-        }
-
-        .guest-info-modal__field label {
-            display: block;
-            font-weight: 600;
-            font-size: 14px;
-            color: #000;
-            margin-bottom: 6px;
-        }
-
-        .guest-info-modal__field input[type="text"],
-        .guest-info-modal__field input[type="tel"] {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-        }
-
-        .guest-info-modal__actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .guest-info-modal__btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .guest-info-modal__btn--cancel {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .guest-info-modal__btn--submit {
-            background: #918a44;
-            color: #fff;
-        }
-
-        .guest-info-modal__btn--submit:hover {
-            background: #7a7340;
-        }
-
         .message {
             padding: 15px 20px;
             padding-right: 45px;
@@ -1711,10 +1614,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                     <!-- Sélection de quantité et ajout au panier -->
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
-                    <?php if (!$user_logged_in): ?>
-                        <input type="hidden" name="guest_nom" id="guest-nom-hidden" value="">
-                        <input type="hidden" name="guest_telephone" id="guest-telephone-hidden" value="">
-                    <?php endif; ?>
                     <div class="quantite-section">
                         <label class="quantite-label">Quantité:</label>
                         <div class="quantite-controls">
@@ -1744,27 +1643,11 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                 </form>
 
                 <?php if (!$user_logged_in): ?>
-                <div class="guest-info-modal" id="guest-info-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="guest-info-modal-title">
-                    <div class="guest-info-modal__backdrop" id="guest-info-modal-backdrop"></div>
-                    <div class="guest-info-modal__panel">
-                        <h3 class="guest-info-modal__title" id="guest-info-modal-title">Vos coordonnées</h3>
-                        <p class="guest-info-modal__subtitle">Indiquez votre nom et votre numéro pour continuer la commande.</p>
-                        <div class="guest-info-modal__field">
-                            <label for="guest-nom-input">Nom *</label>
-                            <input type="text" id="guest-nom-input" name="guest_nom_display" autocomplete="name"
-                                value="<?php echo $guest_has_info ? htmlspecialchars(guest_client_get()['nom']) : ''; ?>">
-                        </div>
-                        <div class="guest-info-modal__field">
-                            <label for="guest-telephone-input">Numéro de téléphone *</label>
-                            <input type="tel" id="guest-telephone-input" name="guest_telephone_display" autocomplete="tel"
-                                value="<?php echo $guest_has_info ? htmlspecialchars(guest_client_get()['telephone']) : ''; ?>">
-                        </div>
-                        <div class="guest-info-modal__actions">
-                            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--cancel" id="guest-info-modal-cancel">Annuler</button>
-                            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--submit" id="guest-info-modal-confirm">Continuer</button>
-                        </div>
-                    </div>
-                </div>
+                    <?php
+                    $guest_checkout_action = 'add_to_panier';
+                    $guest_checkout_return_url = $_SERVER['REQUEST_URI'] ?? ('/produit.php?id=' . (int) $produit_id);
+                    include __DIR__ . '/includes/partials/guest_checkout_modal.php';
+                    ?>
                 <?php endif; ?>
 
                 <!-- Description (en bas) -->
@@ -2125,91 +2008,21 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
 
     <?php if (!$user_logged_in): ?>
         <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+        <script src="/js/guest-checkout-modal.js<?php echo asset_version_query(); ?>"></script>
         <script>
-        (function () {
-            var userLoggedIn = false;
-            var guestHasInfo = <?php echo $guest_has_info ? 'true' : 'false'; ?>;
+        document.addEventListener('DOMContentLoaded', function () {
+            var guestModal = window.initGuestCheckoutModal({
+                userLoggedIn: false,
+                sourceFormId: 'add-to-panier-form'
+            });
             var addForm = document.getElementById('add-to-panier-form');
-            var modal = document.getElementById('guest-info-modal');
-            var btnCancel = document.getElementById('guest-info-modal-cancel');
-            var btnConfirm = document.getElementById('guest-info-modal-confirm');
-            var backdrop = document.getElementById('guest-info-modal-backdrop');
-            var inputNom = document.getElementById('guest-nom-input');
-            var inputTel = document.getElementById('guest-telephone-input');
-            var hiddenNom = document.getElementById('guest-nom-hidden');
-            var hiddenTel = document.getElementById('guest-telephone-hidden');
-            var guestTelIti = null;
-            var pendingSubmit = false;
-
-            if (inputTel && typeof window.initAuthIntlTel === 'function') {
-                guestTelIti = window.initAuthIntlTel('guest-telephone-input');
-            }
-
-            function openGuestModal() {
-                if (!modal) return;
-                modal.removeAttribute('hidden');
-                modal.setAttribute('aria-hidden', 'false');
-                document.body.style.overflow = 'hidden';
-                if (inputNom) inputNom.focus();
-            }
-
-            function closeGuestModal() {
-                if (!modal) return;
-                modal.setAttribute('hidden', '');
-                modal.setAttribute('aria-hidden', 'true');
-                document.body.style.overflow = '';
-                pendingSubmit = false;
-            }
-
-            function getTelValue() {
-                if (guestTelIti) {
-                    try {
-                        if (typeof intlTelInput !== 'undefined' && intlTelInput.utils) {
-                            return guestTelIti.getNumber(intlTelInput.utils.numberFormat.E164) || inputTel.value.trim();
-                        }
-                        return guestTelIti.getNumber() || inputTel.value.trim();
-                    } catch (e) {
-                        return inputTel ? inputTel.value.trim() : '';
-                    }
-                }
-                return inputTel ? inputTel.value.trim() : '';
-            }
-
-            function applyGuestAndSubmit() {
-                var nom = inputNom ? inputNom.value.trim() : '';
-                var tel = getTelValue();
-                if (!nom || !tel) {
-                    alert('Veuillez renseigner votre nom et votre numéro de téléphone.');
-                    return;
-                }
-                if (hiddenNom) hiddenNom.value = nom;
-                if (hiddenTel) hiddenTel.value = tel;
-                guestHasInfo = true;
-                closeGuestModal();
-                pendingSubmit = true;
-                if (addForm) addForm.submit();
-            }
-
-            if (addForm) {
+            if (addForm && guestModal) {
                 addForm.addEventListener('submit', function (e) {
-                    if (userLoggedIn || guestHasInfo || pendingSubmit) {
-                        return;
-                    }
                     e.preventDefault();
-                    openGuestModal();
+                    guestModal.open(1);
                 });
             }
-
-            if (btnConfirm) btnConfirm.addEventListener('click', applyGuestAndSubmit);
-            if (btnCancel) btnCancel.addEventListener('click', closeGuestModal);
-            if (backdrop) backdrop.addEventListener('click', closeGuestModal);
-
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && modal && !modal.hasAttribute('hidden')) {
-                    closeGuestModal();
-                }
-            });
-        })();
+        });
         </script>
     <?php endif; ?>
 

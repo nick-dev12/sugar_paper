@@ -77,7 +77,7 @@ function process_unified_login() {
 }
 
 /**
- * Connexion par téléphone + mot de passe (ou code PIN à 6 chiffres).
+ * Connexion par téléphone + code PIN (4 à 6 chiffres).
  */
 function process_unified_phone_login() {
     $tel = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
@@ -89,7 +89,10 @@ function process_unified_phone_login() {
         return ['success' => false, 'message' => 'Le numéro de téléphone est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
     }
     if ($pin === '') {
-        return ['success' => false, 'message' => 'Le mot de passe est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+        return ['success' => false, 'message' => 'Le code PIN est obligatoire.', 'type' => null, 'admin' => null, 'user' => null];
+    }
+    if (!preg_match('/^\d{4,6}$/', $pin)) {
+        return ['success' => false, 'message' => 'Le code PIN doit comporter 4 à 6 chiffres.', 'type' => null, 'admin' => null, 'user' => null];
     }
 
     $user = get_user_by_telephone($tel);
@@ -158,8 +161,8 @@ function process_user_inscription() {
 
     if ($pin === '' || $pin_confirm === '') {
         $errors[] = 'Le code PIN et sa confirmation sont obligatoires.';
-    } elseif (!preg_match('/^\d{6}$/', $pin)) {
-        $errors[] = 'Le code PIN doit comporter exactement 6 chiffres.';
+    } elseif (!preg_match('/^\d{4}$/', $pin)) {
+        $errors[] = 'Le code PIN doit comporter exactement 4 chiffres.';
     } elseif ($pin !== $pin_confirm) {
         $errors[] = 'Les deux saisies du code PIN ne correspondent pas.';
     }
@@ -444,5 +447,54 @@ function process_account_deletion($user_id) {
 
     unset($_SESSION['user_csrf']);
     return ['success' => true, 'message' => 'Votre compte a été supprimé définitivement.'];
+}
+
+/**
+ * Étape 1 checkout invité : enregistre nom/téléphone en session et détecte si le numéro existe.
+ *
+ * @return array{success:bool,message:string,phone_exists?:bool}
+ */
+function process_guest_checkout_prepare() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => ''];
+    }
+
+    require_once __DIR__ . '/../includes/guest_checkout_auth.php';
+
+    $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
+    if (!guest_checkout_csrf_verify($csrf)) {
+        return ['success' => false, 'message' => 'Session expirée. Rechargez la page et réessayez.'];
+    }
+
+    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
+    $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
+
+    return guest_checkout_save_pending($nom, $telephone);
+}
+
+/**
+ * Étape 2 checkout invité : PIN → création compte ou connexion auto.
+ *
+ * @return array{success:bool,message:string,user?:array,created?:bool}
+ */
+function process_guest_checkout_auth() {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        return ['success' => false, 'message' => ''];
+    }
+
+    require_once __DIR__ . '/../includes/guest_checkout_auth.php';
+
+    $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
+    if (!guest_checkout_csrf_verify($csrf)) {
+        return ['success' => false, 'message' => 'Session expirée. Rechargez la page et réessayez.'];
+    }
+
+    $pending = guest_checkout_get_pending();
+    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : ($pending['nom'] ?? '');
+    $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : ($pending['telephone'] ?? '');
+    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $accepte = isset($_POST['accepte_conditions']) && (string) $_POST['accepte_conditions'] === '1';
+
+    return guest_checkout_register_or_login($nom, $telephone, $pin, $accepte);
 }
 

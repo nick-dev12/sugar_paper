@@ -8,6 +8,9 @@ require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/includes/panier_invite.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 
+$user_logged_in = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
+$need_guest_identity = !$user_logged_in && isset($_GET['need_identity']) && $_GET['need_identity'] === '1';
+
 // Traitement des actions du panier
 $message = '';
 $message_type = '';
@@ -78,6 +81,9 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
+    <?php if (!$user_logged_in): ?>
+        <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
+    <?php endif; ?>
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <style>
         /* Styles panier - Palette Sugar Paper */
@@ -669,9 +675,15 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
                         </span>
                     </div>
 
+                    <?php if ($user_logged_in): ?>
                     <a href="/commande.php" class="btn-commander">
                         <i class="fas fa-shopping-bag"></i> Passer la commande
                     </a>
+                    <?php else: ?>
+                    <button type="button" class="btn-commander" id="btn-panier-checkout-guest">
+                        <i class="fas fa-shopping-bag"></i> Passer la commande
+                    </button>
+                    <?php endif; ?>
 
                     <a href="/index.php" class="link-continuer">
                         Continuer mes achats
@@ -682,6 +694,31 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     </div>
 
     <?php include('footer.php') ?>
+
+    <?php if (!$user_logged_in): ?>
+        <?php
+        $guest_checkout_action = 'go_commande';
+        $guest_checkout_return_url = '/panier.php';
+        $guest_checkout_open_pin = $need_guest_identity || (isset($_GET['guest_checkout']) && $_GET['guest_checkout'] === 'pin');
+        include __DIR__ . '/includes/partials/guest_checkout_modal.php';
+        ?>
+        <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+        <script src="/js/guest-checkout-modal.js<?php echo asset_version_query(); ?>"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var guestModal = window.initGuestCheckoutModal({ userLoggedIn: false });
+            var btn = document.getElementById('btn-panier-checkout-guest');
+            if (btn && guestModal) {
+                btn.addEventListener('click', function () {
+                    guestModal.open(1);
+                });
+            }
+            <?php if ($need_guest_identity && empty($_GET['guest_checkout'])): ?>
+            if (guestModal) guestModal.open(1);
+            <?php endif; ?>
+        });
+        </script>
+    <?php endif; ?>
 
 
     <script>
