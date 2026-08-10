@@ -1634,6 +1634,15 @@ body.livreur-demarrage-open {
     overflow: hidden;
 }
 
+/* Masquer la bottom nav admin pendant le panneau (même logique que page suivi GPS) */
+body.livreur-demarrage-open #adminBottomNav {
+    display: none !important;
+}
+
+html.has-bottom-nav body.livreur-demarrage-open {
+    padding-bottom: 0 !important;
+}
+
 @media (max-width: 992px) {
     .livreur-demarrage-panel__card {
         width: min(420px, calc(100vw - 24px));
@@ -1673,9 +1682,11 @@ body.livreur-demarrage-open {
 
 @media (max-width: 768px) {
     .livreur-demarrage-panel {
-        padding: 0 5px;
+        padding: 0;
         align-items: stretch;
         justify-content: stretch;
+        height: 100dvh;
+        max-height: 100dvh;
     }
 
     .livreur-demarrage-panel__backdrop {
@@ -1683,12 +1694,12 @@ body.livreur-demarrage-open {
     }
 
     .livreur-demarrage-panel__card {
-        width: calc(100vw - 10px);
+        position: relative;
+        width: 100%;
         max-width: none;
         height: 100%;
-        max-height: none;
-        min-height: 100dvh;
-        min-height: 100vh;
+        max-height: 100dvh;
+        min-height: 0;
         border-radius: 0;
         border-left: none;
         border-right: none;
@@ -1752,16 +1763,26 @@ body.livreur-demarrage-open {
     }
 
     .livreur-demarrage-form {
-        padding: 0.65rem 0.75rem 0.55rem;
+        padding: 0.65rem 0.75rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
         flex: 1 1 auto;
         min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .livreur-demarrage-actions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10;
         flex-direction: row;
         flex-wrap: nowrap;
         gap: 0.4rem;
         padding: 0.5rem 0.65rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+        background: #ffffff;
+        border-top: 1px solid rgba(229, 72, 138, 0.2);
+        box-shadow: 0 -10px 28px rgba(42, 26, 34, 0.12);
     }
 
     .livreur-demarrage-actions .btn-primary,

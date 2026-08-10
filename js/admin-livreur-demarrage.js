@@ -695,6 +695,7 @@
         panel.style.top = '';
         panel.style.left = '';
         document.body.classList.add('livreur-demarrage-open');
+        document.documentElement.classList.add('livreur-demarrage-open');
 
         ensureMap();
 
@@ -735,6 +736,7 @@
             panel.setAttribute('aria-hidden', 'true');
         }
         document.body.classList.remove('livreur-demarrage-open');
+        document.documentElement.classList.remove('livreur-demarrage-open');
         if (activeBtn) {
             activeBtn.removeAttribute('disabled');
         }
@@ -778,6 +780,7 @@
         panel.hidden = true;
         panel.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('livreur-demarrage-open');
+        document.documentElement.classList.remove('livreur-demarrage-open');
 
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.livreur-btn-prendre');
