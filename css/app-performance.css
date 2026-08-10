@@ -157,7 +157,14 @@ html.is-native-app body {
 html.is-native-app input,
 html.is-native-app textarea,
 html.is-native-app select {
+  font-size: 16px !important; /* évite le zoom auto iOS au focus */
   scroll-margin-bottom: 120px;
+}
+
+html.is-native-app input[type="password"],
+html.is-native-app input[inputmode="numeric"],
+html.is-native-app .guest-info-modal__field--pin input {
+  font-size: 16px !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

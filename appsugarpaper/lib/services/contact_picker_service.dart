@@ -275,9 +275,13 @@ class _ContactMultiSelectSheetState extends State<_ContactMultiSelectSheet> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     final selectedCount = _selectedIds.length;
-    final height = MediaQuery.sizeOf(context).height * 0.88;
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final height = (screenHeight * 0.88 - viewInsets.bottom).clamp(280.0, screenHeight * 0.92);
 
-    return SizedBox(
+    return Padding(
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: SizedBox(
       height: height,
       child: Column(
         children: [
@@ -323,6 +327,7 @@ class _ContactMultiSelectSheetState extends State<_ContactMultiSelectSheet> {
                   borderSide: BorderSide.none,
                 ),
               ),
+              style: const TextStyle(fontSize: 16),
               onChanged: (v) => setState(() => _query = v),
             ),
           ),
@@ -405,6 +410,7 @@ class _ContactMultiSelectSheetState extends State<_ContactMultiSelectSheet> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

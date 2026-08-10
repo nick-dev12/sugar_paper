@@ -10,8 +10,13 @@
 
     function openModal(modal) {
         if (!modal) return;
+        if (modal.parentElement && modal.parentElement !== document.body) {
+            document.body.appendChild(modal);
+        }
         modal.removeAttribute('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('guest-checkout-open');
+        document.documentElement.classList.add('guest-checkout-open');
         document.body.style.overflow = 'hidden';
     }
 
@@ -19,6 +24,8 @@
         if (!modal) return;
         modal.setAttribute('hidden', '');
         modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('guest-checkout-open');
+        document.documentElement.classList.remove('guest-checkout-open');
         document.body.style.overflow = '';
     }
 
@@ -34,6 +41,8 @@
     function showStep(modal, step) {
         var prepare = $('guest-checkout-form-prepare');
         var auth = $('guest-checkout-form-auth');
+        var actions1 = $('guest-checkout-actions-1');
+        var actions2 = $('guest-checkout-actions-2');
         var title = $('guest-checkout-modal-title');
         var subtitle = $('guest-checkout-subtitle');
         if (!prepare || !auth) return;
@@ -41,6 +50,8 @@
         if (step === 2) {
             prepare.hidden = true;
             auth.hidden = false;
+            if (actions1) actions1.hidden = true;
+            if (actions2) actions2.hidden = false;
             if (title) title.textContent = 'Votre code PIN';
             if (subtitle) {
                 var exists = modal.getAttribute('data-phone-exists') === '1';
@@ -53,6 +64,8 @@
         } else {
             prepare.hidden = false;
             auth.hidden = true;
+            if (actions1) actions1.hidden = false;
+            if (actions2) actions2.hidden = true;
             if (title) title.textContent = 'Vos coordonnées';
             if (subtitle) subtitle.textContent = 'Indiquez votre nom et votre numéro pour continuer.';
         }
@@ -156,6 +169,9 @@
         }
 
         if (modal.getAttribute('data-open-pin') === '1') {
+            if (modal.parentElement && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
             openModal(modal);
             showStep(modal, 2);
         }

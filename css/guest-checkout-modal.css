@@ -23,11 +23,11 @@
 
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 12050;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   font-family: var(--font-corps, 'Poppins', sans-serif);
 }
 
@@ -46,15 +46,32 @@
   z-index: 1;
   width: 100%;
   max-width: 400px;
-  max-height: min(92vh, 640px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  max-height: min(90dvh, 640px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--gim-fond);
   border-radius: var(--gim-radius);
   padding: var(--gim-pad);
+  padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 16px 48px rgba(61, 40, 0, 0.18);
   border: 1px solid rgba(229, 72, 138, 0.18);
   animation: guestModalIn 0.28s ease-out;
+}
+
+.guest-info-modal__panel > :not(.guest-info-modal__step) {
+  flex-shrink: 0;
+}
+
+.guest-info-modal__step {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.guest-info-modal__actions[hidden] {
+  display: none !important;
 }
 
 @keyframes guestModalIn {
@@ -232,9 +249,19 @@
 }
 
 .guest-info-modal__actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   gap: 8px;
-  margin-top: clamp(12px, 3vw, 18px);
+  margin-top: 0;
+  padding: 10px var(--gim-pad) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: #ffffff;
+  border-top: 1px solid rgba(229, 72, 138, 0.14);
+  box-shadow: 0 -8px 24px rgba(61, 40, 0, 0.08);
+  border-radius: 0 0 var(--gim-radius) var(--gim-radius);
 }
 
 .guest-info-modal__btn {
@@ -300,8 +327,22 @@
 }
 
 .guest-info-modal .iti__country-list {
-  z-index: 10000;
+  z-index: 12060;
   max-height: 220px;
+}
+
+/* Masquer bottom nav et boutons sociaux pendant le modal */
+body.guest-checkout-open #bottomNav,
+body.guest-checkout-open .social-floating {
+  display: none !important;
+}
+
+html.has-bottom-nav body.guest-checkout-open {
+  padding-bottom: 0 !important;
+}
+
+body.guest-checkout-open {
+  overflow: hidden;
 }
 
 /* —— Tablette —— */
@@ -325,33 +366,21 @@
 /* —— Mobile —— */
 @media (max-width: 600px) {
   .guest-info-modal {
-    align-items: flex-end;
-    padding: 0;
-    --gim-pad: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    align-items: center;
+    justify-content: center;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    --gim-pad: 14px;
     --gim-gap: 8px;
     --gim-input-pad-y: 10px;
     --gim-btn-pad-y: 10px;
   }
 
   .guest-info-modal__panel {
-    max-width: 100%;
-    max-height: min(88vh, 560px);
-    border-radius: 16px 16px 0 0;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    animation: guestModalSheet 0.3s ease-out;
-  }
-
-  @keyframes guestModalSheet {
-    from {
-      opacity: 0;
-      transform: translateY(24px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+    width: calc(100% - 8px);
+    max-width: 380px;
+    max-height: min(88dvh, 560px);
+    border-radius: var(--gim-radius);
+    animation: guestModalIn 0.28s ease-out;
   }
 
   .guest-info-modal__brand {
@@ -369,7 +398,7 @@
 
   .guest-info-modal__actions {
     gap: 6px;
-    margin-top: 12px;
+    padding: 8px var(--gim-pad) calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
   .guest-info-modal__btn {
@@ -379,7 +408,7 @@
 
 @media (max-width: 380px) {
   .guest-info-modal {
-    --gim-pad: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    --gim-pad: 12px;
   }
 
   .guest-info-modal__help {

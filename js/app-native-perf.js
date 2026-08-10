@@ -68,21 +68,30 @@
     if (!isNativeApp()) {
       return;
     }
+    /* UserScript Flutter (AT_DOCUMENT_START) gère déjà le clavier */
+    if (window.__SUGARPAPER_KB_HANDLER === true) {
+      return;
+    }
     function applyPad() {
       var vv = window.visualViewport;
       if (!vv) return;
       var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       document.documentElement.style.setProperty('--native-kb', overlap + 'px');
-      if (document.body) {
-        document.body.style.paddingBottom = overlap > 0 ? overlap + 'px' : '';
-      }
     }
     function scrollFocused(el) {
       if (!el || !el.scrollIntoView) return;
+      var vv = window.visualViewport;
       try {
         el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
       } catch (e1) {
         try { el.scrollIntoView(true); } catch (e2) {}
+      }
+      if (vv) {
+        var rect = el.getBoundingClientRect();
+        var visibleBottom = vv.height + vv.offsetTop - 20;
+        if (rect.bottom > visibleBottom) {
+          window.scrollBy(0, rect.bottom - visibleBottom + 12);
+        }
       }
     }
     document.addEventListener('focusin', function (e) {
@@ -95,7 +104,12 @@
       setTimeout(function () {
         scrollFocused(t);
         applyPad();
-      }, 280);
+      }, 300);
+    }, true);
+    document.addEventListener('focusout', function () {
+      setTimeout(function () {
+        document.documentElement.style.setProperty('--native-kb', '0px');
+      }, 120);
     }, true);
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', applyPad);

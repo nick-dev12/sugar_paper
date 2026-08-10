@@ -82,11 +82,12 @@ if ($guest_nom_val === '' && function_exists('guest_client_get')) {
                 <input type="tel" id="guest-checkout-telephone" name="telephone" autocomplete="tel" required
                     value="<?php echo htmlspecialchars($guest_tel_val); ?>">
             </div>
-            <div class="guest-info-modal__actions">
-                <button type="button" class="guest-info-modal__btn guest-info-modal__btn--cancel" id="guest-checkout-cancel">Annuler</button>
-                <button type="submit" class="guest-info-modal__btn guest-info-modal__btn--submit">Continuer</button>
-            </div>
         </form>
+
+        <div class="guest-info-modal__actions" id="guest-checkout-actions-1" data-step-actions="1">
+            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--cancel" id="guest-checkout-cancel">Annuler</button>
+            <button type="submit" form="guest-checkout-form-prepare" class="guest-info-modal__btn guest-info-modal__btn--submit">Continuer</button>
+        </div>
 
         <!-- Étape 2 : PIN + création compte / connexion -->
         <form method="POST" action="/user/guest-checkout-auth.php" id="guest-checkout-form-auth" class="guest-info-modal__step" data-step="2" hidden>
@@ -116,11 +117,11 @@ if ($guest_nom_val === '' && function_exists('guest_client_get')) {
                 <input type="checkbox" name="accepte_conditions" value="1" required>
                 <span>J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener">conditions d'utilisation</a> *</span>
             </label>
-
-            <div class="guest-info-modal__actions">
-                <button type="button" class="guest-info-modal__btn guest-info-modal__btn--back" id="guest-checkout-back">Retour</button>
-                <button type="submit" class="guest-info-modal__btn guest-info-modal__btn--submit" id="guest-checkout-submit-pin">Valider</button>
-            </div>
         </form>
+
+        <div class="guest-info-modal__actions" id="guest-checkout-actions-2" data-step-actions="2" hidden>
+            <button type="button" class="guest-info-modal__btn guest-info-modal__btn--back" id="guest-checkout-back">Retour</button>
+            <button type="submit" form="guest-checkout-form-auth" class="guest-info-modal__btn guest-info-modal__btn--submit" id="guest-checkout-submit-pin">Valider</button>
+        </div>
     </div>
 </div>

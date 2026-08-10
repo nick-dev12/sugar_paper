@@ -1453,22 +1453,28 @@ class _WebViewScreenState extends State<WebViewScreen>
     };
   }
 
-  /* Clavier : remonter le champ focusé + padding bas (iOS WebView) */
+  /* Clavier : remonter le champ focusé + espace bas via --native-kb (iOS WebView) */
+  window.__SUGARPAPER_KB_HANDLER = true;
   function sugarPaperKbPad() {
     var vv = window.visualViewport;
     if (!vv) return;
     var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
     document.documentElement.style.setProperty('--native-kb', overlap + 'px');
-    if (document.body) {
-      document.body.style.paddingBottom = overlap > 0 ? (overlap + 'px') : '';
-    }
   }
   function sugarPaperScrollFocused(el) {
     if (!el || !el.scrollIntoView) return;
+    var vv = window.visualViewport;
     try {
       el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
     } catch (e1) {
       try { el.scrollIntoView(true); } catch (e2) {}
+    }
+    if (vv) {
+      var rect = el.getBoundingClientRect();
+      var visibleBottom = vv.height + vv.offsetTop - 24;
+      if (rect.bottom > visibleBottom) {
+        window.scrollBy(0, rect.bottom - visibleBottom + 16);
+      }
     }
   }
   document.addEventListener('focusin', function(e) {
@@ -1481,10 +1487,16 @@ class _WebViewScreenState extends State<WebViewScreen>
     setTimeout(function() {
       sugarPaperScrollFocused(t);
       sugarPaperKbPad();
-    }, 280);
+    }, 300);
   }, true);
   document.addEventListener('focusout', function() {
-    setTimeout(sugarPaperKbPad, 120);
+    setTimeout(function() {
+      sugarPaperKbPad();
+      if (!document.activeElement ||
+          !['INPUT','TEXTAREA','SELECT'].includes((document.activeElement.tagName || '').toUpperCase())) {
+        document.documentElement.style.setProperty('--native-kb', '0px');
+      }
+    }, 120);
   }, true);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', sugarPaperKbPad);
@@ -1521,7 +1533,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                     cacheEnabled: true,
                     clearCache: false,
                     transparentBackground: false,
-                    supportZoom: true,
+                    supportZoom: !Platform.isIOS,
                     builtInZoomControls: false,
                     displayZoomControls: false,
                     verticalScrollBarEnabled: false,
