@@ -111,8 +111,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
@@ -202,7 +200,7 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             padding: 5px 0;
             flex: 1;
             min-width: 0;
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -1119,7 +1117,7 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
         .variantes-scroll-container {
             overflow-x: auto;
             overflow-y: hidden;
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
             -ms-overflow-style: none;

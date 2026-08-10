@@ -674,13 +674,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                     <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_facture); ?></span>
                                 </td>
                                 <td data-label="Montant" class="invoice-col-num">
-                                    <div class="invoice-montant-cell">
-                                        <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
-                                        <span class="invoice-date-statut-line">
-                                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
-                                            <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-<?php echo $statut_class; ?>"><?php echo htmlspecialchars($statut_facture); ?></span>
-                                        </span>
-                                    </div>
+                                    <?php
+                                    $facture = $f;
+                                    include __DIR__ . '/../includes/facture_list_montant_cell.php';
+                                    ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

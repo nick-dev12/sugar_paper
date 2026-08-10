@@ -967,6 +967,9 @@
         }
 
         document.addEventListener('click', function (e) {
+            if (e.target.closest('.invoice-suivi-livraison-btn')) {
+                return;
+            }
             var row = e.target.closest('.invoice-list-item--clickable');
             if (!row || row.hidden) {
                 return;

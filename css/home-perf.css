@@ -1,0 +1,76 @@
+/**
+ * Accueil — fluidité scroll (desktop + mobile + WebView)
+ * Pas de backdrop-filter, pas d’animations Owl lourdes, sections hors écran allégées.
+ */
+
+body.page-home {
+  scroll-behavior: auto;
+}
+
+/* Glassmorphism désactivé sur toute la page d’accueil */
+body.page-home,
+body.page-home *::before,
+body.page-home *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Sections hors viewport : moins de travail au scroll */
+body.page-home .home-main > section,
+body.page-home .galerie-creations,
+body.page-home .services-banner,
+body.page-home .slider-area {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+body.page-home .slider-area {
+  contain-intrinsic-size: auto 320px;
+}
+
+/* Owl : pas de 3D / flip (animate.css) */
+body.page-home .owl-carousel .animated {
+  animation-duration: 0.45s !important;
+  animation-fill-mode: both;
+}
+
+body.page-home .owl-carousel .owl-animated-out {
+  z-index: 0;
+}
+
+/* Réduire les repaints au scroll */
+body.page-home .produit_vedete .articles .carousel,
+body.page-home .produit_vedetes .articles .carousel,
+body.page-home .carousel11 .carousel,
+body.page-home .galerie-card {
+  will-change: auto;
+}
+
+@media (hover: none), (pointer: coarse) {
+  body.page-home .produit_vedete .articles .carousel:hover,
+  body.page-home .produit_vedetes .articles .carousel:hover,
+  body.page-home .carousel11 .carousel:hover,
+  body.page-home .galerie-card:hover,
+  body.page-home .section5 .slider:hover {
+    transform: none !important;
+  }
+
+  body.page-home .section5 .slider:hover img {
+    transform: none !important;
+  }
+
+  body.page-home .galerie-play-overlay {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.page-home .home-reveal {
+    animation: none !important;
+  }
+
+  body.page-home .owl-carousel * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

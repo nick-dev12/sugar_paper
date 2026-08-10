@@ -428,6 +428,15 @@ body.page-commandes-index .sr-only {
   border: 0;
 }
 
+body.page-commandes-index .commandes-data-table td.invoice-col-num {
+  vertical-align: top;
+  text-align: right;
+}
+
+body.page-commandes-index .commandes-data-table .invoice-montant-cell {
+  align-items: flex-end;
+}
+
 body.page-commandes-index .commande-statut {
   display: inline-flex;
   align-items: center;

@@ -1269,6 +1269,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+.page-devis-admin .invoice-data-table td.invoice-col-num {
+  vertical-align: top;
+}
+
 .page-devis-admin .invoice-col-actions,
 .page-devis-admin .invoice-data-table thead th.invoice-col-actions,
 .page-devis-admin .invoice-data-table td.invoice-col-actions {
@@ -1343,6 +1347,119 @@
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.invoice-suivi-livraison-btn,
+.page-commandes-index .invoice-suivi-livraison-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 0;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #20c5c7, #1aa8aa);
+  box-shadow: 0 3px 10px rgba(32, 197, 199, 0.26);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: flex-end;
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.invoice-suivi-livraison-btn--live {
+  width: auto;
+  max-width: 100%;
+}
+
+.invoice-suivi-livraison-btn__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.18);
+  animation: invoice-suivi-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes invoice-suivi-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+.invoice-suivi-livraison-btn i {
+  font-size: 9px;
+}
+
+.invoice-suivi-livraison-btn__label {
+  position: relative;
+  z-index: 1;
+  line-height: 1.15;
+}
+
+.invoice-suivi-livraison-btn:hover {
+  color: #fff;
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  text-decoration: none;
+  box-shadow: 0 5px 14px rgba(32, 197, 199, 0.34);
+}
+
+.page-commandes-index .invoice-montant-cell--suivi,
+.page-devis-admin .invoice-montant-cell--suivi {
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.invoice-montant-cell--suivi .invoice-montant-cell__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+}
+
+.page-devis-admin .invoice-montant-cell--suivi .invoice-montant-cell__meta .invoice-cell-primary {
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.page-devis-admin .invoice-montant-cell--suivi .invoice-montant-cell__meta .invoice-cell-sub--date {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--gris-fonce);
+}
+
+.page-commandes-index .invoice-montant-cell--suivi .invoice-montant-cell__meta .invoice-cell-primary {
+  font-size: calc(1em - 1px);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.page-commandes-index .invoice-montant-cell--suivi .invoice-montant-cell__meta .invoice-cell-sub--date {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--gris-fonce);
+  font-weight: 500;
+}
+
+.page-devis-admin .invoice-montant-cell,
+.page-commandes-index .invoice-montant-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.bottom-nav-badge--menu {
+  background: #c26638;
+  box-shadow: 0 2px 8px rgba(194, 102, 56, 0.35);
 }
 
 .page-devis-admin .invoice-bl-count {

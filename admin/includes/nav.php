@@ -42,6 +42,12 @@ $is_livreurs_notes = $is_livreurs && in_array($current_page, ['notes.php', 'note
 $nav_href = function ($path) use ($admin_nav_base) {
     return $admin_nav_base . ltrim($path, '/');
 };
+
+require_once __DIR__ . '/admin_nav_counts.php';
+$admin_nav_counts = admin_nav_load_counts();
+$admin_nav_commandes_badge = admin_nav_badge_label($admin_nav_counts['commandes_a_traiter']);
+$admin_nav_invoice_badge = admin_nav_badge_label($admin_nav_counts['invoice_impayees']);
+$admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_actifs']);
 ?>
 <!-- Bouton menu mobile -->
 <button class="mobile-menu-toggle" id="menuToggle" type="button" aria-label="Ouvrir le menu">
@@ -145,6 +151,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo ($is_commandes_std && in_array($current_page, ['index.php', 'livrees.php', 'annulees.php', 'details.php', 'historique-ventes.php', 'archives.php'], true)) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Commandes</span>
+                <?php if ($admin_nav_counts['commandes_a_traiter'] > 0): ?>
+                <span class="menu-item-badge" aria-label="<?php echo (int) $admin_nav_counts['commandes_a_traiter']; ?> commande(s) à traiter"><?php echo htmlspecialchars($admin_nav_commandes_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <a href="<?php echo $nav_href('commandes-personnalisees/index.php'); ?>"
                 class="menu-item <?php echo ($is_commandes_perso && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
@@ -155,6 +164,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo ($is_invoice || ($is_devis && in_array($current_page, ['index.php', 'details.php'], true))) ? 'active' : ''; ?>">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Invoice</span>
+                <?php if ($admin_nav_counts['invoice_impayees'] > 0): ?>
+                <span class="menu-item-badge menu-item-badge--invoice" aria-label="<?php echo (int) $admin_nav_counts['invoice_impayees']; ?> facture(s) impayée(s)"><?php echo htmlspecialchars($admin_nav_invoice_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <a href="<?php echo $nav_href('zones-livraison/index.php'); ?>"
                 class="menu-item <?php echo ($is_zones_livraison) ? 'active' : ''; ?>">
@@ -166,6 +178,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo $is_livreurs_carte ? 'active' : ''; ?>">
                 <i class="fas fa-map-location-dot"></i>
                 <span>Map</span>
+                <?php if ($admin_nav_counts['livreurs_actifs'] > 0): ?>
+                <span class="menu-item-badge menu-item-badge--map" aria-label="<?php echo (int) $admin_nav_counts['livreurs_actifs']; ?> livreur(s) actif(s)"><?php echo htmlspecialchars($admin_nav_livreurs_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <?php endif; ?>
             <?php if (admin_can_view_livreur_notes()): ?>
@@ -201,6 +216,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo ($is_commandes && ($current_page == 'index.php' || $current_page == 'livrees.php' || $current_page == 'annulees.php' || $current_page == 'details.php' || $current_page == 'archives.php')) ? 'active' : ''; ?>">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Commandes</span>
+                <?php if ($admin_nav_counts['commandes_a_traiter'] > 0): ?>
+                <span class="menu-item-badge" aria-label="<?php echo (int) $admin_nav_counts['commandes_a_traiter']; ?> commande(s) à traiter"><?php echo htmlspecialchars($admin_nav_commandes_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <a href="<?php echo $nav_href('commandes-personnalisees/index.php'); ?>"
                 class="menu-item <?php echo ($is_commandes_perso && ($current_page == 'index.php' || $current_page == 'details.php')) ? 'active' : ''; ?>">
@@ -211,6 +229,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo ($is_invoice || ($is_devis && ($current_page == 'index.php' || $current_page == 'details.php'))) ? 'active' : ''; ?>">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Invoice</span>
+                <?php if ($admin_nav_counts['invoice_impayees'] > 0): ?>
+                <span class="menu-item-badge menu-item-badge--invoice" aria-label="<?php echo (int) $admin_nav_counts['invoice_impayees']; ?> facture(s) impayée(s)"><?php echo htmlspecialchars($admin_nav_invoice_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <?php if ($can_manage_users): ?>
                 <a href="<?php echo $nav_href('users/index.php'); ?>"
@@ -250,6 +271,9 @@ $nav_href = function ($path) use ($admin_nav_base) {
                 class="menu-item <?php echo $is_livreurs_carte ? 'active' : ''; ?>">
                 <i class="fas fa-map-location-dot"></i>
                 <span>Map</span>
+                <?php if ($admin_nav_counts['livreurs_actifs'] > 0): ?>
+                <span class="menu-item-badge menu-item-badge--map" aria-label="<?php echo (int) $admin_nav_counts['livreurs_actifs']; ?> livreur(s) actif(s)"><?php echo htmlspecialchars($admin_nav_livreurs_badge, ENT_QUOTES, 'UTF-8'); ?></span>
+                <?php endif; ?>
             </a>
             <?php endif; ?>
             <?php if (admin_can_view_livreur_notes()): ?>

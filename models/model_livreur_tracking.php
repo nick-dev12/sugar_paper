@@ -616,6 +616,64 @@ function livreur_livraison_est_terminee(array $row, $type = 'commande') {
 }
 
 /**
+ * Facture B2B : livraison démarrée par le livreur (coords ou GPS actif).
+ *
+ * @param array<string, mixed> $row
+ */
+function livreur_facture_livraison_est_demarree(array $row) {
+    if ((int) ($row['tracking_active'] ?? 0) === 1) {
+        return true;
+    }
+    if (!empty($row['tracking_started_at'])) {
+        return true;
+    }
+    return livreur_parse_coord($row['delivery_latitude'] ?? null) !== null
+        && livreur_parse_coord($row['delivery_longitude'] ?? null) !== null;
+}
+
+/**
+ * Admin : afficher le bouton « Suivre la livraison » (livreur assigné + livraison démarrée).
+ *
+ * @param array<string, mixed> $row
+ * @param 'commande'|'facture' $type
+ */
+function livreur_admin_peut_suivre_livraison(array $row, $type = 'commande') {
+    if (empty($row['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($row, $type)) {
+        return false;
+    }
+    if ((int) ($row['tracking_active'] ?? 0) === 1) {
+        return true;
+    }
+    if ($type === 'commande') {
+        return ($row['statut'] ?? '') === 'livraison_en_cours';
+    }
+    if ($type === 'facture') {
+        return livreur_facture_livraison_est_demarree($row);
+    }
+    return false;
+}
+
+/**
+ * URL page suivi admin (mode observateur).
+ *
+ * @param int $id commande_id ou bl_id
+ * @param 'commande'|'facture' $type
+ */
+function livreur_admin_suivi_livraison_href($id, $type = 'commande') {
+    $id = (int) $id;
+    if ($id < 1) {
+        return '';
+    }
+    if ($type === 'facture') {
+        return '../livreurs/suivi.php?bl_id=' . $id . '&regarder=1';
+    }
+    return '../livreurs/suivi.php?commande_id=' . $id . '&regarder=1';
+}
+
+/**
  * Factures B2B (bons de livraison) — même source que l'onglet Facture du hub Invoice.
  *
  * @param bool $only_today Si true, limite aux factures du jour (vue livreur).

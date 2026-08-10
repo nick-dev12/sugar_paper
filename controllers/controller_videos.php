@@ -176,65 +176,57 @@ function process_delete_video()
  */
 function generate_video_thumbnail($video_path, $output_path, $time_offset = 1)
 {
-    // Vérifier que le fichier vidéo existe
     if (!file_exists($video_path)) {
         return false;
     }
 
-    // Essayer d'utiliser FFmpeg (solution la plus fiable)
-    $ffmpeg_path = 'ffmpeg'; // Par défaut, supposer que ffmpeg est dans le PATH
-    // Si FFmpeg n'est pas dans le PATH, vous pouvez spécifier le chemin complet :
-    // $ffmpeg_path = 'C:\\ffmpeg\\bin\\ffmpeg.exe'; // Exemple pour Windows
+    $ffmpeg_path = null;
+    $candidates = ['ffmpeg'];
 
-    // Vérifier si FFmpeg est disponible
-    $ffmpeg_check = shell_exec("$ffmpeg_path -version 2>&1");
-    if (strpos($ffmpeg_check, 'ffmpeg version') === false) {
-        // FFmpeg non disponible, essayer avec chemin complet commun sur Windows
-        $common_paths = [
+    if (DIRECTORY_SEPARATOR === '\\') {
+        $candidates = array_merge($candidates, [
             'C:\\ffmpeg\\bin\\ffmpeg.exe',
             'C:\\wamp64\\bin\\ffmpeg\\bin\\ffmpeg.exe',
-            'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe'
-        ];
+            'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+        ]);
+    } else {
+        $candidates = array_merge($candidates, [
+            '/usr/bin/ffmpeg',
+            '/usr/local/bin/ffmpeg',
+        ]);
+    }
 
-        $ffmpeg_found = false;
-        foreach ($common_paths as $path) {
-            if (file_exists($path)) {
-                $ffmpeg_path = $path;
-                $ffmpeg_found = true;
+    foreach ($candidates as $candidate) {
+        if ($candidate === 'ffmpeg') {
+            $check = @shell_exec('ffmpeg -version 2>&1');
+            if (is_string($check) && stripos($check, 'ffmpeg version') !== false) {
+                $ffmpeg_path = 'ffmpeg';
                 break;
             }
+            continue;
         }
-
-        if (!$ffmpeg_found) {
-            // FFmpeg non trouvé, on ne peut pas générer de thumbnail
-            return false;
+        if (is_file($candidate)) {
+            $ffmpeg_path = $candidate;
+            break;
         }
     }
 
-    // Générer la commande FFmpeg pour extraire une frame à la position spécifiée
-    // -ss : position dans la vidéo (time_offset secondes)
-    // -i : fichier d'entrée (la vidéo)
-    // -vframes 1 : extraire 1 seule frame
-    // -q:v 2 : qualité de l'image (2 = haute qualité)
-    // -y : écraser le fichier de sortie s'il existe
+    if ($ffmpeg_path === null) {
+        return false;
+    }
 
+    $time_offset = max(0, (int) $time_offset);
     $command = sprintf(
-        '"%s" -ss %d -i "%s" -vframes 1 -q:v 2 -y "%s" 2>&1',
-        $ffmpeg_path,
+        '%s -ss %d -i %s -vframes 1 -q:v 2 -y %s 2>&1',
+        escapeshellarg($ffmpeg_path),
         $time_offset,
         escapeshellarg($video_path),
         escapeshellarg($output_path)
     );
 
-    // Exécuter la commande
-    $output = shell_exec($command);
+    @shell_exec($command);
 
-    // Vérifier si l'image a été créée
-    if (file_exists($output_path) && filesize($output_path) > 0) {
-        return true;
-    }
-
-    return false;
+    return is_file($output_path) && filesize($output_path) > 0;
 }
 
 /**
@@ -297,6 +289,13 @@ function upload_video_file($file)
 
         if (generate_video_thumbnail($file_path, $thumbnail_path, 1)) {
             $thumbnail_filename = $thumbnail_name;
+        } else {
+            for ($try = 2; $try <= 5; $try++) {
+                if (generate_video_thumbnail($file_path, $thumbnail_path, $try)) {
+                    $thumbnail_filename = $thumbnail_name;
+                    break;
+                }
+            }
         }
 
         return [

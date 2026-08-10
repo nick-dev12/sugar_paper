@@ -64,8 +64,6 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
 
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
@@ -166,7 +164,6 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
 
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
-    <script src="/js/owl.animate.js"></script>
     <script src="/js/owl.autoplay.js"></script>
 
     <script>

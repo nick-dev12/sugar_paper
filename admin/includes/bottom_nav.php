@@ -178,6 +178,15 @@ if ($is_contable_bottom) {
 $is_invoice_hub = !empty($admin_invoice_hub_bottom_nav) && $is_invoice && $current_page === 'index.php';
 $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoice_hub_active_tab : 'facture';
 
+require_once __DIR__ . '/admin_nav_counts.php';
+$admin_nav_counts = admin_nav_load_counts();
+$admin_bottom_commandes_count = (int) $admin_nav_counts['commandes_a_traiter'];
+$admin_bottom_invoice_impayees_count = (int) $admin_nav_counts['invoice_impayees'];
+$admin_bottom_livreurs_actifs_count = (int) $admin_nav_counts['livreurs_actifs'];
+$admin_bottom_badge_label = admin_nav_badge_label($admin_bottom_commandes_count);
+$admin_bottom_invoice_badge_label = admin_nav_badge_label($admin_bottom_invoice_impayees_count);
+$admin_bottom_livreurs_badge_label = admin_nav_badge_label($admin_bottom_livreurs_actifs_count);
+
 ?>
 
 <link rel="stylesheet" href="/css/bottom-nav.css<?php echo asset_version_query(); ?>">
@@ -218,7 +227,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
         class="bottom-nav-item bottom-nav-item--facture<?php echo $invoice_hub_tab === 'facture' ? ' is-active' : ''; ?>"
         data-invoice-tab="facture"
         aria-label="Onglet Facture">
-        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_invoice_impayees_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--invoice" aria-label="<?php echo (int) $admin_bottom_invoice_impayees_count; ?> facture(s) impayée(s)"><?php echo htmlspecialchars($admin_bottom_invoice_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Facture</span>
     </button>
     <?php endif; ?>
@@ -251,7 +265,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
         aria-label="Ouvrir le menu admin">
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_commandes_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--menu" aria-hidden="true"><?php echo htmlspecialchars($admin_bottom_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-th" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Menu</span>
     </button>
 
@@ -259,7 +278,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     <a href="<?php echo htmlspecialchars($nav_href('invoice/index.php')); ?>"
         class="bottom-nav-item bottom-nav-item--invoice<?php echo $admin_bottom_active === 'invoice' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_invoice_impayees_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--invoice" aria-label="<?php echo (int) $admin_bottom_invoice_impayees_count; ?> facture(s) impayée(s)"><?php echo htmlspecialchars($admin_bottom_invoice_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Invoice</span>
     </a>
 
@@ -271,19 +295,34 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
     <a href="<?php echo htmlspecialchars($nav_href('commandes/index.php')); ?>"
         class="bottom-nav-item bottom-nav-item--commandes<?php echo $admin_bottom_active === 'commandes' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-shopping-cart" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_commandes_count > 0): ?>
+            <span class="bottom-nav-badge" aria-label="<?php echo (int) $admin_bottom_commandes_count; ?> commande(s) à traiter"><?php echo htmlspecialchars($admin_bottom_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Commandes</span>
     </a>
 
     <a href="<?php echo htmlspecialchars($nav_href('livreurs/carte.php')); ?>"
         class="bottom-nav-item bottom-nav-item--map<?php echo $admin_bottom_active === 'map' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_livreurs_actifs_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--map" aria-label="<?php echo (int) $admin_bottom_livreurs_actifs_count; ?> livreur(s) actif(s)"><?php echo htmlspecialchars($admin_bottom_livreurs_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Map</span>
     </a>
 
     <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="adminBottomNavMenuBtn"
         aria-label="Ouvrir le menu admin">
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_commandes_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--menu" aria-hidden="true"><?php echo htmlspecialchars($admin_bottom_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-th" aria-hidden="true"></i>
+        </span>
         <span class="bottom-nav-label">Menu</span>
     </button>
 
@@ -325,7 +364,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
         class="bottom-nav-item bottom-nav-item--invoice<?php echo $admin_bottom_active === 'invoice' ? ' is-active' : ''; ?>">
 
-        <span class="bottom-nav-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_invoice_impayees_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--invoice" aria-label="<?php echo (int) $admin_bottom_invoice_impayees_count; ?> facture(s) impayée(s)"><?php echo htmlspecialchars($admin_bottom_invoice_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-file-invoice-dollar" aria-hidden="true"></i>
+        </span>
 
         <span class="bottom-nav-label">Invoice</span>
 
@@ -345,7 +389,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
         class="bottom-nav-item bottom-nav-item--commandes<?php echo $admin_bottom_active === 'commandes' ? ' is-active' : ''; ?>">
 
-        <span class="bottom-nav-icon"><i class="fas fa-shopping-cart" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_commandes_count > 0): ?>
+            <span class="bottom-nav-badge" aria-label="<?php echo (int) $admin_bottom_commandes_count; ?> commande(s) à traiter"><?php echo htmlspecialchars($admin_bottom_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+        </span>
 
         <span class="bottom-nav-label">Commandes</span>
 
@@ -356,7 +405,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
         class="bottom-nav-item bottom-nav-item--map<?php echo $admin_bottom_active === 'map' ? ' is-active' : ''; ?>">
 
-        <span class="bottom-nav-icon"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_livreurs_actifs_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--map" aria-label="<?php echo (int) $admin_bottom_livreurs_actifs_count; ?> livreur(s) actif(s)"><?php echo htmlspecialchars($admin_bottom_livreurs_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+        </span>
 
         <span class="bottom-nav-label">Map</span>
 
@@ -367,7 +421,12 @@ $invoice_hub_tab = isset($admin_invoice_hub_active_tab) ? (string) $admin_invoic
 
         aria-label="Ouvrir le menu admin">
 
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+        <span class="bottom-nav-icon">
+            <?php if ($admin_bottom_commandes_count > 0): ?>
+            <span class="bottom-nav-badge bottom-nav-badge--menu" aria-hidden="true"><?php echo htmlspecialchars($admin_bottom_badge_label, ENT_QUOTES, 'UTF-8'); ?></span>
+            <?php endif; ?>
+            <i class="fas fa-th" aria-hidden="true"></i>
+        </span>
 
         <span class="bottom-nav-label">Menu</span>
 

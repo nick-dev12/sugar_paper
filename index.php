@@ -32,6 +32,9 @@ $seo_canonical = $base . '/';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php include __DIR__ . '/includes/pwa_meta.php'; ?>
     <?php include __DIR__ . '/includes/seo_meta.php'; ?>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,550;9..144,700&family=Outfit:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -40,12 +43,11 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/animate.min.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/home-perf.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
     /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
@@ -345,18 +347,25 @@ $seo_canonical = $base . '/';
     }
     ?>
     <?php if ($section4_actif): ?>
-    <section class="section4 home-reveal">
-        <div class="slider" style="background-image: url('<?php echo $image_fond_path; ?>');">
-            <?php if ($section4_titre !== ''): ?>
-            <div class="box">
-                <div class="text">
-                    <h1><?php echo htmlspecialchars($section4_titre); ?></h1>
-                </div>
+    <section class="section4 home-hero-banner home-reveal" aria-label="Bannière d'accueil">
+        <div class="home-hero-banner__media">
+            <img class="home-hero-banner__img"
+                src="<?php echo htmlspecialchars($image_fond_path, ENT_QUOTES, 'UTF-8'); ?>"
+                alt="<?php echo htmlspecialchars($section4_titre !== '' ? $section4_titre : 'Sugar Paper', ENT_QUOTES, 'UTF-8'); ?>"
+                width="1400"
+                height="420"
+                fetchpriority="high"
+                decoding="async">
+            <div class="home-hero-banner__overlay" aria-hidden="true"></div>
+            <div class="home-hero-banner__content">
+                <span class="home-hero-banner__kicker"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i> Sugar Paper</span>
+                <?php if ($section4_titre !== ''): ?>
+                <h2 class="home-hero-banner__title"><?php echo htmlspecialchars($section4_titre); ?></h2>
+                <?php endif; ?>
+                <?php if ($section4_texte !== ''): ?>
+                <p class="home-hero-banner__tagline"><?php echo htmlspecialchars($section4_texte); ?></p>
+                <?php endif; ?>
             </div>
-            <?php endif; ?>
-            <?php if ($section4_texte !== ''): ?>
-            <p><?php echo htmlspecialchars($section4_texte); ?></p>
-            <?php endif; ?>
         </div>
     </section>
     <?php endif; ?>
@@ -383,15 +392,22 @@ $seo_canonical = $base . '/';
             <div class="galerie-grid" id="videosSlider">
                 <?php foreach ($videos as $index => $video): ?>
                 <?php
-                    $preview_file = video_ensure_preview_image($video);
-                    $poster_url = $preview_file
-                        ? '/upload/videos/thumbnails/' . rawurlencode($preview_file)
-                        : '';
+                    $poster_url = '';
+                    if (!empty($video['image_preview'])) {
+                        $thumb_disk = __DIR__ . '/upload/videos/thumbnails/' . $video['image_preview'];
+                        if (is_file($thumb_disk) && filesize($thumb_disk) > 0) {
+                            $poster_url = '/upload/videos/thumbnails/' . rawurlencode($video['image_preview']);
+                        }
+                    }
                     $video_src = '/upload/videos/' . rawurlencode($video['fichier_video']);
+                    $needs_poster = $poster_url === '' ? '1' : '0';
                 ?>
                 <article class="galerie-item">
                     <div class="galerie-card">
-                        <div class="galerie-video-wrapper" data-video-loaded="0">
+                        <div class="galerie-video-wrapper"
+                            data-video-loaded="0"
+                            data-needs-poster="<?php echo $needs_poster; ?>"
+                            data-video-title="<?php echo htmlspecialchars($video['titre'] ?? 'Vidéo création', ENT_QUOTES, 'UTF-8'); ?>">
                             <?php if ($poster_url !== ''): ?>
                             <img class="galerie-poster"
                                 src="<?php echo htmlspecialchars($poster_url, ENT_QUOTES, 'UTF-8'); ?>"
@@ -428,65 +444,6 @@ $seo_canonical = $base . '/';
         </div>
     </section>
     <?php endif; ?>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.galerie-video-wrapper').forEach(function(wrapper) {
-            var poster = wrapper.querySelector('.galerie-poster');
-            var video = wrapper.querySelector('.galerie-video');
-            var playBtn = wrapper.querySelector('.galerie-play-overlay');
-            if (!video || !playBtn) {
-                return;
-            }
-
-            function loadVideoSource() {
-                if (video.dataset.loaded === '1') {
-                    return;
-                }
-                var src = video.getAttribute('data-src');
-                var source = video.querySelector('source');
-                if (src && source && !source.getAttribute('src')) {
-                    source.setAttribute('src', src);
-                    video.load();
-                }
-                video.dataset.loaded = '1';
-                wrapper.setAttribute('data-video-loaded', '1');
-            }
-
-            function hidePoster() {
-                if (poster) {
-                    poster.style.display = 'none';
-                }
-                video.classList.add('is-active');
-                playBtn.style.opacity = '0';
-                playBtn.style.pointerEvents = 'none';
-            }
-
-            function showPoster() {
-                if (poster) {
-                    poster.style.display = '';
-                }
-                video.classList.remove('is-active');
-                playBtn.style.opacity = '';
-                playBtn.style.pointerEvents = '';
-            }
-
-            playBtn.addEventListener('click', function() {
-                loadVideoSource();
-                hidePoster();
-                video.play().catch(function() {});
-            });
-
-            video.addEventListener('play', hidePoster);
-            video.addEventListener('pause', function() {
-                if (video.currentTime === 0 || video.ended) {
-                    showPoster();
-                }
-            });
-            video.addEventListener('ended', showPoster);
-        });
-    });
-    </script>
 
     <?php
     // Récupérer les produits les plus visités
@@ -733,318 +690,48 @@ $seo_canonical = $base . '/';
 
     <script src="/js/owl.carousel.min.js"></script>
     <script src="/js/owl.carousel.js"></script>
-    <script src="/js/owl.animate.js"></script>
     <script src="/js/owl.autoplay.js"></script>
 
     <script>
     $(document).ready(function() {
-
-        $('.slider1').owlCarousel({
-            items: 2,
+        var owlDefaults = {
             loop: true,
             dots: true,
-            autoplay: true,
-            autoplayTimeout: 4000,
-            animateOut: 'slideOutDown',
-            animateIn: 'flipInX',
-            smartSpeed: 400,
-            stagePadding: 0,
             nav: true,
-            navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                '<i class="fa-solid fa-chevron-right"></i>'
-            ]
-        });
-        var carousel2 = $('.slider1').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
-
-        // Nouveaux produits et Produits populaires : Owl désactivé, toujours en mode flex-wrap
-
-
-        $('.slider-area').owlCarousel({
-            items: 1,
-            loop: true,
-            dots: true,
-            autoplay: true,
-            autoplayTimeout: 6000,
-            animateOut: 'slideOutDown',
-            animateIn: 'flipInX',
-            smartSpeed: 800,
-            stagePadding: 1,
-            nav: true,
-            navText: ['<i class="fa-solid fa-chevron-left"></i>',
-                '<i class="fa-solid fa-chevron-right"></i>'
-            ]
-        });
-        var carousel2 = $('.carousel2').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
-
-
-        // Carrousel catégories : 1 item < 350px, 2 items >= 350px sur mobile
-        $('.categorie').owlCarousel({
-            items: 5,
-            loop: true,
-            dots: true,
-            autoplay: true,
-            autoplayTimeout: 2000,
-            autoplaySpeed: 3000,
-            animateOut: 'slideOutDown',
-            animateIn: 'flipInX',
-            smartSpeed: 1200,
-            stagePadding: 20,
-            margin: 15,
-            nav: true,
-            navText: ['<i class="fa-solid fa-chevron-left"></i>',
+            navText: [
+                '<i class="fa-solid fa-chevron-left"></i>',
                 '<i class="fa-solid fa-chevron-right"></i>'
             ],
+            smartSpeed: 450,
+            autoplayHoverPause: true
+        };
+
+        $('.slider-area').owlCarousel($.extend({}, owlDefaults, {
+            items: 1,
+            autoplay: true,
+            autoplayTimeout: 6000,
+            lazyLoad: true
+        }));
+
+        $('.categorie').owlCarousel($.extend({}, owlDefaults, {
+            items: 5,
+            autoplay: true,
+            autoplayTimeout: 4500,
+            stagePadding: 20,
+            margin: 15,
             responsive: {
-                0: {
-                    items: 1,
-                    stagePadding: 10,
-                    margin: 10,
-                    nav: true,
-                    dots: true
-                },
-                350: {
-                    items: 2,
-                    stagePadding: 10,
-                    margin: 12,
-                    nav: true,
-                    dots: true
-                },
-                576: {
-                    items: 2,
-                    stagePadding: 15,
-                    margin: 15,
-                    nav: true,
-                    dots: true
-                },
-                768: {
-                    items: 3,
-                    stagePadding: 15,
-                    margin: 15,
-                    nav: true,
-                    dots: true
-                },
-                992: {
-                    items: 4,
-                    stagePadding: 20,
-                    margin: 15,
-                    nav: true,
-                    dots: true
-                },
-                1200: {
-                    items: 4,
-                    stagePadding: 20,
-                    margin: 15,
-                    nav: true,
-                    dots: true
-                }
+                0: { items: 1, stagePadding: 10, margin: 10 },
+                350: { items: 2, stagePadding: 10, margin: 12 },
+                576: { items: 2, stagePadding: 15, margin: 15 },
+                768: { items: 3, stagePadding: 15, margin: 15 },
+                992: { items: 4, stagePadding: 20, margin: 15 },
+                1200: { items: 4, stagePadding: 20, margin: 15 }
             }
-        });
-        var carousel2 = $('.carousel2').owlCarousel();
-        $('.owl-next2').click(function() {
-            carousel2.trigger('next.owl.carousel');
-        })
-        $('.owl-prev2').click(function() {
-            carousel2.trigger('prev.owl.carousel');
-        })
-
-
+        }));
     });
     </script>
 
-
-    <script>
-    // Slider vidéo simple en JavaScript vanilla
-    document.addEventListener('DOMContentLoaded', function() {
-        var slider = document.getElementById('videosSlider');
-        var prevBtn = document.getElementById('videosPrev');
-        var nextBtn = document.getElementById('videosNext');
-        var dotsContainer = document.getElementById('videosDots');
-        var autoplayInterval;
-        var autoplayDelay = 8000; // 8 secondes
-
-        if (!slider) {
-            return; // Pas de slider, ne rien faire
-        }
-
-        var cards = slider.querySelectorAll('.video-card');
-        if (cards.length === 0) {
-            return; // Pas de vidéos
-        }
-
-        var currentIndex = 0;
-        var itemsPerView = 1; // Par défaut mobile
-        var dots = [];
-
-        // Fonction pour déterminer le nombre d'éléments visibles
-        function getItemsPerView() {
-            var width = window.innerWidth;
-            if (width >= 992) {
-                return 3; // Grand écran : 3 vidéos
-            } else if (width >= 768) {
-                return 2; // Tablette : 2 vidéos
-            }
-            return 1; // Mobile : 1 vidéo
-        }
-
-        // Fonction pour créer les dots
-        function createDots() {
-            if (!dotsContainer) return;
-
-            itemsPerView = getItemsPerView();
-            var totalPages = Math.ceil(cards.length / itemsPerView);
-
-            dotsContainer.innerHTML = '';
-            dots = [];
-
-            for (var i = 0; i < totalPages; i++) {
-                var dot = document.createElement('span');
-                dot.className = 'dot';
-                if (i === 0) {
-                    dot.classList.add('active');
-                }
-                dot.setAttribute('data-page', i);
-                dot.addEventListener('click', function() {
-                    var page = parseInt(this.getAttribute('data-page'));
-                    currentIndex = page * itemsPerView;
-                    updateSlider();
-                    stopAutoplay();
-                    startAutoplay();
-                });
-                dotsContainer.appendChild(dot);
-                dots.push(dot);
-            }
-        }
-
-        // Fonction pour calculer le nombre de slides possibles
-        function getMaxIndex() {
-            itemsPerView = getItemsPerView();
-            return Math.max(0, cards.length - itemsPerView);
-        }
-
-        // Fonction pour mettre à jour la position du slider
-        function updateSlider() {
-            var maxIndex = getMaxIndex();
-            if (currentIndex > maxIndex) {
-                currentIndex = maxIndex;
-            }
-
-            if (cards.length === 0) return;
-
-            // Calculer la translation en fonction de la largeur des cartes
-            var cardWidth = cards[0].offsetWidth;
-            var gap = 20;
-            var translateX = -(currentIndex * (cardWidth + gap));
-
-            slider.style.transform = 'translateX(' + translateX + 'px)';
-
-            // Mettre à jour les dots
-            var dotIndex = Math.floor(currentIndex / itemsPerView);
-            dots.forEach(function(dot, index) {
-                dot.classList.remove('active');
-                if (index === dotIndex) {
-                    dot.classList.add('active');
-                }
-            });
-
-            // Afficher/masquer les boutons selon la position
-            if (prevBtn) {
-                prevBtn.style.display = currentIndex === 0 ? 'none' : 'flex';
-            }
-            if (nextBtn) {
-                nextBtn.style.display = currentIndex >= maxIndex ? 'none' : 'flex';
-            }
-        }
-
-        function nextSlide() {
-            var maxIndex = getMaxIndex();
-            if (currentIndex < maxIndex) {
-                currentIndex += itemsPerView;
-            } else {
-                currentIndex = 0; // Retour au début
-            }
-            updateSlider();
-        }
-
-        function prevSlide() {
-            var maxIndex = getMaxIndex();
-            if (currentIndex > 0) {
-                currentIndex -= itemsPerView;
-                if (currentIndex < 0) {
-                    currentIndex = maxIndex; // Aller à la fin
-                }
-            } else {
-                currentIndex = maxIndex; // Aller à la fin
-            }
-            updateSlider();
-        }
-
-        function startAutoplay() {
-            autoplayInterval = setInterval(function() {
-                nextSlide();
-            }, autoplayDelay);
-        }
-
-        function stopAutoplay() {
-            if (autoplayInterval) {
-                clearInterval(autoplayInterval);
-            }
-        }
-
-        // Événements pour les boutons
-        if (nextBtn) {
-            nextBtn.addEventListener('click', function() {
-                nextSlide();
-                stopAutoplay();
-                startAutoplay();
-            });
-        }
-
-        if (prevBtn) {
-            prevBtn.addEventListener('click', function() {
-                prevSlide();
-                stopAutoplay();
-                startAutoplay();
-            });
-        }
-
-        // Pause autoplay au survol
-        var sliderWrapper = document.querySelector('.videos-slider-wrapper');
-        if (sliderWrapper) {
-            sliderWrapper.addEventListener('mouseenter', stopAutoplay);
-            sliderWrapper.addEventListener('mouseleave', startAutoplay);
-        }
-
-        // Gérer le redimensionnement de la fenêtre
-        var resizeTimeout;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(function() {
-                currentIndex = 0;
-                createDots();
-                updateSlider();
-            }, 250);
-        });
-
-        // Initialiser
-        createDots();
-        updateSlider();
-        if (cards.length > getItemsPerView()) {
-            startAutoplay();
-        }
-    });
-    </script>
+    <script src="/js/home-galerie-video.js<?php echo asset_version_query(); ?>" defer></script>
 
 </body>
 

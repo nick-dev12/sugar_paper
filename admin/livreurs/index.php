@@ -494,14 +494,13 @@ foreach ($factures_liste as $facture_row) {
                 <span><i class="fas fa-house" aria-hidden="true"></i> Arrivée</span>
                 <span><i class="fas fa-route" aria-hidden="true"></i> Itinéraire</span>
             </div>
-
-            <div class="livreur-demarrage-actions">
-                <button type="button" class="btn-secondary" data-livreur-demarrage-close>Annuler</button>
-                <button type="submit" class="btn-primary livreur-demarrage-submit">
-                    <i class="fas fa-play" aria-hidden="true"></i> Commencer la livraison
-                </button>
-            </div>
         </form>
+        <div class="livreur-demarrage-actions">
+            <button type="button" class="btn-secondary" data-livreur-demarrage-close>Annuler</button>
+            <button type="submit" form="livreur-demarrage-form" class="btn-primary livreur-demarrage-submit">
+                <i class="fas fa-play" aria-hidden="true"></i> Commencer la livraison
+            </button>
+        </div>
     </div>
 </div>
 <?php endif; ?>

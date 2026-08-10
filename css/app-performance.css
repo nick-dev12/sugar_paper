@@ -6,6 +6,10 @@
  * backdrop-filter : très coûteux en WebView (scroll ~12–20 fps).
  */
 
+html {
+  scroll-behavior: auto;
+}
+
 html.is-native-app {
   scroll-behavior: auto;
 }

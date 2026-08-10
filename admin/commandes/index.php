@@ -112,6 +112,7 @@ function commandes_statut_label($statut)
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-commandes-index.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/admin-devis-compta-pages.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/admin-invoice-onglets.css<?php echo asset_version_query(); ?>">
 </head>
 
@@ -271,16 +272,10 @@ function commandes_statut_label($statut)
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
                             <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
-                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">
-                            <div class="invoice-montant-cell">
-                                <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
-                                <span class="invoice-date-statut-line">
-                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
-                                    <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-<?php echo htmlspecialchars($statut_cmd); ?>"><?php echo htmlspecialchars($statut_label); ?></span>
-                                </span>
-                            </div>
+                            <?php include __DIR__ . '/../includes/commande_list_montant_cell.php'; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -395,16 +390,10 @@ function commandes_statut_label($statut)
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
                             <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
-                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">
-                            <div class="invoice-montant-cell">
-                                <span class="invoice-cell-primary"><?php echo $montant_txt; ?> FCFA</span>
-                                <span class="invoice-date-statut-line">
-                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($date_aff); ?></span>
-                                    <span class="invoice-row-statut invoice-row-statut--inline commande-statut statut-<?php echo htmlspecialchars($statut_cmd); ?>"><?php echo htmlspecialchars($statut_label); ?></span>
-                                </span>
-                            </div>
+                            <?php include __DIR__ . '/../includes/commande_list_montant_cell.php'; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -502,7 +491,7 @@ function commandes_statut_label($statut)
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
                             <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
-                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_cmd !== '' ? $numero_cmd : $telephone_aff); ?></span>
+                            <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">
                             <div class="invoice-montant-cell">

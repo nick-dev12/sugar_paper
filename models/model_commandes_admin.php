@@ -434,6 +434,28 @@ function count_commandes_by_statut($statut = null, $archive_mode = 'active') {
 }
 
 /**
+ * Commandes encore à traiter (hors livrées, payées, annulées).
+ */
+function count_commandes_a_traiter($archive_mode = 'active') {
+    global $db;
+
+    try {
+        $sql = "SELECT COUNT(*) FROM commandes WHERE statut NOT IN ('livree', 'paye', 'annulee')";
+        if (commandes_archived_column_ok()) {
+            if ($archive_mode === 'archived') {
+                $sql .= " AND COALESCE(archived, 0) = 1";
+            } elseif ($archive_mode !== 'all') {
+                $sql .= " AND COALESCE(archived, 0) = 0";
+            }
+        }
+        $stmt = $db->query($sql);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Retourne le montant total des commandes (comptabilité)
  * @param string|null $statut Filtrer par statut (optionnel). Si null, toutes les commandes.
  * @param string $archive_mode active|archived|all

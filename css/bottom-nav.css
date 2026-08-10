@@ -221,6 +221,16 @@
   box-shadow: 0 2px 8px rgba(229, 72, 138, 0.35);
 }
 
+.bottom-nav-badge--menu {
+  background: #c26638;
+  box-shadow: 0 2px 8px rgba(194, 102, 56, 0.35);
+}
+
+.bottom-nav-badge--map {
+  background: #20c5c7;
+  box-shadow: 0 2px 8px rgba(32, 197, 199, 0.35);
+}
+
 /* Accueil — rose principal */
 .bottom-nav-item--accueil .bottom-nav-icon {
   background: rgba(229, 72, 138, 0.12);

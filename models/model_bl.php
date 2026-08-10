@@ -684,6 +684,30 @@ function count_all_bl_invoices($archive_mode = 'active') {
 }
 
 /**
+ * Nombre de factures B2B non payées (badge navigation admin).
+ *
+ * @param string $archive_mode active|archived|all
+ */
+function count_bl_factures_impayees($archive_mode = 'active') {
+    global $db;
+    if (!bl_tables_available()) {
+        return 0;
+    }
+    if (!bl_col_facture_payee_ok()) {
+        return count_all_bl_invoices($archive_mode);
+    }
+    $archive_sql = bl_sql_archived_clause('bons_livraison', $archive_mode);
+    try {
+        $stmt = $db->query(
+            'SELECT COUNT(*) FROM bons_livraison WHERE COALESCE(facture_bl_payee, 0) = 0' . $archive_sql
+        );
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Liste paginée de toutes les factures B2B avec infos client.
  *
  * @return list<array<string, mixed>>
