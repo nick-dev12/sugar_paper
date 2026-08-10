@@ -28,10 +28,11 @@ class NativePermissionCopy {
       'Pendant une livraison active, Sugar Paper transmet votre position '
       'en direct au client et à l\'équipe, y compris si vous quittez '
       'l\'écran ou mettez l\'application en arrière-plan.\n\n'
+      'Choisissez « Autoriser tout le temps » (Android) ou « Toujours » (iPhone) '
+      'pour un suivi fiable. Sur Android, acceptez aussi de ne pas optimiser '
+      'la batterie pour Sugar Paper afin que le GPS ne s\'arrête pas.\n\n'
       '• Le suivi s\'arrête quand vous terminez la livraison ou en changez.\n'
-      '• Une notification persistante s\'affiche sur Android pendant la course.\n\n'
-      'Autorisez « Toujours » (iOS) ou « Autoriser tout le temps » (Android) '
-      'pour un suivi fiable en arrière-plan.';
+      '• Une notification persistante s\'affiche sur Android pendant la course.';
 
   static const deliveryTrackingDeniedForeverTitle =
       'Localisation arrière-plan requise';
@@ -184,6 +185,7 @@ class NativePermissionService {
 
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.always) {
+      await _requestBatteryOptimizationExemption();
       return true;
     }
 
@@ -215,6 +217,7 @@ class NativePermissionService {
       if (Platform.isAndroid) {
         final bg = await Permission.locationAlways.request();
         if (bg.isGranted) {
+          await _requestBatteryOptimizationExemption();
           return true;
         }
       } else if (Platform.isIOS) {
@@ -223,17 +226,20 @@ class NativePermissionService {
     }
 
     if (permission == LocationPermission.always) {
+      await _requestBatteryOptimizationExemption();
       return true;
     }
 
     if (Platform.isAndroid) {
       final bg = await Permission.locationAlways.status;
       if (bg.isGranted) {
+        await _requestBatteryOptimizationExemption();
         return true;
       }
     }
 
     if (permission == LocationPermission.whileInUse) {
+      await _requestBatteryOptimizationExemption();
       return true;
     }
 
@@ -247,6 +253,22 @@ class NativePermissionService {
 
     return permission == LocationPermission.always ||
         permission == LocationPermission.whileInUse;
+  }
+
+  /// Demande d'ignorer l'optimisation batterie (Android) pour ne pas tuer le GPS.
+  static Future<void> _requestBatteryOptimizationExemption() async {
+    if (!Platform.isAndroid) {
+      return;
+    }
+    try {
+      final status = await Permission.ignoreBatteryOptimizations.status;
+      if (status.isGranted) {
+        return;
+      }
+      await Permission.ignoreBatteryOptimizations.request();
+    } catch (_) {
+      /* certains OEM refusent silencieusement */
+    }
   }
 
   /// Demande la caméra avec explication préalable (aligné Info.plist).

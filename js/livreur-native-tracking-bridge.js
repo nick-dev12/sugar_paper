@@ -35,7 +35,8 @@
             statusUrl: buildStatusUrl(cfg),
             socketUrl: cfg.socketUrl || global.location.origin,
             socketPath: cfg.socketPath || '/socket.io',
-            realtimeConfigured: !!cfg.realtimeConfigured
+            realtimeConfigured: !!cfg.realtimeConfigured,
+            embeddedWatchToken: cfg.embeddedWatchToken || ''
         };
     }
 
@@ -46,6 +47,23 @@
         return global.SugarPaperNative[method](payload).catch(function (err) {
             return { success: false, error: (err && err.message) ? err.message : 'native_error' };
         });
+    }
+
+    /**
+     * Positions GPS natives → mise à jour carte WebView + socket web (secours).
+     * Appelé depuis Flutter via evaluateJavascript.
+     */
+    function onNativePosition(data) {
+        if (!data || data.latitude == null || data.longitude == null) {
+            return;
+        }
+        try {
+            if (typeof global.__livreurOnNativePosition === 'function') {
+                global.__livreurOnNativePosition(data);
+            }
+        } catch (e) {
+            /* silencieux */
+        }
     }
 
     global.LivreurNativeTracking = {
@@ -71,6 +89,10 @@
                 return Promise.resolve({ success: false, active: false });
             }
             return callNative('getDeliveryTrackingStatus');
-        }
+        },
+        onNativePosition: onNativePosition
     };
+
+    // Alias stable pour injection Flutter
+    global.__sugarPaperNativeDeliveryPosition = onNativePosition;
 })(window);

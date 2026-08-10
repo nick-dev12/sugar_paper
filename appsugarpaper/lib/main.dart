@@ -242,10 +242,6 @@ class _WebViewScreenState extends State<WebViewScreen>
   }
 
   void _scheduleLivreurTrackingRestoreIfNeeded() {
-    final url = (_currentUrl ?? '').toLowerCase();
-    if (!url.contains('/admin/livreurs/suivi.php')) {
-      return;
-    }
     Future<void>.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         unawaited(_tryRestoreLivreurTracking());
@@ -271,6 +267,32 @@ class _WebViewScreenState extends State<WebViewScreen>
     }
   }
 
+  void _pushNativeDeliveryPositionToWebView(Map<String, dynamic> position) {
+    final controller = webViewController;
+    if (controller == null) {
+      return;
+    }
+    final encoded = jsonEncode(position);
+    unawaited(
+      controller.evaluateJavascript(
+        source: '''
+(function () {
+  try {
+    var data = $encoded;
+    if (typeof window.__sugarPaperNativeDeliveryPosition === 'function') {
+      window.__sugarPaperNativeDeliveryPosition(data);
+    } else if (window.LivreurNativeTracking && typeof window.LivreurNativeTracking.onNativePosition === 'function') {
+      window.LivreurNativeTracking.onNativePosition(data);
+    } else if (typeof window.__livreurOnNativePosition === 'function') {
+      window.__livreurOnNativePosition(data);
+    }
+  } catch (e) {}
+})();
+''',
+      ),
+    );
+  }
+
   Future<void> _tryRestoreLivreurTracking() async {
     if (kIsWeb || !mounted) {
       return;
@@ -285,6 +307,7 @@ class _WebViewScreenState extends State<WebViewScreen>
           context,
         );
       },
+      onPosition: _pushNativeDeliveryPositionToWebView,
     );
   }
 
@@ -328,6 +351,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       getCookieHeader: _getWebViewCookieHeader,
       requestPermissions: () =>
           NativePermissionService.requestDeliveryTrackingPermissions(context),
+      onPosition: _pushNativeDeliveryPositionToWebView,
     );
   }
 
@@ -366,6 +390,8 @@ class _WebViewScreenState extends State<WebViewScreen>
     } else if (state == AppLifecycleState.resumed) {
       // Application revenue au premier plan - restaurer l'URL si nécessaire
       _restoreUrlIfNeeded();
+      // Reprendre le GPS livraison si une course était active
+      unawaited(_tryRestoreLivreurTracking());
     }
   }
 

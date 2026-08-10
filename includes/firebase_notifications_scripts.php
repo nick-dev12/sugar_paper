@@ -97,3 +97,8 @@ $firebase_js_v = file_exists($firebase_js_path) ? (string) filemtime($firebase_j
         console.error('[FCM] firebase-notifications.js introuvable ou en erreur — vérifiez l’onglet Réseau (F12)');
     }
 </script>
+<?php
+if ($firebase_notify_type === 'user' && $fcm_account_id > 0) {
+    include __DIR__ . '/client_livraison_popup_scripts.php';
+}
+?>

@@ -2358,6 +2358,74 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true, $st
 }
 
 /**
+ * Commande en cours avec suivi GPS actif pour un client connecté (popup site/app).
+ *
+ * @return array<string, mixed>|null
+ */
+function livreur_client_active_tracking_popup_data($user_id) {
+    global $db;
+
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !livreur_tracking_tables_ready()) {
+        return null;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT c.id, c.numero_commande, c.statut, c.livreur_id, c.tracking_active,
+                   c.tracking_started_at, c.delivery_latitude, c.delivery_longitude,
+                   c.adresse_livraison, c.livraison_terminee_at,
+                   a.prenom AS livreur_prenom, a.nom AS livreur_nom
+            FROM commandes c
+            LEFT JOIN admin a ON a.id = c.livreur_id AND a.role IN ('livreur', 'admin')
+            WHERE c.user_id = :user_id
+              AND c.livreur_id IS NOT NULL
+              AND COALESCE(c.tracking_active, 0) = 1
+              AND c.statut NOT IN ('livree', 'paye', 'annulee')
+            ORDER BY COALESCE(c.tracking_started_at, c.date_commande) DESC
+            LIMIT 1
+        ");
+        $stmt->execute(['user_id' => $user_id]);
+        $commande = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$commande || livreur_livraison_est_terminee($commande, 'commande')) {
+            return null;
+        }
+
+        $commande_id = (int) $commande['id'];
+        $livreur_id = (int) ($commande['livreur_id'] ?? 0);
+        $livreur_nom = trim(
+            ((string) ($commande['livreur_prenom'] ?? '')) . ' ' . ((string) ($commande['livreur_nom'] ?? ''))
+        );
+        if ($livreur_nom === '') {
+            $livreur_nom = 'Votre livreur';
+        }
+
+        $last = $livreur_id > 0
+            ? livreur_get_last_position($livreur_id, $commande_id, null)
+            : false;
+
+        require_once __DIR__ . '/../includes/site_url.php';
+        $base = rtrim(get_site_base_url(), '/');
+        $suivi_url = $base . '/user/suivi-commande.php?commande_id=' . $commande_id;
+
+        return [
+            'commande_id' => $commande_id,
+            'numero_commande' => (string) ($commande['numero_commande'] ?? $commande_id),
+            'livreur_nom' => $livreur_nom,
+            'suivi_url' => $suivi_url,
+            'tracking_active' => true,
+            'driver_lat' => $last ? livreur_parse_coord($last['latitude'] ?? null) : null,
+            'driver_lng' => $last ? livreur_parse_coord($last['longitude'] ?? null) : null,
+            'delivery_lat' => livreur_parse_coord($commande['delivery_latitude'] ?? null),
+            'delivery_lng' => livreur_parse_coord($commande['delivery_longitude'] ?? null),
+            'adresse_livraison' => trim((string) ($commande['adresse_livraison'] ?? '')),
+        ];
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
  * Le client peut-il suivre le GPS en direct pour cette commande ?
  *
  * @param array<string, mixed> $commande

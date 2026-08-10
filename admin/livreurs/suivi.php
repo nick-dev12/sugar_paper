@@ -438,6 +438,7 @@ window.LIVREUR_TRACKING_CONFIG = {
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
     watchTokenUrl: <?php echo json_encode($watch_token_url, JSON_UNESCAPED_SLASHES); ?>,
     embeddedWatchToken: <?php echo json_encode($embedded_watch_token, JSON_UNESCAPED_UNICODE); ?>,
+    publicWatchToken: <?php echo json_encode($watch_only ? $embedded_watch_token : '', JSON_UNESCAPED_UNICODE); ?>,
     initialWatchPayload: <?php echo $initial_watch_payload !== null
         ? json_encode($initial_watch_payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         : 'null'; ?>,

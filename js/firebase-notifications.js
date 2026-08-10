@@ -849,6 +849,9 @@
                     || (payload.data && payload.data.body) || '';
                 var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('sugar-paper-' + Date.now());
                 var link = (payload.data && payload.data.link) ? resolveNotificationLink(payload.data.link) : '';
+                if (typeof window.ClientLivraisonPopup !== 'undefined') {
+                    window.ClientLivraisonPopup.onPush(payload);
+                }
                 showBrowserNotification(title, body, tag, link).then(function (ok) {
                     if (!ok) {
                         warn('Impossible d\'afficher la bulle — vérifiez Paramètres Windows → Notifications → Chrome');

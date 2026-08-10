@@ -313,8 +313,11 @@
             var ok = !!(result && result.success);
             nativeDriverTracking = ok;
             if (ok) {
+                /* GPS WebView souvent gelé dès que le FGS Flutter prend le GPS :
+                   on coupe le watch JS et on consomme les positions natives. */
+                stopWatch();
                 clearBackgroundTracking();
-                /* Garder le flux WebView en secours (HTTP + socket) si le canal natif n'enregistre pas */
+                bindNativePositionHandler();
             }
             return ok;
         }).catch(function () {
@@ -323,8 +326,38 @@
         });
     }
 
+    function bindNativePositionHandler() {
+        window.__livreurOnNativePosition = function (data) {
+            if (!data || data.latitude == null || data.longitude == null) {
+                return;
+            }
+            var lat = parseFloat(data.latitude);
+            var lng = parseFloat(data.longitude);
+            if (!isFinite(lat) || !isFinite(lng)) {
+                return;
+            }
+            var coords = {
+                accuracy: data.accuracy != null ? parseFloat(data.accuracy) : null,
+                speed: data.speed != null ? parseFloat(data.speed) : null,
+                heading: data.heading != null ? parseFloat(data.heading) : null
+            };
+            updateDriverMarker(lat, lng, coords);
+            /* Le natif poste déjà en HTTP ; on émet aussi via le socket WebView
+               (souvent plus fiable côté can_emit_position) pour les clients. */
+            emitPositionToSocket(lat, lng, coords);
+            maybeRecalculateRoute(lat, lng, false, coords);
+            if (!deliveryActive && cfg.trackingActive) {
+                setDeliveryActive(true);
+            }
+            setDeliveryStatusRealtime(true);
+        };
+    }
+
     function stopNativeDriverTracking() {
         nativeDriverTracking = false;
+        try {
+            window.__livreurOnNativePosition = null;
+        } catch (e) { /* ignore */ }
         if (typeof window.LivreurNativeTracking !== 'undefined') {
             return window.LivreurNativeTracking.stop().catch(function () {
                 return { success: false };
@@ -3018,8 +3051,10 @@
         } else if (cfg.commandeId) {
             params.set('commande_id', String(cfg.commandeId));
         }
-        if (cfg.publicWatchToken) {
-            params.set('token', cfg.publicWatchToken);
+        /* Client public : publicWatchToken ; admin regarder : embeddedWatchToken */
+        var watchTok = cfg.publicWatchToken || cfg.embeddedWatchToken || '';
+        if (watchTok) {
+            params.set('token', watchTok);
         }
         return url + '?' + params.toString();
     }
@@ -3140,6 +3175,34 @@
                     setStatus('En attente du démarrage livreur…', 'pending');
                 }
             });
+        bindObserverVisibilityResume();
+    }
+
+    /**
+     * Dans l'app (WebView), au retour au premier plan : reconnecter socket + forcer un poll.
+     */
+    function bindObserverVisibilityResume() {
+        if (!isObserverMode() || bindObserverVisibilityResume._bound) {
+            return;
+        }
+        bindObserverVisibilityResume._bound = true;
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+            fetchLastPositionUpdate();
+            restartPositionPolling();
+            if (!realtimeConnected) {
+                ensureObserverRealtimeConnection();
+            }
+        });
+        window.addEventListener('pageshow', function () {
+            fetchLastPositionUpdate();
+            restartPositionPolling();
+            if (!realtimeConnected) {
+                ensureObserverRealtimeConnection();
+            }
+        });
     }
 
     function bindShareDelivery() {
@@ -3496,6 +3559,7 @@
         bindSwitchDeliveryModal();
         startMyDeliveriesPolling();
         bindBackgroundTracking();
+        bindNativePositionHandler();
         if (cfg.trackingActive) {
             if (isNativeDriverTrackingAvailable()) {
                 startNativeDriverTracking();
