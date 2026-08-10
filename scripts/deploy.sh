@@ -185,7 +185,10 @@ verify_secrets_quick() {
   log "Vérification rapide secrets PHP ↔ Node"
   local php_secret node_secret
   php_secret="$(php -r "require '${DEPLOY_DIR}/includes/tracking_config.php'; echo tracking_internal_secret();" 2>/dev/null || echo "")"
-  node_secret="$(grep -E '^TRACKING_INTERNAL_SECRET=' "${DEPLOY_DIR}/tracking-server/.env" 2>/dev/null | head -1 | cut -d= -f2- | tr -d \"'\" || echo "")"
+  node_secret="$(grep -E '^TRACKING_INTERNAL_SECRET=' "${DEPLOY_DIR}/tracking-server/.env" 2>/dev/null | head -1 | cut -d= -f2- || true)"
+  node_secret="${node_secret//\"/}"
+  node_secret="${node_secret//\'/}"
+  node_secret="${node_secret//[[:space:]]/}"
 
   if [[ -z "$php_secret" || "$php_secret" == *REMPLACEZ* ]]; then
     log_fail "config/tracking.php — internal_secret invalide"
@@ -223,7 +226,7 @@ verify_socket_public() {
   socket_path="$(php -r "require '${DEPLOY_DIR}/includes/tracking_config.php'; echo tracking_config_get('socket_path','/socket.io');" 2>/dev/null || echo '/socket.io')"
   probe="${SITE_URL}${socket_path}/?EIO=4&transport=polling"
   log "Vérification Socket.io public"
-  if curl -sf --max-time 12 "$probe" | head -c 80 | grep -qE 'sid|0\{'; then
+  if curl -sf --max-time 12 "$probe" | head -c 80 | grep -qE "sid|0\\{"; then
     log_ok "Socket.io public OK"
   else
     log_warn "Socket.io public non confirmé (${probe}) — proxy Nginx/Apache /socket.io"
