@@ -84,21 +84,29 @@ class LivreurTrackingService {
       _active = config;
       await _persistSession(config);
 
-      await _connectSocket(config, getCookieHeader);
+      /* Socket + polling en parallèle — ne pas bloquer le retour à la WebView */
+      unawaited(_connectSocket(config, getCookieHeader));
       await _startPositionStream(config, getCookieHeader);
       _startStatusPolling(config, getCookieHeader);
       _startHeartbeat(config, getCookieHeader);
 
-      // Première position immédiate (évite carte figée au démarrage)
+      /* Fix immédiat si une position récente existe */
       try {
-        final first = await geo.Geolocator.getCurrentPosition(
+        final last = await geo.Geolocator.getLastKnownPosition();
+        if (last != null) {
+          await _onPosition(config, getCookieHeader, last, forceHttp: true);
+        }
+      } catch (_) {}
+
+      /* Haute précision en arrière-plan (le stream prend le relais) */
+      unawaited(
+        geo.Geolocator.getCurrentPosition(
           desiredAccuracy: geo.LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 12),
-        );
-        await _onPosition(config, getCookieHeader, first, forceHttp: true);
-      } catch (_) {
-        /* le stream prendra le relais */
-      }
+          timeLimit: const Duration(seconds: 6),
+        ).then(
+          (first) => _onPosition(config, getCookieHeader, first, forceHttp: true),
+        ).catchError((_) {}),
+      );
 
       return {'success': true};
     } catch (e) {
@@ -411,7 +419,7 @@ class LivreurTrackingService {
     _socket = socket;
     socket.connect();
 
-    timeout = Timer(const Duration(seconds: 12), () {
+    timeout = Timer(const Duration(seconds: 5), () {
       if (!completer.isCompleted) {
         completer.complete();
       }

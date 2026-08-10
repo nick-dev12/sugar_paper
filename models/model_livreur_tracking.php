@@ -2057,10 +2057,7 @@ function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) 
         }
 
         require_once __DIR__ . '/../services/livreur_push_notifications.php';
-        notify_admins_livreur_arrive($type, $livraison_id, $admin_id, $numero);
-        if ($type === 'commande') {
-            notify_client_livreur_arrive($livraison_id);
-        }
+        livreur_enqueue_arrive_notifications($type, $livraison_id, $admin_id, $numero);
 
         return [
             'ok' => true,

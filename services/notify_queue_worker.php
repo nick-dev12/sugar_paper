@@ -129,6 +129,20 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
                     );
                     break;
 
+                case 'livreur_arrive':
+                    require_once __DIR__ . '/livreur_push_notifications.php';
+                    $arrive_type = (($p['type'] ?? '') === 'facture') ? 'facture' : 'commande';
+                    $arrive_id = (int) ($p['livraison_id'] ?? 0);
+                    $arrive_livreur = (int) ($p['livreur_id'] ?? 0);
+                    $arrive_numero = (string) ($p['numero'] ?? '');
+                    if ($arrive_id > 0 && $arrive_livreur > 0) {
+                        notify_admins_livreur_arrive($arrive_type, $arrive_id, $arrive_livreur, $arrive_numero);
+                        if ($arrive_type === 'commande') {
+                            notify_client_livreur_arrive($arrive_id);
+                        }
+                    }
+                    break;
+
                 default:
                     $result['notify']['errors'][] = 'type inconnu: ' . $type;
             }

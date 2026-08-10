@@ -2442,7 +2442,7 @@
                     'Délai dépassé en attente de votre position.',
                     ['Activez le GPS de l\'appareil', 'Autorisez la géolocalisation', 'Réessayez près d\'une fenêtre']
                 ));
-            }, timeoutMs || 15000);
+            }, timeoutMs || 12000);
 
             navigator.geolocation.getCurrentPosition(
                 function (pos) {
@@ -2477,8 +2477,58 @@
                     }
                     reject(trackingError(title, message, details));
                 },
-                { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: Math.min(timeoutMs || 12000, 10000), maximumAge: 8000 }
             );
+        });
+    }
+
+    function finishWebGpsStart(pos, deferConfirm, isManualStart) {
+        updateDriverMarker(pos.coords.latitude, pos.coords.longitude, pos.coords);
+        postPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords);
+        if (!startWatchStream()) {
+            throw trackingError(
+                'Flux GPS',
+                'Impossible de démarrer le suivi continu de position.',
+                ['Vérifiez les autorisations GPS', 'Réessayez avec un autre navigateur']
+            );
+        }
+        if (!deferConfirm) {
+            confirmDeliveryStarted();
+        }
+        return connectRealtimeAfterGpsStart(isManualStart);
+    }
+
+    /** App Flutter : GPS natif directement (évite 15–30 s de GPS WebView en double). */
+    function startTrackingViaNative(deferConfirm, isManualStart) {
+        return startNativeDriverTracking().then(function (nativeOk) {
+            if (nativeOk) {
+                if (!deferConfirm) {
+                    confirmDeliveryStarted();
+                }
+                return connectRealtimeAfterGpsStart(isManualStart);
+            }
+            syncBackgroundTracking(true);
+            return waitForFirstPosition(8000).then(function (pos) {
+                return finishWebGpsStart(pos, deferConfirm, isManualStart);
+            });
+        });
+    }
+
+    /** Navigateur web : GPS WebView puis pont natif si disponible. */
+    function startTrackingViaWeb(deferConfirm, isManualStart) {
+        return waitForFirstPosition(12000).then(function (pos) {
+            if (!deferConfirm) {
+                confirmDeliveryStarted();
+            }
+            return startNativeDriverTracking().then(function (nativeOk) {
+                if (!nativeOk) {
+                    syncBackgroundTracking(true);
+                    return finishWebGpsStart(pos, deferConfirm, isManualStart);
+                }
+                updateDriverMarker(pos.coords.latitude, pos.coords.longitude, pos.coords);
+                postPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords);
+                return connectRealtimeAfterGpsStart(isManualStart);
+            });
         });
     }
 
@@ -2625,34 +2675,10 @@
                 if (data && data.countdown) {
                     applyCountdownFromServer(data.countdown);
                 }
-                return waitForFirstPosition(15000);
-            })
-            .then(function (pos) {
-                updateDriverMarker(pos.coords.latitude, pos.coords.longitude, pos.coords);
-                postPosition(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, pos.coords);
-                if (!startWatchStream()) {
-                    throw trackingError(
-                        'Flux GPS',
-                        'Impossible de démarrer le suivi continu de position.',
-                        ['Vérifiez les autorisations GPS', 'Réessayez avec un autre navigateur']
-                    );
+                if (isNativeDriverTrackingAvailable()) {
+                    return startTrackingViaNative(deferConfirm, isManualStart);
                 }
-                if (!deferConfirm) {
-                    confirmDeliveryStarted();
-                }
-                return startNativeDriverTracking().then(function (nativeOk) {
-                    if (!nativeOk) {
-                        syncBackgroundTracking(true);
-                        if (!startWatchStream()) {
-                            throw trackingError(
-                                'Flux GPS',
-                                'Impossible de démarrer le suivi continu de position.',
-                                ['Vérifiez les autorisations GPS', 'Réessayez avec un autre navigateur']
-                            );
-                        }
-                    }
-                    return connectRealtimeAfterGpsStart(isManualStart);
-                });
+                return startTrackingViaWeb(deferConfirm, isManualStart);
             })
             .catch(function (err) {
                 autostartFailed = true;
@@ -2907,7 +2933,7 @@
             arriveBtn.setAttribute('disabled', 'disabled');
         }
         setStatus('Confirmation de votre arrivée…', 'pending');
-        showLoadingOverlay('Notification en cours…');
+        showLoadingOverlay('Enregistrement…');
 
         callWebApi({ action: 'arrive' })
             .then(function (data) {
@@ -2917,7 +2943,7 @@
                 setStatus(
                     data && data.already
                         ? 'Arrivée déjà confirmée — vous pouvez terminer la livraison'
-                        : 'Arrivée confirmée — admin et client notifiés',
+                        : 'Arrivée confirmée — notifications envoyées',
                     'live'
                 );
             })

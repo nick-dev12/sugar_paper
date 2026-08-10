@@ -213,4 +213,30 @@ if (!function_exists('livreur_notify_get_livreur_label')) {
 
         return ((int) ($result['success'] ?? 0)) > 0;
     }
+
+    /**
+     * Enfile les push « livreur arrivé » (admin + client) — ne bloque pas la réponse HTTP.
+     *
+     * @param 'commande'|'facture' $type
+     * @return bool
+     */
+    function livreur_enqueue_arrive_notifications($type, $livraison_id, $livreur_id, $numero = '') {
+        require_once __DIR__ . '/notify_queue.php';
+
+        $type = ($type === 'facture') ? 'facture' : 'commande';
+        $livraison_id = (int) $livraison_id;
+        $livreur_id = (int) $livreur_id;
+        if ($livraison_id < 1 || $livreur_id < 1) {
+            return false;
+        }
+
+        $queued = notify_queue_enqueue('livreur_arrive', [
+            'type' => $type,
+            'livraison_id' => $livraison_id,
+            'livreur_id' => $livreur_id,
+            'numero' => trim((string) $numero),
+        ], true);
+
+        return !empty($queued['success']);
+    }
 }
