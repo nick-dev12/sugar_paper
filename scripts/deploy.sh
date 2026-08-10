@@ -233,6 +233,19 @@ verify_socket_public() {
   fi
 }
 
+verify_android_assetlinks() {
+  if [[ ! -f "${DEPLOY_DIR}/scripts/verify_assetlinks.php" ]]; then
+    log_warn "scripts/verify_assetlinks.php absent — vérification App Links ignorée"
+    return 0
+  fi
+  log "Vérification Android App Links (assetlinks.json)"
+  if php "${DEPLOY_DIR}/scripts/verify_assetlinks.php" "${SITE_URL}"; then
+    log_ok "assetlinks.json OK"
+  else
+    log_warn "assetlinks.json — configurez config/assetlinks.php (SHA-256 Play Console) puis Recontrôler dans Play Console"
+  fi
+}
+
 run_php_tracking_verify() {
   if [[ ! -f "${DEPLOY_DIR}/scripts/deploy-tracking-verify.php" ]]; then
     log_warn "scripts/deploy-tracking-verify.php absent — vérification PHP ignorée"
@@ -276,6 +289,7 @@ deploy_tracking_server
 fix_permissions
 verify_site_http
 verify_socket_public
+verify_android_assetlinks
 run_php_tracking_verify
 print_pm2_status
 

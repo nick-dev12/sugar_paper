@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sugarpaper.app",
+      "sha256_cert_fingerprints": [
+        "12:A3:64:3B:AA:B5:C7:67:17:AE:DC:B2:56:12:97:12:D5:06:BA:CD:E7:E9:AB:9C:90:06:C2:72:65:C1:96:4F"
+      ]
+    }
+  }
+]

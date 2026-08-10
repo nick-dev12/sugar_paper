@@ -24,6 +24,7 @@ config/site.php
 config/firebase_config.php
 config/firebase_server.php
 config/tracking.php
+config/assetlinks.php
 
 # Serveur suivi GPS (Node.js)
 tracking-server/.env
