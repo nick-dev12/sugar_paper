@@ -20,6 +20,7 @@ $return_url = guest_checkout_safe_redirect($_POST['return_url'] ?? '/index.php',
 $is_ajax = modal_request_is_ajax();
 
 $result = process_guest_checkout_auth();
+$guest_user_id = (int) ($_SESSION['user_id'] ?? ($result['user']['id'] ?? 0));
 if (!$result['success']) {
     if ($is_ajax) {
         modal_json_response([
@@ -36,18 +37,16 @@ if ($checkout_action === 'add_to_panier') {
     require_once __DIR__ . '/../controllers/controller_panier.php';
     $add_result = process_add_to_panier();
     if ($add_result['success']) {
+        $redirect = checkout_modals_after_login_url($return_url);
         if ($is_ajax) {
-            $rendered = checkout_modals_render_cart($add_result['message'] ?? 'Produit ajouté au panier.', 'success');
             modal_json_response([
                 'ok' => true,
-                'open' => 'cart',
-                'html' => $rendered['html'],
-                'count' => $rendered['count'],
-                'empty' => !empty($rendered['empty']),
-                'message' => $add_result['message'] ?? 'Produit ajouté au panier.',
+                'reload' => true,
+                'redirect' => $redirect,
+                'user_id' => $guest_user_id,
             ]);
         }
-        header('Location: ' . checkout_modals_append_query($return_url, 'open', 'panier'));
+        header('Location: ' . $redirect);
         exit;
     }
     if ($is_ajax) {
@@ -61,13 +60,15 @@ if ($checkout_action === 'add_to_panier') {
     exit;
 }
 
+$redirect = checkout_modals_after_login_url($return_url);
 if ($is_ajax) {
     modal_json_response([
         'ok' => true,
-        'open' => 'checkout',
-        'count' => modal_panier_count(),
+        'reload' => true,
+        'redirect' => $redirect,
+        'user_id' => $guest_user_id,
     ]);
 }
 
-header('Location: ' . checkout_modals_append_query($return_url, 'open', 'commande'));
+header('Location: ' . $redirect);
 exit;

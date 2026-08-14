@@ -434,6 +434,35 @@
         });
     }
 
+    function requestGuestNotifyPermission() {
+        try {
+            if (window.SugarPaperNative && typeof window.SugarPaperNative.registerFcmToken === 'function') {
+                window.SugarPaperNative.registerFcmToken();
+            } else if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                window.flutter_inappwebview.callHandler('registerFcmToken');
+            }
+        } catch (e) { /* ignore */ }
+
+        if (window.FirebaseNotifications && window.FirebaseNotifications.isSugarPaperNativeApp
+            && window.FirebaseNotifications.isSugarPaperNativeApp()) {
+            return Promise.resolve();
+        }
+        if (typeof Notification === 'undefined' || !window.isSecureContext) {
+            return Promise.resolve();
+        }
+        if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+            return Promise.resolve();
+        }
+        try {
+            return Promise.race([
+                Notification.requestPermission().then(function () {}).catch(function () {}),
+                new Promise(function (resolve) { setTimeout(resolve, 6000); })
+            ]);
+        } catch (err) {
+            return Promise.resolve();
+        }
+    }
+
     function interceptGuestForm() {
         var form = document.getElementById('guest-checkout-form');
         if (!form || form.getAttribute('data-ckm-bound') === '1') return;
@@ -478,15 +507,20 @@
             var fd = new FormData(form);
             fd.set('nom', nom);
             fd.set('telephone', tel);
+            fd.set('accepte_conditions', '1');
             fd.append('ajax', '1');
             loading = true;
             showLoader(true);
-            fetchJson(form.getAttribute('action') || '/user/guest-checkout-auth.php', {
-                method: 'POST',
-                body: fd
+            requestGuestNotifyPermission().then(function () {
+                return fetchJson(form.getAttribute('action') || '/user/guest-checkout-auth.php', {
+                    method: 'POST',
+                    body: fd
+                });
             }).then(function (res) {
                 var data = res.data || {};
                 if (!data.ok) {
+                    loading = false;
+                    showLoader(false);
                     var err = document.getElementById('guest-checkout-error');
                     if (err) {
                         err.hidden = false;
@@ -494,24 +528,12 @@
                     }
                     return;
                 }
-                closeGuest();
-                window.CKM_USER_LOGGED = true;
-                if (typeof data.count !== 'undefined') updateBadges(data.count);
-                loading = false;
-                showLoader(false);
-                if (data.html && data.open !== 'checkout') {
-                    applyCartHtml(data.html, data.count);
+                var redirect = data.redirect || '';
+                if (data.reload && redirect) {
+                    window.location.href = redirect;
                     return;
                 }
-                if (data.open === 'checkout') {
-                    if (data.html) {
-                        applyCartHtml(data.html, data.count);
-                    }
-                    openCheckout();
-                } else {
-                    openCart();
-                }
-                return;
+                window.location.href = redirect || (window.location.pathname + '?open=panier');
             }).catch(function () {
                 form.removeAttribute('data-ckm-bound');
                 form.submit();

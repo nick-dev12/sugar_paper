@@ -468,7 +468,8 @@ function process_guest_checkout_auth() {
 
     $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
     $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
-    $accepte = isset($_POST['accepte_conditions']) && (string) $_POST['accepte_conditions'] === '1';
+    // Continuer = acceptation implicite des conditions d'utilisation
+    $accepte = true;
 
     return guest_checkout_register_or_login($nom, $telephone, $accepte);
 }

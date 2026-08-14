@@ -104,15 +104,13 @@ function send_commande_personnalisee_status_notification($user_id, $cp_id, $nouv
     $base_url = get_site_base_url();
     $link = $base_url . '/user/commande-personnalisee-details.php?id=' . $cp_id;
 
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'commande_perso_id' => (string) $cp_id,
-            'statut' => $nouveau_statut,
-            'tag' => 'cp-' . $cp_id
-        ]);
-    }
+    require_once __DIR__ . '/notify_helpers.php';
+    notifications_send_user_push($user_id, $title, $body, [
+        'link' => $link,
+        'commande_perso_id' => (string) $cp_id,
+        'statut' => $nouveau_statut,
+        'tag' => 'cp-' . $cp_id
+    ], 'cp_statut');
 
     $user_email = trim((string) $user_email);
     if ($user_email === '' || !filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
@@ -161,14 +159,12 @@ function send_commande_personnalisee_prix_notification($user_id, $cp_id, $prix, 
     $base_url = get_site_base_url();
     $link = $base_url . '/user/commande-personnalisee-details.php?id=' . $cp_id;
 
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'commande_perso_id' => (string) $cp_id,
-            'tag' => 'cp-devis-' . $cp_id
-        ]);
-    }
+    require_once __DIR__ . '/notify_helpers.php';
+    notifications_send_user_push($user_id, $title, $body, [
+        'link' => $link,
+        'commande_perso_id' => (string) $cp_id,
+        'tag' => 'cp-devis-' . $cp_id
+    ], 'cp_devis');
 
     $user_email = trim((string) $user_email);
     if ($user_email === '' || !filter_var($user_email, FILTER_VALIDATE_EMAIL)) {
@@ -214,14 +210,12 @@ function send_commande_personnalisee_confirmation_to_client($user_id, $cp_id, $u
     $base_url = get_site_base_url();
     $link = $base_url . '/user/commande-personnalisee-details.php?id=' . $cp_id;
 
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'commande_perso_id' => (string) $cp_id,
-            'tag' => 'cp-confirm-' . $cp_id
-        ]);
-    }
+    require_once __DIR__ . '/notify_helpers.php';
+    notifications_send_user_push($user_id, $title, $body, [
+        'link' => $link,
+        'commande_perso_id' => (string) $cp_id,
+        'tag' => 'cp-confirm-' . $cp_id
+    ], 'cp_confirm');
 
     $user_email = trim((string) $user_email);
     if ($user_email === '' || !filter_var($user_email, FILTER_VALIDATE_EMAIL)) {

@@ -216,28 +216,16 @@
   line-height: 1.35;
 }
 
-.guest-info-modal__checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+.guest-info-modal__legal {
   margin: 12px 0 0;
-  padding: 10px 12px;
-  font-size: clamp(0.7rem, 2.1vw, 0.78rem);
-  line-height: 1.35;
-  color: rgba(61, 40, 0, 0.8);
-  background: rgba(229, 72, 138, 0.04);
-  border: 1px solid rgba(229, 72, 138, 0.12);
-  border-radius: 10px;
-  cursor: pointer;
+  padding: 0 2px;
+  font-size: clamp(0.68rem, 2.1vw, 0.76rem);
+  line-height: 1.4;
+  color: rgba(61, 40, 0, 0.72);
+  text-align: left;
 }
 
-.guest-info-modal__checkbox input {
-  margin-top: 2px;
-  flex-shrink: 0;
-  accent-color: var(--gim-rose);
-}
-
-.guest-info-modal__checkbox a {
+.guest-info-modal__legal a {
   color: var(--gim-rose);
   font-weight: 600;
   text-decoration: underline;

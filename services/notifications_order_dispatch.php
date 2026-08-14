@@ -29,7 +29,7 @@ function notifications_dispatch_after_commande(array $result) {
         ], false);
     }
 
-    if (empty($result['is_guest']) && !empty($result['numero_commande'])) {
+    if (!empty($result['numero_commande'])) {
         $user_id = (int) ($result['user_id'] ?? 0);
         if ($user_id < 1 && session_status() !== PHP_SESSION_ACTIVE) {
             @session_start();

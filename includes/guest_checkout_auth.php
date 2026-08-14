@@ -239,9 +239,8 @@ if (!function_exists('guest_checkout_register_or_login')) {
         if (strlen($digits) < 8) {
             return ['success' => false, 'message' => 'Le numéro de téléphone semble incomplet.'];
         }
-        if (!$accepte_conditions) {
-            return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation.'];
-        }
+
+        $accepte_conditions = true;
 
         guest_client_save($nom, $telephone);
 

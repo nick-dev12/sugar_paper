@@ -31,14 +31,12 @@ function send_new_commande_confirmation_to_client($user_id, $numero_commande, $m
     $base_url = get_site_base_url();
     $link = $base_url . '/user/mes-commandes.php';
 
-    $tokens = get_fcm_tokens_by_user($user_id);
-    if (!empty($tokens)) {
-        firebase_send_notification($tokens, $title, $body, [
-            'link' => $link,
-            'numero_commande' => $numero_commande,
-            'tag' => 'commande-confirm-' . $numero_commande
-        ]);
-    }
+    require_once __DIR__ . '/notify_helpers.php';
+    notifications_send_user_push($user_id, $title, $body, [
+        'link' => $link,
+        'numero_commande' => $numero_commande,
+        'tag' => 'commande-confirm-' . $numero_commande
+    ], 'confirmation_client');
 
     $user_email = trim((string) $user_email);
     if (strpos($user_email, '@guest.sugarpaper.local') !== false) {

@@ -373,8 +373,12 @@ function update_commande_statut($commande_id, $statut) {
 
             $db->commit();
             if ($ancien_statut !== $statut) {
-                require_once __DIR__ . '/../services/notify_helpers.php';
-                notify_client_commande_statut_changed($commande_id, $statut);
+                try {
+                    require_once __DIR__ . '/../services/notify_helpers.php';
+                    notify_client_commande_statut_changed($commande_id, $statut);
+                } catch (Throwable $e) {
+                    error_log('[update_commande_statut notify] ' . $e->getMessage());
+                }
             }
             return true;
         } catch (PDOException $e) {
@@ -393,8 +397,12 @@ function update_commande_statut($commande_id, $statut) {
         ");
         $ok = $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
         if ($ok && $ancien_statut !== $statut) {
-            require_once __DIR__ . '/../services/notify_helpers.php';
-            notify_client_commande_statut_changed($commande_id, $statut);
+            try {
+                require_once __DIR__ . '/../services/notify_helpers.php';
+                notify_client_commande_statut_changed($commande_id, $statut);
+            } catch (Throwable $e) {
+                error_log('[update_commande_statut notify] ' . $e->getMessage());
+            }
         }
         return $ok;
     } catch (PDOException $e) {

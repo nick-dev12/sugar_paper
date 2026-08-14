@@ -159,11 +159,74 @@
         return window.location.origin + (value.charAt(0) === '/' ? value : '/' + value);
     }
 
-    /**
-     * Affiche une notification système.
-     * Sur Windows/Chrome, new Notification() en premier plan n'affiche souvent PAS la bulle.
-     * registration.showNotification() (Service Worker) est plus fiable.
-     */
+    function ensureFcmToastStyles() {
+        if (document.getElementById('sugar-fcm-toast-style')) {
+            return;
+        }
+        var css = document.createElement('style');
+        css.id = 'sugar-fcm-toast-style';
+        css.textContent = '#sugar-fcm-toast{position:fixed;left:50%;top:16px;bottom:auto;transform:translateX(-50%) translateY(-140%);z-index:2147483646 !important;max-width:min(440px,calc(100vw - 24px));background:#fff;color:#1a1a1a;border:1px solid rgba(229,72,138,.35);border-radius:14px;box-shadow:0 12px 40px rgba(107,47,32,.22);padding:14px 16px 14px 18px;font-family:system-ui,Segoe UI,sans-serif;transition:transform .35s ease;pointer-events:auto;}'
+            + '#sugar-fcm-toast.is-visible{transform:translateX(-50%) translateY(0) !important;}'
+            + '#sugar-fcm-toast strong{display:block;color:#E5488A;font-size:15px;margin-bottom:4px;}'
+            + '#sugar-fcm-toast p{margin:0;font-size:14px;line-height:1.4;color:#333;}'
+            + '#sugar-fcm-toast button{position:absolute;top:8px;right:10px;border:0;background:transparent;color:#999;font-size:18px;cursor:pointer;line-height:1;}';
+        document.head.appendChild(css);
+    }
+
+    var _lastToastKey = '';
+    var _lastToastAt = 0;
+
+    function showInPageToast(title, body, link) {
+        var key = String(title || '') + '|' + String(body || '');
+        var now = Date.now();
+        if (key === _lastToastKey && (now - _lastToastAt) < 2500) {
+            return;
+        }
+        _lastToastKey = key;
+        _lastToastAt = now;
+        ensureFcmToastStyles();
+        var el = document.getElementById('sugar-fcm-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'sugar-fcm-toast';
+            el.setAttribute('role', 'status');
+            document.body.appendChild(el);
+        }
+        el.innerHTML = '<button type="button" aria-label="Fermer">&times;</button>'
+            + '<strong></strong><p></p>';
+        el.querySelector('strong').textContent = title || 'Sugar Paper';
+        el.querySelector('p').textContent = body || '';
+        el.querySelector('button').onclick = function (ev) {
+            ev.stopPropagation();
+            el.classList.remove('is-visible');
+        };
+        el.onclick = function () {
+            if (link) {
+                window.location.href = link;
+            }
+        };
+        el.classList.add('is-visible');
+        clearTimeout(showInPageToast._timer);
+        showInPageToast._timer = setTimeout(function () {
+            el.classList.remove('is-visible');
+        }, 10000);
+    }
+
+    function handleIncomingPush(payload) {
+        payload = payload || {};
+        var title = (payload.notification && payload.notification.title)
+            || (payload.data && payload.data.title) || 'Sugar Paper';
+        var body = (payload.notification && payload.notification.body)
+            || (payload.data && payload.data.body) || '';
+        var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('sugar-paper-' + Date.now());
+        var link = (payload.data && payload.data.link) ? resolveNotificationLink(payload.data.link) : '';
+        log('Notification reçue', title, body);
+        if (typeof window.ClientLivraisonPopup !== 'undefined') {
+            window.ClientLivraisonPopup.onPush(payload);
+        }
+        showInPageToast(title, body, link);
+        showBrowserNotification(title, body, tag, link);
+    }
     function showBrowserNotification(title, body, tag, link) {
         if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
             warn('Permission notifications non accordée');
@@ -177,7 +240,7 @@
             badge: icon,
             tag: tag || ('sugar-paper-' + Date.now()),
             renotify: true,
-            requireInteraction: false,
+            requireInteraction: true,
             silent: false,
             data: { link: link || '' }
         };
@@ -810,6 +873,80 @@
             } catch (e) { /* ignore */ }
         },
 
+        /**
+         * Après connexion AJAX (checkout invité) : rattache le token FCM au compte.
+         */
+        bindAccountAfterLogin: function (userId) {
+            userId = parseInt(userId, 10) || 0;
+            if (userId < 1) {
+                return;
+            }
+            window.FIREBASE_NOTIFY_TYPE = 'user';
+            window.FCM_ACCOUNT_ID = userId;
+            window.FCM_ACCOUNT_KEY = 'user_' + userId;
+            window.FCM_FORCE_RESYNC = true;
+            log('Rattachement FCM après connexion, user#' + userId);
+            window.FirebaseNotifications.autoActivateForLoggedInUser();
+        },
+
+        /**
+         * Active les notifications sans passer par le tableau de bord client.
+         * App native : rattache le token déjà obtenu. Web : demande la permission puis enregistre le token.
+         */
+        autoActivateForLoggedInUser: function (opts) {
+            opts = opts || {};
+            var silent = opts.silent !== false;
+            var accountId = parseInt(window.FCM_ACCOUNT_ID, 10) || 0;
+            if (accountId < 1) {
+                return Promise.resolve(false);
+            }
+
+            try {
+                if (window.SugarPaperNative && typeof window.SugarPaperNative.registerFcmToken === 'function') {
+                    window.SugarPaperNative.registerFcmToken();
+                } else if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+                    window.flutter_inappwebview.callHandler('registerFcmToken');
+                }
+            } catch (e) { /* ignore */ }
+
+            if (isSugarPaperNativeApp()) {
+                window.FirebaseNotifications.setupForegroundHandler();
+                return Promise.resolve(true);
+            }
+
+            if (typeof Notification === 'undefined' || !window.isSecureContext) {
+                return Promise.resolve(false);
+            }
+            if (Notification.permission === 'denied') {
+                return Promise.resolve(false);
+            }
+
+            var type = window.FIREBASE_NOTIFY_TYPE || 'user';
+            var permPromise = Notification.permission === 'granted'
+                ? Promise.resolve('granted')
+                : Notification.requestPermission();
+
+            return permPromise.then(function (permission) {
+                if (permission !== 'granted') {
+                    return false;
+                }
+                window.FirebaseNotifications.setupForegroundHandler();
+                window.FirebaseNotifications.setupTokenRefreshListener();
+                return window.FirebaseNotifications.syncTokenWithServer(type, true);
+            }).then(function (ok) {
+                if (ok) {
+                    markEnabled();
+                    log('Notifications client activées (hors tableau de bord) ✓');
+                }
+                return !!ok;
+            }).catch(function (err) {
+                if (!silent) {
+                    warn('Activation auto FCM', err);
+                }
+                return false;
+            });
+        },
+
         bindButton: function (buttonEl) {
             var btn = buttonEl || document.getElementById('btn-enable-notifications');
             if (!btn || btn.dataset.notifyBound === '1') return;
@@ -842,21 +979,7 @@
             if (typeof firebase === 'undefined' || !firebase.messaging) return;
             window.FirebaseNotifications._foregroundHandlerSetup = true;
             firebase.messaging().onMessage(function (payload) {
-                log('Notification reçue (premier plan)', payload);
-                var title = (payload.notification && payload.notification.title)
-                    || (payload.data && payload.data.title) || 'Sugar Paper';
-                var body = (payload.notification && payload.notification.body)
-                    || (payload.data && payload.data.body) || '';
-                var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('sugar-paper-' + Date.now());
-                var link = (payload.data && payload.data.link) ? resolveNotificationLink(payload.data.link) : '';
-                if (typeof window.ClientLivraisonPopup !== 'undefined') {
-                    window.ClientLivraisonPopup.onPush(payload);
-                }
-                showBrowserNotification(title, body, tag, link).then(function (ok) {
-                    if (!ok) {
-                        warn('Impossible d\'afficher la bulle — vérifiez Paramètres Windows → Notifications → Chrome');
-                    }
-                });
+                handleIncomingPush(payload);
             });
         },
 
@@ -873,8 +996,10 @@
 
             if (shouldHideWebPushButton()) {
                 log('App native mobile — bouton web push masqué (FCM natif via WebView)');
-                // L'app injecte déjà le token ; on écoute quand même les messages page visible
                 window.FirebaseNotifications.setupForegroundHandler();
+                if (window.FCM_ACCOUNT_ID) {
+                    window.FirebaseNotifications.autoActivateForLoggedInUser();
+                }
                 return;
             }
 
@@ -882,11 +1007,19 @@
             window.FirebaseNotifications.bindButton(btn);
             window.FirebaseNotifications.bindHelpPanel();
 
+            var params = new URLSearchParams(window.location.search || '');
+            var forceClientActivate = window.FCM_FORCE_RESYNC === true
+                || params.get('notify') === '1';
+
             if (btn) {
                 window.FirebaseNotifications.syncButton(btn);
-            } else if (window.FCM_ACCOUNT_ID && (window.FCM_FORCE_RESYNC || isMarkedEnabled())) {
-                // Pages sans bouton : resync silencieux du token pour CE compte
-                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                if (forceClientActivate && window.FCM_ACCOUNT_ID && window.FIREBASE_NOTIFY_TYPE === 'user') {
+                    window.FirebaseNotifications.autoActivateForLoggedInUser();
+                }
+            } else if (window.FCM_ACCOUNT_ID) {
+                if (forceClientActivate || isMarkedEnabled()) {
+                    window.FirebaseNotifications.autoActivateForLoggedInUser();
+                } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                     window.FirebaseNotifications.syncTokenWithServer(
                         window.FIREBASE_NOTIFY_TYPE || 'user',
                         true
@@ -896,9 +1029,7 @@
                 }
             }
 
-            if (typeof Notification !== 'undefined'
-                && Notification.permission === 'granted'
-                && isMarkedEnabled()) {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 window.FirebaseNotifications.setupForegroundHandler();
                 window.FirebaseNotifications.setupTokenRefreshListener();
             }
@@ -907,6 +1038,15 @@
                 navigator.serviceWorker.addEventListener('message', function (event) {
                     if (event.data && event.data.type === 'FCM_SW_LOG') {
                         log('SW:', event.data.message, event.data.payload || '');
+                        if (event.data.payload && (event.data.payload.title || event.data.payload.body)) {
+                            handleIncomingPush({
+                                notification: {
+                                    title: event.data.payload.title,
+                                    body: event.data.payload.body
+                                },
+                                data: event.data.payload
+                            });
+                        }
                     }
                 });
             }
@@ -929,6 +1069,14 @@
     function initFirebaseNotifications() {
         window.FirebaseNotifications.boot();
         scheduleNativeAppUiRecheck();
+
+        window.SugarPaperClientFcm = {
+            afterLogin: function (userId) {
+                if (window.FirebaseNotifications && typeof window.FirebaseNotifications.bindAccountAfterLogin === 'function') {
+                    window.FirebaseNotifications.bindAccountAfterLogin(userId);
+                }
+            }
+        };
 
         var mq = window.matchMedia('(max-width: ' + NATIVE_APP_MOBILE_MAX_WIDTH + 'px)');
         if (typeof mq.addEventListener === 'function') {

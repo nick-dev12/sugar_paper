@@ -72,31 +72,49 @@ function notifyPageClients(message, payload) {
     });
 }
 
+function payloadDisplay(payload) {
+    payload = payload || {};
+    var data = payload.data || payload;
+    return {
+        title: (payload.notification && payload.notification.title) || data.title || 'Sugar Paper',
+        body: (payload.notification && payload.notification.body) || data.body || '',
+        link: data.link || '/user/mes-commandes.php',
+        tag: data.tag || ('sugar-paper-' + Date.now())
+    };
+}
+
+function showSwNotification(info, extraData) {
+    var icon = resolveNotificationUrl('/icons/icon-192.png');
+    return self.registration.showNotification(info.title, {
+        body: info.body,
+        icon: icon,
+        badge: icon,
+        tag: info.tag,
+        requireInteraction: true,
+        renotify: true,
+        silent: false,
+        vibrate: [200, 100, 200],
+        data: Object.assign({}, extraData || {}, { link: info.link })
+    });
+}
+
 messaging.onBackgroundMessage(function (payload) {
     console.log('[FCM-SW] Message arrière-plan', payload);
-    var title = (payload.notification && payload.notification.title)
-        || (payload.data && payload.data.title)
-        || 'Sugar Paper';
-    var body = (payload.notification && payload.notification.body)
-        || (payload.data && payload.data.body)
-        || '';
-    var link = (payload.data && payload.data.link) ? payload.data.link : '/user/mes-commandes.php';
-    var tag = (payload.data && payload.data.tag) ? payload.data.tag : ('sugar-paper-' + Date.now());
-    var icon = resolveNotificationUrl('/icons/icon-192.png');
+    notifyPageClients('Message arrière-plan reçu', payloadDisplay(payload));
+});
 
-    return notifyPageClients('Message arrière-plan reçu', { title: title, body: body, tag: tag })
-        .then(function () {
-            return self.registration.showNotification(title, {
-                body: body,
-                icon: icon,
-                badge: icon,
-                tag: tag,
-                requireInteraction: false,
-                silent: false,
-                vibrate: [200, 100, 200],
-                data: Object.assign({}, payload.data || {}, { link: link })
-            });
-        });
+self.addEventListener('push', function (event) {
+    var raw = {};
+    try {
+        raw = event.data ? event.data.json() : {};
+    } catch (e) {
+        raw = {};
+    }
+    var info = payloadDisplay(raw);
+    event.waitUntil(Promise.all([
+        notifyPageClients('Push reçu', info),
+        showSwNotification(info, raw.data || raw)
+    ]));
 });
 
 self.addEventListener('notificationclick', function (event) {

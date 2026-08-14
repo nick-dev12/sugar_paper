@@ -950,7 +950,7 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
 
         if ($current_livreur === null) {
             require_once __DIR__ . '/../services/livreur_push_notifications.php';
-            notify_admins_livreur_prise_en_charge(
+            livreur_enqueue_prise_notifications(
                 'facture',
                 $bl_id,
                 $admin_livreur_id,
@@ -1101,6 +1101,13 @@ function livreur_prendre_commande($commande_id, $admin_livreur_id, $require_toda
 
         require_once __DIR__ . '/model_commandes_admin.php';
         require_once __DIR__ . '/../services/send_commande_notification.php';
+        require_once __DIR__ . '/../services/livreur_push_notifications.php';
+        livreur_enqueue_prise_notifications(
+            'commande',
+            $commande_id,
+            $admin_livreur_id,
+            (string) ($commande['numero_commande'] ?? '')
+        );
         $statut_avant = (string) ($commande['statut'] ?? '');
         $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];
         if (in_array($statut_avant, $statuts_avant_livraison, true)) {
@@ -1192,6 +1199,14 @@ function livreur_prendre_facture($bl_id, $admin_livreur_id, $require_today = tru
         if ($upd->rowCount() < 1) {
             return ['ok' => false, 'error' => 'Impossible de prendre cette facture.'];
         }
+
+        require_once __DIR__ . '/../services/livreur_push_notifications.php';
+        livreur_enqueue_prise_notifications(
+            'facture',
+            $bl_id,
+            $admin_livreur_id,
+            (string) ($facture['numero_bl'] ?? '')
+        );
 
         return [
             'ok' => true,
@@ -1438,7 +1453,7 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
         /* Push admin uniquement à la première prise (pas à chaque re-démarrage) */
         if ($current_livreur === null) {
             require_once __DIR__ . '/../services/livreur_push_notifications.php';
-            notify_admins_livreur_prise_en_charge(
+            livreur_enqueue_prise_notifications(
                 'commande',
                 $commande_id,
                 $admin_livreur_id,
@@ -1482,18 +1497,45 @@ function livreur_assign_commande($commande_id, $livreur_id) {
 
 function livreur_start_tracking($commande_id, $livreur_id) {
     global $db;
+    $commande_id = (int) $commande_id;
+    $livreur_id = (int) $livreur_id;
+    if ($commande_id < 1 || $livreur_id < 1) {
+        return false;
+    }
     try {
+        $avant = livreur_get_commande_tracking($commande_id);
+        $deja_actif = $avant && (int) ($avant['tracking_active'] ?? 0) === 1;
+
         $stmt = $db->prepare("
             UPDATE commandes
             SET livreur_id = :livreur_id,
                 tracking_active = 1,
-                tracking_started_at = NOW()
+                tracking_started_at = COALESCE(tracking_started_at, NOW())
             WHERE id = :commande_id
         ");
-        return $stmt->execute([
-            'livreur_id' => (int) $livreur_id,
-            'commande_id' => (int) $commande_id,
+        $ok = $stmt->execute([
+            'livreur_id' => $livreur_id,
+            'commande_id' => $commande_id,
         ]);
+        if (!$ok) {
+            return false;
+        }
+
+        if ($deja_actif) {
+            return true;
+        }
+
+        require_once __DIR__ . '/model_commandes_admin.php';
+        $commande = get_commande_by_id($commande_id);
+        $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];
+        if ($commande && in_array((string) ($commande['statut'] ?? ''), $statuts_avant_livraison, true)) {
+            update_commande_statut($commande_id, 'livraison_en_cours');
+        }
+
+        require_once __DIR__ . '/../services/send_commande_notification.php';
+        notify_client_suivi_gps_demarre($commande_id);
+
+        return true;
     } catch (PDOException $e) {
         return false;
     }

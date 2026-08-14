@@ -42,8 +42,50 @@ if (!function_exists('checkout_modals_append_query')) {
     function checkout_modals_append_query($url, $key, $value)
     {
         $url = (string) $url;
-        $sep = (strpos($url, '?') !== false) ? '&' : '?';
-        return $url . $sep . rawurlencode($key) . '=' . rawurlencode((string) $value);
+        $parts = parse_url($url);
+        $path = (isset($parts['path']) && is_string($parts['path']) && $parts['path'] !== '')
+            ? $parts['path']
+            : '/index.php';
+        $qs = [];
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $qs);
+        }
+        if (!is_array($qs)) {
+            $qs = [];
+        }
+        $qs[(string) $key] = (string) $value;
+        $query = http_build_query($qs);
+        return $path . ($query !== '' ? '?' . $query : '');
+    }
+}
+
+/**
+ * Après connexion / inscription invité : recharge la page et ouvre le modal panier
+ * (le rechargement rattache le token FCM natif iOS/Android sans rebuild de l'app).
+ *
+ * @param string $url
+ * @return string
+ */
+if (!function_exists('checkout_modals_after_login_url')) {
+    function checkout_modals_after_login_url($url)
+    {
+        $url = (string) $url;
+        $parts = parse_url($url);
+        $path = (isset($parts['path']) && is_string($parts['path']) && $parts['path'] !== '')
+            ? $parts['path']
+            : '/index.php';
+        $qs = [];
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $qs);
+        }
+        if (!is_array($qs)) {
+            $qs = [];
+        }
+        unset($qs['guest_checkout'], $qs['guest_error'], $qs['open']);
+        $qs['open'] = 'panier';
+        $qs['notify'] = '1';
+        $query = http_build_query($qs);
+        return $path . ($query !== '' ? '?' . $query : '');
     }
 }
 

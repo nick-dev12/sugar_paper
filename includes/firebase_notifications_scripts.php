@@ -30,6 +30,12 @@ if (empty($enable_firebase_notifications)) {
         if (!isset($firebase_notify_type)) {
             $firebase_notify_type = 'admin';
         }
+    } elseif (!$is_admin_area) {
+        // Boutique : charger le SDK même sans session pour rattacher le token après connexion AJAX
+        $enable_firebase_notifications = true;
+        if (!isset($firebase_notify_type)) {
+            $firebase_notify_type = 'user';
+        }
     }
 }
 if (empty($enable_firebase_notifications)) {

@@ -158,13 +158,10 @@ if ($guest_nom_val === '' && function_exists('guest_client_get')) {
 
 
 
-                <label class="guest-info-modal__checkbox">
-
-                    <input type="checkbox" id="guest-checkout-conditions" name="accepte_conditions" value="1" required>
-
-                    <span>J'accepte les <a href="/conditions-utilisation.php" target="_blank" rel="noopener">conditions d'utilisation</a> *</span>
-
-                </label>
+                <p class="guest-info-modal__legal">
+                    En continuant, vous acceptez les
+                    <a href="/conditions-utilisation.php" target="_blank" rel="noopener">conditions d'utilisation</a>.
+                </p>
 
             </form>
 

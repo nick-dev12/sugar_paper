@@ -114,23 +114,91 @@ function notifications_get_commande_admin_email()
 }
 
 /**
- * Notifie le client après changement de statut d'une commande classique
+ * Envoie un push FCM à un client (tokens user) et journalise le résultat.
+ *
+ * @param int $user_id
+ * @param string $title
+ * @param string $body
+ * @param array<string, mixed> $data
+ * @param string $context Libellé pour fcm_send.log
+ * @return array{success:int,failed:int,errors:array}
+ */
+function notifications_send_user_push($user_id, $title, $body, array $data = [], $context = 'client')
+{
+    notifications_db_bootstrap();
+    require_once __DIR__ . '/../models/model_fcm.php';
+    require_once __DIR__ . '/firebase_push.php';
+
+    $user_id = (int) $user_id;
+    $context = trim((string) $context);
+    if ($context === '') {
+        $context = 'client';
+    }
+    $context .= ' user#' . $user_id;
+
+    if ($user_id < 1) {
+        $empty = ['success' => 0, 'failed' => 0, 'errors' => ['user_id invalide'], 'token_results' => []];
+        _firebase_log_send($context, $empty);
+        return $empty;
+    }
+
+    $tokens = get_fcm_tokens_by_user($user_id);
+    if (empty($tokens)) {
+        $empty = [
+            'success' => 0,
+            'failed' => 0,
+            'errors' => ['aucun token FCM pour le client #' . $user_id],
+            'token_results' => [],
+        ];
+        _firebase_log_send($context, $empty);
+        return $empty;
+    }
+
+    $token_meta = get_fcm_user_token_meta($user_id);
+    $result = firebase_send_notification($tokens, $title, $body, $data, $token_meta);
+    _firebase_log_send($context, $result);
+    return $result;
+}
+
+/**
+ * Notifie le client après changement de statut d'une commande classique.
+ * Par défaut : file d'attente (ne bloque pas la requête admin).
+ *
  * @param int $commande_id
  * @param string $nouveau_statut
+ * @param bool $immediate Si true, envoi immédiat (worker)
  * @return bool
  */
-function notify_client_commande_statut_changed($commande_id, $nouveau_statut)
+function notify_client_commande_statut_changed($commande_id, $nouveau_statut, $immediate = false)
 {
+    $commande_id = (int) $commande_id;
+    $nouveau_statut = (string) $nouveau_statut;
+    if ($commande_id < 1 || $nouveau_statut === '') {
+        return false;
+    }
+
+    if (!$immediate) {
+        require_once __DIR__ . '/notify_queue.php';
+        $queued = notify_queue_enqueue('commande_statut', [
+            'commande_id' => $commande_id,
+            'nouveau_statut' => $nouveau_statut,
+        ], true);
+        return !empty($queued['success']);
+    }
+
+    notifications_db_bootstrap();
     require_once __DIR__ . '/../models/model_commandes_admin.php';
     require_once __DIR__ . '/send_commande_notification.php';
 
-    $commande = get_commande_by_id((int) $commande_id);
+    $commande = get_commande_by_id($commande_id);
     if (!$commande) {
+        error_log('[notify_client_commande_statut_changed] commande introuvable #' . $commande_id);
         return false;
     }
 
     $user_id = (int) ($commande['user_id'] ?? 0);
     if ($user_id < 1) {
+        error_log('[notify_client_commande_statut_changed] pas de user_id commande #' . $commande_id);
         return false;
     }
 
@@ -140,7 +208,7 @@ function notify_client_commande_statut_changed($commande_id, $nouveau_statut)
         (string) ($commande['numero_commande'] ?? ''),
         $nouveau_statut,
         trim($commande['user_email'] ?? ''),
-        (int) $commande_id
+        $commande_id
     );
 
     return true;

@@ -129,6 +129,36 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
                     );
                     break;
 
+                case 'commande_statut':
+                    require_once __DIR__ . '/notify_helpers.php';
+                    notify_client_commande_statut_changed(
+                        (int) ($p['commande_id'] ?? 0),
+                        (string) ($p['nouveau_statut'] ?? ''),
+                        true
+                    );
+                    break;
+
+                case 'livreur_en_route':
+                    require_once __DIR__ . '/send_commande_notification.php';
+                    notify_client_livreur_en_route((int) ($p['commande_id'] ?? 0), true);
+                    break;
+
+                case 'suivi_gps':
+                    require_once __DIR__ . '/send_commande_notification.php';
+                    notify_client_suivi_gps_demarre((int) ($p['commande_id'] ?? 0), true);
+                    break;
+
+                case 'livreur_prise':
+                    require_once __DIR__ . '/livreur_push_notifications.php';
+                    $prise_type = (($p['type'] ?? '') === 'facture') ? 'facture' : 'commande';
+                    $prise_id = (int) ($p['livraison_id'] ?? 0);
+                    $prise_livreur = (int) ($p['livreur_id'] ?? 0);
+                    $prise_numero = (string) ($p['numero'] ?? '');
+                    if ($prise_id > 0 && $prise_livreur > 0) {
+                        notify_admins_livreur_prise_en_charge($prise_type, $prise_id, $prise_livreur, $prise_numero);
+                    }
+                    break;
+
                 case 'livreur_arrive':
                     require_once __DIR__ . '/livreur_push_notifications.php';
                     $arrive_type = (($p['type'] ?? '') === 'facture') ? 'facture' : 'commande';

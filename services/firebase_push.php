@@ -122,24 +122,15 @@ function _firebase_build_mobile_config($title, $body, $dataPayload) {
 }
 
 /**
- * Configuration Web Push (navigateur / PWA) avec logo du site
+ * Configuration Web Push (navigateur / PWA).
+ * Pas de webpush.notification : Chrome onglet au premier plan avale ces bulles
+ * sans appeler onMessage. Affichage : onMessage (toast) + onBackgroundMessage (SW).
  */
 function _firebase_build_webpush_config($title, $body, $dataPayload) {
-    $iconUrl = firebase_get_notification_icon_url();
-    $tag = isset($dataPayload['tag']) ? (string) $dataPayload['tag'] : ('sugar-paper-' . time());
     return [
         'headers' => [
             'Urgency' => 'high',
             'TTL' => '86400',
-        ],
-        'notification' => [
-            'title' => (string) $title,
-            'body' => (string) $body,
-            'icon' => $iconUrl,
-            'badge' => $iconUrl,
-            'tag' => $tag,
-            'requireInteraction' => false,
-            'silent' => false,
         ],
         'fcm_options' => [
             'link' => $dataPayload['link'] ?? '/',
@@ -255,7 +246,6 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
 
     try {
         $dataPayloadBase = firebase_prepare_push_data($title, $body, $data);
-        $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
         $mobile = _firebase_build_mobile_config($title, $body, $dataPayloadBase);
 
         $messages = [];
@@ -274,13 +264,12 @@ function _firebase_send_via_library($credentials_path, $tokens, $title, $body, $
                 && fcm_user_agent_is_desktop_browser($ua);
             $webpush = _firebase_build_webpush_config($title, $body, $payload);
 
+            // Data-only + webpush headers : Chrome premier plan reçoit via onMessage.
+            // App native : android / apns ci-dessous.
             $msg = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $token)
-                ->withNotification($notification)
                 ->withData($payload)
                 ->withWebPushConfig(\Kreait\Firebase\Messaging\WebPushConfig::fromArray($webpush));
 
-            // Toujours envoyer Android/APNs sauf navigateur desktop pur
-            // (les tokens iPhone app ont un UA Mozilla → sans APNs = aucune bulle iOS)
             if (!$desktop_only) {
                 $msg = $msg
                     ->withAndroidConfig(\Kreait\Firebase\Messaging\AndroidConfig::fromArray($mobile['android']))
@@ -493,11 +482,9 @@ function _firebase_send_native($credentials_path, $project_id, $tokens, $title, 
         $webpush = _firebase_build_webpush_config($title, $body, $dataPayload);
         $msg = [
             'token' => $token,
-            'notification' => ['title' => $title, 'body' => $body],
             'data' => $dataPayload,
             'webpush' => $webpush,
         ];
-        // iPhone / Android app : toujours APNs + Android (sinon iOS ne affiche rien)
         if (!$desktop_only) {
             $mobile = _firebase_build_mobile_config($title, $body, $dataPayload);
             $msg['android'] = $mobile['android'];
@@ -696,6 +683,12 @@ function firebase_send_notification($tokens, $title, $body, $data = [], $token_m
 function firebase_send_notification_to_all_admins($title, $body, $data = []) {
     @set_time_limit(180);
     @ignore_user_abort(true);
+
+    if (function_exists('notifications_db_bootstrap')) {
+        notifications_db_bootstrap();
+    } elseif (!function_exists('get_fcm_admin_token_groups')) {
+        require_once __DIR__ . '/../models/model_fcm.php';
+    }
 
     if (!function_exists('get_fcm_admin_token_groups')) {
         require_once __DIR__ . '/../models/model_fcm.php';

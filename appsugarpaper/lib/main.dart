@@ -615,6 +615,14 @@ class _WebViewScreenState extends State<WebViewScreen>
     );
 
     webViewController?.addJavaScriptHandler(
+      handlerName: 'registerFcmToken',
+      callback: (args) async {
+        await _registerFCMTokenInWebView();
+        return {'success': FCMService.getToken() != null};
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
       handlerName: 'startDeliveryTracking',
       callback: (args) async {
         final payload = args.isNotEmpty ? args[0] : null;
@@ -1130,6 +1138,14 @@ class _WebViewScreenState extends State<WebViewScreen>
           getDeliveryTrackingStatus: function() {
             return new Promise((resolve, reject) => {
               window.flutter_inappwebview.callHandler('getDeliveryTrackingStatus')
+                .then(result => resolve(result || { success: false }))
+                .catch(error => reject(error));
+            });
+          },
+
+          registerFcmToken: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('registerFcmToken')
                 .then(result => resolve(result || { success: false }))
                 .catch(error => reject(error));
             });

@@ -137,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
         }
     } elseif (isset($_POST['changer_statut'])) {
         $nouveau_statut = $_POST['statut'] ?? '';
-        if (in_array($nouveau_statut, ['en_attente', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'paye', 'annulee'])) {
+        if (in_array($nouveau_statut, ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'livraison_en_cours', 'livree', 'paye', 'annulee'])) {
             if (update_commande_statut($commande_id, $nouveau_statut)) {
                 $statut_mis_a_jour = $nouveau_statut;
             } else {
@@ -520,9 +520,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                             <label for="statut">Nouveau statut</label>
                             <select id="statut" name="statut" required>
                                 <option value="en_attente" <?php echo $commande['statut'] == 'en_attente' ? 'selected' : ''; ?>>En Attente</option>
+                                <option value="confirmee" <?php echo $commande['statut'] == 'confirmee' ? 'selected' : ''; ?>>Confirmée</option>
                                 <option value="prise_en_charge" <?php echo $commande['statut'] == 'prise_en_charge' ? 'selected' : ''; ?>>Prise en charge</option>
                                 <option value="en_preparation" <?php echo $commande['statut'] == 'en_preparation' ? 'selected' : ''; ?>>En Préparation</option>
                                 <option value="livraison_en_cours" <?php echo $commande['statut'] == 'livraison_en_cours' ? 'selected' : ''; ?>>Livraison en cours</option>
+                                <option value="livree" <?php echo $commande['statut'] == 'livree' ? 'selected' : ''; ?>>Livrée</option>
                                 <option value="paye" <?php echo $commande['statut'] == 'paye' ? 'selected' : ''; ?>>Payée (décrémente le stock)</option>
                                 <option value="annulee" <?php echo $commande['statut'] == 'annulee' ? 'selected' : ''; ?>>Annulée</option>
                             </select>

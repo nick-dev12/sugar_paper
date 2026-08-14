@@ -124,7 +124,16 @@ function save_fcm_token($token, $type, $user_id = null, $admin_id = null, $devic
  */
 function get_fcm_tokens_by_user($user_id)
 {
+    if (function_exists('notifications_db_bootstrap')) {
+        notifications_db_bootstrap();
+    }
     global $db;
+
+    $user_id = (int) $user_id;
+    if ($user_id < 1 || !isset($db) || !($db instanceof PDO)) {
+        error_log('[get_fcm_tokens_by_user] BDD indisponible user_id=' . $user_id);
+        return [];
+    }
 
     try {
         $stmt = $db->prepare("
@@ -133,15 +142,70 @@ function get_fcm_tokens_by_user($user_id)
             INNER JOIN users u ON u.id = ft.user_id
             WHERE ft.user_id = :user_id
               AND ft.type = 'user'
-              AND u.statut = 'actif'
+              AND (u.statut = 'actif' OR u.statut IS NULL OR u.statut = '')
               AND ft.token IS NOT NULL AND ft.token != ''
         ");
-        $stmt->execute(['user_id' => (int) $user_id]);
+        $stmt->execute(['user_id' => $user_id]);
+        $tokens = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if ($tokens) {
+            return array_values(array_unique($tokens));
+        }
+
+        // Secours : token rattaché au compte même si le statut user n'est pas « actif »
+        $stmt = $db->prepare("
+            SELECT token
+            FROM fcm_tokens
+            WHERE user_id = :user_id
+              AND token IS NOT NULL AND token != ''
+        ");
+        $stmt->execute(['user_id' => $user_id]);
         $tokens = $stmt->fetchAll(PDO::FETCH_COLUMN);
         return $tokens ? array_values(array_unique($tokens)) : [];
     } catch (PDOException $e) {
+        error_log('[get_fcm_tokens_by_user] ' . $e->getMessage());
         return [];
     }
+}
+
+/**
+ * Métadonnées tokens client (user_agent) pour adapter web vs app native.
+ *
+ * @param int $user_id
+ * @return array<string, array{user_agent:string}>
+ */
+function get_fcm_user_token_meta($user_id)
+{
+    if (function_exists('notifications_db_bootstrap')) {
+        notifications_db_bootstrap();
+    }
+    global $db;
+
+    $user_id = (int) $user_id;
+    $meta = [];
+    if ($user_id < 1 || !isset($db) || !($db instanceof PDO)) {
+        return $meta;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT token, user_agent
+            FROM fcm_tokens
+            WHERE user_id = :user_id
+              AND token IS NOT NULL AND token != ''
+        ");
+        $stmt->execute(['user_id' => $user_id]);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $token = trim((string) ($row['token'] ?? ''));
+            if ($token === '') {
+                continue;
+            }
+            $meta[$token] = ['user_agent' => (string) ($row['user_agent'] ?? '')];
+        }
+    } catch (PDOException $e) {
+        return $meta;
+    }
+
+    return $meta;
 }
 
 /**
@@ -234,8 +298,16 @@ function delete_fcm_tokens_by_user($user_id)
  */
 function get_fcm_admin_token_groups()
 {
+    if (function_exists('notifications_db_bootstrap')) {
+        notifications_db_bootstrap();
+    }
     global $db;
     $groups = [];
+
+    if (!isset($db) || !($db instanceof PDO)) {
+        error_log('[get_fcm_admin_token_groups] BDD indisponible');
+        return [];
+    }
 
     try {
         $stmt = $db->query("
