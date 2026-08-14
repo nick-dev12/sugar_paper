@@ -19,7 +19,8 @@ require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 $tables_ready = livreur_tracking_tables_ready();
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? 0);
-$regarder_mode = ($bl_id > 0 || $commande_id > 0)
+$cp_id = (int) ($_GET['cp_id'] ?? 0);
+$regarder_mode = ($bl_id > 0 || $commande_id > 0 || $cp_id > 0)
     && isset($_GET['regarder'])
     && (string) $_GET['regarder'] === '1';
 
@@ -36,7 +37,10 @@ if (!$regarder_mode && !admin_can_livreur_gps()) {
 $livraison = false;
 $livraison_type = '';
 
-if ($tables_ready && $bl_id > 0) {
+if ($tables_ready && $cp_id > 0) {
+    $livraison = livreur_get_cp_tracking($cp_id);
+    $livraison_type = 'personnalisee';
+} elseif ($tables_ready && $bl_id > 0) {
     $livraison = livreur_get_facture_tracking($bl_id);
     $livraison_type = 'facture';
 } elseif ($tables_ready && $commande_id > 0) {
@@ -55,6 +59,10 @@ if ($livraison) {
         $client_nom = trim((string) ($livraison['client_nom'] ?? $livraison['raison_sociale'] ?? ''));
         $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
         $statut_label = livreur_facture_statut_livraison($livraison);
+    } elseif ($livraison_type === 'personnalisee') {
+        $client_nom = trim((string) ($livraison['client_prenom'] ?? '') . ' ' . (string) ($livraison['client_nom'] ?? ''));
+        $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
+        $statut_label = livreur_cp_statut_livraison($livraison);
     } else {
         $client_nom = trim((string) ($livraison['client_prenom'] ?? '') . ' ' . (string) ($livraison['client_nom'] ?? ''));
         $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
@@ -72,11 +80,18 @@ $realtime_configured = tracking_realtime_available();
 $watch_token_url = '';
 if ($livraison_type === 'facture' && $bl_id > 0) {
     $watch_token_url = '/api/tracking/watch-token.php?bl_id=' . $bl_id;
+} elseif ($livraison_type === 'personnalisee' && $cp_id > 0) {
+    $watch_token_url = '/api/tracking/watch-token.php?cp_id=' . $cp_id;
 } elseif ($livraison_type === 'commande' && $commande_id > 0) {
     $watch_token_url = '/api/tracking/watch-token.php?commande_id=' . $commande_id;
 }
 
-$can_manage_livraison = $livraison && livreur_web_can_manage_livraison((int) $_SESSION['admin_id'], $commande_id > 0 ? $commande_id : null, $bl_id > 0 ? $bl_id : null);
+$can_manage_livraison = $livraison && livreur_web_can_manage_livraison(
+    (int) $_SESSION['admin_id'],
+    $commande_id > 0 ? $commande_id : null,
+    $bl_id > 0 ? $bl_id : null,
+    $cp_id > 0 ? $cp_id : null
+);
 $can_start_livraison = $can_manage_livraison && !$regarder_mode;
 $geo_ready = $delivery_lat !== null && $delivery_lng !== null;
 $tracking_active_initial = $livraison ? (int) ($livraison['tracking_active'] ?? 0) : 0;
@@ -89,8 +104,10 @@ $watch_only = $regarder_mode || !$can_manage_livraison;
 $index_back_url = $regarder_mode
     ? ($bl_id > 0
         ? '../invoice/bl_voir.php?id=' . (int) $bl_id
-        : '../commandes/details.php?id=' . (int) $commande_id)
-    : ('index.php' . ($livraison_type === 'facture' ? '?tab=facture' : ''));
+        : ($cp_id > 0
+            ? '../commandes-personnalisees/details.php?id=' . (int) $cp_id
+            : '../commandes/details.php?id=' . (int) $commande_id))
+    : ('index.php' . ($livraison_type === 'facture' ? '?tab=facture' : ($livraison_type === 'personnalisee' ? '?tab=personnalisees' : '')));
 $show_share_delivery = $livraison && !empty($livraison['livreur_id']);
 $embedded_watch_token = '';
 $initial_watch_payload = null;
@@ -98,6 +115,8 @@ if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
     $watch_row = null;
     if ($bl_id > 0) {
         $watch_row = livreur_create_watch_token(null, 'admin', (int) $_SESSION['admin_id'], null, $bl_id);
+    } elseif ($cp_id > 0) {
+        $watch_row = livreur_create_watch_token(null, 'admin', (int) $_SESSION['admin_id'], null, null, $cp_id);
     } elseif ($commande_id > 0) {
         $watch_row = livreur_create_watch_token($commande_id, 'admin', (int) $_SESSION['admin_id'], null);
     }
@@ -106,14 +125,15 @@ if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
         $last_pos = livreur_get_last_position(
             (int) $livraison['livreur_id'],
             $commande_id > 0 ? $commande_id : null,
-            $bl_id > 0 ? $bl_id : null
+            $bl_id > 0 ? $bl_id : null,
+            $cp_id > 0 ? $cp_id : null
         );
         $initial_watch_payload = [
             'success' => true,
             'watch_token' => $embedded_watch_token,
             'livraison_type' => $livraison_type,
             'commande' => [
-                'id' => $livraison_type === 'facture' ? $bl_id : $commande_id,
+                'id' => $livraison_type === 'facture' ? $bl_id : ($livraison_type === 'personnalisee' ? $cp_id : $commande_id),
                 'numero_commande' => $livraison_type === 'facture'
                     ? ($livraison['numero_bl'] ?? '')
                     : ($livraison['numero_commande'] ?? ''),
@@ -433,6 +453,7 @@ if ($initial_watch_payload !== null) {
 window.LIVREUR_TRACKING_CONFIG = {
     commandeId: <?php echo $livraison_type === 'commande' ? (int) $commande_id : 0; ?>,
     blId: <?php echo $livraison_type === 'facture' ? (int) $bl_id : 0; ?>,
+    cpId: <?php echo $livraison_type === 'personnalisee' ? (int) $cp_id : 0; ?>,
     livraisonType: <?php echo json_encode($livraison_type, JSON_UNESCAPED_UNICODE); ?>,
     socketUrl: <?php echo json_encode($socket_client_url, JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
@@ -467,7 +488,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     myDeliveriesUrl: '/api/tracking/mes-livraisons.php?started=1',
     enableBackgroundTracking: <?php echo $can_start_livraison ? 'true' : 'false'; ?>,
     currentDeliveryKey: <?php echo json_encode(
-        $livraison_type === 'facture' ? 'facture-' . (int) $bl_id : 'commande-' . (int) $commande_id,
+        $livraison_type === 'facture'
+            ? 'facture-' . (int) $bl_id
+            : ($livraison_type === 'personnalisee' ? 'personnalisee-' . (int) $cp_id : 'commande-' . (int) $commande_id),
         JSON_UNESCAPED_UNICODE
     ); ?>,
     livreurPhotoUrl: <?php echo json_encode($livreur_photo_url, JSON_UNESCAPED_SLASHES); ?>,

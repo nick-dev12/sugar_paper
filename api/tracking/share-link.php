@@ -28,17 +28,34 @@ if (stripos($content_type, 'application/json') !== false) {
 
 $commande_id = (int) ($input['commande_id'] ?? 0);
 $bl_id = (int) ($input['bl_id'] ?? 0);
+$cp_id = (int) ($input['cp_id'] ?? 0);
 
-if ($commande_id < 1 && $bl_id < 1) {
+if ($commande_id < 1 && $bl_id < 1 && $cp_id < 1) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'bl_id ou commande_id requis'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => 'bl_id, commande_id ou cp_id requis'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $label = 'Suivi livraison';
 $client_name = '';
 
-if ($bl_id > 0) {
+if ($cp_id > 0) {
+    $cp = livreur_get_cp_tracking($cp_id);
+    if (!$cp || empty($cp['livreur_id'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Aucune livraison en cours pour cette commande personnalisée.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $watch = livreur_create_watch_token(null, 'client', null, null, null, $cp_id);
+    if (!$watch) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Impossible de générer le lien.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $label = 'Suivi livraison — ' . livreur_cp_numero($cp_id);
+    $client_name = trim((string) ($cp['client_prenom'] ?? '') . ' ' . (string) ($cp['client_nom'] ?? ''));
+    $path = '/suivi-livraison.php?cp_id=' . $cp_id . '&token=' . rawurlencode($watch['token']);
+} elseif ($bl_id > 0) {
     $facture = livreur_get_facture_tracking($bl_id);
     if (!$facture || empty($facture['livreur_id'])) {
         http_response_code(400);

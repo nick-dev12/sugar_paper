@@ -38,19 +38,27 @@ if (stripos($content_type, 'application/json') !== false) {
 $action = trim((string) ($input['action'] ?? ''));
 $commande_id = (int) ($input['commande_id'] ?? 0);
 $bl_id = (int) ($input['bl_id'] ?? 0);
+$cp_id = (int) ($input['cp_id'] ?? 0);
 $admin_id = (int) $_SESSION['admin_id'];
 
-if ($commande_id < 1 && $bl_id < 1) {
+if ($commande_id < 1 && $bl_id < 1 && $cp_id < 1) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'commande_id ou bl_id requis']);
+    echo json_encode(['success' => false, 'message' => 'commande_id, bl_id ou cp_id requis']);
     exit;
 }
 
 $cmd_param = $commande_id > 0 ? $commande_id : null;
 $bl_param = $bl_id > 0 ? $bl_id : null;
+$cp_param = $cp_id > 0 ? $cp_id : null;
+if ($cp_param) {
+    $cmd_param = null;
+    $bl_param = null;
+} elseif ($bl_param) {
+    $cmd_param = null;
+}
 
 if ($action === 'start') {
-    $result = livreur_start_web_tracking($admin_id, $cmd_param, $bl_param);
+    $result = livreur_start_web_tracking($admin_id, $cmd_param, $bl_param, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
@@ -66,7 +74,7 @@ if ($action === 'start') {
 
 if ($action === 'set_countdown') {
     $duration_seconds = (int) ($input['duration_seconds'] ?? 0);
-    $result = livreur_countdown_init_from_duration($admin_id, $cmd_param, $bl_param, $duration_seconds);
+    $result = livreur_countdown_init_from_duration($admin_id, $cmd_param, $bl_param, $duration_seconds, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
@@ -81,7 +89,7 @@ if ($action === 'set_countdown') {
 
 if ($action === 'stop') {
     /* Pause uniquement du suivi GPS — ne marque PAS la livraison comme terminée */
-    $result = livreur_stop_web_tracking($admin_id, $cmd_param, $bl_param);
+    $result = livreur_stop_web_tracking($admin_id, $cmd_param, $bl_param, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
@@ -92,7 +100,7 @@ if ($action === 'stop') {
 }
 
 if ($action === 'arrive') {
-    $result = livreur_marquer_arrivee($admin_id, $cmd_param, $bl_param);
+    $result = livreur_marquer_arrivee($admin_id, $cmd_param, $bl_param, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
@@ -109,7 +117,7 @@ if ($action === 'arrive') {
 
 if ($action === 'terminer') {
     /* Clôture définitive : uniquement via le bouton Terminer */
-    $result = livreur_terminer_livraison($admin_id, $cmd_param, $bl_param);
+    $result = livreur_terminer_livraison($admin_id, $cmd_param, $bl_param, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);
@@ -128,7 +136,7 @@ if ($action === 'position') {
         echo json_encode(['success' => false, 'message' => 'Coordonnées requises']);
         exit;
     }
-    $result = livreur_save_web_position($admin_id, $latitude, $longitude, $cmd_param, $bl_param, $accuracy);
+    $result = livreur_save_web_position($admin_id, $latitude, $longitude, $cmd_param, $bl_param, $accuracy, $cp_param);
     if (empty($result['ok'])) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur']);

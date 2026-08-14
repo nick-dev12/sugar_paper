@@ -5,7 +5,7 @@
     'use strict';
 
     var cfg = window.LIVREUR_BG_PAGE_CONFIG;
-    if (!cfg || (!cfg.commandeId && !cfg.blId)) {
+    if (!cfg || (!cfg.commandeId && !cfg.blId && !cfg.cpId)) {
         return;
     }
 
@@ -22,6 +22,9 @@
         }
         if (cfg.blId) {
             body.bl_id = cfg.blId;
+        }
+        if (cfg.cpId) {
+            body.cp_id = cfg.cpId;
         }
         if (extra.latitude != null) {
             body.latitude = extra.latitude;
@@ -63,7 +66,9 @@
             speed: coords && coords.speed != null ? coords.speed : null,
             heading: coords && coords.heading != null ? coords.heading : null
         };
-        if (cfg.blId) {
+        if (cfg.cpId) {
+            payload.cp_id = cfg.cpId;
+        } else if (cfg.blId) {
             payload.bl_id = cfg.blId;
         } else if (cfg.commandeId) {
             payload.commande_id = cfg.commandeId;
@@ -152,7 +157,8 @@
                     role: 'watch',
                     token: token,
                     commande_id: cfg.commandeId || 0,
-                    bl_id: cfg.blId || 0
+                    bl_id: cfg.blId || 0,
+                    cp_id: cfg.cpId || 0
                 }
             });
 

@@ -1,44 +1,41 @@
 /**
- * Assistant IA JotForm — avatar / launcher masqué (demande produit)
+ * Assistant IA JotForm
+ * Bulle : position:fixed, au-dessus de #bottomNav (même logique que .social-floating)
  */
 
 :root {
-    --jf-agent-bottom-offset: 24px;
-    --jf-agent-left-offset: 14px;
+  --jf-agent-bottom-offset: 24px;
+  --jf-agent-left-offset: 16px;
+  --jf-agent-top-offset: 12px;
+  --jf-agent-panel-max-height: calc(100dvh - 48px);
 }
 
 @media (max-width: 992px) {
-    html.has-bottom-nav {
-        --jf-agent-bottom-offset: calc(var(--bottom-nav-stack-height, 88px) + env(safe-area-inset-bottom, 0px));
-    }
+  :root,
+  html.has-bottom-nav {
+    --jf-agent-bottom-offset: calc(60px + env(safe-area-inset-bottom, 0px));
+    --jf-agent-left-offset: 10px;
+    --jf-agent-top-offset: calc(10px + env(safe-area-inset-top, 0px));
+    --jf-agent-panel-max-height: calc(
+      100dvh - var(--jf-agent-bottom-offset) - var(--jf-agent-top-offset)
+    );
+  }
 }
 
-/* Masquer entièrement l'avatar / bulle flottante Jotform */
-#JotformAgent-019f778143a0700083020339cfca9d410011,
-[id^="JotformAgent-"],
 .ai-agent-chat-avatar-container,
-.ai-agent-avatar-content,
-.ai-agent-chat-avatar,
-.ai-agent-chat-avatar-pulse-wrapper,
-.embedded-agent-container .ai-agent-chat-avatar-container {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    overflow: hidden !important;
+.ai-agent-chat-avatar {
+  position: fixed !important;
+  bottom: var(--jf-agent-bottom-offset) !important;
+  left: var(--jf-agent-left-offset) !important;
+  top: auto !important;
+  right: auto !important;
+  inset: auto auto var(--jf-agent-bottom-offset) var(--jf-agent-left-offset) !important;
+  transform: none !important;
+  z-index: 10018 !important;
 }
 
-#JotformAgent-019f778143a0700083020339cfca9d410011 img[alt="agent"],
-[id^="JotformAgent-"] img[alt="agent"],
-img[src*="jotform.com/agent/"][alt="agent"] {
-    display: none !important;
-    visibility: hidden !important;
-}
-
-@media (max-width: 600px) {
-    :root {
-        --jf-agent-left-offset: 12px;
-    }
+[id^="JotformAgent-"] .jficc,
+[id^="JotformAgent-"] .embedded-agent-container {
+  transform: none !important;
+  filter: none !important;
 }

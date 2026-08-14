@@ -5,7 +5,7 @@
     'use strict';
 
     var cfg = window.LIVREUR_TRACKING_CONFIG;
-    if (!cfg || (!cfg.commandeId && !cfg.blId)) {
+    if (!cfg || (!cfg.commandeId && !cfg.blId && !cfg.cpId)) {
         return;
     }
 
@@ -1793,7 +1793,9 @@
         if (cfg.publicWatchToken) {
             opts.token = cfg.publicWatchToken;
         }
-        if (cfg.blId) {
+        if (cfg.cpId) {
+            opts.cpId = cfg.cpId;
+        } else if (cfg.blId) {
             opts.blId = cfg.blId;
         } else if (cfg.commandeId) {
             opts.commandeId = cfg.commandeId;
@@ -1844,7 +1846,9 @@
             distance_m: routeData.distance_m || 0,
             duration_s: routeData.duration_s || 0,
         };
-        if (cfg.blId) {
+        if (cfg.cpId) {
+            payload.cp_id = cfg.cpId;
+        } else if (cfg.blId) {
             payload.bl_id = cfg.blId;
         } else if (cfg.commandeId) {
             payload.commande_id = cfg.commandeId;
@@ -2070,6 +2074,7 @@
 
     function webApiPayload(extra) {
         var body = { action: extra.action };
+        if (cfg.cpId) body.cp_id = cfg.cpId;
         if (cfg.commandeId) body.commande_id = cfg.commandeId;
         if (cfg.blId) body.bl_id = cfg.blId;
         if (extra.latitude != null) body.latitude = extra.latitude;
@@ -2314,6 +2319,7 @@
                     token: watchToken,
                     commande_id: cfg.commandeId || 0,
                     bl_id: cfg.blId || 0,
+                    cp_id: cfg.cpId || 0,
                 },
             });
 
@@ -2550,7 +2556,9 @@
             speed: coords && coords.speed != null ? coords.speed : null,
             heading: coords && coords.heading != null ? coords.heading : null
         };
-        if (cfg.blId) {
+        if (cfg.cpId) {
+            payload.cp_id = cfg.cpId;
+        } else if (cfg.blId) {
             payload.bl_id = cfg.blId;
         } else if (cfg.commandeId) {
             payload.commande_id = cfg.commandeId;
@@ -3072,7 +3080,9 @@
     function buildLastPositionUrl() {
         var url = cfg.lastPositionUrl || '/api/tracking/last-position.php';
         var params = new URLSearchParams();
-        if (cfg.blId) {
+        if (cfg.cpId) {
+            params.set('cp_id', String(cfg.cpId));
+        } else if (cfg.blId) {
             params.set('bl_id', String(cfg.blId));
         } else if (cfg.commandeId) {
             params.set('commande_id', String(cfg.commandeId));
@@ -3240,7 +3250,9 @@
 
         function openShareModal() {
             var body = {};
-            if (cfg.blId) {
+            if (cfg.cpId) {
+                body.cp_id = cfg.cpId;
+            } else if (cfg.blId) {
                 body.bl_id = cfg.blId;
             } else if (cfg.commandeId) {
                 body.commande_id = cfg.commandeId;

@@ -177,6 +177,12 @@ function users_phone_lookup_variants($telephone) {
 
     $variants = [$digits];
 
+    // Indicatif international saisi en 00 (ex. 00221…)
+    if (strlen($digits) > 4 && strpos($digits, '00') === 0) {
+        $digits = substr($digits, 2);
+        $variants[] = $digits;
+    }
+
     // Sénégal : 221 + 9 chiffres (70, 76, 77, 78…)
     if (strlen($digits) === 12 && strpos($digits, '221') === 0) {
         $local = substr($digits, 3);
@@ -203,6 +209,12 @@ function users_phone_lookup_variants($telephone) {
     }
     if (strlen($digits) === 10 && $digits[0] === '0') {
         $variants[] = '33' . substr($digits, 1);
+    }
+
+    foreach ($variants as $variant) {
+        if ($variant !== '' && strpos($variant, '00') !== 0 && strlen($variant) >= 9) {
+            $variants[] = '00' . $variant;
+        }
     }
 
     return array_values(array_unique(array_filter($variants)));

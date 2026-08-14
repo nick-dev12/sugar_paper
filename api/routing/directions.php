@@ -23,11 +23,13 @@ if (!$authorized) {
     $token = trim((string) ($_GET['token'] ?? ''));
     $commande_id = (int) ($_GET['commande_id'] ?? 0);
     $bl_id = (int) ($_GET['bl_id'] ?? 0);
-    if ($token !== '' && ($commande_id > 0 || $bl_id > 0)) {
+    $cp_id = (int) ($_GET['cp_id'] ?? 0);
+    if ($token !== '' && ($commande_id > 0 || $bl_id > 0 || $cp_id > 0)) {
         $row = livreur_get_watch_token_row(
             $token,
             $commande_id > 0 ? $commande_id : null,
-            $bl_id > 0 ? $bl_id : null
+            $bl_id > 0 ? $bl_id : null,
+            $cp_id > 0 ? $cp_id : null
         );
         if ($row) {
             $authorized = true;

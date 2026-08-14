@@ -360,6 +360,8 @@ function get_statuts_commande_personnalisee() {
         'devis_envoye' => 'Devis envoyé',
         'acceptee' => 'Acceptée',
         'refusee' => 'Refusée',
+        'livraison_en_cours' => 'Livraison en cours',
+        'livree' => 'Livrée',
         'terminee' => 'Terminée',
         'annulee' => 'Annulée'
     ];

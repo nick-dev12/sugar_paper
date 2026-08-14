@@ -244,6 +244,19 @@ function process_commande_personnalisee() {
         $errors[] = 'Le téléphone est obligatoire.';
     } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
         $errors[] = 'Le format du téléphone n\'est pas valide.';
+    } else {
+        require_once __DIR__ . '/../models/model_users.php';
+        $tel_digits = users_normalize_phone_digits($telephone);
+        if (strlen($tel_digits) < 8) {
+            $errors[] = 'Le numéro de téléphone semble incomplet.';
+        } else {
+            $telephone = $tel_digits;
+        }
+    }
+
+    $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
+    if ($csrf === '' || empty($_SESSION['cp_form_csrf']) || !hash_equals((string) $_SESSION['cp_form_csrf'], $csrf)) {
+        $errors[] = 'Session expirée. Veuillez renvoyer le formulaire.';
     }
 
     if ($user_id > 0) {
@@ -287,6 +300,22 @@ function process_commande_personnalisee() {
     }
 
     if (empty($errors)) {
+        if ($user_id < 1) {
+            require_once __DIR__ . '/../includes/guest_checkout_auth.php';
+            $auth = guest_checkout_register_or_login($nom, $telephone, true);
+            if (empty($auth['success'])) {
+                $errors[] = (string) ($auth['message'] ?? 'Impossible de créer ou de connecter le compte avec ce numéro.');
+            } else {
+                $user_id = (int) ($auth['user']['id'] ?? 0);
+                if ($user_id > 0) {
+                    $email = trim((string) ($auth['user']['email'] ?? $email));
+                    $prenom = trim((string) ($auth['user']['prenom'] ?? $prenom));
+                }
+            }
+        }
+    }
+
+    if (empty($errors)) {
         $upload_batch = upload_commande_personnalisee_images($images_files);
         if (!$upload_batch['success'] && !empty($upload_batch['message'])) {
             $errors[] = $upload_batch['message'];
@@ -299,6 +328,12 @@ function process_commande_personnalisee() {
             } else {
                 $image_reference = $upload_result['path'];
             }
+        }
+    }
+
+    if (empty($errors)) {
+        if ($user_id < 1) {
+            $errors[] = 'Impossible d\'associer la demande à un compte. Vérifiez votre numéro.';
         }
     }
 
@@ -321,7 +356,7 @@ function process_commande_personnalisee() {
         $id = create_commande_personnalisee($data);
         if ($id) {
             $success = true;
-            $message = 'Votre demande de commande personnalisée a été envoyée avec succès. Nous vous contacterons rapidement.';
+            $message = 'Votre demande de commande personnalisée a été envoyée avec succès. Vous pouvez la suivre dans Mes commandes.';
             return [
                 'success' => true,
                 'message' => $message,

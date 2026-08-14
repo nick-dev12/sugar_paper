@@ -14,7 +14,7 @@
                 return null;
             }
             var data = JSON.parse(raw);
-            if (!data || (!data.blId && !data.commandeId)) {
+            if (!data || (!data.blId && !data.commandeId && !data.cpId)) {
                 return null;
             }
             return data;
@@ -41,6 +41,9 @@
         if (!data) {
             return '';
         }
+        if (data.cpId) {
+            return 'cp-' + data.cpId;
+        }
         if (data.blId) {
             return 'bl-' + data.blId;
         }
@@ -55,6 +58,9 @@
             return false;
         }
         var params = new URLSearchParams(global.location.search || '');
+        if (data.cpId && params.get('cp_id') === String(data.cpId)) {
+            return true;
+        }
         if (data.blId && params.get('bl_id') === String(data.blId)) {
             return true;
         }
@@ -66,7 +72,9 @@
 
     function buildBackgroundUrl(data) {
         var base = '/admin/livreurs/tracking-background.php';
-        var qs = data.blId ? ('bl_id=' + encodeURIComponent(String(data.blId))) : ('commande_id=' + encodeURIComponent(String(data.commandeId)));
+        var qs = data.cpId
+            ? ('cp_id=' + encodeURIComponent(String(data.cpId)))
+            : (data.blId ? ('bl_id=' + encodeURIComponent(String(data.blId))) : ('commande_id=' + encodeURIComponent(String(data.commandeId))));
         return base + '?' + qs;
     }
 
@@ -122,13 +130,14 @@
     }
 
     function saveSession(cfg) {
-        if (!cfg || (!cfg.blId && !cfg.commandeId)) {
+        if (!cfg || (!cfg.blId && !cfg.commandeId && !cfg.cpId)) {
             return;
         }
         writeSession({
             blId: cfg.blId || 0,
             commandeId: cfg.commandeId || 0,
-            livraisonType: cfg.livraisonType || (cfg.blId ? 'facture' : 'commande'),
+            cpId: cfg.cpId || 0,
+            livraisonType: cfg.livraisonType || (cfg.cpId ? 'personnalisee' : (cfg.blId ? 'facture' : 'commande')),
             webApiUrl: cfg.webApiUrl || '/api/tracking/livreur-web.php',
             watchTokenUrl: cfg.watchTokenUrl || '',
             socketUrl: cfg.socketUrl || '',

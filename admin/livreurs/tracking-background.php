@@ -21,11 +21,15 @@ require_once __DIR__ . '/../../includes/asset_version.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? 0);
+$cp_id = (int) ($_GET['cp_id'] ?? 0);
 $admin_id = (int) $_SESSION['admin_id'];
 
 $livraison = null;
 $livraison_type = '';
-if ($bl_id > 0 && livreur_tracking_tables_ready()) {
+if ($cp_id > 0 && livreur_tracking_tables_ready()) {
+    $livraison = livreur_get_cp_tracking($cp_id);
+    $livraison_type = 'personnalisee';
+} elseif ($bl_id > 0 && livreur_tracking_tables_ready()) {
     $livraison = livreur_get_facture_tracking($bl_id);
     $livraison_type = 'facture';
 } elseif ($commande_id > 0 && livreur_tracking_tables_ready()) {
@@ -33,7 +37,12 @@ if ($bl_id > 0 && livreur_tracking_tables_ready()) {
     $livraison_type = 'commande';
 }
 
-if (!$livraison || !livreur_web_can_manage_livraison($admin_id, $commande_id > 0 ? $commande_id : null, $bl_id > 0 ? $bl_id : null)) {
+if (!$livraison || !livreur_web_can_manage_livraison(
+    $admin_id,
+    $commande_id > 0 ? $commande_id : null,
+    $bl_id > 0 ? $bl_id : null,
+    $cp_id > 0 ? $cp_id : null
+)) {
     http_response_code(403);
     exit;
 }
@@ -52,12 +61,16 @@ $realtime_configured = tracking_realtime_available();
 $watch_token_url = '';
 if ($livraison_type === 'facture' && $bl_id > 0) {
     $watch_token_url = '/api/tracking/watch-token.php?bl_id=' . $bl_id;
+} elseif ($livraison_type === 'personnalisee' && $cp_id > 0) {
+    $watch_token_url = '/api/tracking/watch-token.php?cp_id=' . $cp_id;
 } elseif ($livraison_type === 'commande' && $commande_id > 0) {
     $watch_token_url = '/api/tracking/watch-token.php?commande_id=' . $commande_id;
 }
 
 $status_url = '/api/tracking/last-position.php?';
-if ($bl_id > 0) {
+if ($cp_id > 0) {
+    $status_url .= 'cp_id=' . $cp_id;
+} elseif ($bl_id > 0) {
     $status_url .= 'bl_id=' . $bl_id;
 } else {
     $status_url .= 'commande_id=' . $commande_id;
@@ -76,6 +89,7 @@ if ($bl_id > 0) {
 window.LIVREUR_BG_PAGE_CONFIG = {
     commandeId: <?php echo $livraison_type === 'commande' ? (int) $commande_id : 0; ?>,
     blId: <?php echo $livraison_type === 'facture' ? (int) $bl_id : 0; ?>,
+    cpId: <?php echo $livraison_type === 'personnalisee' ? (int) $cp_id : 0; ?>,
     webApiUrl: '/api/tracking/livreur-web.php',
     watchTokenUrl: <?php echo json_encode($watch_token_url, JSON_UNESCAPED_SLASHES); ?>,
     statusUrl: <?php echo json_encode($status_url, JSON_UNESCAPED_SLASHES); ?>,

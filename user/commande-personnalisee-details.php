@@ -18,6 +18,7 @@ if ($cp_id <= 0) {
 }
 
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
+require_once __DIR__ . '/../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 $cp = get_commande_personnalisee_by_id($cp_id);
 
@@ -47,9 +48,21 @@ $cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
     <div class="content-header">
         <h1><i class="fas fa-palette"></i> Ma commande personnalisée</h1>
         <div class="header-actions">
+            <?php if (livreur_client_peut_suivre_gps_cp($cp)): ?>
+                <a href="suivi-commande-personnalisee.php?id=<?php echo (int) $cp['id']; ?>" class="btn-primary">
+                    <i class="fas fa-location-dot"></i> Suivre la livraison
+                </a>
+            <?php endif; ?>
             <a href="mes-commandes.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
         </div>
     </div>
+
+    <?php if (isset($_GET['suivi']) && $_GET['suivi'] === 'indisponible'): ?>
+    <div class="message error">
+        <i class="fas fa-info-circle"></i>
+        <span>Le suivi GPS n'est pas encore disponible. Il s'affichera dès que le livreur aura démarré la livraison.</span>
+    </div>
+    <?php endif; ?>
 
     <section class="content-section">
         <div class="commande-perso-detail-card">

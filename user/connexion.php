@@ -597,10 +597,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     </script>
     <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
-    <?php
-    $skip_jotform_ai_assistant = true;
-    include __DIR__ . '/../includes/social_floating.php';
-    ?>
+    <?php include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 
 </html>

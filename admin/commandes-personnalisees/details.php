@@ -20,6 +20,7 @@ if ($cp_id <= 0) {
 
 require_once __DIR__ . '/../../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../../models/model_factures_personnalisees.php';
+require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../../includes/site_url.php';
 require_once __DIR__ . '/../../includes/image_optimizer.php';
 $cp = get_commande_personnalisee_by_id($cp_id);
@@ -102,6 +103,11 @@ $cp = get_commande_personnalisee_by_id($cp_id);
     <div class="cp-details-header">
         <h1><i class="fas fa-palette"></i> Demande #<?php echo $cp['id']; ?></h1>
         <div class="header-actions">
+            <?php if (livreur_admin_peut_suivre_livraison($cp, 'personnalisee')): ?>
+                <a href="<?php echo htmlspecialchars(livreur_admin_suivi_livraison_href((int) $cp['id'], 'personnalisee')); ?>" class="btn-secondary">
+                    <i class="fas fa-map-location-dot"></i> Suivre la livraison
+                </a>
+            <?php endif; ?>
             <?php if ($facture_cp): ?>
                 <a href="facture.php?id=<?php echo (int) $facture_cp['id']; ?>" class="btn-primary">
                     <i class="fas fa-file-invoice"></i> Voir la facture

@@ -64,22 +64,31 @@ body.page-home .home-alert--error {
   color: var(--home-ink);
 }
 
-/* ——— Commande perso compacte ——— */
+/* ——— Commande perso — invitation atelier ——— */
 body.page-home .commande-perso-showcase {
-  margin-top: 12px;
+  margin-top: clamp(16px, 2.4vw, 24px);
   padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: 0;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 body.page-home .commande-perso-showcase-inner {
   position: relative;
   overflow: hidden;
-  border-radius: 14px;
-  background: linear-gradient(120deg, #e5488a 0%, #c23a72 100%);
-  box-shadow: 0 8px 22px rgba(229, 72, 138, 0.2);
+  border-radius: clamp(20px, 3vw, 28px);
+  background:
+    radial-gradient(ellipse 70% 80% at 0% 0%, rgba(229, 72, 138, 0.1), transparent 55%),
+    radial-gradient(ellipse 50% 60% at 100% 100%, rgba(32, 197, 199, 0.1), transparent 50%),
+    linear-gradient(165deg, #fffdfb 0%, #fff7fb 48%, #fff 100%);
+  border: 1px solid rgba(229, 72, 138, 0.16);
+  box-shadow:
+    0 22px 50px rgba(42, 26, 34, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
   min-height: 0;
   height: auto;
 }
@@ -87,98 +96,250 @@ body.page-home .commande-perso-showcase-inner {
 body.page-home .commande-perso-showcase-inner::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 92% 0%, rgba(255, 255, 255, 0.18), transparent 42%);
+  width: 280px;
+  height: 280px;
+  right: -80px;
+  top: -90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(229, 72, 138, 0.22), transparent 68%);
+  pointer-events: none;
+}
+
+body.page-home .commande-perso-showcase-inner::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  left: -50px;
+  bottom: -70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(32, 197, 199, 0.16), transparent 70%);
   pointer-events: none;
 }
 
 body.page-home .commande-perso-content {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px 14px;
-  padding: 12px 14px;
-  color: #fff;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  color: var(--home-ink);
   min-width: 0;
-  min-height: 0;
+  min-height: clamp(280px, 32vw, 360px);
   height: auto;
 }
 
 body.page-home .commande-perso-main {
-  flex: 1 1 200px;
+  flex: none;
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(28px, 4.5vw, 48px) clamp(22px, 4vw, 44px);
 }
 
 body.page-home .commande-perso-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
+  gap: 8px;
+  padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  color: #fff;
+  background: rgba(229, 72, 138, 0.1);
+  border: 1px solid rgba(229, 72, 138, 0.22);
+  color: var(--home-rose);
   font-family: var(--home-font-ui);
-  font-size: 10px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 16px;
 }
 
 body.page-home .commande-perso-title {
-  margin: 0 0 2px;
+  margin: 0 0 14px;
   font-family: var(--home-font-display);
-  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-size: clamp(1.85rem, 4.4vw, 3rem);
   font-weight: 700;
-  line-height: 1.2;
-  color: #fff;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: var(--home-ink);
+}
+
+body.page-home .commande-perso-title em {
+  font-style: italic;
+  font-weight: 700;
+  background: linear-gradient(120deg, #e5488a 0%, #c23a72 48%, #20c5c7 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 body.page-home .commande-perso-text {
-  margin: 0;
+  margin: 0 0 18px;
   font-family: var(--home-font-ui);
+  font-size: clamp(0.95rem, 1.7vw, 1.08rem);
+  line-height: 1.6;
+  color: var(--home-muted);
+  max-width: 36rem;
+}
+
+body.page-home .commande-perso-text strong {
+  color: var(--home-ink);
+  font-weight: 700;
+}
+
+body.page-home .commande-perso-promises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+}
+
+body.page-home .commande-perso-promises li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(229, 72, 138, 0.14);
+  box-shadow: 0 6px 16px rgba(42, 26, 34, 0.05);
+  font-family: var(--home-font-ui);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--home-ink);
+}
+
+body.page-home .commande-perso-promises i {
+  color: var(--home-rose);
   font-size: 12px;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.92);
-  max-width: 28rem;
 }
 
 body.page-home .commande-perso-features,
 body.page-home .commande-perso-actions,
-body.page-home .commande-perso-visual,
 body.page-home .commande-perso-card,
 body.page-home .commande-perso-note {
   display: none !important;
 }
 
-body.page-home .commande-perso-steps {
+body.page-home .commande-perso-visual {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 14px;
+  padding: clamp(18px, 3vw, 26px) clamp(16px, 2.5vw, 22px);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 80% 12%, rgba(255, 255, 255, 0.22), transparent 42%),
+    linear-gradient(160deg, #e5488a 0%, #c23a72 58%, #9b2d5c 100%);
+  box-shadow: 0 18px 40px rgba(194, 58, 114, 0.32);
+  color: #fff;
+  min-width: 0;
+}
+
+body.page-home .commande-perso-atelier {
+  position: relative;
+  min-height: 150px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+}
+
+body.page-home .commande-perso-cake {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 32% 28%, #ffffff 0%, #ffe8f2 46%, #f5c6d8 100%);
+  color: #c23a72;
+  font-size: 44px;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.18),
+    0 0 0 8px rgba(255, 255, 255, 0.16);
+}
+
+body.page-home .commande-perso-float {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #fff;
+  font-size: 16px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+  animation: commandePersoFloat 4.6s ease-in-out infinite;
+}
+
+body.page-home .commande-perso-float--1 {
+  top: 8px;
+  left: 10px;
+}
+
+body.page-home .commande-perso-float--2 {
+  top: 18px;
+  right: 12px;
+  animation-delay: -1.4s;
+}
+
+body.page-home .commande-perso-float--3 {
+  bottom: 10px;
+  left: 22px;
+  animation-delay: -2.6s;
+}
+
+body.page-home .commande-perso-stamp {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-family: var(--home-font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+body.page-home .commande-perso-steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-  flex: 0 0 auto;
+  flex: none;
+  width: 100%;
 }
 
 body.page-home .commande-perso-step {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px 4px 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 body.page-home .commande-perso-step-number {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
   display: inline-flex !important;
@@ -187,42 +348,83 @@ body.page-home .commande-perso-step-number {
   background: #ffffff !important;
   color: #c23a72 !important;
   font-family: var(--home-font-ui);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
   line-height: 1;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+body.page-home .commande-perso-step-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
 }
 
 body.page-home .commande-perso-step-label {
   color: #fff !important;
   font-family: var(--home-font-ui);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-body.page-home .btn-commande-perso {
+body.page-home .commande-perso-step-hint {
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--home-font-ui);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+body.page-home .commande-perso-text {
+  display: none !important;
+}
+
+body.page-home .commande-perso-showcase .btn-commande-perso {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: #fff;
-  color: #c23a72 !important;
+  gap: 10px;
+  padding: 14px 22px !important;
+  background: linear-gradient(135deg, #e5488a, #c23a72);
+  color: #fff !important;
   text-decoration: none;
   border-radius: 999px;
   font-family: var(--home-font-ui);
   font-weight: 700;
-  font-size: 12.5px;
-  white-space: nowrap;
+  font-size: 15px !important;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 14px 28px rgba(229, 72, 138, 0.32);
   flex: 0 0 auto;
 }
 
-body.page-home .btn-commande-perso:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+body.page-home .commande-perso-showcase .btn-commande-perso:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(229, 72, 138, 0.4);
+}
+
+@keyframes commandePersoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@media (max-width: 900px) {
+  body.page-home .commande-perso-content {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  body.page-home .commande-perso-visual {
+    margin: 0 14px 14px;
+  }
+
+  body.page-home .commande-perso-atelier {
+    min-height: 128px;
+  }
 }
 
 @media (max-width: 700px) {
@@ -230,31 +432,76 @@ body.page-home .btn-commande-perso:hover {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    padding: 11px 12px;
-    gap: 8px;
+    padding: 0;
+    gap: 0;
   }
 
   body.page-home .commande-perso-main {
     flex: 0 0 auto;
+    padding: 22px 18px 10px;
+  }
+
+  body.page-home .commande-perso-title {
+    font-size: clamp(1.7rem, 8vw, 2.15rem);
+  }
+
+  body.page-home .commande-perso-promises li {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  body.page-home .commande-perso-showcase .btn-commande-perso {
+    width: 100%;
+    padding: 13px 18px !important;
+    font-size: 14.5px !important;
   }
 
   body.page-home .commande-perso-steps {
-    justify-content: space-between;
+    justify-content: stretch;
     width: 100%;
   }
 
   body.page-home .commande-perso-step {
     flex: 1;
-    justify-content: center;
-    padding: 5px 4px;
+    justify-content: flex-start;
+    padding: 8px 10px;
   }
 
   body.page-home .commande-perso-step-label {
-    font-size: 10.5px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 576px) {
+  body.page-home .commande-perso-showcase .btn-commande-perso {
+    padding: 13px 16px !important;
+    font-size: 14px !important;
   }
 
-  body.page-home .btn-commande-perso {
-    width: 100%;
+  body.page-home .commande-perso-stamp {
+    display: none;
+  }
+
+  body.page-home .commande-perso-atelier {
+    min-height: 110px;
+  }
+
+  body.page-home .commande-perso-cake {
+    width: 96px;
+    height: 96px;
+    font-size: 36px;
+  }
+
+  body.page-home .commande-perso-float {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.page-home .commande-perso-float {
+    animation: none;
   }
 }
 

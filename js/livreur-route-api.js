@@ -16,7 +16,9 @@
         if (options.token) {
             params.set('token', String(options.token));
         }
-        if (options.blId) {
+        if (options.cpId) {
+            params.set('cp_id', String(options.cpId));
+        } else if (options.blId) {
             params.set('bl_id', String(options.blId));
         } else if (options.commandeId) {
             params.set('commande_id', String(options.commandeId));

@@ -133,10 +133,13 @@
         var tabButtons = document.querySelectorAll('.livreur-delivery-tab');
         var panels = {
             commandes: document.getElementById('livreur-panel-commandes'),
-            facture: document.getElementById('livreur-panel-facture')
+            facture: document.getElementById('livreur-panel-facture'),
+            personnalisees: document.getElementById('livreur-panel-personnalisees')
         };
         var cfg = window.LIVREUR_INDEX_UI || {};
-        var activeTab = cfg.activeTab === 'commandes' ? 'commandes' : 'facture';
+        var activeTab = cfg.activeTab === 'commandes' || cfg.activeTab === 'personnalisees'
+            ? cfg.activeTab
+            : 'facture';
 
         function switchTab(tabName) {
             if (!panels[tabName]) return;
@@ -191,7 +194,8 @@
         var summaryEl = document.getElementById('livreur-search-summary');
         var panelCommandes = document.getElementById('livreur-panel-commandes');
         var panelFacture = document.getElementById('livreur-panel-facture');
-        if (!panelCommandes && !panelFacture) return;
+        var panelPersonnalisees = document.getElementById('livreur-panel-personnalisees');
+        if (!panelCommandes && !panelFacture && !panelPersonnalisees) return;
 
         var tabApi = initTabs(function () {
             updateSearchPlaceholder();
@@ -210,6 +214,12 @@
                 noResults: document.getElementById('livreur-no-results-factures'),
                 labelSingular: 'facture',
                 labelPlural: 'factures'
+            },
+            personnalisees: {
+                tbody: document.getElementById('livreur-cp-list-body'),
+                noResults: document.getElementById('livreur-no-results-personnalisees'),
+                labelSingular: 'commande personnalisée',
+                labelPlural: 'commandes personnalisées'
             }
         };
 
@@ -233,11 +243,15 @@
         function updateTabCounts() {
             var factureCountEl = document.getElementById('livreur-tab-count-facture');
             var commandesCountEl = document.getElementById('livreur-tab-count-commandes');
+            var persoCountEl = document.getElementById('livreur-tab-count-personnalisees');
             if (factureCountEl) {
                 factureCountEl.textContent = String(countRowsForPeriod('facture'));
             }
             if (commandesCountEl) {
                 commandesCountEl.textContent = String(countRowsForPeriod('commandes'));
+            }
+            if (persoCountEl) {
+                persoCountEl.textContent = String(countRowsForPeriod('personnalisees'));
             }
         }
 
@@ -259,9 +273,13 @@
         function updateSearchPlaceholder() {
             if (!searchInput) return;
             var tab = tabApi.getActiveTab();
-            searchInput.placeholder = tab === 'facture'
-                ? 'Nom client, téléphone…'
-                : 'Nom client, téléphone, n° commande…';
+            if (tab === 'facture') {
+                searchInput.placeholder = 'Nom client, téléphone…';
+            } else if (tab === 'personnalisees') {
+                searchInput.placeholder = 'Nom client, téléphone, n° CP…';
+            } else {
+                searchInput.placeholder = 'Nom client, téléphone, n° commande…';
+            }
         }
 
         function applyFilters() {

@@ -21,7 +21,7 @@ body.page-home .galerie-creations,
 body.page-home .services-banner,
 body.page-home .slider-area {
   content-visibility: auto;
-  contain-intrinsic-size: auto 420px;
+  contain-intrinsic-size: auto 720px;
 }
 
 body.page-home .slider-area {

@@ -67,6 +67,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             exit;
         }
         $error = $result['error'] ?? 'Impossible de démarrer la livraison de la facture.';
+    } elseif ($action === 'commencer_livraison_cp') {
+        $cp_id = (int) ($_POST['cp_id'] ?? 0);
+        $result = livreur_commencer_livraison_cp($cp_id, $admin_session_id, [
+            'driver_lat' => $_POST['driver_lat'] ?? '',
+            'driver_lng' => $_POST['driver_lng'] ?? '',
+            'driver_precision' => $_POST['driver_precision'] ?? '',
+            'delivery_lat' => $_POST['delivery_lat'] ?? '',
+            'delivery_lng' => $_POST['delivery_lng'] ?? '',
+            'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
+        ], $is_livreur);
+        if (!empty($result['ok'])) {
+            header('Location: suivi.php?cp_id=' . (int) ($result['cp_id'] ?? $cp_id) . '&autostart=1');
+            exit;
+        }
+        $error = $result['error'] ?? 'Impossible de démarrer la livraison personnalisée.';
     }
 }
 
@@ -77,11 +92,21 @@ $bl_tables_ok = bl_tables_available();
 $factures_liste = ($tables_ready && $bl_tables_ok)
     ? livreur_get_factures_livraison_list($is_livreur)
     : [];
+$cp_liste = ($tables_ready && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok())
+    ? livreur_get_cp_livraison_list($is_livreur)
+    : [];
 
 $tab_param = isset($_GET['tab']) ? (string) $_GET['tab'] : '';
-$active_tab = ($tab_param === 'commandes') ? 'commandes' : 'facture';
+if ($tab_param === 'commandes') {
+    $active_tab = 'commandes';
+} elseif ($tab_param === 'personnalisees') {
+    $active_tab = 'personnalisees';
+} else {
+    $active_tab = 'facture';
+}
 $tab_commandes_active = $active_tab === 'commandes';
 $tab_facture_active = $active_tab === 'facture';
+$tab_personnalisees_active = $active_tab === 'personnalisees';
 
 $today_ymd = date('Y-m-d');
 $commandes_count = 0;
@@ -107,6 +132,18 @@ foreach ($factures_liste as $facture_row) {
     }
     if ($is_livreur || date('Y-m-d', strtotime($date_source)) === $today_ymd) {
         $factures_count++;
+    }
+}
+$cp_count = 0;
+foreach ($cp_liste as $cp_row) {
+    if (livreur_livraison_est_terminee($cp_row, 'personnalisee')) {
+        continue;
+    }
+    if (empty($cp_row['date_creation'])) {
+        continue;
+    }
+    if ($is_livreur || date('Y-m-d', strtotime($cp_row['date_creation'])) === $today_ymd) {
+        $cp_count++;
     }
 }
 ?>
@@ -153,7 +190,7 @@ foreach ($factures_liste as $facture_row) {
 
 <section class="livreur-card livreur-card--wide livreur-card--commandes-jour page-livreur-delivery-section">
     <div class="livreur-delivery-tabs-wrap">
-        <div class="admin-devis-bl-tabs livreur-delivery-tabs" role="tablist" aria-label="Factures et commandes à livrer">
+        <div class="admin-devis-bl-tabs livreur-delivery-tabs" role="tablist" aria-label="Factures, commandes et commandes personnalisées à livrer">
             <button type="button"
                 class="admin-tab admin-tab--bl livreur-delivery-tab <?php echo $tab_facture_active ? 'is-active' : ''; ?>"
                 id="livreur-tab-btn-facture"
@@ -175,11 +212,21 @@ foreach ($factures_liste as $facture_row) {
                 <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-shopping-bag"></i></span>
                 <span class="admin-tab__txt">Commandes (<span class="livreur-tab-count" id="livreur-tab-count-commandes"><?php echo (int) $commandes_count; ?></span>)</span>
             </button>
+            <button type="button"
+                class="admin-tab admin-tab--devis livreur-delivery-tab <?php echo $tab_personnalisees_active ? 'is-active' : ''; ?>"
+                id="livreur-tab-btn-personnalisees"
+                role="tab"
+                aria-selected="<?php echo $tab_personnalisees_active ? 'true' : 'false'; ?>"
+                aria-controls="livreur-panel-personnalisees"
+                data-livreur-tab="personnalisees">
+                <span class="admin-tab__ic" aria-hidden="true"><i class="fas fa-palette"></i></span>
+                <span class="admin-tab__txt">Personnalisées (<span class="livreur-tab-count" id="livreur-tab-count-personnalisees"><?php echo (int) $cp_count; ?></span>)</span>
+            </button>
         </div>
     </div>
 
     <?php if ($is_livreur): ?>
-    <p class="livreur-section-hint">Prenez une commande ou consultez une facture à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
+    <p class="livreur-section-hint">Prenez une commande, une commande personnalisée ou une facture à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
     <?php endif; ?>
 
     <div class="invoice-panel-toolbar livreur-panel-toolbar">
@@ -191,7 +238,7 @@ foreach ($factures_liste as $facture_row) {
                     <input type="search"
                         id="livreur-search-input"
                         class="invoice-panel-search-input"
-                        placeholder="<?php echo $tab_facture_active ? 'Nom client, téléphone…' : 'Nom client, téléphone, n° commande…'; ?>"
+                        placeholder="<?php echo $tab_facture_active ? 'Nom client, téléphone…' : ($tab_personnalisees_active ? 'Nom client, téléphone, n° CP…' : 'Nom client, téléphone, n° commande…'); ?>"
                         autocomplete="off"
                         inputmode="search"
                         data-live-search-input>
@@ -434,6 +481,108 @@ foreach ($factures_liste as $facture_row) {
         </p>
         <?php endif; ?>
     </div>
+
+    <div id="livreur-panel-personnalisees"
+        class="livreur-tab-panel tab-panel-devis-bl <?php echo $tab_personnalisees_active ? 'is-active' : ''; ?>"
+        role="tabpanel"
+        aria-labelledby="livreur-tab-btn-personnalisees"
+        <?php echo $tab_personnalisees_active ? '' : 'hidden'; ?>>
+        <?php if (empty($cp_liste)): ?>
+            <p class="livreur-empty">Aucune commande personnalisée à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
+        <?php else: ?>
+        <div class="livreur-table-wrap">
+            <table class="livreur-table livreur-table--jour">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="livreur-cp-list-body">
+                <?php foreach ($cp_liste as $cp): ?>
+                    <?php
+                    $cp_id_row = (int) ($cp['id'] ?? 0);
+                    $cp_livreur_id = !empty($cp['livreur_id']) ? (int) $cp['livreur_id'] : null;
+                    $est_terminee = livreur_livraison_est_terminee($cp, 'personnalisee');
+                    $prise_par_moi = !$est_terminee && $cp_livreur_id === $admin_session_id;
+                    $prise_par_autre = !$est_terminee && $cp_livreur_id !== null && !$prise_par_moi;
+                    $disponible = !$est_terminee && $cp_livreur_id === null;
+                    $client_nom = trim((string) ($cp['user_prenom'] ?? $cp['prenom'] ?? '') . ' ' . (string) ($cp['user_nom'] ?? $cp['nom'] ?? ''));
+                    $client_tel = trim((string) ($cp['user_telephone'] ?? $cp['telephone'] ?? $cp['client_telephone'] ?? ''));
+                    $date_iso = !empty($cp['date_creation']) ? date('Y-m-d', strtotime($cp['date_creation'])) : '';
+                    $search_blob = htmlspecialchars(livreur_cp_search_blob($cp), ENT_QUOTES, 'UTF-8');
+                    $delivery_lat = livreur_parse_coord($cp['delivery_latitude'] ?? null);
+                    $delivery_lng = livreur_parse_coord($cp['delivery_longitude'] ?? null);
+                    $adresse_cp = livreur_cp_adresse_affichage($cp);
+                    $numero_cp = livreur_cp_numero($cp_id_row);
+                    $statut_livraison = livreur_cp_statut_livraison($cp);
+                    ?>
+                    <tr class="livreur-cmd-row<?php echo $est_terminee ? ' livreur-cmd-row--terminee' : ''; ?>" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $est_terminee ? ' data-terminee="1"' : ''; ?>>
+                        <td data-label="Client">
+                            <?php if ($client_nom !== ''): ?>
+                                <span class="livreur-cmd-client"><i class="fas fa-user" aria-hidden="true"></i> <?php echo htmlspecialchars($client_nom); ?></span>
+                            <?php endif; ?>
+                            <?php if ($client_tel !== ''): ?>
+                                <br><span class="livreur-cmd-tel"><i class="fas fa-phone" aria-hidden="true"></i> <?php echo htmlspecialchars($client_tel); ?></span>
+                            <?php endif; ?>
+                            <br><small class="livreur-cmd-taken"><?php echo htmlspecialchars($numero_cp); ?></small>
+                        </td>
+                        <td class="livreur-actions" data-label="Action">
+                            <div class="livreur-actions__btns">
+                            <?php if ($est_terminee): ?>
+                                <span class="btn-sm livreur-btn-terminee" aria-disabled="true">
+                                    <i class="fas fa-check-circle" aria-hidden="true"></i> Terminée
+                                </span>
+                            <?php elseif (($is_livreur || $is_admin) && $disponible): ?>
+                            <button type="button"
+                                class="btn-primary btn-sm livreur-btn-prendre"
+                                data-livraison-type="personnalisee"
+                                data-cp-id="<?php echo $cp_id_row; ?>"
+                                    data-numero="<?php echo htmlspecialchars($numero_cp, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-adresse="<?php echo htmlspecialchars($adresse_cp, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-delivery-lat="<?php echo $delivery_lat !== null ? htmlspecialchars((string) $delivery_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                    <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+                                    <span class="livreur-btn-text livreur-btn-text--full">Prendre la commande</span>
+                                    <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
+                                </button>
+                            <?php elseif (($is_livreur || $is_admin) && $prise_par_moi): ?>
+                                <a href="suivi.php?cp_id=<?php echo $cp_id_row; ?>&amp;autostart=1" class="btn-secondary btn-sm livreur-btn-suivi">
+                                    <i class="fas fa-map-location-dot" aria-hidden="true"></i>
+                                    <span class="livreur-btn-text livreur-btn-text--full">Suivi GPS</span>
+                                    <span class="livreur-btn-text livreur-btn-text--short">GPS</span>
+                                </a>
+                            <?php elseif ($prise_par_autre && !$is_admin): ?>
+                                <span class="btn-sm livreur-btn-occupe" aria-disabled="true">
+                                    <i class="fas fa-lock" aria-hidden="true"></i> Occupé
+                                </span>
+                            <?php elseif ($is_admin && $prise_par_autre): ?>
+                                <a href="suivi.php?cp_id=<?php echo $cp_id_row; ?>" class="btn-link livreur-btn-link"><i class="fas fa-map-location-dot" aria-hidden="true"></i> GPS</a>
+                            <?php elseif ($is_admin && $cp_livreur_id): ?>
+                                <a href="suivi.php?cp_id=<?php echo $cp_id_row; ?>" class="btn-link livreur-btn-link"><i class="fas fa-map-location-dot" aria-hidden="true"></i> GPS</a>
+                            <?php else: ?>
+                                <span class="livreur-badge livreur-badge--actif">Disponible</span>
+                            <?php endif; ?>
+                            </div>
+                            <div class="livreur-actions__status">
+                                <span class="livreur-badge livreur-badge--statut<?php echo $est_terminee ? ' livreur-badge--terminee' : ''; ?>"><?php echo htmlspecialchars($statut_livraison); ?></span>
+                                <?php if ($est_terminee && $cp_livreur_id): ?>
+                                    <small class="livreur-cmd-taken">Livrée par <?php echo htmlspecialchars(trim(($cp['livreur_prenom'] ?? '') . ' ' . ($cp['livreur_nom'] ?? ''))); ?></small>
+                                <?php elseif ($prise_par_autre): ?>
+                                    <small class="livreur-cmd-taken">Prise par <?php echo htmlspecialchars(trim(($cp['livreur_prenom'] ?? '') . ' ' . ($cp['livreur_nom'] ?? ''))); ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <p class="livreur-empty livreur-no-results" id="livreur-no-results-personnalisees" hidden>
+            <i class="fas fa-search"></i> Aucune commande personnalisée ne correspond à votre recherche ou à la période sélectionnée.
+        </p>
+        <?php endif; ?>
+    </div>
 </section>
 
 <?php if ($tables_ready && ($is_livreur || $is_admin)): ?>
@@ -452,6 +601,7 @@ foreach ($factures_liste as $facture_row) {
             <input type="hidden" name="action" id="livreur-demarrage-action" value="commencer_livraison">
             <input type="hidden" name="commande_id" id="livreur-demarrage-commande-id" value="">
             <input type="hidden" name="bl_id" id="livreur-demarrage-bl-id" value="">
+            <input type="hidden" name="cp_id" id="livreur-demarrage-cp-id" value="">
             <input type="hidden" name="driver_lat" id="livreur-driver-lat" value="">
             <input type="hidden" name="driver_lng" id="livreur-driver-lng" value="">
             <input type="hidden" name="driver_precision" id="livreur-driver-precision" value="">

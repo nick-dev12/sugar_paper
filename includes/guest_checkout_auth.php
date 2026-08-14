@@ -155,6 +155,47 @@ if (!function_exists('guest_checkout_link_past_orders')) {
     }
 }
 
+if (!function_exists('guest_checkout_link_past_commandes_personnalisees')) {
+    function guest_checkout_link_past_commandes_personnalisees($user_id, $telephone)
+    {
+        global $db;
+
+        $user_id = (int) $user_id;
+        if ($user_id < 1 || !isset($db) || !($db instanceof PDO)) {
+            return 0;
+        }
+
+        require_once __DIR__ . '/../models/model_users.php';
+        $variants = users_phone_lookup_variants($telephone);
+        if (empty($variants)) {
+            return 0;
+        }
+
+        $norm = "REPLACE(REPLACE(" . users_phone_normalized_sql('telephone') . ", '(', ''), ')', '')";
+        $placeholders = [];
+        $params = ['user_id' => $user_id];
+        foreach ($variants as $i => $variant) {
+            $key = 'p' . $i;
+            $placeholders[] = ':' . $key;
+            $params[$key] = $variant;
+        }
+
+        try {
+            $stmt = $db->prepare("
+                UPDATE commandes_personnalisees
+                SET user_id = :user_id
+                WHERE (user_id IS NULL OR user_id = 0)
+                  AND telephone IS NOT NULL AND TRIM(telephone) != ''
+                  AND {$norm} IN (" . implode(', ', $placeholders) . ")
+            ");
+            $stmt->execute($params);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+}
+
 if (!function_exists('guest_checkout_save_pending')) {
     function guest_checkout_save_pending($nom, $telephone)
     {
@@ -255,6 +296,7 @@ if (!function_exists('guest_checkout_register_or_login')) {
             update_user_accepte_conditions((int) $existing['id'], true);
             guest_checkout_login_user_session($existing);
             guest_checkout_link_past_orders((int) $existing['id'], $digits);
+            guest_checkout_link_past_commandes_personnalisees((int) $existing['id'], $digits);
 
             return [
                 'success' => true,
@@ -278,6 +320,7 @@ if (!function_exists('guest_checkout_register_or_login')) {
                 update_user_accepte_conditions((int) $existing_retry['id'], true);
                 guest_checkout_login_user_session($existing_retry);
                 guest_checkout_link_past_orders((int) $existing_retry['id'], $digits);
+                guest_checkout_link_past_commandes_personnalisees((int) $existing_retry['id'], $digits);
                 return [
                     'success' => true,
                     'message' => 'Connexion réussie.',
@@ -297,6 +340,7 @@ if (!function_exists('guest_checkout_register_or_login')) {
 
         guest_checkout_login_user_session($user);
         guest_checkout_link_past_orders((int) $user_id, $digits);
+        guest_checkout_link_past_commandes_personnalisees((int) $user_id, $digits);
 
         return [
             'success' => true,

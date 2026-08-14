@@ -128,10 +128,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   updateCounter();
 
+  if (typeof window.initAuthIntlTel === 'function') {
+    window.cpTelIti = window.initAuthIntlTel('telephone');
+  }
+
   var formPerso = document.getElementById('form-commande-perso');
   var loaderOverlay = document.getElementById('commande-loader-overlay');
   var persoSubmitting = false;
   var MIN_LOADER_MS = 600;
+
+  function applyE164() {
+    var input = document.getElementById('telephone');
+    if (!input || !window.cpTelIti) {
+      return;
+    }
+    try {
+      var n = '';
+      if (typeof intlTelInput !== 'undefined' && intlTelInput.utils) {
+        n = window.cpTelIti.getNumber(intlTelInput.utils.numberFormat.E164);
+      } else {
+        n = window.cpTelIti.getNumber();
+      }
+      if (n) {
+        input.value = n;
+      }
+    } catch (e) {}
+  }
 
   if (formPerso && loaderOverlay) {
     formPerso.addEventListener('submit', function (event) {
@@ -139,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault();
         return;
       }
+      applyE164();
       if (!formPerso.checkValidity()) {
         return;
       }
@@ -155,6 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       setTimeout(function () {
+        applyE164();
         formPerso.submit();
       }, MIN_LOADER_MS);
     });

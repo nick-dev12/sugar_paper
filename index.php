@@ -151,27 +151,52 @@ $seo_canonical = $base . '/';
             <div class="commande-perso-showcase-inner">
                 <div class="commande-perso-content">
                     <div class="commande-perso-main">
-                        <span class="commande-perso-badge"><i class="fas fa-palette"></i> Sur mesure</span>
-                        <h2 class="commande-perso-title">Commande personnalisée</h2>
-                        <p class="commande-perso-text">Décrivez votre besoin et joignez une image d'inspiration. Réponse rapide.</p>
+                        <span class="commande-perso-badge"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Création sur mesure</span>
+                        <h2 class="commande-perso-title">Vous l’imaginez.<br><em>Nous le créons.</em></h2>
+                        <ul class="commande-perso-promises">
+                            <li><i class="fas fa-pen-nib" aria-hidden="true"></i> Votre idée, sans limite</li>
+                            <li><i class="fas fa-image" aria-hidden="true"></i> Photo d’inspiration</li>
+                            <li><i class="fas fa-bolt" aria-hidden="true"></i> Réponse rapide</li>
+                        </ul>
+                        <a href="commande-personnalisee.php" class="btn-commande-perso">
+                            <span>Faire une commande personnalisée</span>
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                        </a>
                     </div>
-                    <ol class="commande-perso-steps" aria-label="Étapes">
-                        <li class="commande-perso-step">
-                            <span class="commande-perso-step-number">1</span>
-                            <span class="commande-perso-step-label">Décrivez</span>
-                        </li>
-                        <li class="commande-perso-step">
-                            <span class="commande-perso-step-number">2</span>
-                            <span class="commande-perso-step-label">Inspirez</span>
-                        </li>
-                        <li class="commande-perso-step">
-                            <span class="commande-perso-step-number">3</span>
-                            <span class="commande-perso-step-label">Recevez</span>
-                        </li>
-                    </ol>
-                    <a href="commande-personnalisee.php" class="btn-commande-perso">
-                        <i class="fas fa-palette"></i> Faire une demande
-                    </a>
+                    <aside class="commande-perso-visual">
+                        <div class="commande-perso-atelier" aria-hidden="true">
+                            <div class="commande-perso-cake">
+                                <i class="fas fa-cake-candles"></i>
+                            </div>
+                            <span class="commande-perso-float commande-perso-float--1"><i class="fas fa-palette"></i></span>
+                            <span class="commande-perso-float commande-perso-float--2"><i class="fas fa-camera"></i></span>
+                            <span class="commande-perso-float commande-perso-float--3"><i class="fas fa-heart"></i></span>
+                            <span class="commande-perso-stamp">100&nbsp;% à votre image</span>
+                        </div>
+                        <ol class="commande-perso-steps" aria-label="Comment ça marche">
+                            <li class="commande-perso-step">
+                                <span class="commande-perso-step-number">1</span>
+                                <span class="commande-perso-step-copy">
+                                    <span class="commande-perso-step-label">Décrivez</span>
+                                    <span class="commande-perso-step-hint">Votre idée exacte</span>
+                                </span>
+                            </li>
+                            <li class="commande-perso-step">
+                                <span class="commande-perso-step-number">2</span>
+                                <span class="commande-perso-step-copy">
+                                    <span class="commande-perso-step-label">Inspirez</span>
+                                    <span class="commande-perso-step-hint">Une photo suffit</span>
+                                </span>
+                            </li>
+                            <li class="commande-perso-step">
+                                <span class="commande-perso-step-number">3</span>
+                                <span class="commande-perso-step-copy">
+                                    <span class="commande-perso-step-label">Recevez</span>
+                                    <span class="commande-perso-step-hint">Une création unique</span>
+                                </span>
+                            </li>
+                        </ol>
+                    </aside>
                 </div>
             </div>
         </div>

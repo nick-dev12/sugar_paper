@@ -646,6 +646,7 @@
         currentLivraisonType = livraisonType;
         var commandeId = btn.getAttribute('data-commande-id') || '';
         var blId = btn.getAttribute('data-bl-id') || '';
+        var cpId = btn.getAttribute('data-cp-id') || '';
         var numero = btn.getAttribute('data-numero') || '';
         var client = btn.getAttribute('data-client') || '';
         var adresse = btn.getAttribute('data-adresse') || '';
@@ -663,12 +664,21 @@
             if (labelEl) labelEl.textContent = 'Facture';
             qs('livreur-demarrage-commande-id').value = '';
             qs('livreur-demarrage-bl-id').value = blId;
+            if (qs('livreur-demarrage-cp-id')) qs('livreur-demarrage-cp-id').value = '';
             qs('livreur-demarrage-numero').textContent = client || 'Client B2B';
+        } else if (livraisonType === 'personnalisee') {
+            if (actionInput) actionInput.value = 'commencer_livraison_cp';
+            if (labelEl) labelEl.textContent = 'Personnalisée';
+            qs('livreur-demarrage-commande-id').value = '';
+            if (qs('livreur-demarrage-bl-id')) qs('livreur-demarrage-bl-id').value = '';
+            if (qs('livreur-demarrage-cp-id')) qs('livreur-demarrage-cp-id').value = cpId;
+            qs('livreur-demarrage-numero').textContent = numero;
         } else {
             if (actionInput) actionInput.value = 'commencer_livraison';
             if (labelEl) labelEl.textContent = 'Commande';
             qs('livreur-demarrage-commande-id').value = commandeId;
             if (qs('livreur-demarrage-bl-id')) qs('livreur-demarrage-bl-id').value = '';
+            if (qs('livreur-demarrage-cp-id')) qs('livreur-demarrage-cp-id').value = '';
             qs('livreur-demarrage-numero').textContent = numero;
         }
 

@@ -666,12 +666,16 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             $est_payee = bl_est_facture_payee($f);
                             $statut_facture = $est_payee ? 'Payée' : 'Impayée';
                             $statut_class = $est_payee ? 'paye' : 'impaye';
-                            $search_blob = invoice_tab_search_blob($client_label, $numero_facture, $date_aff, $statut_facture, $montant_txt, 'fcfa');
+                            $client_tel = trim((string) ($f['client_telephone'] ?? $f['telephone'] ?? ''));
+                            $search_blob = invoice_tab_search_blob($client_label, $client_tel, $numero_facture, $date_aff, $statut_facture, $montant_txt, 'fcfa');
                             ?>
                             <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($facture_href); ?>" data-montant="<?php echo (int) round($montant_aff); ?>" data-montant-hors-livraison="<?php echo $montant_hors_livraison; ?>" data-montant-livraison="<?php echo $montant_livraison; ?>" data-payee="<?php echo $est_payee ? '1' : '0'; ?>" role="link" tabindex="0" aria-label="Voir la facture <?php echo htmlspecialchars($numero_facture); ?>">
                                 <td data-label="Client">
                                     <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_label); ?></strong>
-                                    <span class="invoice-cell-sub"><?php echo htmlspecialchars($numero_facture); ?></span>
+                                    <?php if ($client_tel !== ''): ?>
+                                    <span class="invoice-cell-phone"><?php echo htmlspecialchars($client_tel); ?></span>
+                                    <?php endif; ?>
+                                    <span class="invoice-cell-sub invoice-cell-sub--num"><?php echo htmlspecialchars($numero_facture); ?></span>
                                 </td>
                                 <td data-label="Montant" class="invoice-col-num">
                                     <?php

@@ -24,6 +24,48 @@ require_once __DIR__ . '/../../models/model_livreur_tracking.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? $_POST['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? $_POST['bl_id'] ?? 0);
+$cp_id = (int) ($_GET['cp_id'] ?? $_POST['cp_id'] ?? 0);
+
+if ($cp_id > 0) {
+    $cp = livreur_get_cp_tracking($cp_id);
+    if (!$cp) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Commande personnalisée introuvable']);
+        exit;
+    }
+
+    $watch = livreur_create_watch_token(null, 'admin', (int) $_SESSION['admin_id'], null, null, $cp_id);
+    if (!$watch) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Impossible de générer le token']);
+        exit;
+    }
+
+    $last = null;
+    if (!empty($cp['livreur_id'])) {
+        $last = livreur_get_last_position((int) $cp['livreur_id'], null, null, $cp_id);
+    }
+
+    $numero = livreur_cp_numero($cp_id);
+    echo json_encode([
+        'success' => true,
+        'watch_token' => $watch['token'],
+        'expires_at' => $watch['expires_at'],
+        'livraison_type' => 'personnalisee',
+        'commande' => [
+            'id' => $cp_id,
+            'numero_commande' => $numero,
+            'tracking_active' => (int) ($cp['tracking_active'] ?? 0),
+            'adresse_livraison' => $cp['adresse_livraison'] ?? '',
+            'delivery_latitude' => livreur_parse_coord($cp['delivery_latitude'] ?? null),
+            'delivery_longitude' => livreur_parse_coord($cp['delivery_longitude'] ?? null),
+            'livreur_nom' => trim(($cp['livreur_prenom'] ?? '') . ' ' . ($cp['livreur_nom'] ?? '')),
+        ],
+        'last_position' => $last,
+        'socket_path' => tracking_config_get('socket_path', '/socket.io'),
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 if ($bl_id > 0) {
     $facture = livreur_get_facture_tracking($bl_id);
@@ -76,7 +118,7 @@ if ($bl_id > 0) {
 
 if ($commande_id < 1) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'commande_id ou bl_id requis']);
+    echo json_encode(['success' => false, 'message' => 'commande_id, bl_id ou cp_id requis']);
     exit;
 }
 

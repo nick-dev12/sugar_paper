@@ -16,6 +16,7 @@ if (!isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0) {
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_livreur_tracking.php';
+require_once __DIR__ . '/../models/model_bl.php';
 
 $success_message = '';
 $error_message = '';
@@ -135,6 +136,13 @@ if (isset($_GET['commande_annulee']) && $_GET['commande_annulee'] == '1') {
     $success_message = 'Commande annulée avec succès !';
 }
 
+if (isset($_GET['commande_perso']) && $_GET['commande_perso'] == '1') {
+    $success_message = !empty($_SESSION['commande_perso_success'])
+        ? (string) $_SESSION['commande_perso_success']
+        : 'Votre demande personnalisée a été envoyée. Vous pouvez la suivre ici.';
+    unset($_SESSION['commande_perso_success']);
+}
+
 $commandes = get_commandes_by_user($_SESSION['user_id']);
 
 $commandes_actives = array_values(array_filter($commandes, function ($commande) {
@@ -160,12 +168,20 @@ $enrich_commandes($commandes_recues);
 
 $commandes_perso = get_commandes_personnalisees_by_user($_SESSION['user_id']);
 $commandes_perso_actives = array_values(array_filter($commandes_perso, function ($cp) {
-    return !in_array($cp['statut'], ['terminee', 'refusee', 'annulee']);
+    return !in_array($cp['statut'], ['terminee', 'livree', 'refusee', 'annulee'], true);
 }));
 $commandes_perso_terminees = array_values(array_filter($commandes_perso, function ($cp) {
-    return ($cp['statut'] ?? '') === 'terminee';
+    return in_array($cp['statut'] ?? '', ['terminee', 'livree'], true);
 }));
 $statuts_labels = get_statuts_commande_personnalisee();
+
+$factures = get_bls_for_registered_user((int) $_SESSION['user_id']);
+$factures_actives = array_values(array_filter($factures, function ($bl) {
+    return !livreur_livraison_est_terminee($bl, 'facture');
+}));
+$factures_recues = array_values(array_filter($factures, function ($bl) {
+    return livreur_livraison_est_terminee($bl, 'facture');
+}));
 
 $statut_labels_cmd = [
     'en_attente' => 'En attente',
@@ -179,8 +195,8 @@ $statut_labels_cmd = [
     'annulee' => 'Annulée',
 ];
 
-$total_actives = count($commandes_actives) + count($commandes_perso_actives);
-$total_recues = count($commandes_recues) + count($commandes_perso_terminees);
+$total_actives = count($commandes_actives) + count($commandes_perso_actives) + count($factures_actives);
+$total_recues = count($commandes_recues) + count($commandes_perso_terminees) + count($factures_recues);
 
 $onglet = isset($_GET['onglet']) ? trim((string) $_GET['onglet']) : 'en_cours';
 if (!in_array($onglet, ['en_cours', 'recues'], true)) {
@@ -291,7 +307,7 @@ $firebase_notify_type = 'user';
                     </a>
                 </div>
 
-                <?php if (empty($commandes_actives) && empty($commandes_perso_actives)): ?>
+                <?php if (empty($commandes_actives) && empty($commandes_perso_actives) && empty($factures_actives)): ?>
                     <div class="mc-empty">
                         <i class="fas fa-box-open"></i>
                         <p>Aucune commande active pour le moment.</p>
@@ -435,6 +451,83 @@ $firebase_notify_type = 'user';
                                         class="mc-btn mc-btn--sm mc-btn--primary">
                                         <i class="fas fa-eye"></i> Détails
                                     </a>
+                                    <?php if (livreur_client_peut_suivre_gps_cp($cp)): ?>
+                                        <a href="suivi-commande-personnalisee.php?id=<?php echo (int) $cp['id']; ?>"
+                                            class="mc-btn mc-btn--sm mc-btn--track">
+                                            <i class="fas fa-location-dot"></i> Suivre
+                                        </a>
+                                    <?php elseif (livreur_client_livraison_en_cours_cp($cp)): ?>
+                                        <span class="mc-btn mc-btn--sm mc-btn--pending" aria-disabled="true">
+                                            <i class="fas fa-truck"></i> GPS bientôt
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+
+                        <?php foreach ($factures_actives as $facture): ?>
+                            <?php
+                            $bl_st = bl_client_statut_affichage($facture);
+                            $bl_date = !empty($facture['date_bl'])
+                                ? date('d/m/Y', strtotime($facture['date_bl']))
+                                : (!empty($facture['date_creation']) ? date('d/m/Y à H:i', strtotime($facture['date_creation'])) : '—');
+                            $bl_numero = trim((string) ($facture['numero_bl'] ?? ''));
+                            if ($bl_numero === '') {
+                                $bl_numero = 'BL-' . (int) $facture['id'];
+                            }
+                            $bl_montant = bl_montant_facture_affichage($facture);
+                            $bl_details = bl_public_facture_url($facture);
+                            $bl_adresse = trim((string) ($facture['adresse_livraison_affichee'] ?? $facture['adresse_livraison'] ?? ''));
+                            $bl_adresse_short = mb_strlen($bl_adresse) > 42 ? mb_substr($bl_adresse, 0, 42) . '…' : $bl_adresse;
+                            ?>
+                            <article class="mc-order mc-order--facture">
+                                <div class="mc-order__top">
+                                    <div class="mc-order__meta">
+                                        <span class="mc-order__badge"><i class="fas fa-file-invoice"></i> Facture</span>
+                                        <span class="mc-order__numero">#<?php echo htmlspecialchars($bl_numero); ?></span>
+                                        <span class="mc-order__date"><i class="far fa-calendar"></i> <?php echo htmlspecialchars($bl_date); ?></span>
+                                    </div>
+                                    <span class="mc-order__statut statut-<?php echo htmlspecialchars($bl_st['key']); ?>">
+                                        <?php echo htmlspecialchars($bl_st['label']); ?>
+                                    </span>
+                                </div>
+
+                                <div class="mc-order__details">
+                                    <div class="mc-order__detail">
+                                        <span>Montant</span>
+                                        <strong><?php echo number_format($bl_montant, 0, ',', ' '); ?> FCFA</strong>
+                                    </div>
+                                    <?php if (!empty($facture['client_telephone'])): ?>
+                                        <div class="mc-order__detail">
+                                            <span>Téléphone</span>
+                                            <strong><?php echo htmlspecialchars((string) $facture['client_telephone']); ?></strong>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($bl_adresse_short !== ''): ?>
+                                        <div class="mc-order__detail">
+                                            <span>Adresse</span>
+                                            <strong><?php echo htmlspecialchars($bl_adresse_short); ?></strong>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="mc-order__actions">
+                                    <?php if ($bl_details !== ''): ?>
+                                        <a href="<?php echo htmlspecialchars($bl_details); ?>"
+                                            class="mc-btn mc-btn--sm mc-btn--primary">
+                                            <i class="fas fa-eye"></i> Détails
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (livreur_client_peut_suivre_gps_facture($facture)): ?>
+                                        <a href="suivi-facture.php?bl_id=<?php echo (int) $facture['id']; ?>"
+                                            class="mc-btn mc-btn--sm mc-btn--track">
+                                            <i class="fas fa-location-dot"></i> Suivre
+                                        </a>
+                                    <?php elseif (livreur_client_livraison_en_cours_facture($facture)): ?>
+                                        <span class="mc-btn mc-btn--sm mc-btn--pending" aria-disabled="true">
+                                            <i class="fas fa-truck"></i> GPS bientôt
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -449,7 +542,7 @@ $firebase_notify_type = 'user';
                     </a>
                 </div>
 
-                <?php if (empty($commandes_recues) && empty($commandes_perso_terminees)): ?>
+                <?php if (empty($commandes_recues) && empty($commandes_perso_terminees) && empty($factures_recues)): ?>
                     <div class="mc-empty">
                         <i class="fas fa-box-open"></i>
                         <p>Aucune commande livrée pour le moment.</p>
@@ -567,6 +660,62 @@ $firebase_notify_type = 'user';
                                         class="mc-btn mc-btn--sm mc-btn--primary">
                                         <i class="fas fa-eye"></i> Détails
                                     </a>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+
+                        <?php foreach ($factures_recues as $facture): ?>
+                            <?php
+                            $bl_date = !empty($facture['date_bl'])
+                                ? date('d/m/Y', strtotime($facture['date_bl']))
+                                : (!empty($facture['date_creation']) ? date('d/m/Y à H:i', strtotime($facture['date_creation'])) : '—');
+                            $bl_numero = trim((string) ($facture['numero_bl'] ?? ''));
+                            if ($bl_numero === '') {
+                                $bl_numero = 'BL-' . (int) $facture['id'];
+                            }
+                            $bl_montant = bl_montant_facture_affichage($facture);
+                            $bl_details = bl_public_facture_url($facture);
+                            $bl_adresse = trim((string) ($facture['adresse_livraison_affichee'] ?? $facture['adresse_livraison'] ?? ''));
+                            $bl_adresse_short = mb_strlen($bl_adresse) > 42 ? mb_substr($bl_adresse, 0, 42) . '…' : $bl_adresse;
+                            ?>
+                            <article class="mc-order mc-order--facture mc-order--livree">
+                                <div class="mc-order__top">
+                                    <div class="mc-order__meta">
+                                        <span class="mc-order__badge"><i class="fas fa-file-invoice"></i> Facture</span>
+                                        <span class="mc-order__numero">#<?php echo htmlspecialchars($bl_numero); ?></span>
+                                        <span class="mc-order__date"><i class="far fa-calendar"></i> <?php echo htmlspecialchars($bl_date); ?></span>
+                                    </div>
+                                    <span class="mc-order__statut statut-livree">
+                                        <i class="fas fa-check-circle"></i> Reçu
+                                    </span>
+                                </div>
+
+                                <div class="mc-order__details">
+                                    <div class="mc-order__detail">
+                                        <span>Montant</span>
+                                        <strong><?php echo number_format($bl_montant, 0, ',', ' '); ?> FCFA</strong>
+                                    </div>
+                                    <?php if (!empty($facture['client_telephone'])): ?>
+                                        <div class="mc-order__detail">
+                                            <span>Téléphone</span>
+                                            <strong><?php echo htmlspecialchars((string) $facture['client_telephone']); ?></strong>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if ($bl_adresse_short !== ''): ?>
+                                        <div class="mc-order__detail">
+                                            <span>Adresse</span>
+                                            <strong><?php echo htmlspecialchars($bl_adresse_short); ?></strong>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="mc-order__actions">
+                                    <?php if ($bl_details !== ''): ?>
+                                        <a href="<?php echo htmlspecialchars($bl_details); ?>"
+                                            class="mc-btn mc-btn--sm mc-btn--primary">
+                                            <i class="fas fa-eye"></i> Détails
+                                        </a>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>

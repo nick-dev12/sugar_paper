@@ -104,6 +104,21 @@ function send_commande_personnalisee_status_notification($user_id, $cp_id, $nouv
     $base_url = get_site_base_url();
     $link = $base_url . '/user/commande-personnalisee-details.php?id=' . $cp_id;
 
+    if ($nouveau_statut === 'livraison_en_cours') {
+        $title = 'Votre commande personnalisée est en livraison';
+        $body = "Demande #{$cp_id} : le livreur est en route.";
+        if (!function_exists('livreur_client_public_suivi_url_cp')) {
+            require_once __DIR__ . '/../models/model_livreur_tracking.php';
+        }
+        $suivi = livreur_client_public_suivi_url_cp($cp_id, $user_id, false);
+        if ($suivi) {
+            $link = $suivi;
+        }
+    } elseif ($nouveau_statut === 'livree') {
+        $title = 'Votre commande personnalisée a été livrée';
+        $body = "Demande #{$cp_id} : votre commande a bien été livrée.";
+    }
+
     require_once __DIR__ . '/notify_helpers.php';
     notifications_send_user_push($user_id, $title, $body, [
         'link' => $link,

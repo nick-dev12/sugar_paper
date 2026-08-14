@@ -13,11 +13,12 @@ require_once __DIR__ . '/../../models/model_livreur_notes.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? 0);
+$cp_id = (int) ($_GET['cp_id'] ?? 0);
 $token = trim((string) ($_GET['token'] ?? ''));
 
-if ($commande_id < 1 && $bl_id < 1) {
+if ($commande_id < 1 && $bl_id < 1 && $cp_id < 1) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'bl_id ou commande_id requis'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => 'bl_id, commande_id ou cp_id requis'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -31,13 +32,17 @@ if ($token !== '') {
     $row = livreur_get_watch_token_row(
         $token,
         $commande_id > 0 ? $commande_id : null,
-        $bl_id > 0 ? $bl_id : null
+        $bl_id > 0 ? $bl_id : null,
+        $cp_id > 0 ? $cp_id : null
     );
     if ($row) {
         $authorized = true;
         $livreur_id = (int) ($row['livreur_id'] ?? 0);
         $tracking_active = (int) ($row['tracking_active'] ?? 0);
-        if ($bl_id > 0) {
+        if ($cp_id > 0) {
+            $livraison_row = livreur_get_cp_tracking($cp_id);
+            $livraison_type_poll = 'personnalisee';
+        } elseif ($bl_id > 0) {
             $livraison_row = livreur_get_facture_tracking($bl_id);
             $livraison_type_poll = 'facture';
         } elseif ($commande_id > 0) {
@@ -48,12 +53,23 @@ if ($token !== '') {
 } else {
     session_start_persistent();
     if (isset($_SESSION['admin_id'])) {
-        if ($bl_id > 0) {
+        if ($cp_id > 0) {
+            $cp = livreur_get_cp_tracking($cp_id);
+            if ($cp) {
+                $authorized = true;
+                $livreur_id = !empty($cp['livreur_id']) ? (int) $cp['livreur_id'] : null;
+                $tracking_active = (int) ($cp['tracking_active'] ?? 0);
+                $livraison_row = $cp;
+                $livraison_type_poll = 'personnalisee';
+            }
+        } elseif ($bl_id > 0) {
             $facture = livreur_get_facture_tracking($bl_id);
             if ($facture) {
                 $authorized = true;
                 $livreur_id = !empty($facture['livreur_id']) ? (int) $facture['livreur_id'] : null;
                 $tracking_active = (int) ($facture['tracking_active'] ?? 0);
+                $livraison_row = $facture;
+                $livraison_type_poll = 'facture';
             }
         } elseif ($commande_id > 0) {
             $commande = livreur_get_commande_tracking($commande_id);
@@ -61,6 +77,8 @@ if ($token !== '') {
                 $authorized = true;
                 $livreur_id = !empty($commande['livreur_id']) ? (int) $commande['livreur_id'] : null;
                 $tracking_active = (int) ($commande['tracking_active'] ?? 0);
+                $livraison_row = $commande;
+                $livraison_type_poll = 'commande';
             }
         }
     }
@@ -74,12 +92,18 @@ if (!$authorized) {
 
 $last = null;
 if ($livreur_id) {
-    $last = livreur_get_last_position($livreur_id, $commande_id > 0 ? $commande_id : null, $bl_id > 0 ? $bl_id : null);
+    $last = livreur_get_last_position(
+        $livreur_id,
+        $commande_id > 0 ? $commande_id : null,
+        $bl_id > 0 ? $bl_id : null,
+        $cp_id > 0 ? $cp_id : null
+    );
 }
 
 $countdown = livreur_countdown_state_for_livraison(
     $commande_id > 0 ? $commande_id : null,
-    $bl_id > 0 ? $bl_id : null
+    $bl_id > 0 ? $bl_id : null,
+    $cp_id > 0 ? $cp_id : null
 );
 
 $can_rate_livreur = false;

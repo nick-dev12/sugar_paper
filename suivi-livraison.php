@@ -10,9 +10,10 @@ require_once __DIR__ . '/includes/asset_version.php';
 
 $commande_id = (int) ($_GET['commande_id'] ?? 0);
 $bl_id = (int) ($_GET['bl_id'] ?? 0);
+$cp_id = (int) ($_GET['cp_id'] ?? 0);
 $token = trim((string) ($_GET['token'] ?? ''));
 
-if ($token === '' || ($commande_id < 1 && $bl_id < 1)) {
+if ($token === '' || ($commande_id < 1 && $bl_id < 1 && $cp_id < 1)) {
     http_response_code(400);
     echo 'Lien de suivi invalide.';
     exit;
@@ -27,7 +28,8 @@ if (!livreur_tracking_tables_ready()) {
 $token_row = livreur_get_watch_token_row(
     $token,
     $commande_id > 0 ? $commande_id : null,
-    $bl_id > 0 ? $bl_id : null
+    $bl_id > 0 ? $bl_id : null,
+    $cp_id > 0 ? $cp_id : null
 );
 if (!$token_row) {
     http_response_code(403);
@@ -37,7 +39,10 @@ if (!$token_row) {
 
 $livraison = false;
 $livraison_type = '';
-if ($bl_id > 0) {
+if ($cp_id > 0) {
+    $livraison = livreur_get_cp_tracking($cp_id);
+    $livraison_type = 'personnalisee';
+} elseif ($bl_id > 0) {
     $livraison = livreur_get_facture_tracking($bl_id);
     $livraison_type = 'facture';
 } else {
@@ -61,6 +66,10 @@ if ($livraison_type === 'facture') {
     $client_nom = trim((string) ($livraison['client_nom'] ?? $livraison['raison_sociale'] ?? ''));
     $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
     $statut_label = livreur_facture_statut_livraison($livraison);
+} elseif ($livraison_type === 'personnalisee') {
+    $client_nom = trim((string) ($livraison['client_prenom'] ?? '') . ' ' . (string) ($livraison['client_nom'] ?? ''));
+    $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
+    $statut_label = livreur_cp_statut_livraison($livraison);
 } else {
     $client_nom = trim((string) ($livraison['client_prenom'] ?? '') . ' ' . (string) ($livraison['client_nom'] ?? ''));
     $client_tel = trim((string) ($livraison['client_telephone'] ?? ''));
@@ -82,13 +91,13 @@ $livreur_photo_url = $livreur_profile['photo_url'];
 $livreur_initials = $livreur_profile['initials'];
 $livreur_nom_affichage = trim((string) ($livraison['livreur_prenom'] ?? '') . ' ' . (string) ($livraison['livreur_nom'] ?? ''));
 
-$existing_rating = livreur_notes_tables_ready()
+$existing_rating = ($livraison_type !== 'personnalisee' && livreur_notes_tables_ready())
     ? livreur_note_get_for_livraison(
         $commande_id > 0 ? $commande_id : null,
         $bl_id > 0 ? $bl_id : null
     )
     : null;
-$can_rate_livreur = livreur_note_peut_noter($livraison, $livraison_type);
+$can_rate_livreur = $livraison_type !== 'personnalisee' && livreur_note_peut_noter($livraison, $livraison_type);
 $rating_state = $existing_rating ? 'rated' : ($can_rate_livreur ? 'ready' : 'pending');
 $existing_rating_value = $existing_rating ? (int) ($existing_rating['note'] ?? 0) : 0;
 $livreur_id_rating = (int) ($livraison['livreur_id'] ?? 0);
@@ -98,7 +107,8 @@ if (!empty($livraison['livreur_id'])) {
     $last = livreur_get_last_position(
         (int) $livraison['livreur_id'],
         $commande_id > 0 ? $commande_id : null,
-        $bl_id > 0 ? $bl_id : null
+        $bl_id > 0 ? $bl_id : null,
+        $cp_id > 0 ? $cp_id : null
     );
 }
 
@@ -107,7 +117,7 @@ $initial_payload = [
     'watch_token' => $token,
     'livraison_type' => $livraison_type,
     'commande' => [
-        'id' => $livraison_type === 'commande' ? $commande_id : $bl_id,
+        'id' => $livraison_type === 'commande' ? $commande_id : ($livraison_type === 'personnalisee' ? $cp_id : $bl_id),
         'numero_commande' => $livraison_type === 'facture'
             ? ($livraison['numero_bl'] ?? '')
             : ($livraison['numero_commande'] ?? ''),
@@ -262,6 +272,7 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
 window.LIVREUR_TRACKING_CONFIG = {
     commandeId: <?php echo $livraison_type === 'commande' ? (int) $commande_id : 0; ?>,
     blId: <?php echo $livraison_type === 'facture' ? (int) $bl_id : 0; ?>,
+    cpId: <?php echo $livraison_type === 'personnalisee' ? (int) $cp_id : 0; ?>,
     livraisonType: <?php echo json_encode($livraison_type, JSON_UNESCAPED_UNICODE); ?>,
     socketUrl: <?php echo json_encode($socket_client_url, JSON_UNESCAPED_SLASHES); ?>,
     socketPath: <?php echo json_encode($socket_path, JSON_UNESCAPED_SLASHES); ?>,
@@ -292,7 +303,9 @@ window.LIVREUR_TRACKING_CONFIG = {
     myDeliveries: [],
     myDeliveriesUrl: '',
     currentDeliveryKey: <?php echo json_encode(
-        $livraison_type === 'facture' ? 'facture-' . (int) $bl_id : 'commande-' . (int) $commande_id,
+        $livraison_type === 'facture'
+            ? 'facture-' . (int) $bl_id
+            : ($livraison_type === 'personnalisee' ? 'personnalisee-' . (int) $cp_id : 'commande-' . (int) $commande_id),
         JSON_UNESCAPED_UNICODE
     ); ?>,
     livreurPhotoUrl: <?php echo json_encode($livreur_photo_url, JSON_UNESCAPED_SLASHES); ?>,

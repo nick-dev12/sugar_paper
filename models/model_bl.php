@@ -1157,6 +1157,9 @@ function create_bl_from_devis($devis_id, $admin_id) {
         }
 
         $db->commit();
+        if (function_exists('bl_enqueue_client_event')) {
+            bl_enqueue_client_event('created', $bl_id);
+        }
         return ['success' => true, 'bl_id' => $bl_id, 'numero_bl' => $numero];
     } catch (PDOException $e) {
         $db->rollBack();
@@ -1313,6 +1316,9 @@ function create_bl_manuel($client_b2b_id, $date_bl, $notes, $lignes, $admin_id, 
             ]);
         }
         $db->commit();
+        if (function_exists('bl_enqueue_client_event')) {
+            bl_enqueue_client_event('created', $bl_id);
+        }
         return ['success' => true, 'bl_id' => $bl_id, 'numero_bl' => $numero];
     } catch (PDOException $e) {
         $db->rollBack();
@@ -2085,3 +2091,5 @@ function get_annees_disponibles_rapport_factures()
     rsort($years, SORT_NUMERIC);
     return $years;
 }
+
+require_once __DIR__ . '/model_bl_client.php';

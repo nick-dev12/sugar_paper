@@ -258,7 +258,7 @@ function livreur_update_session_commande($token, $commande_id) {
     }
 }
 
-function livreur_create_watch_token($commande_id, $type, $admin_id = null, $user_id = null, $bl_id = null) {
+function livreur_create_watch_token($commande_id, $type, $admin_id = null, $user_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_tracking_tables_ready()) {
         return false;
@@ -266,7 +266,8 @@ function livreur_create_watch_token($commande_id, $type, $admin_id = null, $user
 
     $commande_id = $commande_id !== null ? (int) $commande_id : 0;
     $bl_id = $bl_id !== null ? (int) $bl_id : 0;
-    if ($commande_id < 1 && $bl_id < 1) {
+    $cp_id = $cp_id !== null ? (int) $cp_id : 0;
+    if ($commande_id < 1 && $bl_id < 1 && $cp_id < 1) {
         return false;
     }
 
@@ -277,23 +278,24 @@ function livreur_create_watch_token($commande_id, $type, $admin_id = null, $user
         $ttl = 480;
     }
 
+    $has_cp = function_exists('livreur_watch_token_has_cp_column') && livreur_watch_token_has_cp_column();
+
     try {
+        $cols = 'token_hash, commande_id, bl_id, type, admin_id, user_id, expires_at, date_creation';
+        $vals = ':token_hash, :commande_id, :bl_id, :type, :admin_id, :user_id, DATE_ADD(NOW(), INTERVAL :ttl MINUTE), NOW()';
+        if ($has_cp) {
+            $cols = 'token_hash, commande_id, bl_id, cp_id, type, admin_id, user_id, expires_at, date_creation';
+            $vals = ':token_hash, :commande_id, :bl_id, :cp_id, :type, :admin_id, :user_id, DATE_ADD(NOW(), INTERVAL :ttl MINUTE), NOW()';
+        }
         $stmt = $db->prepare("
-            INSERT INTO tracking_watch_tokens
-                (token_hash, commande_id, bl_id, type, admin_id, user_id, expires_at, date_creation)
-            VALUES
-                (:token_hash, :commande_id, :bl_id, :type, :admin_id, :user_id, DATE_ADD(NOW(), INTERVAL :ttl MINUTE), NOW())
+            INSERT INTO tracking_watch_tokens ($cols)
+            VALUES ($vals)
         ");
         $stmt->bindValue(':token_hash', $hash, PDO::PARAM_STR);
-        if ($commande_id > 0) {
-            $stmt->bindValue(':commande_id', $commande_id, PDO::PARAM_INT);
-        } else {
-            $stmt->bindValue(':commande_id', null, PDO::PARAM_NULL);
-        }
-        if ($bl_id > 0) {
-            $stmt->bindValue(':bl_id', $bl_id, PDO::PARAM_INT);
-        } else {
-            $stmt->bindValue(':bl_id', null, PDO::PARAM_NULL);
+        $stmt->bindValue(':commande_id', $commande_id > 0 ? $commande_id : null, $commande_id > 0 ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        $stmt->bindValue(':bl_id', $bl_id > 0 ? $bl_id : null, $bl_id > 0 ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        if ($has_cp) {
+            $stmt->bindValue(':cp_id', $cp_id > 0 ? $cp_id : null, $cp_id > 0 ? PDO::PARAM_INT : PDO::PARAM_NULL);
         }
         $stmt->bindValue(':type', $type === 'client' ? 'client' : 'admin', PDO::PARAM_STR);
         $stmt->bindValue(':admin_id', $admin_id !== null ? (int) $admin_id : null, PDO::PARAM_INT);
@@ -306,13 +308,14 @@ function livreur_create_watch_token($commande_id, $type, $admin_id = null, $user
             'expires_at' => date('Y-m-d H:i:s', time() + ($ttl * 60)),
             'commande_id' => $commande_id > 0 ? $commande_id : null,
             'bl_id' => $bl_id > 0 ? $bl_id : null,
+            'cp_id' => $cp_id > 0 ? $cp_id : null,
         ];
     } catch (PDOException $e) {
         return false;
     }
 }
 
-function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null) {
+function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_tracking_tables_ready() || trim((string) $token) === '') {
         return false;
@@ -321,6 +324,13 @@ function livreur_get_watch_token_row($token, $commande_id = null, $bl_id = null)
     $hash = livreur_hash_token($token);
 
     try {
+        if ($cp_id !== null && (int) $cp_id > 0 && function_exists('livreur_merge_watch_token_with_cp')) {
+            $row = livreur_merge_watch_token_with_cp($hash, (int) $cp_id);
+            if ($row) {
+                return $row;
+            }
+        }
+
         if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
             $row = livreur_merge_watch_token_with_facture($hash, (int) $bl_id);
             if ($row) {
@@ -602,7 +612,7 @@ function livreur_livraison_arrivee_column_ok() {
 /**
  * Indique si une livraison a été terminée par le livreur (plus de reprise GPS).
  *
- * @param 'commande'|'facture' $type
+ * @param 'commande'|'facture'|'personnalisee' $type
  */
 function livreur_livraison_est_terminee(array $row, $type = 'commande') {
     if (livreur_livraison_terminee_column_ok() && !empty($row['livraison_terminee_at'])) {
@@ -611,6 +621,10 @@ function livreur_livraison_est_terminee(array $row, $type = 'commande') {
     if ($type === 'commande') {
         $statut = strtolower(trim((string) ($row['statut'] ?? '')));
         return in_array($statut, ['livree', 'paye'], true);
+    }
+    if ($type === 'personnalisee') {
+        $statut = strtolower(trim((string) ($row['statut'] ?? '')));
+        return $statut === 'livree' || !empty($row['livraison_terminee_at']);
     }
     return false;
 }
@@ -635,7 +649,7 @@ function livreur_facture_livraison_est_demarree(array $row) {
  * Admin : afficher le bouton « Suivre la livraison » (livreur assigné + livraison démarrée).
  *
  * @param array<string, mixed> $row
- * @param 'commande'|'facture' $type
+ * @param 'commande'|'facture'|'personnalisee' $type
  */
 function livreur_admin_peut_suivre_livraison(array $row, $type = 'commande') {
     if (empty($row['livreur_id'])) {
@@ -653,6 +667,10 @@ function livreur_admin_peut_suivre_livraison(array $row, $type = 'commande') {
     if ($type === 'facture') {
         return livreur_facture_livraison_est_demarree($row);
     }
+    if ($type === 'personnalisee') {
+        return ($row['statut'] ?? '') === 'livraison_en_cours'
+            || (int) ($row['tracking_active'] ?? 0) === 1;
+    }
     return false;
 }
 
@@ -660,7 +678,7 @@ function livreur_admin_peut_suivre_livraison(array $row, $type = 'commande') {
  * URL page suivi admin (mode observateur).
  *
  * @param int $id commande_id ou bl_id
- * @param 'commande'|'facture' $type
+ * @param 'commande'|'facture'|'personnalisee' $type
  */
 function livreur_admin_suivi_livraison_href($id, $type = 'commande') {
     $id = (int) $id;
@@ -669,6 +687,9 @@ function livreur_admin_suivi_livraison_href($id, $type = 'commande') {
     }
     if ($type === 'facture') {
         return '../livreurs/suivi.php?bl_id=' . $id . '&regarder=1';
+    }
+    if ($type === 'personnalisee') {
+        return '../livreurs/suivi.php?cp_id=' . $id . '&regarder=1';
     }
     return '../livreurs/suivi.php?commande_id=' . $id . '&regarder=1';
 }
@@ -1541,10 +1562,17 @@ function livreur_start_tracking($commande_id, $livreur_id) {
     }
 }
 
-function livreur_web_can_manage_livraison($admin_id, $commande_id = null, $bl_id = null) {
+function livreur_web_can_manage_livraison($admin_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     $admin_id = (int) $admin_id;
     if ($admin_id < 1) {
         return false;
+    }
+    if ($cp_id !== null && (int) $cp_id > 0 && function_exists('livreur_get_cp_tracking')) {
+        $row = livreur_get_cp_tracking((int) $cp_id);
+        if (!$row || (int) ($row['livreur_id'] ?? 0) !== $admin_id) {
+            return false;
+        }
+        return !livreur_livraison_est_terminee($row, 'personnalisee');
     }
     if ($commande_id !== null && (int) $commande_id > 0) {
         $row = livreur_get_commande_tracking((int) $commande_id);
@@ -1584,7 +1612,10 @@ function livreur_countdown_columns_ok() {
 /**
  * @return array{table:string,id:int}|null
  */
-function livreur_countdown_resolve_target($commande_id = null, $bl_id = null) {
+function livreur_countdown_resolve_target($commande_id = null, $bl_id = null, $cp_id = null) {
+    if ($cp_id !== null && (int) $cp_id > 0 && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+        return ['table' => 'commandes_personnalisees', 'id' => (int) $cp_id];
+    }
     if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
         return ['table' => 'bons_livraison', 'id' => (int) $bl_id];
     }
@@ -1597,12 +1628,12 @@ function livreur_countdown_resolve_target($commande_id = null, $bl_id = null) {
 /**
  * @return array<string, mixed>|false
  */
-function livreur_countdown_fetch_row($commande_id = null, $bl_id = null) {
+function livreur_countdown_fetch_row($commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_countdown_columns_ok()) {
         return false;
     }
-    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id, $cp_id);
     if (!$target) {
         return false;
     }
@@ -1665,8 +1696,8 @@ function livreur_countdown_state_from_row($row) {
 /**
  * @return array<string, mixed>|null
  */
-function livreur_countdown_state_for_livraison($commande_id = null, $bl_id = null) {
-    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+function livreur_countdown_state_for_livraison($commande_id = null, $bl_id = null, $cp_id = null) {
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id, $cp_id);
     if (!$row) {
         return null;
     }
@@ -1690,12 +1721,12 @@ function livreur_countdown_seconds_from_route_duration($duration_seconds) {
     return max(60, $max_min * 60);
 }
 
-function livreur_countdown_pause_row($commande_id = null, $bl_id = null) {
+function livreur_countdown_pause_row($commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_countdown_columns_ok()) {
         return false;
     }
-    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id, $cp_id);
     if (!$row || $row['delivery_countdown_remaining_sec'] === null) {
         return true;
     }
@@ -1703,7 +1734,7 @@ function livreur_countdown_pause_row($commande_id = null, $bl_id = null) {
     if (!$state) {
         return false;
     }
-    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id, $cp_id);
     if (!$target) {
         return false;
     }
@@ -1723,16 +1754,16 @@ function livreur_countdown_pause_row($commande_id = null, $bl_id = null) {
     }
 }
 
-function livreur_countdown_resume($commande_id = null, $bl_id = null) {
+function livreur_countdown_resume($commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_countdown_columns_ok()) {
         return false;
     }
-    $row = livreur_countdown_fetch_row($commande_id, $bl_id);
+    $row = livreur_countdown_fetch_row($commande_id, $bl_id, $cp_id);
     if (!$row || $row['delivery_countdown_remaining_sec'] === null) {
         return true;
     }
-    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id, $cp_id);
     if (!$target) {
         return false;
     }
@@ -1748,12 +1779,12 @@ function livreur_countdown_resume($commande_id = null, $bl_id = null) {
     }
 }
 
-function livreur_countdown_clear($commande_id = null, $bl_id = null) {
+function livreur_countdown_clear($commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_countdown_columns_ok()) {
         return false;
     }
-    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id, $cp_id);
     if (!$target) {
         return false;
     }
@@ -1776,9 +1807,9 @@ function livreur_countdown_clear($commande_id = null, $bl_id = null) {
  *
  * @return array{ok:bool,error?:string,countdown?:array<string,mixed>|null}
  */
-function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $duration_seconds) {
+function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $duration_seconds, $cp_id = null) {
     global $db;
-    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
+    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id, $cp_id)) {
         return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
     }
     if (!livreur_countdown_columns_ok()) {
@@ -1788,7 +1819,7 @@ function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $
     if ($seconds < 1) {
         return ['ok' => false, 'error' => 'Durée invalide.'];
     }
-    $target = livreur_countdown_resolve_target($commande_id, $bl_id);
+    $target = livreur_countdown_resolve_target($commande_id, $bl_id, $cp_id);
     if (!$target) {
         return ['ok' => false, 'error' => 'Livraison introuvable.'];
     }
@@ -1819,12 +1850,12 @@ function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $
                 'id' => $target['id'],
             ]);
             if ((int) ($row['tracking_active'] ?? 0) !== 1) {
-                livreur_countdown_pause_row($commande_id, $bl_id);
+                livreur_countdown_pause_row($commande_id, $bl_id, $cp_id);
             }
         } elseif ((int) ($row['tracking_active'] ?? 0) === 1 && empty($row['delivery_countdown_running_at'])) {
-            livreur_countdown_resume($commande_id, $bl_id);
+            livreur_countdown_resume($commande_id, $bl_id, $cp_id);
         }
-        $fresh = livreur_countdown_fetch_row($commande_id, $bl_id);
+        $fresh = livreur_countdown_fetch_row($commande_id, $bl_id, $cp_id);
         return [
             'ok' => true,
             'countdown' => livreur_countdown_state_from_row($fresh),
@@ -1834,7 +1865,7 @@ function livreur_countdown_init_from_duration($admin_id, $commande_id, $bl_id, $
     }
 }
 
-function livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id = null, $except_bl_id = null) {
+function livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id = null, $except_bl_id = null, $except_cp_id = null) {
     global $db;
     $admin_id = (int) $admin_id;
     if ($admin_id < 1 || !livreur_countdown_columns_ok()) {
@@ -1876,6 +1907,25 @@ function livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_
                 livreur_countdown_pause_row(null, (int) $bid);
             }
         }
+
+        if (function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+            if ($except_cp_id !== null && (int) $except_cp_id > 0) {
+                $stmtCp = $db->prepare('
+                    SELECT id FROM commandes_personnalisees
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+                ');
+                $stmtCp->execute(['livreur_id' => $admin_id, 'except_id' => (int) $except_cp_id]);
+            } else {
+                $stmtCp = $db->prepare('
+                    SELECT id FROM commandes_personnalisees
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1
+                ');
+                $stmtCp->execute(['livreur_id' => $admin_id]);
+            }
+            foreach ($stmtCp->fetchAll(PDO::FETCH_COLUMN) as $pid) {
+                livreur_countdown_pause_row(null, null, (int) $pid);
+            }
+        }
     } catch (PDOException $e) {
         /* silencieux */
     }
@@ -1884,14 +1934,30 @@ function livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_
 /**
  * @return array{ok:bool,error?:string,countdown?:array<string,mixed>|null}
  */
-function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = null) {
+function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
-    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
+    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id, $cp_id)) {
         return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
     }
-    livreur_stop_other_active_web_trackings($admin_id, $commande_id, $bl_id);
+    livreur_stop_other_active_web_trackings($admin_id, $commande_id, $bl_id, $cp_id);
     try {
-        if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
+        if ($cp_id !== null && (int) $cp_id > 0 && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+            $row = livreur_get_cp_tracking((int) $cp_id);
+            if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
+                livreur_countdown_resume(null, null, (int) $cp_id);
+                return [
+                    'ok' => true,
+                    'countdown' => livreur_countdown_state_for_livraison(null, null, (int) $cp_id),
+                ];
+            }
+            $stmt = $db->prepare('
+                UPDATE commandes_personnalisees
+                SET tracking_active = 1,
+                    tracking_started_at = COALESCE(tracking_started_at, NOW())
+                WHERE id = :id AND livreur_id = :livreur_id
+            ');
+            $stmt->execute(['id' => (int) $cp_id, 'livreur_id' => (int) $admin_id]);
+        } elseif ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
             $row = livreur_get_facture_tracking((int) $bl_id);
             if ($row && (int) ($row['tracking_active'] ?? 0) === 1) {
                 livreur_countdown_resume(null, (int) $bl_id);
@@ -1927,16 +1993,33 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
         if ($stmt->rowCount() < 1) {
             return ['ok' => false, 'error' => 'Impossible d\'activer le suivi GPS.'];
         }
-        livreur_countdown_resume($commande_id, $bl_id);
+        livreur_countdown_resume($commande_id, $bl_id, $cp_id);
 
         if ($commande_id !== null && (int) $commande_id > 0) {
             require_once __DIR__ . '/../services/send_commande_notification.php';
             notify_client_suivi_gps_demarre((int) $commande_id);
+        } elseif ($bl_id !== null && (int) $bl_id > 0) {
+            require_once __DIR__ . '/model_bl.php';
+            if (function_exists('bl_enqueue_client_event')) {
+                bl_enqueue_client_event('gps', (int) $bl_id);
+            }
+        } elseif ($cp_id !== null && (int) $cp_id > 0) {
+            $cp = isset($row) ? $row : livreur_get_cp_tracking((int) $cp_id);
+            $uid = (int) ($cp['user_id'] ?? 0);
+            if ($uid > 0) {
+                require_once __DIR__ . '/../services/send_commande_personnalisee_notification.php';
+                send_commande_personnalisee_status_notification(
+                    $uid,
+                    (int) $cp_id,
+                    'livraison_en_cours',
+                    trim((string) ($cp['email'] ?? $cp['user_email'] ?? ''))
+                );
+            }
         }
 
         return [
             'ok' => true,
-            'countdown' => livreur_countdown_state_for_livraison($commande_id, $bl_id),
+            'countdown' => livreur_countdown_state_for_livraison($commande_id, $bl_id, $cp_id),
         ];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de l\'activation du suivi.'];
@@ -1946,13 +2029,13 @@ function livreur_start_web_tracking($admin_id, $commande_id = null, $bl_id = nul
 /**
  * Désactive le suivi GPS des autres livraisons du même livreur (changement de course).
  */
-function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id = null, $except_bl_id = null) {
+function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id = null, $except_bl_id = null, $except_cp_id = null) {
     global $db;
     $admin_id = (int) $admin_id;
     if ($admin_id < 1) {
         return false;
     }
-    livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id, $except_bl_id);
+    livreur_countdown_pause_active_for_livreur($admin_id, $except_commande_id, $except_bl_id, $except_cp_id);
     try {
         if ($except_commande_id !== null && (int) $except_commande_id > 0) {
             $stmt = $db->prepare('
@@ -1993,6 +2076,26 @@ function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id 
                 $stmtBl->execute(['livreur_id' => $admin_id]);
             }
         }
+        if (function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+            if ($except_cp_id !== null && (int) $except_cp_id > 0) {
+                $stmtCp = $db->prepare('
+                    UPDATE commandes_personnalisees
+                    SET tracking_active = 0
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1 AND id != :except_id
+                ');
+                $stmtCp->execute([
+                    'livreur_id' => $admin_id,
+                    'except_id' => (int) $except_cp_id,
+                ]);
+            } else {
+                $stmtCp = $db->prepare('
+                    UPDATE commandes_personnalisees
+                    SET tracking_active = 0
+                    WHERE livreur_id = :livreur_id AND tracking_active = 1
+                ');
+                $stmtCp->execute(['livreur_id' => $admin_id]);
+            }
+        }
         return true;
     } catch (PDOException $e) {
         return false;
@@ -2002,13 +2105,20 @@ function livreur_stop_other_active_web_trackings($admin_id, $except_commande_id 
 /**
  * @return array{ok:bool,error?:string}
  */
-function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null) {
+function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
-    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
+    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id, $cp_id)) {
         return ['ok' => false, 'error' => 'Accès refusé à cette livraison.'];
     }
     try {
-        if ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
+        if ($cp_id !== null && (int) $cp_id > 0 && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+            $stmt = $db->prepare('
+                UPDATE commandes_personnalisees
+                SET tracking_active = 0
+                WHERE id = :id AND livreur_id = :livreur_id
+            ');
+            $stmt->execute(['id' => (int) $cp_id, 'livreur_id' => (int) $admin_id]);
+        } elseif ($bl_id !== null && (int) $bl_id > 0 && livreur_bl_livraison_columns_ok()) {
             $stmt = $db->prepare('
                 UPDATE bons_livraison
                 SET tracking_active = 0
@@ -2023,7 +2133,7 @@ function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null
             ');
             $stmt->execute(['id' => (int) $commande_id, 'livreur_id' => (int) $admin_id]);
         }
-        livreur_countdown_clear($commande_id, $bl_id);
+        livreur_countdown_clear($commande_id, $bl_id, $cp_id);
         return ['ok' => true];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de l\'arrêt du suivi.'];
@@ -2040,7 +2150,7 @@ function livreur_stop_web_tracking($admin_id, $commande_id = null, $bl_id = null
  *
  * @return array{ok:bool,already?:bool,error?:string,arrivee_at?:string}
  */
-function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) {
+function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
 
     $admin_id = (int) $admin_id;
@@ -2048,7 +2158,12 @@ function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) 
         return ['ok' => false, 'error' => 'Compte invalide.'];
     }
 
-    if ($bl_id !== null && (int) $bl_id > 0) {
+    if ($cp_id !== null && (int) $cp_id > 0) {
+        $row = livreur_get_cp_tracking((int) $cp_id);
+        $type = 'personnalisee';
+        $livraison_id = (int) $cp_id;
+        $numero = livreur_cp_numero($cp_id);
+    } elseif ($bl_id !== null && (int) $bl_id > 0) {
         $row = livreur_get_facture_tracking((int) $bl_id);
         $type = 'facture';
         $livraison_id = (int) $bl_id;
@@ -2079,7 +2194,15 @@ function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) 
 
     try {
         if (livreur_livraison_arrivee_column_ok()) {
-            if ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
+            if ($type === 'personnalisee' && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+                $stmt = $db->prepare('
+                    UPDATE commandes_personnalisees
+                    SET livraison_arrivee_at = NOW()
+                    WHERE id = :id AND livreur_id = :livreur_id
+                      AND (livraison_arrivee_at IS NULL OR livraison_arrivee_at = \'\')
+                ');
+                $stmt->execute(['id' => $livraison_id, 'livreur_id' => $admin_id]);
+            } elseif ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
                 $stmt = $db->prepare('
                     UPDATE bons_livraison
                     SET livraison_arrivee_at = NOW()
@@ -2110,7 +2233,7 @@ function livreur_marquer_arrivee($admin_id, $commande_id = null, $bl_id = null) 
     }
 }
 
-function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = null) {
+function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
 
     $admin_id = (int) $admin_id;
@@ -2118,7 +2241,10 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
         return ['ok' => false, 'error' => 'Compte invalide.'];
     }
 
-    if ($bl_id !== null && (int) $bl_id > 0) {
+    if ($cp_id !== null && (int) $cp_id > 0) {
+        $row = livreur_get_cp_tracking((int) $cp_id);
+        $type = 'personnalisee';
+    } elseif ($bl_id !== null && (int) $bl_id > 0) {
         $row = livreur_get_facture_tracking((int) $bl_id);
         $type = 'facture';
     } elseif ($commande_id !== null && (int) $commande_id > 0) {
@@ -2136,7 +2262,29 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
     }
 
     try {
-        if ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
+        if ($type === 'personnalisee' && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+            $sql = '
+                UPDATE commandes_personnalisees
+                SET tracking_active = 0,
+                    tracking_started_at = NULL,
+                    statut = \'livree\',
+                    livraison_terminee_at = NOW(),
+                    date_modification = NOW()
+                WHERE id = :id AND livreur_id = :livreur_id
+            ';
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['id' => (int) $cp_id, 'livreur_id' => $admin_id]);
+            $uid = (int) ($row['user_id'] ?? 0);
+            if ($uid > 0) {
+                require_once __DIR__ . '/../services/send_commande_personnalisee_notification.php';
+                send_commande_personnalisee_status_notification(
+                    $uid,
+                    (int) $cp_id,
+                    'livree',
+                    trim((string) ($row['email'] ?? $row['user_email'] ?? ''))
+                );
+            }
+        } elseif ($type === 'facture' && livreur_bl_livraison_columns_ok()) {
             $sql = '
                 UPDATE bons_livraison
                 SET tracking_active = 0,
@@ -2148,6 +2296,10 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
             $sql .= ' WHERE id = :id AND livreur_id = :livreur_id';
             $stmt = $db->prepare($sql);
             $stmt->execute(['id' => (int) $bl_id, 'livreur_id' => $admin_id]);
+            require_once __DIR__ . '/model_bl.php';
+            if (function_exists('bl_enqueue_client_event')) {
+                bl_enqueue_client_event('terminee', (int) $bl_id);
+            }
         } else {
             $sql = '
                 UPDATE commandes
@@ -2170,7 +2322,7 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
             }
         }
 
-        livreur_countdown_clear($commande_id, $bl_id);
+        livreur_countdown_clear($commande_id, $bl_id, $cp_id);
         return ['ok' => true];
     } catch (PDOException $e) {
         return ['ok' => false, 'error' => 'Erreur lors de la clôture de la livraison.'];
@@ -2180,11 +2332,13 @@ function livreur_terminer_livraison($admin_id, $commande_id = null, $bl_id = nul
 /**
  * @return array{ok:bool,error?:string}
  */
-function livreur_save_web_position($admin_id, $latitude, $longitude, $commande_id = null, $bl_id = null, $accuracy = null) {
-    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id)) {
+function livreur_save_web_position($admin_id, $latitude, $longitude, $commande_id = null, $bl_id = null, $accuracy = null, $cp_id = null) {
+    if (!livreur_web_can_manage_livraison($admin_id, $commande_id, $bl_id, $cp_id)) {
         return ['ok' => false, 'error' => 'Accès refusé.'];
     }
-    if ($bl_id !== null && (int) $bl_id > 0) {
+    if ($cp_id !== null && (int) $cp_id > 0) {
+        $row = livreur_get_cp_tracking((int) $cp_id);
+    } elseif ($bl_id !== null && (int) $bl_id > 0) {
         $row = livreur_get_facture_tracking((int) $bl_id);
     } else {
         $row = livreur_get_commande_tracking((int) $commande_id);
@@ -2194,6 +2348,7 @@ function livreur_save_web_position($admin_id, $latitude, $longitude, $commande_i
     }
     $cmd_id = ($commande_id !== null && (int) $commande_id > 0) ? (int) $commande_id : null;
     $facture_id = ($bl_id !== null && (int) $bl_id > 0) ? (int) $bl_id : null;
+    $perso_id = ($cp_id !== null && (int) $cp_id > 0) ? (int) $cp_id : null;
     $ok = livreur_save_position(
         (int) $admin_id,
         $latitude,
@@ -2202,7 +2357,8 @@ function livreur_save_web_position($admin_id, $latitude, $longitude, $commande_i
         $accuracy,
         null,
         null,
-        $facture_id
+        $facture_id,
+        $perso_id
     );
     return $ok ? ['ok' => true] : ['ok' => false, 'error' => 'Enregistrement position impossible.'];
 }
@@ -2221,7 +2377,7 @@ function livreur_stop_tracking($commande_id) {
     }
 }
 
-function livreur_save_position($livreur_id, $latitude, $longitude, $commande_id = null, $accuracy = null, $speed = null, $heading = null, $bl_id = null) {
+function livreur_save_position($livreur_id, $latitude, $longitude, $commande_id = null, $accuracy = null, $speed = null, $heading = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_tracking_tables_ready()) {
         return false;
@@ -2234,34 +2390,34 @@ function livreur_save_position($livreur_id, $latitude, $longitude, $commande_id 
     }
 
     $has_bl_col = livreur_bl_livraison_columns_ok();
+    $has_cp_col = function_exists('livreur_positions_has_cp_column') && livreur_positions_has_cp_column();
     try {
+        $cols = 'livreur_id, commande_id, latitude, longitude, accuracy, speed, heading, recorded_at';
+        $vals = ':livreur_id, :commande_id, :latitude, :longitude, :accuracy, :speed, :heading, NOW()';
         if ($has_bl_col) {
-            $stmt = $db->prepare("
-                INSERT INTO livreur_positions
-                    (livreur_id, commande_id, bl_id, latitude, longitude, accuracy, speed, heading, recorded_at)
-                VALUES
-                    (:livreur_id, :commande_id, :bl_id, :latitude, :longitude, :accuracy, :speed, :heading, NOW())
-            ");
-        } else {
-            $stmt = $db->prepare("
-                INSERT INTO livreur_positions
-                    (livreur_id, commande_id, latitude, longitude, accuracy, speed, heading, recorded_at)
-                VALUES
-                    (:livreur_id, :commande_id, :latitude, :longitude, :accuracy, :speed, :heading, NOW())
-            ");
+            $cols = 'livreur_id, commande_id, bl_id, latitude, longitude, accuracy, speed, heading, recorded_at';
+            $vals = ':livreur_id, :commande_id, :bl_id, :latitude, :longitude, :accuracy, :speed, :heading, NOW()';
         }
-        $stmt->bindValue(':livreur_id', (int) $livreur_id, PDO::PARAM_INT);
-        if ($commande_id !== null) {
-            $stmt->bindValue(':commande_id', (int) $commande_id, PDO::PARAM_INT);
-        } else {
-            $stmt->bindValue(':commande_id', null, PDO::PARAM_NULL);
-        }
-        if ($has_bl_col) {
-            if ($bl_id !== null) {
-                $stmt->bindValue(':bl_id', (int) $bl_id, PDO::PARAM_INT);
+        if ($has_cp_col) {
+            $cols = str_replace('bl_id, latitude', 'bl_id, cp_id, latitude', $cols);
+            if (strpos($cols, 'cp_id') === false) {
+                $cols = 'livreur_id, commande_id, cp_id, latitude, longitude, accuracy, speed, heading, recorded_at';
+                $vals = ':livreur_id, :commande_id, :cp_id, :latitude, :longitude, :accuracy, :speed, :heading, NOW()';
             } else {
-                $stmt->bindValue(':bl_id', null, PDO::PARAM_NULL);
+                $vals = str_replace(':bl_id, :latitude', ':bl_id, :cp_id, :latitude', $vals);
             }
+        }
+        $stmt = $db->prepare("
+            INSERT INTO livreur_positions ($cols)
+            VALUES ($vals)
+        ");
+        $stmt->bindValue(':livreur_id', (int) $livreur_id, PDO::PARAM_INT);
+        $stmt->bindValue(':commande_id', $commande_id !== null ? (int) $commande_id : null, $commande_id !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        if ($has_bl_col) {
+            $stmt->bindValue(':bl_id', $bl_id !== null ? (int) $bl_id : null, $bl_id !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
+        }
+        if ($has_cp_col) {
+            $stmt->bindValue(':cp_id', $cp_id !== null ? (int) $cp_id : null, $cp_id !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
         }
         $stmt->bindValue(':latitude', $lat);
         $stmt->bindValue(':longitude', $lng);
@@ -2275,7 +2431,7 @@ function livreur_save_position($livreur_id, $latitude, $longitude, $commande_id 
     }
 }
 
-function livreur_get_last_position($livreur_id, $commande_id = null, $bl_id = null) {
+function livreur_get_last_position($livreur_id, $commande_id = null, $bl_id = null, $cp_id = null) {
     global $db;
     if (!livreur_tracking_tables_ready()) {
         return false;
@@ -2288,7 +2444,10 @@ function livreur_get_last_position($livreur_id, $commande_id = null, $bl_id = nu
             WHERE livreur_id = :livreur_id
         ";
         $params = ['livreur_id' => (int) $livreur_id];
-        if ($bl_id !== null && livreur_bl_livraison_columns_ok()) {
+        if ($cp_id !== null && function_exists('livreur_positions_has_cp_column') && livreur_positions_has_cp_column()) {
+            $sql .= " AND cp_id = :cp_id";
+            $params['cp_id'] = (int) $cp_id;
+        } elseif ($bl_id !== null && livreur_bl_livraison_columns_ok()) {
             $sql .= " AND bl_id = :bl_id";
             $params['bl_id'] = (int) $bl_id;
         } elseif ($commande_id !== null) {
@@ -2351,6 +2510,10 @@ function livreur_mes_livraison_en_cours($type, array $row) {
     if ($type === 'commande') {
         $statut = strtolower(trim((string) ($row['statut'] ?? '')));
         return !in_array($statut, ['livree', 'paye', 'annulee'], true);
+    }
+    if ($type === 'personnalisee') {
+        $statut = strtolower(trim((string) ($row['statut'] ?? '')));
+        return $statut === 'livraison_en_cours' || !empty($row['tracking_active']);
     }
     $statut_bl = strtolower(trim((string) ($row['statut_bl'] ?? $row['statut'] ?? '')));
     return !in_array($statut_bl, ['livree', 'livré', 'livre', 'annulee', 'annulée', 'annule'], true);
@@ -2442,6 +2605,39 @@ function livreur_get_mes_livraisons_for_admin($admin_id, $only_today = true, $st
         }
     }
 
+    foreach (livreur_get_cp_livraison_list($only_today) as $cp) {
+        if ((int) ($cp['livreur_id'] ?? 0) !== $admin_id) {
+            continue;
+        }
+        $lat = livreur_parse_coord($cp['delivery_latitude'] ?? null);
+        $lng = livreur_parse_coord($cp['delivery_longitude'] ?? null);
+        $client_nom = trim((string) ($cp['user_prenom'] ?? $cp['prenom'] ?? '') . ' ' . (string) ($cp['user_nom'] ?? $cp['nom'] ?? ''));
+        $tel = trim((string) ($cp['user_telephone'] ?? $cp['telephone'] ?? $cp['client_telephone'] ?? ''));
+        $tracking_active = (int) ($cp['tracking_active'] ?? 0);
+        $geo_ready = $lat !== null && $lng !== null;
+        if ($started_only && !livreur_mes_livraison_en_cours('personnalisee', $cp)) {
+            continue;
+        }
+        $suivi_qs = 'cp_id=' . (int) $cp['id'];
+        if ($tracking_active || $geo_ready) {
+            $suivi_qs .= '&autostart=1';
+        }
+        $items[] = [
+            'type' => 'personnalisee',
+            'id' => (int) $cp['id'],
+            'numero' => livreur_cp_numero((int) $cp['id']),
+            'client_nom' => $client_nom,
+            'client_tel' => $tel,
+            'adresse' => livreur_cp_adresse_affichage($cp),
+            'tracking_active' => $tracking_active,
+            'statut' => (string) ($cp['statut'] ?? ''),
+            'statut_label' => livreur_cp_statut_livraison($cp),
+            'geo_ready' => $geo_ready,
+            'suivi_url' => 'suivi.php?' . $suivi_qs,
+            'terminee' => false,
+        ];
+    }
+
     usort($items, function ($a, $b) {
         $ta = !empty($a['tracking_active']) ? 0 : 1;
         $tb = !empty($b['tracking_active']) ? 0 : 1;
@@ -2484,39 +2680,130 @@ function livreur_client_active_tracking_popup_data($user_id) {
         ");
         $stmt->execute(['user_id' => $user_id]);
         $commande = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$commande || livreur_livraison_est_terminee($commande, 'commande')) {
-            return null;
+        if ($commande && !livreur_livraison_est_terminee($commande, 'commande')) {
+            $commande_id = (int) $commande['id'];
+            $livreur_id = (int) ($commande['livreur_id'] ?? 0);
+            $livreur_nom = trim(
+                ((string) ($commande['livreur_prenom'] ?? '')) . ' ' . ((string) ($commande['livreur_nom'] ?? ''))
+            );
+            if ($livreur_nom === '') {
+                $livreur_nom = 'Votre livreur';
+            }
+
+            $last = $livreur_id > 0
+                ? livreur_get_last_position($livreur_id, $commande_id, null)
+                : false;
+
+            require_once __DIR__ . '/../includes/site_url.php';
+            $base = rtrim(get_site_base_url(), '/');
+            $suivi_url = $base . '/user/suivi-commande.php?commande_id=' . $commande_id;
+
+            return [
+                'commande_id' => $commande_id,
+                'numero_commande' => (string) ($commande['numero_commande'] ?? $commande_id),
+                'livreur_nom' => $livreur_nom,
+                'suivi_url' => $suivi_url,
+                'tracking_active' => true,
+                'driver_lat' => $last ? livreur_parse_coord($last['latitude'] ?? null) : null,
+                'driver_lng' => $last ? livreur_parse_coord($last['longitude'] ?? null) : null,
+                'delivery_lat' => livreur_parse_coord($commande['delivery_latitude'] ?? null),
+                'delivery_lng' => livreur_parse_coord($commande['delivery_longitude'] ?? null),
+                'adresse_livraison' => trim((string) ($commande['adresse_livraison'] ?? '')),
+            ];
         }
 
-        $commande_id = (int) $commande['id'];
-        $livreur_id = (int) ($commande['livreur_id'] ?? 0);
-        $livreur_nom = trim(
-            ((string) ($commande['livreur_prenom'] ?? '')) . ' ' . ((string) ($commande['livreur_nom'] ?? ''))
-        );
-        if ($livreur_nom === '') {
-            $livreur_nom = 'Votre livreur';
+        if (function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+        $stmt_cp = $db->prepare("
+            SELECT cp.id, cp.statut, cp.livreur_id, cp.tracking_active,
+                   cp.tracking_started_at, cp.delivery_latitude, cp.delivery_longitude,
+                   cp.adresse_livraison, cp.livraison_terminee_at, cp.date_creation,
+                   a.prenom AS livreur_prenom, a.nom AS livreur_nom
+            FROM commandes_personnalisees cp
+            LEFT JOIN admin a ON a.id = cp.livreur_id AND a.role IN ('livreur', 'admin')
+            WHERE cp.user_id = :user_id
+              AND cp.livreur_id IS NOT NULL
+              AND COALESCE(cp.tracking_active, 0) = 1
+              AND cp.statut NOT IN ('livree', 'refusee', 'annulee', 'terminee')
+            ORDER BY COALESCE(cp.tracking_started_at, cp.date_creation) DESC
+            LIMIT 1
+        ");
+        $stmt_cp->execute(['user_id' => $user_id]);
+        $cp = $stmt_cp->fetch(PDO::FETCH_ASSOC);
+        if ($cp && !livreur_livraison_est_terminee($cp, 'personnalisee')) {
+            $cp_id = (int) $cp['id'];
+            $livreur_id = (int) ($cp['livreur_id'] ?? 0);
+            $livreur_nom = trim(
+                ((string) ($cp['livreur_prenom'] ?? '')) . ' ' . ((string) ($cp['livreur_nom'] ?? ''))
+            );
+            if ($livreur_nom === '') {
+                $livreur_nom = 'Votre livreur';
+            }
+
+            $last = $livreur_id > 0
+                ? livreur_get_last_position($livreur_id, null, null, $cp_id)
+                : false;
+
+            require_once __DIR__ . '/../includes/site_url.php';
+            $base = rtrim(get_site_base_url(), '/');
+            $suivi_url = $base . '/user/suivi-commande-personnalisee.php?id=' . $cp_id;
+
+            return [
+                'commande_id' => $cp_id,
+                'cp_id' => $cp_id,
+                'numero_commande' => livreur_cp_numero($cp_id),
+                'livreur_nom' => $livreur_nom,
+                'suivi_url' => $suivi_url,
+                'tracking_active' => true,
+                'driver_lat' => $last ? livreur_parse_coord($last['latitude'] ?? null) : null,
+                'driver_lng' => $last ? livreur_parse_coord($last['longitude'] ?? null) : null,
+                'delivery_lat' => livreur_parse_coord($cp['delivery_latitude'] ?? null),
+                'delivery_lng' => livreur_parse_coord($cp['delivery_longitude'] ?? null),
+                'adresse_livraison' => trim((string) ($cp['adresse_livraison'] ?? '')),
+            ];
+        }
         }
 
-        $last = $livreur_id > 0
-            ? livreur_get_last_position($livreur_id, $commande_id, null)
-            : false;
+        require_once __DIR__ . '/model_bl.php';
+        if (function_exists('get_bls_for_registered_user')) {
+            $bls = get_bls_for_registered_user($user_id);
+            foreach ($bls as $facture) {
+                if (!livreur_client_peut_suivre_gps_facture($facture)) {
+                    continue;
+                }
+                $bl_id = (int) ($facture['id'] ?? 0);
+                $livreur_id = (int) ($facture['livreur_id'] ?? 0);
+                $livreur_nom = trim(
+                    ((string) ($facture['livreur_prenom'] ?? '')) . ' ' . ((string) ($facture['livreur_nom'] ?? ''))
+                );
+                if ($livreur_nom === '') {
+                    $livreur_nom = 'Votre livreur';
+                }
+                $last = $livreur_id > 0
+                    ? livreur_get_last_position($livreur_id, null, $bl_id)
+                    : false;
+                require_once __DIR__ . '/../includes/site_url.php';
+                $base = rtrim(get_site_base_url(), '/');
+                $numero = trim((string) ($facture['numero_bl'] ?? ''));
+                if ($numero === '') {
+                    $numero = 'BL-' . $bl_id;
+                }
+                return [
+                    'commande_id' => $bl_id,
+                    'bl_id' => $bl_id,
+                    'numero_commande' => $numero,
+                    'livreur_nom' => $livreur_nom,
+                    'suivi_url' => $base . '/user/suivi-facture.php?bl_id=' . $bl_id,
+                    'tracking_active' => true,
+                    'driver_lat' => $last ? livreur_parse_coord($last['latitude'] ?? null) : null,
+                    'driver_lng' => $last ? livreur_parse_coord($last['longitude'] ?? null) : null,
+                    'delivery_lat' => livreur_parse_coord($facture['delivery_latitude'] ?? null),
+                    'delivery_lng' => livreur_parse_coord($facture['delivery_longitude'] ?? null),
+                    'adresse_livraison' => trim((string) ($facture['adresse_livraison_affichee'] ?? $facture['adresse_livraison'] ?? '')),
+                ];
+            }
+        }
 
-        require_once __DIR__ . '/../includes/site_url.php';
-        $base = rtrim(get_site_base_url(), '/');
-        $suivi_url = $base . '/user/suivi-commande.php?commande_id=' . $commande_id;
-
-        return [
-            'commande_id' => $commande_id,
-            'numero_commande' => (string) ($commande['numero_commande'] ?? $commande_id),
-            'livreur_nom' => $livreur_nom,
-            'suivi_url' => $suivi_url,
-            'tracking_active' => true,
-            'driver_lat' => $last ? livreur_parse_coord($last['latitude'] ?? null) : null,
-            'driver_lng' => $last ? livreur_parse_coord($last['longitude'] ?? null) : null,
-            'delivery_lat' => livreur_parse_coord($commande['delivery_latitude'] ?? null),
-            'delivery_lng' => livreur_parse_coord($commande['delivery_longitude'] ?? null),
-            'adresse_livraison' => trim((string) ($commande['adresse_livraison'] ?? '')),
-        ];
+        return null;
     } catch (PDOException $e) {
         return null;
     }
@@ -2599,6 +2886,67 @@ function livreur_client_public_suivi_url($commande_id, $user_id = null, $require
     $base = rtrim(get_site_base_url(), '/');
     return $base . '/suivi-livraison.php?commande_id=' . $commande_id
         . '&token=' . rawurlencode($watch['token']);
+}
+
+function livreur_client_peut_suivre_gps_facture(array $facture)
+{
+    if (empty($facture['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($facture, 'facture')) {
+        return false;
+    }
+    return (int) ($facture['tracking_active'] ?? 0) === 1;
+}
+
+function livreur_client_livraison_en_cours_facture(array $facture)
+{
+    if (empty($facture['livreur_id'])) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($facture, 'facture')) {
+        return false;
+    }
+    return true;
+}
+
+function livreur_client_public_suivi_url_bl($bl_id, $user_id = null, $require_tracking = false)
+{
+    require_once __DIR__ . '/model_bl.php';
+    require_once __DIR__ . '/../includes/site_url.php';
+
+    $bl_id = (int) $bl_id;
+    if ($bl_id < 1) {
+        return false;
+    }
+
+    $facture = livreur_get_facture_tracking($bl_id);
+    if (!$facture || empty($facture['livreur_id'])) {
+        return false;
+    }
+    if ($user_id !== null && (int) $user_id > 0 && function_exists('bl_user_can_access') && !bl_user_can_access($bl_id, (int) $user_id)) {
+        return false;
+    }
+    if (livreur_livraison_est_terminee($facture, 'facture')) {
+        return false;
+    }
+    if ($require_tracking && (int) ($facture['tracking_active'] ?? 0) !== 1) {
+        return false;
+    }
+
+    $token_user_id = $user_id !== null && (int) $user_id > 0 ? (int) $user_id : null;
+    $watch = livreur_create_watch_token(null, 'client', null, $token_user_id, $bl_id);
+    if (!$watch || empty($watch['token'])) {
+        return false;
+    }
+
+    $base = rtrim(get_site_base_url(), '/');
+    return $base . '/suivi-livraison.php?bl_id=' . $bl_id . '&token=' . rawurlencode($watch['token']);
+}
+
+function livreur_client_suivi_map_url_bl($bl_id, $user_id)
+{
+    return livreur_client_public_suivi_url_bl($bl_id, $user_id, true);
 }
 
 /**
@@ -2698,11 +3046,49 @@ function livreur_get_actifs_sur_carte() {
         }
     }
 
+    if (function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+        try {
+            $stmt = $db->query("
+                SELECT cp.id AS livraison_id, 'personnalisee' AS livraison_type,
+                       CONCAT('CP-', cp.id) AS numero, cp.adresse_livraison,
+                       cp.livreur_id, cp.tracking_active,
+                       cp.delivery_latitude, cp.delivery_longitude,
+                       a.nom AS livreur_nom, a.prenom AS livreur_prenom, a.email AS livreur_email
+                       " . livreur_admin_photo_profil_sql_select('a') . "
+                FROM commandes_personnalisees cp
+                INNER JOIN admin a ON a.id = cp.livreur_id
+                WHERE cp.tracking_active = 1
+                  AND cp.livreur_id IS NOT NULL
+                  AND cp.livreur_id > 0
+                ORDER BY cp.date_creation DESC
+            ");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            foreach ($rows as $row) {
+                $lid = (int) $row['livreur_id'];
+                if ($lid < 1 || isset($by_livreur[$lid])) {
+                    continue;
+                }
+                $by_livreur[$lid] = $row;
+            }
+        } catch (PDOException $e) {
+            /* silencieux */
+        }
+    }
+
     $out = [];
     foreach ($by_livreur as $lid => $row) {
         $commande_id = ($row['livraison_type'] === 'commande') ? (int) $row['livraison_id'] : null;
         $bl_id = ($row['livraison_type'] === 'facture') ? (int) $row['livraison_id'] : null;
-        $pos = livreur_get_last_position($lid, $commande_id, $bl_id);
+        $cp_id = ($row['livraison_type'] === 'personnalisee') ? (int) $row['livraison_id'] : null;
+        $pos = livreur_get_last_position($lid, $commande_id, $bl_id, $cp_id);
+
+        if ($row['livraison_type'] === 'facture') {
+            $suivi_url = 'suivi.php?bl_id=' . (int) $row['livraison_id'] . '&regarder=1';
+        } elseif ($row['livraison_type'] === 'personnalisee') {
+            $suivi_url = 'suivi.php?cp_id=' . (int) $row['livraison_id'] . '&regarder=1';
+        } else {
+            $suivi_url = 'suivi.php?commande_id=' . (int) $row['livraison_id'] . '&regarder=1';
+        }
 
         $out[] = [
             'livreur_id' => $lid,
@@ -2721,9 +3107,7 @@ function livreur_get_actifs_sur_carte() {
             'heading' => $pos && isset($pos['heading']) ? (float) $pos['heading'] : null,
             'speed' => $pos && isset($pos['speed']) ? (float) $pos['speed'] : null,
             'recorded_at' => $pos['recorded_at'] ?? null,
-            'suivi_url' => $row['livraison_type'] === 'facture'
-                ? ('suivi.php?bl_id=' . (int) $row['livraison_id'] . '&regarder=1')
-                : ('suivi.php?commande_id=' . (int) $row['livraison_id'] . '&regarder=1'),
+            'suivi_url' => $suivi_url,
         ];
     }
 
@@ -2733,3 +3117,5 @@ function livreur_get_actifs_sur_carte() {
 
     return $out;
 }
+
+require_once __DIR__ . '/model_livreur_cp.php';

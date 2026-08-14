@@ -39,4 +39,9 @@ if (!empty($whatsapp)) {
     </a>
     <?php endif; ?>
 </div>
-<?php include __DIR__ . '/floating_back_button.php'; ?>
+<?php
+if (empty($skip_jotform_ai_assistant) && !defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
+    include __DIR__ . '/jotform_ai_assistant.php';
+}
+include __DIR__ . '/floating_back_button.php';
+?>

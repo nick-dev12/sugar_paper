@@ -133,9 +133,11 @@ async function verifyLivreurToken(token) {
   return data;
 }
 
-async function verifyWatchToken(token, commandeId, blId) {
+async function verifyWatchToken(token, commandeId, blId, cpId) {
   const payload = { token };
-  if (blId) {
+  if (cpId) {
+    payload.cp_id = cpId;
+  } else if (blId) {
     payload.bl_id = blId;
   } else if (commandeId) {
     payload.commande_id = commandeId;
@@ -143,10 +145,11 @@ async function verifyWatchToken(token, commandeId, blId) {
   const { status, data } = await callPhp('/api/tracking/verify-watch.php', payload);
   if (status !== 200 || !data.valid) {
     console.warn(
-      '[tracking] verify-watch failed status=%s bl=%s commande=%s error=%s',
+      '[tracking] verify-watch failed status=%s bl=%s commande=%s cp=%s error=%s',
       status,
       blId || 0,
       commandeId || 0,
+      cpId || 0,
       (data && data.error) ? data.error : 'unknown'
     );
     return null;
@@ -186,17 +189,19 @@ io.use(async (socket, next) => {
       const token = auth.token || '';
       const commandeId = parseInt(auth.commande_id, 10) || 0;
       const blId = parseInt(auth.bl_id, 10) || 0;
-      if (!token || (!commandeId && !blId)) {
+      const cpId = parseInt(auth.cp_id, 10) || 0;
+      if (!token || (!commandeId && !blId && !cpId)) {
         return next(new Error('watch_invalid_params'));
       }
-      const info = await verifyWatchToken(token, commandeId, blId);
+      const info = await verifyWatchToken(token, commandeId, blId, cpId);
       if (!info) {
-        console.warn('[tracking] watch_unauthorized commande=%s bl=%s', commandeId, blId);
+        console.warn('[tracking] watch_unauthorized commande=%s bl=%s cp=%s', commandeId, blId, cpId);
         return next(new Error('watch_unauthorized'));
       }
       socket.data.role = 'watch';
       socket.data.commandeId = info.commande_id || null;
       socket.data.blId = info.bl_id || null;
+      socket.data.cpId = info.cp_id || null;
       socket.data.watchType = info.type || 'admin';
       socket.data.watchMeta = info;
       return next();
@@ -222,6 +227,9 @@ io.on('connection', (socket) => {
     if (socket.data.blId) {
       socket.join(`bl_${socket.data.blId}`);
     }
+    if (socket.data.cpId) {
+      socket.join(`cp_${socket.data.cpId}`);
+    }
 
     socket.emit('livreur:ready', {
       livreur_id: livreurId,
@@ -233,6 +241,7 @@ io.on('connection', (socket) => {
   if (role === 'watch') {
     const commandeId = socket.data.commandeId;
     const blId = socket.data.blId;
+    const cpId = socket.data.cpId;
     const meta = socket.data.watchMeta || {};
     if (commandeId) {
       socket.join(`commande_${commandeId}`);
@@ -240,12 +249,16 @@ io.on('connection', (socket) => {
     if (blId) {
       socket.join(`bl_${blId}`);
     }
+    if (cpId) {
+      socket.join(`cp_${cpId}`);
+    }
     if (meta.livreur_id) {
       socket.join(`livreur_${meta.livreur_id}`);
     }
     socket.emit('watch:ready', {
       commande_id: commandeId,
       bl_id: blId,
+      cp_id: cpId,
       numero_commande: meta.numero_commande || null,
       tracking_active: !!meta.tracking_active,
       countdown: meta.countdown || null,
@@ -279,10 +292,11 @@ io.on('connection', (socket) => {
 
     const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId || 0;
     const blId = parseInt(raw && raw.bl_id, 10) || socket.data.blId || 0;
+    const cpId = parseInt(raw && raw.cp_id, 10) || socket.data.cpId || 0;
     const latitude = raw && raw.latitude;
     const longitude = raw && raw.longitude;
 
-    if ((!commandeId && !blId) || latitude == null || longitude == null) {
+    if ((!commandeId && !blId && !cpId) || latitude == null || longitude == null) {
       socket.emit('livreur:error', { message: 'position_invalid' });
       return;
     }
@@ -291,6 +305,7 @@ io.on('connection', (socket) => {
       livreur_id: livreurId,
       commande_id: commandeId || null,
       bl_id: blId || null,
+      cp_id: cpId || null,
       latitude,
       longitude,
       accuracy: raw.accuracy != null ? raw.accuracy : null,
@@ -309,11 +324,15 @@ io.on('connection', (socket) => {
     if (blId) {
       io.to(`bl_${blId}`).emit('position:update', payload);
     }
+    if (cpId) {
+      io.to(`cp_${cpId}`).emit('position:update', payload);
+    }
 
     persistPosition({
       livreur_id: livreurId,
       commande_id: commandeId || null,
       bl_id: blId || null,
+      cp_id: cpId || null,
       latitude: payload.latitude,
       longitude: payload.longitude,
       accuracy: payload.accuracy,
@@ -333,14 +352,16 @@ io.on('connection', (socket) => {
 
     const commandeId = parseInt(raw && raw.commande_id, 10) || socket.data.commandeId || 0;
     const blId = parseInt(raw && raw.bl_id, 10) || socket.data.blId || 0;
+    const cpId = parseInt(raw && raw.cp_id, 10) || socket.data.cpId || 0;
     const coords = raw && raw.coords;
-    if ((!commandeId && !blId) || !Array.isArray(coords) || coords.length < 2) {
+    if ((!commandeId && !blId && !cpId) || !Array.isArray(coords) || coords.length < 2) {
       return;
     }
 
     const routePayload = {
       commande_id: commandeId || null,
       bl_id: blId || null,
+      cp_id: cpId || null,
       coords,
       distance_m: raw.distance_m != null ? raw.distance_m : null,
       duration_s: raw.duration_s != null ? raw.duration_s : null,
@@ -352,6 +373,9 @@ io.on('connection', (socket) => {
     }
     if (blId) {
       io.to(`bl_${blId}`).emit('route:update', routePayload);
+    }
+    if (cpId) {
+      io.to(`cp_${cpId}`).emit('route:update', routePayload);
     }
   });
 

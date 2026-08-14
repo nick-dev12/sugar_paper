@@ -150,18 +150,25 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
 
                 case 'livreur_prise':
                     require_once __DIR__ . '/livreur_push_notifications.php';
-                    $prise_type = (($p['type'] ?? '') === 'facture') ? 'facture' : 'commande';
+                    $prise_type = in_array(($p['type'] ?? ''), ['facture', 'personnalisee'], true)
+                        ? (string) $p['type']
+                        : 'commande';
                     $prise_id = (int) ($p['livraison_id'] ?? 0);
                     $prise_livreur = (int) ($p['livreur_id'] ?? 0);
                     $prise_numero = (string) ($p['numero'] ?? '');
                     if ($prise_id > 0 && $prise_livreur > 0) {
                         notify_admins_livreur_prise_en_charge($prise_type, $prise_id, $prise_livreur, $prise_numero);
+                        if ($prise_type === 'facture') {
+                            notify_client_bl_event('prise', $prise_id);
+                        }
                     }
                     break;
 
                 case 'livreur_arrive':
                     require_once __DIR__ . '/livreur_push_notifications.php';
-                    $arrive_type = (($p['type'] ?? '') === 'facture') ? 'facture' : 'commande';
+                    $arrive_type = in_array(($p['type'] ?? ''), ['facture', 'personnalisee'], true)
+                        ? (string) $p['type']
+                        : 'commande';
                     $arrive_id = (int) ($p['livraison_id'] ?? 0);
                     $arrive_livreur = (int) ($p['livreur_id'] ?? 0);
                     $arrive_numero = (string) ($p['numero'] ?? '');
@@ -169,8 +176,20 @@ function notify_queue_process_jobs($notify_limit = 20, $email_limit = 30) {
                         notify_admins_livreur_arrive($arrive_type, $arrive_id, $arrive_livreur, $arrive_numero);
                         if ($arrive_type === 'commande') {
                             notify_client_livreur_arrive($arrive_id);
+                        } elseif ($arrive_type === 'personnalisee') {
+                            notify_client_livreur_arrive_cp($arrive_id);
+                        } elseif ($arrive_type === 'facture') {
+                            notify_client_bl_event('arrive', $arrive_id);
                         }
                     }
+                    break;
+
+                case 'bl_client':
+                    require_once __DIR__ . '/livreur_push_notifications.php';
+                    notify_client_bl_event(
+                        (string) ($p['event'] ?? ''),
+                        (int) ($p['bl_id'] ?? 0)
+                    );
                     break;
 
                 default:

@@ -83,6 +83,29 @@ if ($action === 'prendre_facture') {
     exit;
 }
 
+if ($action === 'prendre_personnalisee') {
+    $cp_id = (int) ($input['cp_id'] ?? 0);
+    if ($cp_id < 1) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'cp_id requis'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $result = livreur_commencer_livraison_cp($cp_id, $admin_id, $input, $require_today);
+    if (empty($result['ok'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $result['error'] ?? 'Erreur'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    echo json_encode([
+        'success' => true,
+        'message' => $result['message'] ?? 'Commande personnalisée prise en charge.',
+        'cp_id' => (int) ($result['cp_id'] ?? $cp_id),
+        'already' => !empty($result['already']),
+        'suivi_url' => 'suivi.php?cp_id=' . (int) ($result['cp_id'] ?? $cp_id) . '&autostart=1',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 if ($action === 'annuler_commande') {
     $commande_id = (int) ($input['commande_id'] ?? 0);
     if ($commande_id < 1) {
