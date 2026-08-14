@@ -26,7 +26,7 @@ function process_add_to_panier()
     if (!$user_connecte) {
         return [
             'success' => false,
-            'message' => 'Veuillez vous identifier avec votre numéro et votre code PIN pour commander.',
+            'message' => 'Veuillez vous identifier avec votre nom et votre numéro de téléphone pour commander.',
         ];
     }
 

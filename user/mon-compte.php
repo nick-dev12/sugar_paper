@@ -143,7 +143,7 @@ $firebase_notify_type = 'user';
                 <span class="mc-stat__value"><?php echo (int) $nb_commandes; ?></span>
                 <span class="mc-stat__label">Commandes</span>
             </a>
-            <a href="/panier.php" class="mc-stat mc-stat--panier">
+            <a href="/index.php?open=panier" class="mc-stat mc-stat--panier js-open-cart-modal">
                 <span class="mc-stat__icon"><i class="fas fa-shopping-cart"></i></span>
                 <span class="mc-stat__value"><?php echo (int) $nb_panier; ?></span>
                 <span class="mc-stat__label">Panier</span>

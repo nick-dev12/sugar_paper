@@ -44,7 +44,7 @@ if (!isset($bottom_nav_active)) {
     }
 }
 
-$panier_url = isset($_SESSION['user_id']) ? '/panier.php' : '/user/connexion.php?redirect=panier';
+$panier_url = '/index.php?open=panier';
 
 $compte_url = $store_nav_account['url'];
 $compte_label = $store_nav_account['short_label'];
@@ -53,75 +53,75 @@ $bottom_nav_menu_target = $bottom_nav_context === 'user' ? 'user' : 'store';
 ?>
 <link rel="stylesheet" href="/css/bottom-nav.css<?php echo asset_version_query(); ?>">
 <?php if ($bottom_nav_context === 'user'): ?>
-<nav class="bottom-nav bottom-nav--user" id="bottomNav" aria-label="Navigation espace client">
-    <a href="/user/mon-compte.php"
-        class="bottom-nav-item bottom-nav-item--dashboard<?php echo $bottom_nav_active === 'dashboard' ? ' is-active' : ''; ?>"
-        title="Tableau de bord">
-        <span class="bottom-nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Accueil</span>
-    </a>
-    <a href="/user/mes-commandes.php"
-        class="bottom-nav-item bottom-nav-item--commandes<?php echo $bottom_nav_active === 'commandes' ? ' is-active' : ''; ?>"
-        title="Mes commandes">
-        <span class="bottom-nav-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Commandes</span>
-    </a>
-    <a href="<?php echo htmlspecialchars($panier_url); ?>"
-        class="bottom-nav-item bottom-nav-item--panier<?php echo $bottom_nav_active === 'panier' ? ' is-active' : ''; ?>"
-        title="Mon panier">
-        <span class="bottom-nav-icon">
-            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
-            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-                <span class="bottom-nav-badge"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
-            <?php endif; ?>
-        </span>
-        <span class="bottom-nav-label">Panier</span>
-    </a>
-    <a href="/user/profil.php"
-        class="bottom-nav-item bottom-nav-item--profil<?php echo $bottom_nav_active === 'profil' ? ' is-active' : ''; ?>"
-        title="Mon profil">
-        <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Profil</span>
-    </a>
-    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn"
-        data-menu-target="user" aria-label="Ouvrir le menu">
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Menu</span>
-    </button>
-</nav>
+    <nav class="bottom-nav bottom-nav--user" id="bottomNav" aria-label="Navigation espace client">
+        <a href="/user/mon-compte.php"
+            class="bottom-nav-item bottom-nav-item--dashboard<?php echo $bottom_nav_active === 'dashboard' ? ' is-active' : ''; ?>"
+            title="Tableau de bord">
+            <span class="bottom-nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Accueil</span>
+        </a>
+        <a href="/user/mes-commandes.php"
+            class="bottom-nav-item bottom-nav-item--commandes<?php echo $bottom_nav_active === 'commandes' ? ' is-active' : ''; ?>"
+            title="Mes commandes">
+            <span class="bottom-nav-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Commandes</span>
+        </a>
+        <a href="<?php echo htmlspecialchars($panier_url); ?>"
+            class="bottom-nav-item bottom-nav-item--panier js-open-cart-modal<?php echo $bottom_nav_active === 'panier' ? ' is-active' : ''; ?>"
+            title="Mon panier">
+            <span class="bottom-nav-icon">
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                    <span class="bottom-nav-badge"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+                <?php endif; ?>
+            </span>
+            <span class="bottom-nav-label">Panier</span>
+        </a>
+        <a href="/user/profil.php"
+            class="bottom-nav-item bottom-nav-item--profil<?php echo $bottom_nav_active === 'profil' ? ' is-active' : ''; ?>"
+            title="Mon profil">
+            <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Profil</span>
+        </a>
+        <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn" data-menu-target="user"
+            aria-label="Ouvrir le menu">
+            <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Menu</span>
+        </button>
+    </nav>
 <?php else: ?>
-<nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
-    <a href="/index.php"
-        class="bottom-nav-item bottom-nav-item--accueil<?php echo $bottom_nav_active === 'accueil' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Accueil</span>
-    </a>
-    <a href="/produits.php"
-        class="bottom-nav-item bottom-nav-item--produits<?php echo $bottom_nav_active === 'produits' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Produits</span>
-    </a>
-    <a href="<?php echo htmlspecialchars($panier_url); ?>"
-        class="bottom-nav-item bottom-nav-item--panier<?php echo $bottom_nav_active === 'panier' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon">
-            <i class="fas fa-shopping-cart" aria-hidden="true"></i>
-            <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
-                <span class="bottom-nav-badge"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
-            <?php endif; ?>
-        </span>
-        <span class="bottom-nav-label">Panier</span>
-    </a>
-    <a href="<?php echo htmlspecialchars($compte_url); ?>"
-        class="bottom-nav-item bottom-nav-item--compte<?php echo $bottom_nav_active === 'compte' ? ' is-active' : ''; ?>">
-        <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label"><?php echo htmlspecialchars($compte_label); ?></span>
-    </a>
-    <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn"
-        data-menu-target="<?php echo htmlspecialchars($bottom_nav_menu_target); ?>" aria-label="Ouvrir le menu">
-        <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
-        <span class="bottom-nav-label">Menu</span>
-    </button>
-</nav>
+    <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
+        <a href="/index.php"
+            class="bottom-nav-item bottom-nav-item--accueil<?php echo $bottom_nav_active === 'accueil' ? ' is-active' : ''; ?>">
+            <span class="bottom-nav-icon"><i class="fas fa-home" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Accueil</span>
+        </a>
+        <a href="/produits.php"
+            class="bottom-nav-item bottom-nav-item--produits<?php echo $bottom_nav_active === 'produits' ? ' is-active' : ''; ?>">
+            <span class="bottom-nav-icon"><i class="fas fa-shopping-bag" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Produits</span>
+        </a>
+        <a href="<?php echo htmlspecialchars($panier_url); ?>"
+            class="bottom-nav-item bottom-nav-item--panier js-open-cart-modal<?php echo $bottom_nav_active === 'panier' ? ' is-active' : ''; ?>">
+            <span class="bottom-nav-icon">
+                <i class="fas fa-shopping-cart" aria-hidden="true"></i>
+                <?php if (isset($_SESSION['user_id']) && $panier_count > 0): ?>
+                    <span class="bottom-nav-badge"><?php echo $panier_count > 99 ? '99+' : (int) $panier_count; ?></span>
+                <?php endif; ?>
+            </span>
+            <span class="bottom-nav-label">Panier</span>
+        </a>
+        <a href="<?php echo htmlspecialchars($compte_url); ?>"
+            class="bottom-nav-item bottom-nav-item--compte<?php echo $bottom_nav_active === 'compte' ? ' is-active' : ''; ?>">
+            <span class="bottom-nav-icon"><i class="fas fa-user" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label"><?php echo htmlspecialchars($compte_label); ?></span>
+        </a>
+        <button type="button" class="bottom-nav-item bottom-nav-item--menu" id="bottomNavMenuBtn"
+            data-menu-target="<?php echo htmlspecialchars($bottom_nav_menu_target); ?>" aria-label="Ouvrir le menu">
+            <span class="bottom-nav-icon"><i class="fas fa-th" aria-hidden="true"></i></span>
+            <span class="bottom-nav-label">Menu</span>
+        </button>
+    </nav>
 <?php endif; ?>
 <script>
     (function () {

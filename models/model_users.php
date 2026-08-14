@@ -324,6 +324,53 @@ function create_user($nom, $prenom, $email, $telephone, $password_hash) {
 }
 
 /**
+ * Crée un client via checkout invité (nom + téléphone, mot de passe système).
+ *
+ * @return int|false
+ */
+function create_user_guest_checkout($nom, $telephone, $password_hash) {
+    global $db;
+
+    $nom = trim((string) $nom);
+    $tel_digits = users_normalize_phone_digits($telephone);
+    if ($nom === '' || $tel_digits === '') {
+        return false;
+    }
+
+    $email_bind = users_phone_placeholder_email($tel_digits);
+    $has_flag = users_has_column('inscription_checkout_invite');
+
+    try {
+        if ($has_flag) {
+            $stmt = $db->prepare("
+                INSERT INTO users (nom, prenom, email, telephone, password, date_creation, statut, inscription_checkout_invite)
+                VALUES (:nom, '', :email, :telephone, :password, NOW(), 'actif', 1)
+            ");
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO users (nom, prenom, email, telephone, password, date_creation, statut)
+                VALUES (:nom, '', :email, :telephone, :password, NOW(), 'actif')
+            ");
+        }
+
+        $result = $stmt->execute([
+            'nom' => $nom,
+            'email' => $email_bind,
+            'telephone' => $tel_digits,
+            'password' => $password_hash,
+        ]);
+
+        if ($result) {
+            return (int) $db->lastInsertId();
+        }
+
+        return false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
  * Met à jour les informations d'un utilisateur
  * @param int $id L'ID de l'utilisateur
  * @param array $data Les nouvelles données

@@ -342,6 +342,7 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
 
     /* Panier + compte dans la barre du bas sur mobile/tablette */
     @media (max-width: 992px) {
+
         .nav-actions .nav-panier-link,
         .nav-actions .nav-compte-btn {
             display: none !important;
@@ -536,8 +537,7 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
             include $gtranslate_path;
         }
         ?>
-        <a href="/panier.php"
-            class="nav-panier-link"
+        <a href="/index.php?open=panier" class="nav-panier-link js-open-cart-modal"
             title="<?php echo 'Voir mon panier (' . $panier_count . ' article' . ($panier_count > 1 ? 's' : '') . ')'; ?>">
             <i class="fa-solid fa-cart-shopping"></i>
             <?php if ($panier_count > 0): ?>

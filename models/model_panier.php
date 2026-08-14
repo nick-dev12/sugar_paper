@@ -11,6 +11,10 @@ function _panier_has_variante_columns() {
     static $has = null;
     if ($has === null) {
         global $db;
+        if (!isset($db) || !($db instanceof PDO)) {
+            $has = false;
+            return $has;
+        }
         try {
             $r = $db->query("SHOW COLUMNS FROM panier LIKE 'variante_id'");
             $has = $r && $r->rowCount() > 0;

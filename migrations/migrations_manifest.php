@@ -171,4 +171,9 @@ return [
         'label' => 'Notes clients sur livreurs',
         'script' => 'run_add_livreur_notes_client.php',
     ],
+    [
+        'id' => 'users_inscription_checkout_invite',
+        'label' => 'Colonne inscription checkout invité (users)',
+        'script' => 'run_add_users_inscription_checkout_invite.php',
+    ],
 ];

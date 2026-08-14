@@ -321,7 +321,18 @@
         });
     }
 
+    function reset() {
+        stopWatch();
+        if (map) {
+            try { map.remove(); } catch (e) {}
+        }
+        map = null;
+        marker = null;
+        accuracyCircle = null;
+    }
+
     function init() {
+        reset();
         bindModeButtons();
         setMode(getMode());
 
@@ -349,14 +360,19 @@
 
     window.CommandeGeo = {
         init: init,
+        reset: reset,
         validate: validateBeforeSubmit,
         getMode: getMode,
         stopWatch: stopWatch
     };
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
+        document.addEventListener('DOMContentLoaded', function () {
+            if (qs('form-commande')) {
+                init();
+            }
+        });
+    } else if (qs('form-commande')) {
         init();
     }
 })();

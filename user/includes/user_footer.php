@@ -42,6 +42,7 @@ if (!defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
 $enable_firebase_notifications = true;
 $firebase_notify_type = 'user';
 include __DIR__ . '/../../includes/firebase_notifications_scripts.php';
+include __DIR__ . '/../../includes/checkout_modals_init.php';
 ?>
 </body>
 </html>

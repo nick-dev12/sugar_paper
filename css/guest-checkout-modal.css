@@ -1,5 +1,5 @@
 /**
- * Modal checkout invité — 2 étapes (coordonnées + PIN)
+ * Modal checkout invité — une étape (coordonnées + conditions)
  * Responsive compact mobile / tablette
  */
 
@@ -53,21 +53,30 @@
   background: var(--gim-fond);
   border-radius: var(--gim-radius);
   padding: var(--gim-pad);
-  padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 16px 48px rgba(61, 40, 0, 0.18);
   border: 1px solid rgba(229, 72, 138, 0.18);
   animation: guestModalIn 0.28s ease-out;
 }
 
-.guest-info-modal__panel > :not(.guest-info-modal__step) {
-  flex-shrink: 0;
+.guest-info-modal__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.guest-info-modal__form {
+  display: block;
 }
 
 .guest-info-modal__step {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: block;
+}
+
+.guest-info-modal__step[hidden] {
+  display: none !important;
 }
 
 .guest-info-modal__actions[hidden] {
@@ -149,10 +158,6 @@
   line-height: 1.4;
 }
 
-.guest-info-modal__step[hidden] {
-  display: none !important;
-}
-
 .guest-info-modal__field {
   margin-bottom: var(--gim-gap);
 }
@@ -215,10 +220,15 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 4px 0 0;
+  margin: 12px 0 0;
+  padding: 10px 12px;
   font-size: clamp(0.7rem, 2.1vw, 0.78rem);
   line-height: 1.35;
   color: rgba(61, 40, 0, 0.8);
+  background: rgba(229, 72, 138, 0.04);
+  border: 1px solid rgba(229, 72, 138, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
 }
 
 .guest-info-modal__checkbox input {
@@ -249,19 +259,12 @@
 }
 
 .guest-info-modal__actions {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
+  flex-shrink: 0;
   display: flex;
   gap: 8px;
-  margin-top: 0;
-  padding: 10px var(--gim-pad) calc(10px + env(safe-area-inset-bottom, 0px));
-  background: #ffffff;
+  margin-top: var(--gim-gap);
+  padding-top: 12px;
   border-top: 1px solid rgba(229, 72, 138, 0.14);
-  box-shadow: 0 -8px 24px rgba(61, 40, 0, 0.08);
-  border-radius: 0 0 var(--gim-radius) var(--gim-radius);
 }
 
 .guest-info-modal__btn {
@@ -398,7 +401,8 @@ body.guest-checkout-open {
 
   .guest-info-modal__actions {
     gap: 6px;
-    padding: 8px var(--gim-pad) calc(8px + env(safe-area-inset-bottom, 0px));
+    margin-top: 10px;
+    padding-top: 10px;
   }
 
   .guest-info-modal__btn {

@@ -1,9 +1,13 @@
 <?php
 /**
- * Inscription / connexion automatique lors du checkout invité (PIN 4 chiffres).
+ * Inscription / connexion automatique lors du checkout invité (nom + téléphone).
  */
 
 require_once __DIR__ . '/guest_client.php';
+
+if (!defined('GUEST_CHECKOUT_DEFAULT_PASSWORD')) {
+    define('GUEST_CHECKOUT_DEFAULT_PASSWORD', 'SugarPaper@26');
+}
 
 if (!function_exists('guest_checkout_csrf_token')) {
     function guest_checkout_csrf_token()
@@ -211,18 +215,19 @@ if (!function_exists('guest_checkout_get_pending')) {
 }
 
 if (!function_exists('guest_checkout_register_or_login')) {
-    function guest_checkout_register_or_login($nom, $telephone, $pin, $accepte_conditions, $pin_confirm = null)
+    /**
+     * Crée ou connecte un client après saisie nom + téléphone (checkout invité).
+     * Mot de passe système : GUEST_CHECKOUT_DEFAULT_PASSWORD (nouveaux comptes).
+     * Comptes existants : connexion automatique par numéro de téléphone.
+     *
+     * @param string $nom
+     * @param string $telephone
+     * @param bool $accepte_conditions
+     * @return array{success:bool,message:string,user?:array,created?:bool,phone_exists?:bool}
+     */
+    function guest_checkout_register_or_login($nom, $telephone, $accepte_conditions = true, $unused = null)
     {
         require_once __DIR__ . '/../models/model_users.php';
-
-        if (guest_checkout_pin_attempts_remaining() <= 0) {
-            return ['success' => false, 'message' => 'Trop de tentatives. Réessayez dans quelques minutes ou connectez-vous depuis la page Connexion.'];
-        }
-
-        // Rétrocompat : ancien ordre ($pin, $pin_confirm, $accepte)
-        if (!is_bool($accepte_conditions) && $pin_confirm !== null && is_bool($pin_confirm)) {
-            $accepte_conditions = $pin_confirm;
-        }
 
         $nom = trim((string) $nom);
         $telephone = trim((string) $telephone);
@@ -231,45 +236,33 @@ if (!function_exists('guest_checkout_register_or_login')) {
         if ($nom === '' || $digits === '') {
             return ['success' => false, 'message' => 'Nom et téléphone obligatoires.'];
         }
+        if (strlen($digits) < 8) {
+            return ['success' => false, 'message' => 'Le numéro de téléphone semble incomplet.'];
+        }
         if (!$accepte_conditions) {
             return ['success' => false, 'message' => 'Vous devez accepter les conditions d\'utilisation.'];
         }
 
+        guest_client_save($nom, $telephone);
+
         $existing = get_user_by_telephone($digits);
         $_SESSION['guest_checkout_phone_exists'] = $existing ? 1 : 0;
-        $is_existing = (bool) $existing;
 
-        $pin_check = guest_checkout_pin_validate($pin, $is_existing);
-        if (!$pin_check['ok']) {
-            return [
-                'success' => false,
-                'message' => $pin_check['message'],
-                'phone_exists' => $is_existing,
-            ];
-        }
-
-        if ($is_existing) {
+        if ($existing) {
             if (($existing['statut'] ?? '') !== 'actif') {
-                guest_checkout_register_pin_failure();
-                return ['success' => false, 'message' => 'Téléphone ou code PIN incorrect.'];
+                return ['success' => false, 'message' => 'Ce compte est inactif. Contactez le support.'];
             }
-            if (!password_verify($pin, $existing['password'])) {
-                guest_checkout_register_pin_failure();
-                return [
-                    'success' => false,
-                    'message' => 'Code PIN incorrect pour ce numéro.',
-                    'phone_exists' => true,
-                ];
-            }
+
             update_user_accepte_conditions((int) $existing['id'], true);
             guest_checkout_login_user_session($existing);
             guest_checkout_link_past_orders((int) $existing['id'], $digits);
-            guest_checkout_clear_pin_attempts();
+
             return [
                 'success' => true,
                 'message' => 'Connexion réussie.',
                 'user' => $existing,
                 'created' => false,
+                'phone_exists' => true,
             ];
         }
 
@@ -277,15 +270,20 @@ if (!function_exists('guest_checkout_register_or_login')) {
             return ['success' => false, 'message' => 'Le nom doit contenir au moins 2 caractères.'];
         }
 
-        $password_hash = password_hash($pin, PASSWORD_BCRYPT);
-        $user_id = create_user($nom, '', null, $digits, $password_hash);
+        $password_hash = password_hash(GUEST_CHECKOUT_DEFAULT_PASSWORD, PASSWORD_BCRYPT);
+        $user_id = create_user_guest_checkout($nom, $digits, $password_hash);
         if (!$user_id) {
             $existing_retry = get_user_by_telephone($digits);
             if ($existing_retry) {
                 $_SESSION['guest_checkout_phone_exists'] = 1;
+                update_user_accepte_conditions((int) $existing_retry['id'], true);
+                guest_checkout_login_user_session($existing_retry);
+                guest_checkout_link_past_orders((int) $existing_retry['id'], $digits);
                 return [
-                    'success' => false,
-                    'message' => 'Ce numéro est déjà enregistré. Entrez votre code PIN pour vous connecter.',
+                    'success' => true,
+                    'message' => 'Connexion réussie.',
+                    'user' => $existing_retry,
+                    'created' => false,
                     'phone_exists' => true,
                 ];
             }
@@ -300,13 +298,13 @@ if (!function_exists('guest_checkout_register_or_login')) {
 
         guest_checkout_login_user_session($user);
         guest_checkout_link_past_orders((int) $user_id, $digits);
-        guest_checkout_clear_pin_attempts();
 
         return [
             'success' => true,
             'message' => 'Compte créé et connecté.',
             'user' => $user,
             'created' => true,
+            'phone_exists' => false,
         ];
     }
 }

@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Redirection vers le panier après ajout réussi
     if ($result['success']) {
-        header('Location: /panier.php?added=1');
+        header('Location: /produit.php?id=' . (int) $produit_id . '&open=panier');
         exit;
     }
     $message = $result['message'] ?? '';
@@ -1640,14 +1640,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                     </button>
                 </form>
 
-                <?php if (!$user_logged_in): ?>
-                    <?php
-                    $guest_checkout_action = 'add_to_panier';
-                    $guest_checkout_return_url = $_SERVER['REQUEST_URI'] ?? ('/produit.php?id=' . (int) $produit_id);
-                    include __DIR__ . '/includes/partials/guest_checkout_modal.php';
-                    ?>
-                <?php endif; ?>
-
                 <!-- Description (en bas) -->
                 <!-- <?php if (!empty($produit['description'])): ?>
                     <div class="produit-description produit-section-bg">
@@ -2003,26 +1995,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             }
         });
     </script>
-
-    <?php if (!$user_logged_in): ?>
-        <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
-        <script src="/js/guest-checkout-modal.js<?php echo asset_version_query(); ?>"></script>
-        <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var guestModal = window.initGuestCheckoutModal({
-                userLoggedIn: false,
-                sourceFormId: 'add-to-panier-form'
-            });
-            var addForm = document.getElementById('add-to-panier-form');
-            if (addForm && guestModal) {
-                addForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    guestModal.open(1);
-                });
-            }
-        });
-        </script>
-    <?php endif; ?>
 
 </body>
 

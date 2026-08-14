@@ -450,30 +450,7 @@ function process_account_deletion($user_id) {
 }
 
 /**
- * Étape 1 checkout invité : enregistre nom/téléphone en session et détecte si le numéro existe.
- *
- * @return array{success:bool,message:string,phone_exists?:bool}
- */
-function process_guest_checkout_prepare() {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        return ['success' => false, 'message' => ''];
-    }
-
-    require_once __DIR__ . '/../includes/guest_checkout_auth.php';
-
-    $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
-    if (!guest_checkout_csrf_verify($csrf)) {
-        return ['success' => false, 'message' => 'Session expirée. Rechargez la page et réessayez.'];
-    }
-
-    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
-    $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
-
-    return guest_checkout_save_pending($nom, $telephone);
-}
-
-/**
- * Étape 2 checkout invité : PIN → création compte ou connexion auto.
+ * Checkout invité : nom + téléphone → création compte ou connexion auto.
  *
  * @return array{success:bool,message:string,user?:array,created?:bool}
  */
@@ -489,12 +466,10 @@ function process_guest_checkout_auth() {
         return ['success' => false, 'message' => 'Session expirée. Rechargez la page et réessayez.'];
     }
 
-    $pending = guest_checkout_get_pending();
-    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : ($pending['nom'] ?? '');
-    $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : ($pending['telephone'] ?? '');
-    $pin = isset($_POST['pin']) ? (string) $_POST['pin'] : '';
+    $nom = isset($_POST['nom']) ? trim((string) $_POST['nom']) : '';
+    $telephone = isset($_POST['telephone']) ? trim((string) $_POST['telephone']) : '';
     $accepte = isset($_POST['accepte_conditions']) && (string) $_POST['accepte_conditions'] === '1';
 
-    return guest_checkout_register_or_login($nom, $telephone, $pin, $accepte);
+    return guest_checkout_register_or_login($nom, $telephone, $accepte);
 }
 

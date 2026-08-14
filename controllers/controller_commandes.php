@@ -26,7 +26,7 @@ function process_create_commande() {
     if (!$user_connecte) {
         return [
             'success' => false,
-            'message' => 'Connectez-vous avec votre numéro et votre code PIN pour finaliser la commande.',
+            'message' => 'Identifiez-vous avec votre nom et votre numéro pour finaliser la commande.',
         ];
     }
 

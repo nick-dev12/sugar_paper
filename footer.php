@@ -54,7 +54,7 @@
                     </li>
                 <?php endif; ?>
                 <li class="li footer_list_item">
-                    <a href="/panier.php">Panier</a>
+                    <a href="/index.php?open=panier" class="js-open-cart-modal">Panier</a>
                 </li>
                 <li class="li footer_list_item">
                     <a href="/produits.php">Produits</a>
@@ -91,3 +91,4 @@ if (!defined('JOTFORM_AI_ASSISTANT_INCLUDED')) {
 }
 ?>
 <?php include __DIR__ . '/includes/firebase_notifications_scripts.php'; ?>
+<?php include __DIR__ . '/includes/checkout_modals_init.php'; ?>
