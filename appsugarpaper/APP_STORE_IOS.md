@@ -6,7 +6,7 @@ Apple exige que chaque `NS*UsageDescription` explique **comment** et **pourquoi*
 
 ✅ Configuré dans `ios/Runner/Info.plist` (caméra, photothèque, localisation usage + arrière-plan livreur).
 
-Un **dialogue in-app** (`lib/services/native_permission_service.dart`) précède la boîte système pour la caméra, la localisation client et le suivi livraison livreur.
+Un **écran de divulgation in-app** (`ProminentDisclosureDialog` + `NativePermissionService`) précède la boîte système : écran plein page pour le suivi livraison (localisation arrière-plan), dialogues avec lien vers la politique de confidentialité pour caméra, localisation client et contacts.
 
 Référence : [Human Interface Guidelines — Privacy](https://developer.apple.com/design/human-interface-guidelines/privacy#Requesting-permission)
 

@@ -5,6 +5,7 @@ session_start_persistent();
 // Inclusion des modèles et contrôleurs
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_prix_display.php';
 require_once __DIR__ . '/models/model_panier.php';
 require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
@@ -72,6 +73,7 @@ $pourcentage_reduction = 0;
 if ($prix_original) {
     $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
 }
+$show_price_from = produit_uses_price_from_label($produit);
 
 // Récupérer les variantes du produit
 $variantes = get_variantes_by_produit($produit_id);
@@ -302,6 +304,17 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             font-weight: 700;
             color: var(--titres);
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px 8px;
+        }
+
+        .prix-principal .prix-from-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--texte-fonce);
+            opacity: 0.85;
         }
 
         .prix-original {
@@ -1349,15 +1362,8 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
 
                 <!-- Prix -->
                 <div class="produit-prix-section">
-                    <div class="prix-principal" id="produit-prix-affichage">
-                        <?php if ($prix_original): ?>
-                            <span class="prix-original"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                FCFA</span>
-                            <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA</span>
-                            <span class="promo-badge">-<?php echo $pourcentage_reduction; ?>%</span>
-                        <?php else: ?>
-                            <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
-                        <?php endif; ?>
+                    <div class="prix-principal<?php echo $show_price_from ? ' prix--from' : ''; ?>" id="produit-prix-affichage">
+                        <?php echo produit_render_detail_prix_html($produit, $prix_affichage, (bool) $prix_original, $pourcentage_reduction); ?>
                     </div>
                 </div>
 
@@ -1657,11 +1663,6 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                 <section class="produit_vedetes">
                     <article class="articles carousel11">
                         <?php foreach ($produits_similaires as $similaire): ?>
-                            <?php
-                            $prix_sim = !empty($similaire['prix_promotion']) && $similaire['prix_promotion'] < $similaire['prix']
-                                ? $similaire['prix_promotion']
-                                : $similaire['prix'];
-                            ?>
                             <div class="carousel">
                                 <?php echo produit_share_button_html($similaire); ?>
                                 <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
@@ -1672,8 +1673,7 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                                     </div>
                                     <div class="produit-content">
                                         <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
-                                        <p class="prix"><?php echo number_format($prix_sim, 0, ',', ' '); ?> <span
-                                                class="span1">FCFA</span></p>
+                                        <?php echo produit_render_listing_prix_html($similaire); ?>
                                         <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
                                     </div>
                                 </a>
@@ -1700,6 +1700,8 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
     <script>
         // Calcul automatique du prix total (variante + surcoûts)
         const prixBase = <?php echo $prix_affichage; ?>;
+        const showPriceFrom = <?php echo $show_price_from ? 'true' : 'false'; ?>;
+        const priceFromPrefix = showPriceFrom ? '<span class="prix-from-label">À partir de</span> ' : '';
         const quantiteInput = document.getElementById('quantite');
         const prixTotalElement = document.getElementById('prix-total');
         const prixUnitaireInput = document.getElementById('option-prix-unitaire');
@@ -1761,12 +1763,12 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                 var prixOriginalAvecSurc = prixOrig + surcP + surcT;
 
                 if (prixOrig > 0 && pourcentage > 0) {
-                    elPrix.innerHTML = '<span class="prix-original">' + prixOriginalAvecSurc.toLocaleString('fr-FR') +
+                    elPrix.innerHTML = priceFromPrefix + '<span class="prix-original">' + prixOriginalAvecSurc.toLocaleString('fr-FR') +
                         ' FCFA</span> ' +
                         '<span class="prix-promo">' + prixUnitaire.toLocaleString('fr-FR') + ' FCFA</span> ' +
                         '<span class="promo-badge">-' + pourcentage + '%</span>';
                 } else {
-                    elPrix.textContent = prixUnitaire.toLocaleString('fr-FR') + ' FCFA';
+                    elPrix.innerHTML = priceFromPrefix + prixUnitaire.toLocaleString('fr-FR') + ' FCFA';
                 }
             }
         }

@@ -12,6 +12,7 @@ $admin_nav_base = rtrim(get_public_root_uri_path(), '/') . '/admin/';
 
 $current_dir = dirname($_SERVER['PHP_SELF']);
 $is_produits = strpos($current_dir, '/produits') !== false;
+$is_catalogue_cp = strpos($current_dir, '/catalogue-personnalise') !== false;
 $is_categories = strpos($current_dir, '/categories') !== false;
 $is_stock = strpos($current_dir, '/stock') !== false;
 $is_slider = strpos($current_dir, '/slider') !== false;
@@ -142,6 +143,11 @@ $admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_ac
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
             </a>
+            <a href="<?php echo $nav_href('catalogue-personnalise/index.php'); ?>"
+                class="menu-item <?php echo $is_catalogue_cp ? 'active' : ''; ?>">
+                <i class="fas fa-folder-tree"></i>
+                <span>Configuration catalogue</span>
+            </a>
             <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
                 <i class="fas fa-boxes-stacked"></i>
@@ -205,6 +211,11 @@ $admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_ac
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
+            </a>
+            <a href="<?php echo $nav_href('catalogue-personnalise/index.php'); ?>"
+                class="menu-item <?php echo $is_catalogue_cp ? 'active' : ''; ?>">
+                <i class="fas fa-folder-tree"></i>
+                <span>Configuration catalogue</span>
             </a>
             <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">

@@ -13,7 +13,7 @@ $seo_canonical = $base . '/politique-confidentialite.php';
 $privacy_email = 'sugarpaper26@gmail.com';
 $privacy_email_subject = rawurlencode('Données personnelles — Sugar Paper');
 $company_address = 'Hann Mariste 2 LOT R/01, Dakar, Sénégal';
-$last_update = '11/07/2026';
+$last_update = '27/08/2026';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -68,8 +68,11 @@ $last_update = '11/07/2026';
                 <li><a href="#priv-7">Durées de conservation</a></li>
                 <li><a href="#priv-8">Sécurité des données</a></li>
                 <li><a href="#priv-9">Application mobile et permissions</a></li>
+                <li><a href="#priv-9-tableau">Tableau complet des permissions</a></li>
+                <li><a href="#priv-9-divulgation">Divulgation in-app et consentement</a></li>
                 <li><a href="#priv-9-gps">Localisation GPS et suivi livraison</a></li>
                 <li><a href="#priv-9-contacts">Import contacts (carnet clients)</a></li>
+                <li><a href="#priv-9-auth">Connexion Google / Apple</a></li>
                 <li><a href="#priv-10">Cookies et stockage local</a></li>
                 <li><a href="#priv-11">Communications et notifications</a></li>
                 <li><a href="#priv-12">Mineurs</a></li>
@@ -353,14 +356,16 @@ $last_update = '11/07/2026';
 
         <h3>9.1 Description de l'application</h3>
         <p>
-            L'application mobile officielle <strong>Sugar Paper</strong> (identifiant iOS&nbsp;: <strong>com.sugarpaper.app</strong>, package Android&nbsp;: <strong>com.sugarpaper.app</strong>)
+            L'application mobile officielle <strong>Sugar Paper</strong> (identifiant iOS&nbsp;: <strong>com.goobridge.sugarpaper</strong>, package Android&nbsp;: <strong>com.sugarpaper.app</strong>)
             charge notre site e-commerce dans une interface sécurisée (WebView) et expose, sur demande explicite ou dans des cas décrits ci-dessous, des fonctions natives&nbsp;:
-            prise de photo, localisation GPS, notifications push, partage système, connexion Google / Apple et, pour l'espace commercial, <strong>import de contacts</strong>.
+            prise de photo, import galerie, localisation GPS, notifications push, partage système, connexion Google / Apple et, pour l'espace commercial, <strong>import de contacts</strong>.
         </p>
         <p>
             L'application <strong>ne collecte pas</strong> de données via la caméra, la galerie, le GPS ou le répertoire de contacts sans action de votre part
             (bouton «&nbsp;Localiser&nbsp;», «&nbsp;Prendre une photo&nbsp;», «&nbsp;Importer&nbsp;» dans l'espace commercial, démarrage d'une livraison par un livreur habilité, etc.)
-            ni sans l'autorisation affichée par iOS ou Android. Avant la demande système, un <strong>écran explicatif</strong> rappelle la finalité de l'autorisation.
+            ni sans l'autorisation affichée par iOS ou Android.
+            Avant la demande système, un <strong>écran explicatif in-app</strong> rappelle la finalité de l'autorisation et, pour la localisation en arrière-plan (livreurs),
+            un <strong>écran plein page de divulgation bien visible</strong> décrit les données collectées, leur usage et leur partage (voir section&nbsp;<a href="#priv-9-divulgation">9.3 bis</a>).
         </p>
 
         <h3>9.2 Notifications push (Firebase Cloud Messaging)</h3>
@@ -370,60 +375,164 @@ $last_update = '11/07/2026';
             Vous pouvez désactiver les notifications dans les réglages de l'appareil ou en désinstallant l'application.
         </p>
 
-        <h3>9.3 Tableau des permissions</h3>
-        <p>Conformément aux exigences Apple (ligne directrice 5.1.1) et Google Play&nbsp;:</p>
+        <h3 id="priv-9-tableau">9.3 Tableau complet des permissions (iOS et Android)</h3>
+        <p>Conformément aux exigences Apple (ligne directrice 5.1.1) et Google Play (politique relative aux données utilisateur)&nbsp;:</p>
         <div class="legal-table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th>Permission</th>
+                        <th>Permission / autorisation</th>
+                        <th>Plateforme</th>
+                        <th>Données concernées</th>
                         <th>Finalité</th>
                         <th>Exemple</th>
+                        <th>Partage</th>
                         <th>Obligatoire&nbsp;?</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><strong>Caméra</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Image capturée</td>
                         <td>Photographier un produit ou une image de profil</td>
                         <td>Joindre une photo à une commande personnalisée</td>
+                        <td>Transmise à nos serveurs si vous validez l'envoi</td>
                         <td>Non</td>
                     </tr>
                     <tr>
                         <td><strong>Photothèque (lecture)</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Image sélectionnée</td>
                         <td>Importer une image existante</td>
                         <td>Choisir une photo depuis la galerie</td>
+                        <td>Transmise à nos serveurs si vous validez l'envoi</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Photothèque (enregistrement)</strong></td>
+                        <td>iOS</td>
+                        <td>Image téléchargée</td>
+                        <td>Enregistrer une image depuis la plateforme</td>
+                        <td>Sauvegarder une photo produit dans la galerie</td>
+                        <td>Aucun — stockage local sur votre appareil</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stockage / fichiers</strong></td>
+                        <td>Android (≤&nbsp;12)</td>
+                        <td>Fichiers image</td>
+                        <td>Accéder aux images lors d'un import galerie</td>
+                        <td>Joindre une image depuis le stockage</td>
+                        <td>Transmise à nos serveurs si vous validez l'envoi</td>
                         <td>Non</td>
                     </tr>
                     <tr>
                         <td><strong>Localisation (pendant l'utilisation)</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Coordonnées GPS, précision</td>
                         <td>Confirmer une adresse de livraison ou d'inscription</td>
                         <td>Préremplir votre adresse sur la carte lors d'une commande</td>
+                        <td>Enregistrée sur nos serveurs si vous validez le formulaire</td>
                         <td>Non — saisie manuelle possible</td>
                     </tr>
                     <tr>
                         <td><strong>Localisation (arrière-plan / Toujours)</strong></td>
-                        <td><strong>Uniquement pour les livreurs habilités</strong>, pendant une livraison active démarrée explicitement</td>
+                        <td>iOS, Android</td>
+                        <td>Coordonnées GPS en continu</td>
+                        <td><strong>Uniquement livreurs habilités</strong>, pendant une livraison active démarrée explicitement</td>
                         <td>Transmettre la position au client qui suit sa commande en direct</td>
-                        <td>Non — réservé au personnel livreur ; refus possible (suivi livraison indisponible)</td>
+                        <td>Serveurs Sugar Paper + client concerné (page de suivi)</td>
+                        <td>Non — refus = pas de suivi livraison</td>
                     </tr>
                     <tr>
-                        <td><strong>Notifications</strong></td>
-                        <td>Alertes de commande et livraison</td>
-                        <td>«&nbsp;Votre commande est en route&nbsp;»</td>
-                        <td>Non</td>
+                        <td><strong>Service de premier plan (localisation)</strong></td>
+                        <td>Android</td>
+                        <td>État du service GPS</td>
+                        <td>Maintenir le suivi GPS livreur pendant une course (exigence Android)</td>
+                        <td>Notification persistante «&nbsp;Livraison en cours&nbsp;»</td>
+                        <td>Aucun partage — indicateur système</td>
+                        <td>Non — livreurs, course active</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Optimisation batterie</strong></td>
+                        <td>Android</td>
+                        <td>Aucune donnée personnelle</td>
+                        <td>Éviter l'interruption du GPS par le système pendant une livraison</td>
+                        <td>Demande d'exemption lors du démarrage d'une course</td>
+                        <td>Aucun</td>
+                        <td>Non — livreurs uniquement</td>
                     </tr>
                     <tr>
                         <td><strong>Contacts (répertoire)</strong></td>
-                        <td><strong>Espace commercial / admin uniquement</strong>&nbsp;: importer des clients dans le carnet (nom, téléphone, e-mail)</td>
-                        <td>Appuyer sur «&nbsp;Importer&nbsp;» puis sélectionner les contacts à enregistrer</td>
-                        <td>Non — import fichier .vcf / .csv possible ; refus limite uniquement l'import depuis le répertoire</td>
+                        <td>iOS, Android</td>
+                        <td>Nom, téléphone, e-mail des contacts <strong>sélectionnés</strong></td>
+                        <td><strong>Espace commercial / admin</strong>&nbsp;: importer des clients dans le carnet</td>
+                        <td>Appuyer sur «&nbsp;Importer&nbsp;» puis choisir les contacts</td>
+                        <td>Enregistrés dans votre carnet clients sur nos serveurs</td>
+                        <td>Non — import .vcf / .csv possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notifications push</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Jeton technique FCM / APNs</td>
+                        <td>Alertes de commande et livraison</td>
+                        <td>«&nbsp;Votre commande est en route&nbsp;»</td>
+                        <td>Firebase (Google), APNs (Apple) — prestataires techniques</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Connexion Google / Apple</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Identifiant, e-mail, nom (selon votre choix chez Google/Apple)</td>
+                        <td>Authentification sans mot de passe Sugar Paper</td>
+                        <td>Se connecter avec Google ou Apple</td>
+                        <td>Google / Apple selon leurs politiques ; données compte sur nos serveurs</td>
+                        <td>Non — connexion e-mail possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Partage système</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Lien ou texte que vous choisissez de partager</td>
+                        <td>Partager un produit ou un lien de suivi via une autre app</td>
+                        <td>Envoyer un lien par WhatsApp</td>
+                        <td>Via l'application tierce que vous sélectionnez</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Internet / réseau</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Trafic HTTPS vers sugar-paper.com</td>
+                        <td>Charger le site et communiquer avec nos serveurs</td>
+                        <td>Parcourir le catalogue, commander</td>
+                        <td>Nos serveurs et prestataires techniques (hébergement)</td>
+                        <td>Oui — fonctionnement de l'app</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         <p>
-            <strong>Microphone&nbsp;:</strong> l'application <strong>ne demande pas</strong> l'accès au microphone et n'enregistre pas d'audio.
+            <strong>Microphone&nbsp;:</strong> l'application <strong>ne demande pas</strong> l'accès au microphone et n'enregistre pas d'audio.<br>
+            <strong>Localisation arrière-plan clients&nbsp;:</strong> l'application <strong>ne collecte pas</strong> la position des clients en arrière-plan ;
+            cette autorisation est <strong>réservée aux livreurs</strong> pendant une course active.
+        </p>
+
+        <h3 id="priv-9-divulgation">9.3 bis Divulgation in-app et consentement explicite</h3>
+        <p>
+            Sugar Paper respecte les exigences de transparence d'<strong>Apple App Store</strong> et de <strong>Google Play</strong> en matière de consentement aux autorisations sensibles&nbsp;:
+        </p>
+        <ul>
+            <li><strong>Caméra, localisation client, contacts</strong> — un dialogue in-app décrit la finalité, propose un lien vers la présente politique et requiert votre action «&nbsp;J'accepte&nbsp;» ou «&nbsp;Refuser&nbsp;» avant la boîte système ;</li>
+            <li><strong>Localisation en arrière-plan (livreurs)</strong> — un <strong>écran plein page non dismissible</strong> précède toute demande d'accès «&nbsp;Toujours&nbsp;» / «&nbsp;Autoriser tout le temps&nbsp;».
+                Il indique explicitement que Sugar Paper <strong>collecte votre position GPS en continu pendant une livraison active, y compris lorsque l'application est fermée ou en arrière-plan</strong>,
+                afin que le client suive sa commande en temps réel. Il précise les données transmises, leur destinataire (client concerné via page de suivi) et le fait que le suivi s'arrête en fin de course ;</li>
+            <li><strong>Notifications</strong> — demande via le dialogue système iOS / Android, généralement au premier lancement ou lors de l'activation des alertes ;</li>
+            <li><strong>Connexion Google / Apple</strong> — gérée par les services Google / Apple ; voir section&nbsp;<a href="#priv-9-auth">9.7</a>.</li>
+        </ul>
+        <p>
+            URL publique de la présente politique (stores)&nbsp;:
+            <a href="https://sugar-paper.com/politique-confidentialite.php">https://sugar-paper.com/politique-confidentialite.php</a>
+            (alias&nbsp;: <a href="https://sugar-paper.com/privacy-policy.php">https://sugar-paper.com/privacy-policy.php</a>).
         </p>
 
         <h2 id="priv-9-gps">9.4 Localisation GPS et suivi de livraison en temps réel</h2>
@@ -497,6 +606,23 @@ $last_update = '11/07/2026';
             Aucune donnée bancaire complète n'est stockée en clair côté navigateur.
             Sur navigateur mobile (hors application), l'import depuis le répertoire peut reposer sur l'API Contact Picker (souvent limitée à Android Chrome en HTTPS)
             ou sur un fichier exporté.
+        </p>
+
+        <h3 id="priv-9-auth">9.7 Connexion Google et Sign in with Apple</h3>
+        <p>
+            L'application permet de vous authentifier via <strong>Google</strong> ou <strong>Apple</strong> (Sign in with Apple).
+            Lorsque vous choisissez cette option, Google ou Apple nous transmet les informations nécessaires à la création ou la connexion de votre compte Sugar Paper
+            (typiquement&nbsp;: identifiant unique, adresse e-mail, prénom et nom si vous l'autorisez).
+            Nous ne recevons <strong>pas</strong> votre mot de passe Google ou Apple.
+        </p>
+        <ul>
+            <li>Le traitement par Google est régi par la <a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">politique de confidentialité Google</a> ;</li>
+            <li>Le traitement par Apple est régi par la <a href="https://www.apple.com/legal/privacy/" rel="noopener noreferrer" target="_blank">politique de confidentialité Apple</a> ;</li>
+            <li>Les données de compte créées ou liées sont conservées selon les durées de la section&nbsp;7 et traitées conformément à la section&nbsp;4.</li>
+        </ul>
+        <p>
+            Vous pouvez à tout moment utiliser la connexion par e-mail et mot de passe si vous avez défini un mot de passe Sugar Paper,
+            ou demander la suppression de votre compte (section&nbsp;<a href="#priv-suppression">14</a>).
         </p>
 
         <h2 id="priv-10">10. Cookies et technologies similaires</h2>
@@ -603,7 +729,11 @@ $last_update = '11/07/2026';
             <strong>Documents associés :</strong>
             <a href="/conditions-utilisation.php">Conditions générales d'utilisation</a>
             ·
+            <a href="/conditions-utilisation.php#cgu-4b">Autorisations application mobile</a>
+            ·
             <a href="/politique-suppression-compte.php">Politique de suppression de compte</a>
+            ·
+            <a href="#priv-9-tableau">Tableau des permissions</a>
             ·
             <a href="#priv-9-gps">Suivi GPS livraison</a>
             ·

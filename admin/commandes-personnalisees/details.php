@@ -215,6 +215,19 @@ $cp = get_commande_personnalisee_by_id($cp_id);
                 <div class="value">Zone #<?php echo (int) $cp['zone_livraison_id']; ?></div>
             </div>
             <?php endif; ?>
+            <?php if (!empty($cp['note_vocale'])): ?>
+            <div class="cp-detail-item">
+                <label>Note vocale du client</label>
+                <div class="cp-voice-player">
+                    <audio controls preload="metadata" class="cp-voice-player__audio" src="<?php echo htmlspecialchars($cp['note_vocale']); ?>">
+                        Votre navigateur ne supporte pas la lecture audio.
+                    </audio>
+                    <a href="<?php echo htmlspecialchars($cp['note_vocale']); ?>" class="cp-voice-player__download" download target="_blank" rel="noopener">
+                        <i class="fas fa-download" aria-hidden="true"></i> Télécharger
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
             <?php
             $cp_images = parse_commande_personnalisee_images($cp['image_reference'] ?? '');
             ?>

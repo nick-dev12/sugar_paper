@@ -7,7 +7,9 @@
 /* Conteneurs produits : grille commune */
 .produit_vedete .articles.carousel1-flex-mode,
 .produit_vedete .articles.carousel11,
+.produit_vedete .articles.home-section-grid,
 .produit_vedetes .articles.carousel11,
+.produit_vedetes .articles.home-section-grid,
 .carousel-produits-outer .carousel1.carousel1-flex-mode,
 .carousel11#produits-container,
 .section00 .produit_vedetes .articles.carousel11,
@@ -21,6 +23,7 @@
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .home-section-grid,
   .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {
@@ -84,6 +87,7 @@
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .home-section-grid,
   .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {
@@ -200,6 +204,7 @@
   .produit_vedetes .articles.carousel11,
   .carousel-produits-outer .carousel1.carousel1-flex-mode,
   .carousel11,
+  .home-section-grid,
   .carousel11#produits-container,
   .section00 .produit_vedetes .articles.carousel11,
   .produits-similaires .articles.carousel11 {

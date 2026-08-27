@@ -14,6 +14,8 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_email'])) {
 }
 
 require_once __DIR__ . '/../models/model_visites.php';
+require_once __DIR__ . '/../models/model_produits.php';
+require_once __DIR__ . '/../includes/produit_prix_display.php';
 require_once __DIR__ . '/../includes/produit_share.php';
 $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
 ?>
@@ -119,12 +121,6 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                 <section class="produit_vedetes">
                     <article class="articles carousel11">
                         <?php foreach ($produits_visites as $produit): ?>
-                            <?php
-                            $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                                ? $produit['prix_promotion']
-                                : $produit['prix'];
-                            $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                            ?>
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
                                 <?php echo produit_share_button_html($produit); ?>
                                 <a href="/produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
@@ -143,17 +139,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
-                                        <p class="prix">
-                                            <?php if ($has_promotion): ?>
-                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                            <?php else: ?>
-                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                    FCFA</span>
-                                            <?php endif; ?>
-                                        </p>
+                                        <?php echo produit_render_listing_prix_html($produit); ?>
                                         <?php if (!empty($produit['stock'])): ?>
                                             <p class="produit-card-stock-info">
                                                 <strong>Stock:</strong> <?php echo $produit['stock']; ?>

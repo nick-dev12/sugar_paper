@@ -41,7 +41,47 @@ body.page-dashboard-admin .produit-card {
 
 body.page-produits-index .produit-card-image,
 body.page-dashboard-admin .produit-card-image {
-  height: clamp(100px, 22vw, 200px);
+  height: clamp(140px, 28vw, 200px);
+}
+
+body.page-produits-index .produit-card-media,
+body.page-dashboard-admin .produit-card-media {
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+body.page-produits-index .produit-card-sales-badge,
+body.page-dashboard-admin .produit-card-sales-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(107, 47, 32, 0.92);
+  color: #fff;
+  font-size: clamp(0.58rem, 2vw, 0.68rem);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
+body.page-produits-index .produit-card-sales-badge i,
+body.page-dashboard-admin .produit-card-sales-badge i {
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+  body.page-produits-index .produit-card-image,
+  body.page-dashboard-admin .produit-card-image {
+    height: clamp(155px, 38vw, 220px);
+  }
 }
 
 body.page-produits-index .produit-card-body,
@@ -317,6 +357,15 @@ body.page-dashboard-admin .stats-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
   gap: clamp(10px, 2vw, 18px);
   margin-bottom: clamp(16px, 3vw, 24px);
+}
+
+body.page-dashboard-admin .stats-grid--compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 520px;
+}
+
+body.page-dashboard-admin .stat-card.stat-factures .stat-value {
+  color: var(--couleur-dominante, #e5488a);
 }
 
 @media (min-width: 601px) and (max-width: 1024px) {

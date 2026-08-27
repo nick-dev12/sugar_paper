@@ -4,6 +4,7 @@ session_start_persistent();
 
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_prix_display.php';
 
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 $limit = 20;
@@ -157,9 +158,6 @@ $seo_canonical = $base . '/promo.php';
                 <?php else: ?>
                     <article class="articles carousel11">
                         <?php foreach ($produits as $produit): ?>
-                            <?php
-                            $pourcentage = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
-                            ?>
                             <div class="carousel">
                                 <?php echo produit_share_button_html($produit); ?>
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
@@ -173,14 +171,7 @@ $seo_canonical = $base . '/promo.php';
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
-                                        <p class="prix">
-                                            <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                FCFA</span>
-                                            <span
-                                                class="prix-promo"><?php echo number_format($produit['prix_promotion'], 0, ',', ' '); ?>
-                                                FCFA</span>
-                                            <span class="span3">-<?php echo $pourcentage; ?>%</span>
-                                        </p>
+                                        <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
                                         <?php if (!empty($produit['stock'])): ?>
                                             <p class="produit-card-stock-info"><strong>Stock:</strong> <?php echo $produit['stock']; ?>
                                             </p>

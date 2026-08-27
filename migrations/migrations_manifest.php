@@ -176,4 +176,24 @@ return [
         'label' => 'Colonne inscription checkout invité (users)',
         'script' => 'run_add_users_inscription_checkout_invite.php',
     ],
+    [
+        'id' => 'cp_catalogue',
+        'label' => 'Catalogue commandes personnalisées (dossiers + produits)',
+        'script' => 'run_add_cp_catalogue.php',
+    ],
+    [
+        'id' => 'note_vocale_commandes_personnalisees',
+        'label' => 'Note vocale commandes personnalisées',
+        'script' => 'run_add_note_vocale_commandes_personnalisees.php',
+    ],
+    [
+        'id' => 'produits_section_accueil',
+        'label' => 'Section accueil sur produits',
+        'script' => 'run_add_produits_section_accueil.php',
+    ],
+    [
+        'id' => 'backfill_produits_section_accueil',
+        'label' => 'Assignation sections accueil depuis categories produits',
+        'script' => 'run_backfill_produits_section_accueil.php',
+    ],
 ];

@@ -3,7 +3,6 @@ import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
-    id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     // Plugin Google Services pour Firebase
@@ -19,10 +18,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -99,13 +94,20 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
 // Tâche pour renommer le fichier AAB après génération
 afterEvaluate {
+    val buildOutputDir = layout.buildDirectory.get().asFile
     // Pour la version release
     tasks.findByName("bundleRelease")?.let { bundleTask ->
-        val renameTask = tasks.create("renameReleaseAAB") {
+        val renameTask = tasks.register("renameReleaseAAB") {
             doLast {
-                val bundleDir = file("${project.buildDir}/outputs/bundle/release")
+                val bundleDir = file("${buildOutputDir}/outputs/bundle/release")
                 val originalFile = file("${bundleDir}/app-release.aab")
                 val renamedFile = file("${bundleDir}/SUGAR_PAPER_APP.aab")
                 
@@ -120,15 +122,15 @@ afterEvaluate {
                 }
             }
         }
-        renameTask.dependsOn(bundleTask)
+        renameTask.configure { dependsOn(bundleTask) }
         bundleTask.finalizedBy(renameTask)
     }
     
     // Pour la version debug
     tasks.findByName("bundleDebug")?.let { bundleTask ->
-        val renameTask = tasks.create("renameDebugAAB") {
+        val renameTask = tasks.register("renameDebugAAB") {
             doLast {
-                val bundleDir = file("${project.buildDir}/outputs/bundle/debug")
+                val bundleDir = file("${buildOutputDir}/outputs/bundle/debug")
                 val originalFile = file("${bundleDir}/app-debug.aab")
                 val renamedFile = file("${bundleDir}/SUGAR_PAPER_APP-debug.aab")
                 
@@ -143,7 +145,7 @@ afterEvaluate {
                 }
             }
         }
-        renameTask.dependsOn(bundleTask)
+        renameTask.configure { dependsOn(bundleTask) }
         bundleTask.finalizedBy(renameTask)
     }
 }

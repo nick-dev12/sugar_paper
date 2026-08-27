@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
+require_once __DIR__ . '/../models/model_cp_catalogue.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
@@ -207,8 +208,109 @@ function upload_commande_personnalisee_image($file) {
     ];
 }
 
+function ensure_note_vocale_column() {
+    global $db;
+    if (!$db) {
+        return false;
+    }
+    try {
+        $stmt = $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'note_vocale'");
+        if (!$stmt || $stmt->rowCount() === 0) {
+            $db->exec("ALTER TABLE commandes_personnalisees ADD COLUMN note_vocale VARCHAR(255) NULL DEFAULT NULL AFTER image_reference");
+            return true;
+        }
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
 /**
- * Traite la soumission d'une commande personnalisée
+ * Valide une note vocale uploadée
+ * @param array $file
+ * @return array
+ */
+function validate_commande_personnalisee_voice($file) {
+    if (!is_array($file) || empty($file)) {
+        return ['success' => true, 'message' => '', 'extension' => ''];
+    }
+
+    $error_code = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+    if ($error_code === UPLOAD_ERR_NO_FILE) {
+        return ['success' => true, 'message' => '', 'extension' => ''];
+    }
+
+    if ($error_code !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'Le téléversement de la note vocale a échoué. Veuillez réessayer.', 'extension' => ''];
+    }
+
+    $file_size = isset($file['size']) ? (int) $file['size'] : 0;
+    $max_bytes = 10 * 1024 * 1024;
+    if ($file_size <= 0) {
+        return ['success' => false, 'message' => 'Le fichier audio est invalide.', 'extension' => ''];
+    }
+    if ($file_size > $max_bytes) {
+        return ['success' => false, 'message' => 'La note vocale doit faire moins de 10 Mo.', 'extension' => ''];
+    }
+
+    $mime_type = get_commande_personnalisee_image_mime_type($file['tmp_name'] ?? '');
+    $allowed_mimes = [
+        'audio/webm' => 'webm',
+        'audio/ogg' => 'ogg',
+        'audio/mp4' => 'm4a',
+        'audio/mpeg' => 'mp3',
+        'audio/x-m4a' => 'm4a',
+        'video/webm' => 'webm'
+    ];
+
+    if (!isset($allowed_mimes[$mime_type])) {
+        return ['success' => false, 'message' => 'Format audio non autorisé. Réenregistrez votre message.', 'extension' => ''];
+    }
+
+    return [
+        'success' => true,
+        'message' => '',
+        'extension' => $allowed_mimes[$mime_type]
+    ];
+}
+
+/**
+ * Enregistre une note vocale
+ * @param array $file
+ * @return array
+ */
+function upload_commande_personnalisee_voice($file) {
+    $validation = validate_commande_personnalisee_voice($file);
+    if (!$validation['success']) {
+        return ['success' => false, 'message' => $validation['message'], 'path' => null];
+    }
+
+    $error_code = isset($file['error']) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+    if ($error_code === UPLOAD_ERR_NO_FILE) {
+        return ['success' => true, 'message' => '', 'path' => null];
+    }
+
+    $upload_dir = __DIR__ . '/../upload/commandes-personnalisees/voice/';
+    if (!is_dir($upload_dir) && !mkdir($upload_dir, 0755, true) && !is_dir($upload_dir)) {
+        return ['success' => false, 'message' => 'Impossible de préparer le dossier d\'upload audio.', 'path' => null];
+    }
+
+    $extension = $validation['extension'] ?: 'webm';
+    $filename = 'cp_voice_' . bin2hex(random_bytes(8)) . '.' . $extension;
+    $dest = $upload_dir . $filename;
+
+    if (!move_uploaded_file($file['tmp_name'], $dest)) {
+        return ['success' => false, 'message' => 'Impossible d\'enregistrer la note vocale.', 'path' => null];
+    }
+
+    return [
+        'success' => true,
+        'message' => '',
+        'path' => '/upload/commandes-personnalisees/voice/' . $filename
+    ];
+}
+
+/**
  * @return array ['success' => bool, 'message' => string]
  */
 function process_commande_personnalisee() {
@@ -225,38 +327,38 @@ function process_commande_personnalisee() {
     $prenom = '';
     $email = '';
     $telephone = isset($_POST['telephone']) ? trim($_POST['telephone']) : '';
-    $description = isset($_POST['description']) ? trim($_POST['description']) : '';
+    $prix_propose = isset($_POST['prix_propose']) ? trim($_POST['prix_propose']) : '';
     $type_produit = isset($_POST['type_produit']) ? trim($_POST['type_produit']) : '';
-    $quantite = isset($_POST['quantite']) ? trim($_POST['quantite']) : '';
-    $date_souhaitee = isset($_POST['date_souhaitee']) ? trim($_POST['date_souhaitee']) : '';
-    $zone_livraison_id = isset($_POST['zone_livraison_id']) ? (int) $_POST['zone_livraison_id'] : null;
+    $catalogue_produit_id = isset($_POST['catalogue_produit_id']) ? (int) $_POST['catalogue_produit_id'] : 0;
+    $description_creation = isset($_POST['description_creation']) ? trim($_POST['description_creation']) : '';
+    $description = '';
+    $quantite = null;
+    $date_souhaitee = null;
+    $zone_livraison_id = null;
     $image_reference = null;
     $images_files = $_FILES['images_reference'] ?? null;
     $legacy_image_file = $_FILES['image_reference'] ?? null;
-
-    if (empty($nom)) {
-        $errors[] = 'Le nom est obligatoire.';
-    } elseif (strlen($nom) < 2) {
-        $errors[] = 'Le nom doit contenir au moins 2 caractères.';
-    }
-
-    if (empty($telephone)) {
-        $errors[] = 'Le téléphone est obligatoire.';
-    } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
-        $errors[] = 'Le format du téléphone n\'est pas valide.';
-    } else {
-        require_once __DIR__ . '/../models/model_users.php';
-        $tel_digits = users_normalize_phone_digits($telephone);
-        if (strlen($tel_digits) < 8) {
-            $errors[] = 'Le numéro de téléphone semble incomplet.';
-        } else {
-            $telephone = $tel_digits;
-        }
-    }
+    $voice_file = $_FILES['note_vocale'] ?? null;
+    $note_vocale = null;
 
     $csrf = isset($_POST['csrf_token']) ? (string) $_POST['csrf_token'] : '';
     if ($csrf === '' || empty($_SESSION['cp_form_csrf']) || !hash_equals((string) $_SESSION['cp_form_csrf'], $csrf)) {
         $errors[] = 'Session expirée. Veuillez renvoyer le formulaire.';
+    }
+
+    if ($catalogue_produit_id <= 0) {
+        $errors[] = 'Veuillez sélectionner un produit dans le catalogue.';
+    }
+
+    $catalogue_produit = null;
+    if ($catalogue_produit_id > 0) {
+        $catalogue_produit = get_cp_produit_by_id($catalogue_produit_id, true);
+        if (!$catalogue_produit) {
+            $errors[] = 'Le produit sélectionné n\'est plus disponible.';
+            $catalogue_produit_id = 0;
+        } else {
+            $type_produit = trim($catalogue_produit['nom']);
+        }
     }
 
     if ($user_id > 0) {
@@ -265,23 +367,71 @@ function process_commande_personnalisee() {
         if ($user_compte) {
             $email = trim($user_compte['email'] ?? '');
             $prenom = trim($user_compte['prenom'] ?? '');
-            if ($nom === '' && !empty($user_compte['nom'])) {
-                $nom = trim($user_compte['nom']);
-            }
-            if ($telephone === '' && !empty($user_compte['telephone'])) {
-                $telephone = trim($user_compte['telephone']);
+            $nom = trim($user_compte['nom'] ?? $nom);
+            $telephone = trim($user_compte['telephone'] ?? $telephone);
+        }
+    } else {
+        if (empty($nom)) {
+            $errors[] = 'Le nom est obligatoire.';
+        } elseif (strlen($nom) < 2) {
+            $errors[] = 'Le nom doit contenir au moins 2 caractères.';
+        }
+
+        if (empty($telephone)) {
+            $errors[] = 'Le téléphone est obligatoire.';
+        } elseif (!preg_match('/^[0-9+\-\s()]+$/', $telephone)) {
+            $errors[] = 'Le format du téléphone n\'est pas valide.';
+        } else {
+            require_once __DIR__ . '/../models/model_users.php';
+            $tel_digits = users_normalize_phone_digits($telephone);
+            if (strlen($tel_digits) < 8) {
+                $errors[] = 'Le numéro de téléphone semble incomplet.';
+            } else {
+                $telephone = $tel_digits;
             }
         }
     }
 
-    if (empty($description)) {
-        $errors[] = 'La description de votre demande est obligatoire.';
-    } elseif (strlen($description) < 10) {
-        $errors[] = 'Veuillez détailler davantage votre demande (minimum 10 caractères).';
+    if ($prix_propose === '' || !is_numeric($prix_propose)) {
+        $errors[] = 'Indiquez un prix proposé valide.';
+    } else {
+        $prix_val = (float) $prix_propose;
+        if ($prix_val <= 0) {
+            $errors[] = 'Le prix proposé doit être supérieur à 0.';
+        } elseif ($catalogue_produit) {
+            $pmin = (float) ($catalogue_produit['prix_min'] ?? 0);
+            $pmax = (float) ($catalogue_produit['prix_max'] ?? 0);
+            if ($prix_val < $pmin || $prix_val > $pmax) {
+                $errors[] = 'Le prix proposé doit être entre '
+                    . number_format($pmin, 0, ',', ' ')
+                    . ' et '
+                    . number_format($pmax, 0, ',', ' ')
+                    . ' FCFA.';
+            }
+        }
     }
 
-    if (!empty($date_souhaitee) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_souhaitee)) {
-        $errors[] = 'La date souhaitée n\'est pas valide.';
+    if ($description_creation !== '' && mb_strlen($description_creation) > 2000) {
+        $errors[] = 'La description de votre création ne doit pas dépasser 2000 caractères.';
+    }
+
+    if (empty($errors) && $catalogue_produit) {
+        $prix_aff = number_format((float) $prix_propose, 0, ',', ' ');
+        $description = 'Produit catalogue : ' . $type_produit . '. Prix proposé : ' . $prix_aff . ' FCFA.';
+        if ($description_creation !== '') {
+            $description .= ' Personnalisation : ' . $description_creation;
+        }
+    }
+
+    if (is_array($voice_file) && (($voice_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+        $voice_validation = validate_commande_personnalisee_voice($voice_file);
+        if (!$voice_validation['success']) {
+            $errors[] = $voice_validation['message'];
+        }
+    }
+
+    if (empty($errors) && trim($nom) === '') {
+        $errors[] = 'Impossible de récupérer vos informations. Reconnectez-vous ou contactez le support.';
     }
 
     $files_to_validate = normalize_commande_personnalisee_files_array($images_files);
@@ -329,6 +479,15 @@ function process_commande_personnalisee() {
                 $image_reference = $upload_result['path'];
             }
         }
+
+        if (empty($errors) && is_array($voice_file) && (($voice_file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+            $voice_upload = upload_commande_personnalisee_voice($voice_file);
+            if (!$voice_upload['success']) {
+                $errors[] = $voice_upload['message'];
+            } else {
+                $note_vocale = $voice_upload['path'];
+            }
+        }
     }
 
     if (empty($errors)) {
@@ -339,6 +498,10 @@ function process_commande_personnalisee() {
 
     if (empty($errors)) {
         ensure_image_reference_column();
+        ensure_note_vocale_column();
+        if ($note_vocale && $description !== '') {
+            $description .= ' Message vocal joint.';
+        }
         $data = [
             'user_id' => $user_id,
             'nom' => $nom,
@@ -347,7 +510,9 @@ function process_commande_personnalisee() {
             'telephone' => $telephone,
             'description' => $description,
             'image_reference' => $image_reference,
+            'note_vocale' => $note_vocale,
             'type_produit' => $type_produit ?: null,
+            'catalogue_produit_id' => $catalogue_produit_id > 0 ? $catalogue_produit_id : null,
             'quantite' => $quantite ?: null,
             'date_souhaitee' => $date_souhaitee ?: null,
             'zone_livraison_id' => $zone_livraison_id > 0 ? $zone_livraison_id : null

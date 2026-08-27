@@ -85,6 +85,7 @@ function process_add_produit() {
     $stock = isset($_POST['stock']) ? intval($_POST['stock']) : 0;
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $section_accueil = normalize_produit_section_accueil($_POST['section_accueil'] ?? '');
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $couleurs = null;
     if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
@@ -193,6 +194,7 @@ function process_add_produit() {
             'unite' => $unite,
             'couleurs' => $couleurs,
             'taille' => $taille,
+            'section_accueil' => $section_accueil,
             'statut' => $stock > 0 ? $statut : 'rupture_stock'
         ];
         
@@ -277,6 +279,7 @@ function process_update_produit($produit_id) {
     $categorie_id = isset($_POST['categorie_id']) ? intval($_POST['categorie_id']) : 0;
     $unite = isset($_POST['unite']) ? trim($_POST['unite']) : 'unité';
     $statut = isset($_POST['statut']) ? $_POST['statut'] : 'actif';
+    $section_accueil = normalize_produit_section_accueil($_POST['section_accueil'] ?? '');
     $couleurs = null;
     if (isset($_POST['couleurs']) && trim($_POST['couleurs']) !== '') {
         $raw = trim($_POST['couleurs']);
@@ -394,6 +397,7 @@ function process_update_produit($produit_id) {
             'unite' => $unite,
             'couleurs' => $couleurs,
             'taille' => $taille,
+            'section_accueil' => $section_accueil,
             'statut' => $stock > 0 ? $statut : 'rupture_stock',
             'stock_article_id' => null
         ];

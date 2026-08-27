@@ -217,6 +217,7 @@ if (!function_exists('admin_route_relative_path')) {
                 }
                 return $starts('stock/')
                     || $starts('produits/')
+                    || $starts('catalogue-personnalise/')
                     || $starts('commandes/')
                     || $starts('commandes-personnalisees/')
                     || $starts('zones-livraison/')

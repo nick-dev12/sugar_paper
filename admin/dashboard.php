@@ -23,6 +23,7 @@ require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_categories.php';
+require_once __DIR__ . '/../models/model_bl.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../includes/site_url.php';
 require_once __DIR__ . '/../includes/produit_share.php';
@@ -34,7 +35,6 @@ $recherche = trim($_GET['recherche'] ?? '');
 $categorie_id = isset($_GET['categorie_id']) ? (int) $_GET['categorie_id'] : 0;
 $categories = get_all_categories();
 $produits = get_all_produits();
-$is_utilisateur_dashboard = admin_is_utilisateur();
 
 if (!empty($produits)) {
     $produits = array_values(array_filter($produits, function ($produit) use ($recherche, $categorie_id) {
@@ -157,48 +157,6 @@ $base_site_url = rtrim(get_site_base_url(), '/');
             </div>
         </div>
 
-        <?php if ($is_utilisateur_dashboard): ?>
-        <section class="dashboard-quick-links" aria-label="Accès rapides">
-            <h2 class="dashboard-quick-links__title"><i class="fas fa-th-large" aria-hidden="true"></i> Accès rapides</h2>
-            <div class="dashboard-quick-links__grid">
-                <a href="invoice/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></span>
-                    <span class="dashboard-quick-link__label">Invoice</span>
-                    <span class="dashboard-quick-link__sub">Factures, devis, clients, rapports</span>
-                </a>
-                <a href="livreurs/carte.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-map-location-dot"></i></span>
-                    <span class="dashboard-quick-link__label">Map livreurs</span>
-                    <span class="dashboard-quick-link__sub">Suivi GPS en temps réel</span>
-                </a>
-                <a href="produits/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-box"></i></span>
-                    <span class="dashboard-quick-link__label">Produits</span>
-                    <span class="dashboard-quick-link__sub">Catalogue boutique</span>
-                </a>
-                <a href="stock/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-boxes-stacked"></i></span>
-                    <span class="dashboard-quick-link__label">Stock</span>
-                    <span class="dashboard-quick-link__sub">Catégories et quantités</span>
-                </a>
-                <a href="commandes/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-shopping-cart"></i></span>
-                    <span class="dashboard-quick-link__label">Commandes</span>
-                    <span class="dashboard-quick-link__sub">Gestion des commandes</span>
-                </a>
-                <a href="commandes-personnalisees/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-palette"></i></span>
-                    <span class="dashboard-quick-link__label">Commandes perso</span>
-                    <span class="dashboard-quick-link__sub">Sur mesure client</span>
-                </a>
-                <a href="zones-livraison/index.php" class="dashboard-quick-link">
-                    <span class="dashboard-quick-link__icon" aria-hidden="true"><i class="fas fa-truck"></i></span>
-                    <span class="dashboard-quick-link__label">Zones livraison</span>
-                    <span class="dashboard-quick-link__sub">Tarifs et secteurs</span>
-                </a>
-            </div>
-        </section>
-        <?php endif; ?>
 
         <?php
         if (isset($_SESSION['notification_test_message'])) {
@@ -214,29 +172,18 @@ $base_site_url = rtrim(get_site_base_url(), '/');
         }
         // Récupérer les statistiques des commandes
         $total_commandes = count_commandes_by_statut();
-        $commandes_perso_en_attente = count_commandes_personnalisees_by_statut('en_attente');
-        $en_attente = count_commandes_by_statut('en_attente');
-        $prise_en_charge = count_commandes_by_statut('prise_en_charge');
-        $livraison_en_cours = count_commandes_by_statut('livraison_en_cours');
+        $total_factures = count_all_bl_invoices('active');
         ?>
 
-        <!-- Statistiques des commandes -->
-        <div class="stats-grid">
+        <!-- Statistiques -->
+        <div class="stats-grid stats-grid--compact">
             <div class="stat-card">
                 <h3>Total Commandes</h3>
                 <div class="stat-value"><?php echo $total_commandes; ?></div>
             </div>
-            <div class="stat-card stat-en-attente">
-                <h3>En Attente</h3>
-                <div class="stat-value"><?php echo $en_attente; ?></div>
-            </div>
-            <div class="stat-card stat-prise">
-                <h3>Prise en charge</h3>
-                <div class="stat-value"><?php echo $prise_en_charge; ?></div>
-            </div>
-            <div class="stat-card stat-livraison">
-                <h3>Livraison en cours</h3>
-                <div class="stat-value"><?php echo $livraison_en_cours; ?></div>
+            <div class="stat-card stat-factures">
+                <h3>Total Factures</h3>
+                <div class="stat-value"><?php echo $total_factures; ?></div>
             </div>
         </div>
 
@@ -290,12 +237,21 @@ $base_site_url = rtrim(get_site_base_url(), '/');
                 <!-- Grille de produits -->
                 <div class="produits-grid">
                     <?php foreach ($produits_page as $produit): ?>
+                        <?php $qte_vendue = (int) ($produit['quantite_vendue'] ?? 0); ?>
                         <div class="produit-card produit-card-linkable"
                             data-href="produits/ajuster-stock.php?id=<?php echo (int) $produit['id']; ?>">
                             <?php echo produit_share_button_html($produit); ?>
-                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
-                                onerror="this.src='/image/produit1.jpg'">
+                            <div class="produit-card-media">
+                                <?php if ($qte_vendue > 0): ?>
+                                <span class="produit-card-sales-badge" title="Quantité vendue">
+                                    <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+                                    <?php echo $qte_vendue; ?>
+                                </span>
+                                <?php endif; ?>
+                                <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>"
+                                    alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-card-image"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </div>
                             <div class="produit-card-body">
                                 <h3 class="produit-card-nom"><?php echo htmlspecialchars($produit['nom']); ?></h3>
                                 <p class="produit-card-categorie">
@@ -312,9 +268,6 @@ $base_site_url = rtrim(get_site_base_url(), '/');
                                 </p>
                                 <p class="produit-card-stock">
                                     Stock: <span class="stock-value"><?php echo $produit['stock']; ?></span>
-                                </p>
-                                <p class="produit-card-sales">
-                                    Vendus: <span class="stock-value"><?php echo (int) ($produit['quantite_vendue'] ?? 0); ?></span>
                                 </p>
                                 <div class="produit-card-actions">
                                     <a href="produits/modifier.php?id=<?php echo $produit['id']; ?>" class="btn-card btn-edit">

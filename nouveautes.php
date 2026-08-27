@@ -4,6 +4,7 @@ session_start_persistent();
 
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_prix_display.php';
 
 $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
 $limit = 20;
@@ -157,11 +158,6 @@ $seo_canonical = $base . '/nouveautes.php';
                 <?php else: ?>
                     <article class="articles carousel11">
                         <?php foreach ($produits as $produit): ?>
-                            <?php
-                            $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                            $prix_affichage = $has_promo ? $produit['prix_promotion'] : $produit['prix'];
-                            $pourcentage = $has_promo ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                            ?>
                             <div class="carousel">
                                 <?php echo produit_share_button_html($produit); ?>
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
@@ -175,17 +171,7 @@ $seo_canonical = $base . '/nouveautes.php';
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
-                                        <p class="prix">
-                                            <?php if ($has_promo): ?>
-                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                            <?php else: ?>
-                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                    FCFA</span>
-                                            <?php endif; ?>
-                                        </p>
+                                        <?php echo produit_render_listing_prix_html($produit); ?>
                                         <?php if (!empty($produit['stock'])): ?>
                                             <p class="produit-card-stock-info"><strong>Stock:</strong> <?php echo $produit['stock']; ?>
                                             </p>

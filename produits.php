@@ -5,6 +5,7 @@ session_start_persistent();
 // Inclusion des modèles
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_prix_display.php';
 
 // Récupérer les produits (recherche + filtres ou tous)
 $produits_tous = [];
@@ -214,14 +215,6 @@ $seo_canonical = $base . '/produits.php';
                         </div>
                     <?php else: ?>
                         <?php foreach ($produits_tous as $produit): ?>
-                            <?php
-                            // Calculer le prix à afficher
-                            $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                                ? $produit['prix_promotion']
-                                : $produit['prix'];
-                            $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                            $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                            ?>
                             <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
                                 <?php echo produit_share_button_html($produit); ?>
                                 <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
@@ -235,18 +228,7 @@ $seo_canonical = $base . '/produits.php';
                                         <?php if (!empty($produit['categorie_nom'])): ?>
                                             <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
                                         <?php endif; ?>
-                                        <p class="prix">
-                                            <?php if ($has_promotion): ?>
-                                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                                    FCFA</span>
-                                            <?php else: ?>
-                                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                                    FCFA</span>
-                                            <?php endif; ?>
-                                        </p>
-
+                                        <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
                                     </div>
                                 </a>
                                 <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
@@ -341,13 +323,17 @@ $seo_canonical = $base . '/produits.php';
                             }
 
                             let prixHTML = '';
+                            const prixClass = produit.show_price_from ? 'prix prix--from' : 'prix';
+                            const fromLabel = produit.show_price_from
+                                ? '<span class="prix-from-label">À partir de</span>'
+                                : '';
                             if (produit.has_promotion) {
-                                prixHTML = `<span class="span2">${formatNumber(produit.prix)} FCFA</span>
+                                prixHTML = `${fromLabel}<span class="span2">${formatNumber(produit.prix)} FCFA</span>
                                             <span class="prix-promo">${formatNumber(produit.prix_affichage)} FCFA</span>
                                             <span class="span3">-${produit.pourcentage_promo}%</span>`;
                             } else {
                                 prixHTML =
-                                    `${formatNumber(produit.prix_affichage)}<span class="span1"> FCFA</span>`;
+                                    `${fromLabel}${formatNumber(produit.prix_affichage)}<span class="span1"> FCFA</span>`;
                             }
 
                             let stockHTML = '';
@@ -374,7 +360,7 @@ $seo_canonical = $base . '/produits.php';
                                     <div class="produit-content">
                                         <p id="nom">${escapeHtml(produit.nom)}</p>
                                         ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
-                                        <p class="prix">${prixHTML}</p>
+                                        <p class="${prixClass}">${prixHTML}</p>
                                         ${stockHTML}
                                     </div>
                                 </a>

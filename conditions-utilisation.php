@@ -12,7 +12,7 @@ $seo_canonical = $base . '/conditions-utilisation.php';
 
 $contact_email = 'sugarpaper26@gmail.com';
 $company_address = 'Hann Mariste 2 LOT R/01, Dakar, Sénégal';
-$last_update = '11/07/2026';
+$last_update = '27/08/2026';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -46,7 +46,7 @@ $last_update = '11/07/2026';
         </p>
         <p>
             En créant un compte, en parcourant le site, en passant commande ou en utilisant l'application mobile officielle Sugar Paper
-            (identifiant iOS&nbsp;: <strong>com.sugarpaper.app</strong>, package Android&nbsp;: <strong>com.sugarpaper.app</strong>),
+            (identifiant iOS&nbsp;: <strong>com.goobridge.sugarpaper</strong>, package Android&nbsp;: <strong>com.sugarpaper.app</strong>),
             vous reconnaissez avoir lu, compris et accepté sans réserve les présentes CGU, ainsi que notre
             <a href="/politique-confidentialite.php">Politique de confidentialité</a>, qui en fait partie intégrante.
         </p>
@@ -62,6 +62,7 @@ $last_update = '11/07/2026';
                 <li><a href="#cgu-3">Compte utilisateur et sécurité</a></li>
                 <li><a href="#cgu-4">Description des services</a></li>
                 <li><a href="#cgu-4b">Application mobile et autorisations</a></li>
+                <li><a href="#cgu-4b-divulgation">Divulgation in-app et consentement</a></li>
                 <li><a href="#cgu-5">Règles d'utilisation acceptables</a></li>
                 <li><a href="#cgu-6">Produits, prix et disponibilité</a></li>
                 <li><a href="#cgu-7">Commande et validation</a></li>
@@ -166,26 +167,143 @@ $last_update = '11/07/2026';
 
         <h2 id="cgu-4b">4 bis. Application mobile et autorisations système (iOS / Android)</h2>
         <p>
-            L'application mobile Sugar Paper donne accès au site e-commerce dans une interface sécurisée et peut solliciter,
-            <strong>uniquement lorsque vous utilisez la fonction concernée</strong>, les autorisations suivantes&nbsp;:
+            L'application mobile Sugar Paper donne accès au site e-commerce dans une interface sécurisée (WebView) et peut solliciter,
+            <strong>uniquement lorsque vous utilisez la fonction concernée</strong> ou dans les cas décrits ci-dessous, les autorisations suivantes.
+            Avant toute demande système sensible, l'application affiche un <strong>écran explicatif in-app</strong> (dialogue ou écran plein page pour la localisation en arrière-plan)
+            avec un lien vers la <a href="/politique-confidentialite.php">Politique de confidentialité</a>.
+        </p>
+
+        <div class="legal-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Autorisation</th>
+                        <th>Plateforme</th>
+                        <th>Finalité</th>
+                        <th>Exemple concret</th>
+                        <th>Obligatoire&nbsp;?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Caméra</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Prendre une photo depuis l'application</td>
+                        <td>Photographier un gâteau pour une commande personnalisée</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Photothèque / galerie (lecture)</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Choisir une image existante sur l'appareil</td>
+                        <td>Sélectionner une photo d'inspiration pour votre profil</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Photothèque (enregistrement)</strong></td>
+                        <td>iOS</td>
+                        <td>Enregistrer une image téléchargée depuis la plateforme</td>
+                        <td>Sauvegarder une photo produit dans votre galerie</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stockage / fichiers</strong></td>
+                        <td>Android (≤&nbsp;12)</td>
+                        <td>Accéder aux images lors d'un import depuis la galerie</td>
+                        <td>Joindre une image depuis le stockage de l'appareil</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Localisation (pendant l'utilisation)</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Confirmer une adresse de livraison ou d'inscription</td>
+                        <td>Appuyer sur «&nbsp;Localiser&nbsp;» pour préremplir l'adresse sur la carte</td>
+                        <td>Non — saisie manuelle possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Localisation (arrière-plan / Toujours)</strong></td>
+                        <td>iOS, Android</td>
+                        <td><strong>Livreurs habilités uniquement</strong>, pendant une livraison active démarrée explicitement</td>
+                        <td>Permettre au client de suivre sa commande en direct sur la carte, y compris si l'app est en arrière-plan</td>
+                        <td>Non — refus = pas de suivi livraison en direct</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Service de premier plan (localisation)</strong></td>
+                        <td>Android</td>
+                        <td>Maintenir le suivi GPS livreur pendant une course (exigence Android)</td>
+                        <td>Notification persistante «&nbsp;Livraison en cours&nbsp;» pendant la course</td>
+                        <td>Non — livreurs, course active uniquement</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Optimisation batterie</strong></td>
+                        <td>Android</td>
+                        <td>Éviter que le système n'interrompe le GPS pendant une livraison</td>
+                        <td>Demande d'exemption lorsque le livreur démarre une course</td>
+                        <td>Non — livreurs uniquement</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contacts (répertoire)</strong></td>
+                        <td>iOS, Android</td>
+                        <td><strong>Espace commercial / admin</strong>&nbsp;: importer des clients dans le carnet</td>
+                        <td>Appuyer sur «&nbsp;Importer&nbsp;» puis sélectionner nom, téléphone, e-mail</td>
+                        <td>Non — import .vcf / .csv possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notifications push</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Alertes de commande, livraison et messages liés au compte</td>
+                        <td>«&nbsp;Votre commande est en route&nbsp;»</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Connexion Google / Apple</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Authentification via votre compte Google ou Apple</td>
+                        <td>Se connecter sans créer un nouveau mot de passe</td>
+                        <td>Non — connexion e-mail/mot de passe possible</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Partage système</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Partager un lien (produit, suivi livraison) via les apps installées</td>
+                        <td>Envoyer un lien de suivi par WhatsApp ou SMS</td>
+                        <td>Non</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Internet / réseau</strong></td>
+                        <td>iOS, Android</td>
+                        <td>Charger le site e-commerce et communiquer avec nos serveurs</td>
+                        <td>Parcourir le catalogue, passer commande</td>
+                        <td>Oui — fonctionnement de l'app</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 id="cgu-4b-divulgation">4 bis.1 Divulgation in-app et consentement</h3>
+        <p>
+            Conformément aux exigences <strong>Apple App Store</strong> (ligne directrice 5.1.1) et <strong>Google Play</strong> (politique relative aux données utilisateur)&nbsp;:
         </p>
         <ul>
-            <li><strong>Caméra et photothèque</strong> — pour prendre ou choisir une photo (profil, commande personnalisée). Exemple&nbsp;: joindre une image d'inspiration à une commande sur mesure.</li>
-            <li><strong>Localisation (pendant l'utilisation)</strong> — lorsque vous appuyez sur «&nbsp;Localiser&nbsp;» ou «&nbsp;Mettre à jour ma position&nbsp;» pour confirmer une adresse de livraison ou d'inscription. Vous pouvez refuser et saisir l'adresse manuellement.</li>
-            <li><strong>Localisation (arrière-plan / Toujours)</strong> — <strong>réservée aux livreurs habilités</strong>, uniquement pendant une livraison active qu'ils démarrent explicitement, afin de permettre au client de suivre la course en direct. Voir section&nbsp;9.2.</li>
-            <li><strong>Contacts (répertoire)</strong> — <strong>espace commercial / administrateur uniquement</strong>, lorsque vous appuyez sur «&nbsp;Importer&nbsp;» pour ajouter des clients à votre carnet (nom, téléphone, e-mail des contacts que vous sélectionnez). Aucune lecture automatique du répertoire. Vous pouvez refuser et importer un fichier .vcf / .csv.</li>
-            <li><strong>Notifications</strong> — pour vous informer du statut de vos commandes ou de messages liés à votre compte (avec votre consentement via l'application ou les réglages système).</li>
+            <li>un <strong>dialogue explicatif</strong> précède les demandes de caméra, localisation client, contacts et notifications ;</li>
+            <li>un <strong>écran plein page non dismissible</strong> précède toute demande de <strong>localisation en arrière-plan</strong> (livreurs)&nbsp;:
+                il décrit les données collectées, la finalité, le partage avec le client concerné et propose un lien vers la politique de confidentialité ;</li>
+            <li>vous devez appuyer sur <strong>«&nbsp;J'accepte&nbsp;»</strong> avant que la boîte de dialogue système iOS / Android n'apparaisse ;</li>
+            <li>le refus («&nbsp;Refuser&nbsp;» ou «&nbsp;Plus tard&nbsp;») limite la fonction concernée sans bloquer la navigation générale sur le catalogue.</li>
         </ul>
+
+        <h3 id="cgu-4b-non">4 bis.2 Autorisations non sollicitées</h3>
         <p>
-            Avant la demande système, l'application affiche un <strong>écran explicatif</strong> rappelant la finalité de l'autorisation (caméra, localisation, contacts, etc.).
-            L'application <strong>ne demande pas l'accès au microphone</strong>.
-            Le refus d'une autorisation limite la fonction concernée sans empêcher la navigation générale sur le catalogue.
+            L'application <strong>ne demande pas</strong> l'accès au <strong>microphone</strong>, à la <strong>localisation en arrière-plan pour les clients</strong>
+            (réservée aux livreurs en course active), ni à une lecture automatique ou continue du répertoire de contacts.
         </p>
+
         <p>
-            Le détail des traitements de données figure dans la
+            Le détail des traitements de données, durées de conservation et droits figure dans la
             <a href="/politique-confidentialite.php#priv-9">Politique de confidentialité (section&nbsp;9)</a>,
-            la <a href="/politique-confidentialite.php#priv-9-gps">section suivi GPS livraison</a>
-            et la <a href="/politique-confidentialite.php#priv-9-contacts">section import contacts</a>.
+            la <a href="/politique-confidentialite.php#priv-9-gps">section suivi GPS livraison</a>,
+            la <a href="/politique-confidentialite.php#priv-9-contacts">section import contacts</a>
+            et le <a href="/politique-confidentialite.php#priv-9-tableau">tableau complet des permissions</a>.
         </p>
         <p>
             En installant l'application depuis l'App Store ou Google Play, vous acceptez également les conditions propres à ces plateformes (Apple, Google) pour les téléchargements et mises à jour.
@@ -397,6 +515,8 @@ $last_update = '11/07/2026';
         <div class="legal-cross">
             <strong>Documents associés :</strong>
             <a href="/politique-confidentialite.php">Politique de confidentialité</a>
+            ·
+            <a href="/politique-confidentialite.php#priv-9-tableau">Tableau des permissions</a>
             ·
             <a href="/politique-confidentialite.php#priv-9-gps">Suivi GPS livraison</a>
             ·

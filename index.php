@@ -49,17 +49,6 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-perf.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
-    <style>
-    /* Nouveaux produits et Produits populaires : flex-wrap, Owl désactivé, 6 produits max */
-    .carousel-produits-outer {
-        position: relative;
-        width: 100%;
-    }
-
-    .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel:nth-child(n+7) {
-        display: none !important;
-    }
-    </style>
 
 </head>
 
@@ -254,90 +243,10 @@ $seo_canonical = $base . '/';
 
 
     <?php
-    // Récupérer les 10 derniers produits publiés (nouveautés)
-    $produits_nouveaux = [];
-    if (file_exists(__DIR__ . '/models/model_produits.php')) {
-        require_once __DIR__ . '/models/model_produits.php';
-        $produits_nouveaux = get_all_produits_paginated(0, 10);
-    }
+    require_once __DIR__ . '/includes/home_sections.php';
+    $home_return_url = $_SERVER['REQUEST_URI'] ?? '/index.php';
+    render_home_product_section('cake_topper', 20, $home_return_url);
     ?>
-
-    <section class="produit_vedete home-reveal" id="home-nouveautes">
-        <div class="home-section-head">
-            <div>
-                <span class="home-section-kicker">Juste arrivés</span>
-                <h2 class="home-section-title">Nouveaux produits</h2>
-                <p class="home-section-desc">Les dernières pépites pour vos créations pâtissières.</p>
-            </div>
-            <a href="nouveautes.php" class="home-section-cta">Toutes les nouveautés <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="box1" hidden aria-hidden="true">
-            <span></span>
-            <h1>NOUVEAUX PRODUITS</h1>
-            <span></span>
-        </div>
-
-
-
-        <div class="carousel-produits-outer">
-            <article class="articles carousel1 carousel1-flex-mode" id="carousel-nouveaux">
-                <?php if (empty($produits_nouveaux)): ?>
-                <!-- Message si aucun produit -->
-                <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
-                    <p style="color: var(--texte-fonce); font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_nouveaux as $produit): ?>
-                <?php
-                    // Calculer le prix à afficher
-                    $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                        ? $produit['prix_promotion']
-                        : $produit['prix'];
-                    $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                    $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                    ?>
-                <div class="carousel">
-                    <?php echo produit_share_button_html($produit); ?>
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
-        </div>
-    </section>
-
 
     <?php
     // Récupérer la configuration de la section4
@@ -471,94 +380,8 @@ $seo_canonical = $base . '/';
     <?php endif; ?>
 
     <?php
-    // Récupérer les produits les plus visités
-    $produits_populaires = [];
-    if (file_exists(__DIR__ . '/models/model_visites.php')) {
-        require_once __DIR__ . '/models/model_visites.php';
-        $produits_populaires = get_produits_plus_visites(10);
-    }
+    render_home_product_section('photo_impression', 20, $home_return_url);
     ?>
-
-    <section class="produit_vedete home-reveal" id="home-populaires">
-        <div class="home-section-head">
-            <div>
-                <span class="home-section-kicker">Coups de cœur</span>
-                <h2 class="home-section-title">Produits populaires</h2>
-                <p class="home-section-desc">Les indispensables plébiscités par nos clients.</p>
-            </div>
-            <a href="produits.php" class="home-section-cta">Voir plus <i class="fas fa-arrow-right"></i></a>
-        </div>
-        <div class="box1" hidden aria-hidden="true">
-            <span></span>
-            <h1>PRODUITS POPULAIRES</h1>
-            <span></span>
-        </div>
-
-
-
-        <div class="carousel-produits-outer">
-            <article class="articles carousel1 carousel1-flex-mode" id="carousel-populaires">
-                <?php if (empty($produits_populaires)): ?>
-                <!-- Message si aucun produit -->
-                <div class="carousel message-vide" style="text-align: center; padding: 40px; width: 100%;">
-                    <p style="color: var(--texte-fonce); font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_populaires as $produit): ?>
-                <?php
-                    // Calculer le prix à afficher
-                    $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                        ? $produit['prix_promotion']
-                        : $produit['prix'];
-                    $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                    $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                    ?>
-                <div class="carousel">
-                    <?php echo produit_share_button_html($produit); ?>
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
-        </div>
-    </section>
-
-
-
 
     <?php
     // Récupérer les catégories les plus populaires (visites + commandes) - Maximum 2
@@ -613,100 +436,8 @@ $seo_canonical = $base . '/';
 
 
     <?php
-    // Récupérer les 20 premiers produits
-    $produits_tous = [];
-    $total_produits = 0;
-    if (file_exists(__DIR__ . '/models/model_produits.php')) {
-        require_once __DIR__ . '/models/model_produits.php';
-        $produits_tous = get_all_produits_paginated(0, 20);
-        $total_produits = count_all_produits_actifs();
-    }
+    render_home_product_section('outils_patisserie', 20, $home_return_url);
     ?>
-
-    <section class="section00 home-reveal" id="home-catalogue">
-        <section class="produit_vedetes">
-            <div class="home-section-head">
-                <div>
-                    <span class="home-section-kicker">Boutique</span>
-                    <h2 class="home-section-title">Tous nos produits</h2>
-                    <p class="home-section-desc">Parcourez une sélection de notre catalogue Sugar Paper.</p>
-                </div>
-                <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-                <a href="produits.php" class="home-section-cta">Catalogue complet <i class="fas fa-arrow-right"></i></a>
-                <?php endif; ?>
-            </div>
-            <div class="box1" hidden aria-hidden="true">
-                <h1>Tous nos produits</h1>
-            </div>
-
-            <article class="articles carousel11" id="produits-container">
-                <?php if (empty($produits_tous)): ?>
-                <!-- Message si aucun produit -->
-                <div class="message-vide"
-                    style="text-align: center; padding: 40px; color: var(--texte-fonce); width: 100%;">
-                    <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
-                </div>
-                <?php else: ?>
-                <?php foreach ($produits_tous as $produit): ?>
-                <?php
-                        // Calculer le prix à afficher
-                        $prix_affichage = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix']
-                            ? $produit['prix_promotion']
-                            : $produit['prix'];
-                        $has_promotion = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                        $pourcentage_promo = $has_promotion ? round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100) : 0;
-                        ?>
-                <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                    <?php echo produit_share_button_html($produit); ?>
-                    <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                        <div class="image-wrapper">
-                            <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                        </div>
-                        <div class="produit-content">
-                            <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                            <?php if (!empty($produit['categorie_nom'])): ?>
-                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                            <?php endif; ?>
-                            <p class="prix">
-                                <?php if ($has_promotion): ?>
-                                <span class="span2"><?php echo number_format($produit['prix'], 0, ',', ' '); ?>
-                                    FCFA</span>
-                                <span class="prix-promo"><?php echo number_format($prix_affichage, 0, ',', ' '); ?>
-                                    FCFA</span>
-
-                                <?php else: ?>
-                                <?php echo number_format($prix_affichage, 0, ',', ' '); ?><span class="span1">
-                                    FCFA</span>
-                                <?php endif; ?>
-                            </p>
-
-                        </div>
-                    </a>
-                    <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                        <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                        <input type="hidden" name="quantite" value="1">
-                        <input type="hidden" name="return_url"
-                            value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/index.php'); ?>">
-                        <button type="submit" class="btn-add-cart">
-                            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-                        </button>
-                    </form>
-                </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </article>
-
-            <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-            <div class="voir-tous-produits-wrapper">
-                <a href="produits.php" class="btn-voir-tous-produits">
-                    <i class="fas fa-arrow-right"></i> Voir tous les produits (<?php echo $total_produits; ?>)
-                </a>
-            </div>
-            <?php endif; ?>
-        </section>
-    </section>
 
     </main>
 

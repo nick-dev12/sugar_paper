@@ -19,6 +19,7 @@ return [
         'livreur_notes_client',
         'caisse_ventes', 'caisse_vente_lignes', 'factures_personnalisees',
         'user_password_reset', 'admin_password_reset', 'produits_visites',
+        'cp_catalogue_dossiers', 'cp_catalogue_produits',
     ],
     'columns' => [
         ['users', 'accepte_conditions'],
@@ -71,6 +72,9 @@ return [
         ['commandes_personnalisees', 'image_reference'],
         ['commandes_personnalisees', 'livreur_id'],
         ['commandes_personnalisees', 'tracking_active'],
+        ['commandes_personnalisees', 'note_vocale'],
+        ['commandes_personnalisees', 'catalogue_produit_id'],
+        ['produits', 'section_accueil'],
         ['panier', 'variante_id'],
         ['commande_produits', 'nom_produit'],
     ],

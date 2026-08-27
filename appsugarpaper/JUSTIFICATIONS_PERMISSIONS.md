@@ -5,7 +5,7 @@ Application e-commerce (WebView + pont natif). Bundle / package : **`com.sugarpa
 Usage réel : `lib/main.dart`, `lib/services/native_permission_service.dart`, `ios/Runner/Info.plist`, `android/app/src/main/AndroidManifest.xml`.
 
 Pages légales (stores) :
-- Politique : https://sugar-paper.com/politique-confidentialite.php (sections app mobile, GPS, notifications)
+- Politique : https://sugar-paper.com/politique-confidentialite.php (alias : https://sugar-paper.com/privacy-policy.php)
 - CGU : https://sugar-paper.com/conditions-utilisation.php (section 4 bis — autorisations)
 
 ---
@@ -26,7 +26,7 @@ Chaque clé `NS*UsageDescription` décrit **comment**, **pourquoi** et un **exem
 
 **Arrière-plan iOS** : `UIBackgroundModes` → `location`, `remote-notification`.
 
-**Dialogue in-app** (avant la boîte système) : `NativePermissionService` — caméra, localisation client, suivi livraison livreur (`requestDeliveryTrackingPermissions`), contacts (`requestContactsWithRationale`).
+**Dialogue in-app** (avant la boîte système) : `NativePermissionService` + `ProminentDisclosureDialog` — écran plein page pour la localisation arrière-plan (livreurs), dialogues avec lien politique de confidentialité pour caméra, localisation client, contacts.
 
 **Notifications push** : pas de clé `NS*UsageDescription` (dialogue système iOS via `FCMService.requestNotificationPermission()`).
 
@@ -107,7 +107,8 @@ Dialogues in-app : `lib/services/native_permission_service.dart` (source princip
 
 ## Checklist avant soumission
 
-- [ ] URLs légales prod : `sugar-paper.com/politique-confidentialite.php` et `conditions-utilisation.php`
+- [ ] URLs légales prod : `https://sugar-paper.com/politique-confidentialite.php` (ou alias `https://sugar-paper.com/privacy-policy.php`) et `conditions-utilisation.php`
+- [ ] Play Console > Contenu de l'appli > Politique de confidentialité : URL HTTPS active (tester en navigation privée)
 - [ ] App Store Connect : déclarer localisation arrière-plan (livreurs)
 - [ ] Play Console : formulaire localisation arrière-plan + foreground service location
 - [ ] Xcode : capability **Background Modes** → Location updates + Push Notifications

@@ -8,12 +8,15 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 require_once __DIR__ . '/controllers/controller_commandes_personnalisees.php';
-require_once __DIR__ . '/models/model_zones_livraison.php';
+require_once __DIR__ . '/models/model_cp_catalogue.php';
+require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/guest_client.php';
 
 $result = process_commande_personnalisee();
-$zones_livraison = get_all_zones_livraison('actif');
+$catalogue_produits = cp_catalogue_tables_available() ? get_cp_catalogue_flat_products('actif') : [];
+$catalogue_grouped = cp_catalogue_tables_available() ? get_cp_catalogue_grouped('actif') : [];
+$total_catalogue_produits = count($catalogue_produits);
 
 if ($result['success']) {
     require_once __DIR__ . '/services/notifications_order_dispatch.php';
@@ -36,11 +39,10 @@ $user_logged_in = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
 $prefill = [
     'nom' => $_SESSION['user_nom'] ?? '',
     'telephone' => $_SESSION['user_telephone'] ?? '',
-    'description' => '',
+    'prix_propose' => '',
     'type_produit' => '',
-    'quantite' => '',
-    'date_souhaitee' => '',
-    'zone_livraison_id' => '',
+    'catalogue_produit_id' => '',
+    'description_creation' => '',
 ];
 
 if (!$user_logged_in) {
@@ -58,22 +60,31 @@ if (!$user_logged_in) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prefill['nom'] = $_POST['nom'] ?? $prefill['nom'];
     $prefill['telephone'] = $_POST['telephone'] ?? $prefill['telephone'];
-    $prefill['description'] = $_POST['description'] ?? '';
+    $prefill['prix_propose'] = $_POST['prix_propose'] ?? '';
     $prefill['type_produit'] = $_POST['type_produit'] ?? '';
-    $prefill['quantite'] = $_POST['quantite'] ?? '';
-    $prefill['date_souhaitee'] = $_POST['date_souhaitee'] ?? '';
-    $prefill['zone_livraison_id'] = $_POST['zone_livraison_id'] ?? '';
+    $prefill['catalogue_produit_id'] = $_POST['catalogue_produit_id'] ?? '';
+    $prefill['description_creation'] = $_POST['description_creation'] ?? '';
 }
 
-$types_produit = [
-    'Cake Topper' => ['icon' => 'fa-cake-candles', 'hint' => 'Prénom, âge, 3D'],
-    'Papier sucre A4' => ['icon' => 'fa-image', 'hint' => 'Photo comestible A4'],
-    'Papier sucre A3' => ['icon' => 'fa-expand', 'hint' => 'Grand format A3'],
-    'Papier Azym A4' => ['icon' => 'fa-scroll', 'hint' => 'Azyme fin A4'],
-    'Papier choco transfert A4' => ['icon' => 'fa-cookie', 'hint' => 'Transfert chocolat'],
-];
+$selected_catalogue_id = (int) ($prefill['catalogue_produit_id'] ?? 0);
+$selected_catalogue_nom = trim($prefill['type_produit'] ?? '');
+$selected_catalogue_image = '';
+$selected_prix_min = 0;
+$selected_prix_max = 0;
+if ($selected_catalogue_id > 0) {
+    $selected_produit = get_cp_produit_by_id($selected_catalogue_id, false);
+    if ($selected_produit) {
+        $selected_catalogue_nom = trim($selected_produit['nom']);
+        $selected_catalogue_image = upload_image_url($selected_produit['image'], 'md');
+        $selected_prix_min = (float) $selected_produit['prix_min'];
+        $selected_prix_max = (float) $selected_produit['prix_max'];
+    } else {
+        $selected_catalogue_id = 0;
+        $selected_catalogue_nom = '';
+    }
+}
 
-$date_min = date('Y-m-d');
+$show_order_form = $selected_catalogue_id > 0;
 
 require_once __DIR__ . '/includes/site_url.php';
 $base = get_site_base_url();
@@ -95,6 +106,8 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/bottom-nav.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
@@ -104,16 +117,9 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <?php include 'nav_bar.php'; ?>
 
     <div class="page-commande-perso">
-        <header class="cp-hero">
-            <div class="cp-hero__glow" aria-hidden="true"></div>
-            <div class="cp-hero-badge"><i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i> Création sur mesure</div>
-            <h1>Votre gâteau,<br><span>unique.</span></h1>
-            <p class="intro">Cake toppers, papier sucre, azyme ou transfert chocolat&nbsp;: décrivez votre idée, envoyez des photos d’inspiration, on s’occupe du reste.</p>
-            <ol class="cp-steps" aria-label="Comment ça marche">
-                <li><em>1</em><span>Décrivez</span></li>
-                <li><em>2</em><span>Inspirez</span></li>
-                <li><em>3</em><span>On crée</span></li>
-            </ol>
+        <header class="cp-shop-header">
+            <h1>Commande personnalisée</h1>
+            <p>Sélectionnez un produit dans le catalogue pour passer votre commande.</p>
         </header>
 
         <?php if (!empty($result['message']) && !$result['success']): ?>
@@ -123,33 +129,112 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         </div>
         <?php endif; ?>
 
-        <div class="cp-layout">
-            <aside class="cp-aside">
-                <div class="cp-aside__card">
-                    <h2>Pourquoi Sugar Paper&nbsp;?</h2>
-                    <ul class="cp-benefits">
-                        <li><i class="fas fa-bolt" aria-hidden="true"></i> Réponse rapide sur votre demande</li>
-                        <li><i class="fas fa-palette" aria-hidden="true"></i> Décoration 100&nbsp;% personnalisée</li>
-                        <li><i class="fas fa-mobile-screen" aria-hidden="true"></i> Suivi dans l’application</li>
-                        <li><i class="fas fa-location-dot" aria-hidden="true"></i> Livraison à Dakar et alentours</li>
-                    </ul>
+        <section class="cp-shop-layout cp-shop-layout--full" aria-label="Catalogue produits personnalisés">
+            <div class="cp-shop-main">
+                <div class="cp-shop-toolbar">
+                    <form class="cp-search-form cp-search-form--toolbar" action="#" onsubmit="return false;">
+                        <label class="screen-reader-text" for="cp-search">Rechercher un produit</label>
+                        <input type="search" id="cp-search" class="cp-shop-search" placeholder="Rechercher un produit…" autocomplete="off">
+                        <button type="button" class="cp-search-submit" aria-label="Rechercher">
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                    <p class="cp-shop-results" id="cp-results-text">
+                        Affichage de <strong id="cp-visible-count"><?php echo (int) $total_catalogue_produits; ?></strong>
+                        sur <?php echo (int) $total_catalogue_produits; ?> produit(s)
+                    </p>
+                    <div class="cp-shop-sort-wrap">
+                        <label class="screen-reader-text" for="cp-sort">Tri</label>
+                        <select id="cp-sort" class="cp-shop-sort" aria-label="Tri des produits">
+                            <option value="default">Tri par défaut</option>
+                            <option value="name-asc">Nom A-Z</option>
+                            <option value="price-asc">Prix croissant</option>
+                            <option value="price-desc">Prix décroissant</option>
+                        </select>
+                    </div>
                 </div>
-                <?php if (!$user_logged_in): ?>
-                <div class="cp-aside__card cp-aside__card--guest">
-                    <h2><i class="fas fa-shield-heart" aria-hidden="true"></i> Sans inscription</h2>
-                    <p>Comme pour une commande boutique&nbsp;: votre <strong>numéro de téléphone</strong> suffit. Un compte est créé automatiquement, vous pourrez suivre la demande dans Mes commandes.</p>
+
+                <?php if (empty($catalogue_produits)): ?>
+                <div class="cp-shop-panel">
+                    <div class="cp-shop-empty cp-shop-empty--catalog" id="cp-shop-empty">
+                        <i class="fas fa-box-open" aria-hidden="true"></i>
+                        <h3>Catalogue en préparation</h3>
+                        <p>Les produits seront bientôt disponibles.</p>
+                    </div>
                 </div>
                 <?php else: ?>
-                <div class="cp-aside__card cp-aside__card--guest">
-                    <h2><i class="fas fa-circle-check" aria-hidden="true"></i> Compte connecté</h2>
-                    <p>Cette demande sera enregistrée dans votre espace, au même endroit que vos commandes.</p>
+                <div class="cp-shop-panels" id="cp-shop-panels">
+                    <?php foreach ($catalogue_grouped as $dossier_cat): ?>
+                    <div class="cp-shop-panel cp-dossier-section" data-folder-id="<?php echo (int) $dossier_cat['id']; ?>">
+                        <header class="cp-dossier-title">
+                            <span class="cp-dossier-title__accent" aria-hidden="true"></span>
+                            <span class="cp-dossier-title__icon"><i class="fas fa-folder-open"></i></span>
+                            <div class="cp-dossier-title__text">
+                                <h2><?php echo htmlspecialchars($dossier_cat['nom']); ?></h2>
+                                <p><?php echo count($dossier_cat['produits']); ?> produit(s)</p>
+                            </div>
+                        </header>
+                        <div class="cp-product-grid">
+                            <?php foreach ($dossier_cat['produits'] as $produit_cat): ?>
+                            <button type="button"
+                                class="cp-product-card<?php echo ($selected_catalogue_id === (int) $produit_cat['id']) ? ' is-selected' : ''; ?>"
+                                data-product-id="<?php echo (int) $produit_cat['id']; ?>"
+                                data-folder-id="<?php echo (int) $dossier_cat['id']; ?>"
+                                data-name="<?php echo htmlspecialchars($produit_cat['nom'], ENT_QUOTES, 'UTF-8'); ?>"
+                                data-price-min="<?php echo (float) $produit_cat['prix_min']; ?>"
+                                data-price-max="<?php echo (float) $produit_cat['prix_max']; ?>"
+                                data-image="<?php echo htmlspecialchars(upload_image_url($produit_cat['image'], 'md'), ENT_QUOTES, 'UTF-8'); ?>">
+                                <span class="cp-product-card__media">
+                                    <img src="<?php echo htmlspecialchars(upload_image_url($produit_cat['image'], 'md')); ?>"
+                                        alt="<?php echo htmlspecialchars($produit_cat['nom']); ?>" loading="lazy">
+                                </span>
+                                <span class="cp-product-card__body">
+                                    <strong class="cp-product-card__title"><?php echo htmlspecialchars($produit_cat['nom']); ?></strong>
+                                    <span class="cp-product-card__price">
+                                        <?php echo number_format((float) $produit_cat['prix_min'], 0, ',', ' '); ?>
+                                        — <?php echo number_format((float) $produit_cat['prix_max'], 0, ',', ' '); ?> FCFA
+                                    </span>
+                                </span>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
+                <p class="cp-shop-empty cp-shop-empty--filter" id="cp-shop-empty" hidden>Aucun produit ne correspond à votre recherche.</p>
                 <?php endif; ?>
-            </aside>
+            </div>
+        </section>
 
-            <form method="POST" action="" class="form-commande-perso" id="form-commande-perso" enctype="multipart/form-data">
+        <div class="cp-modal-overlay<?php echo $show_order_form ? ' is-visible' : ''; ?>" id="cp-modal-overlay"<?php echo !$show_order_form ? ' hidden' : ''; ?> aria-hidden="<?php echo $show_order_form ? 'false' : 'true'; ?>">
+            <button type="button" class="cp-modal-backdrop" id="cp-modal-backdrop" aria-label="Fermer le formulaire"></button>
+            <div class="cp-form-wrap cp-form-wrap--modal" id="cp-form-wrap" role="dialog" aria-modal="true" aria-labelledby="cp-form-product-name">
+            <form method="POST" action="" class="form-commande-perso form-commande-perso--modal" id="form-commande-perso" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cp_csrf); ?>">
+                <input type="hidden" name="catalogue_produit_id" id="catalogue_produit_id" value="<?php echo $selected_catalogue_id > 0 ? (int) $selected_catalogue_id : ''; ?>">
+                <input type="hidden" name="type_produit" id="type_produit" value="<?php echo htmlspecialchars($selected_catalogue_nom); ?>">
 
+                <div class="cp-form-product-head" id="cp-form-product-head">
+                    <?php if ($selected_catalogue_image !== ''): ?>
+                    <img src="<?php echo htmlspecialchars($selected_catalogue_image); ?>" alt="" class="cp-form-product-head__img" id="cp-form-product-image">
+                    <?php else: ?>
+                    <img src="" alt="" class="cp-form-product-head__img" id="cp-form-product-image" hidden>
+                    <?php endif; ?>
+                    <div>
+                        <p class="cp-form-product-head__label">Produit sélectionné</p>
+                        <p class="cp-form-product-head__name" id="cp-form-product-name"><?php echo htmlspecialchars($selected_catalogue_nom); ?></p>
+                        <p class="cp-form-product-head__range" id="cp-form-product-range">
+                            <?php if ($selected_prix_max > 0): ?>
+                            Fourchette : <?php echo number_format($selected_prix_min, 0, ',', ' '); ?> — <?php echo number_format($selected_prix_max, 0, ',', ' '); ?> FCFA
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    <button type="button" class="cp-form-product-head__close" id="cp-clear-selection" aria-label="Fermer le formulaire">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <?php if (!$user_logged_in): ?>
                 <section class="cp-form-section">
                     <h2 class="cp-form-section-title"><i class="fas fa-user-circle" aria-hidden="true"></i> Vos coordonnées</h2>
                     <div class="form-row">
@@ -158,70 +243,76 @@ $seo_canonical = $base . '/commande-personnalisee.php';
                             <input type="text" id="nom" name="nom" required autocomplete="name"
                                 value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group form-group--tel">
                             <label for="telephone">Téléphone *</label>
-                            <div class="input-wrapper input-wrapper--intl-tel">
+                            <div class="input-wrapper input-wrapper--intl-tel cp-tel-intl">
                                 <input type="tel" id="telephone" name="telephone" required autocomplete="tel"
                                     value="<?php echo htmlspecialchars($prefill['telephone']); ?>"
                                     placeholder="77 123 45 67">
                             </div>
-                            <p class="cp-field-hint">Indicatif automatique — Sénégal par défaut, changeable.</p>
                         </div>
                     </div>
                 </section>
+                <?php endif; ?>
 
                 <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-lightbulb" aria-hidden="true"></i> Votre projet</h2>
+                    <h2 class="cp-form-section-title"><i class="fas fa-tag" aria-hidden="true"></i> Votre prix</h2>
                     <div class="form-group">
-                        <label for="description">Décrivez votre demande *</label>
-                        <textarea id="description" name="description" required minlength="10"
-                            placeholder="Thème, prénom, âge, couleurs, dimensions, quantité, date de l’événement…"><?php echo htmlspecialchars($prefill['description']); ?></textarea>
-                    </div>
-
-                    <p class="cp-type-label">Type de produit <span>(optionnel)</span></p>
-                    <div class="cp-type-grid" role="radiogroup" aria-label="Type de produit">
-                        <?php foreach ($types_produit as $type_nom => $type_meta): ?>
-                        <label class="cp-type-card">
-                            <input type="radio" name="type_produit" value="<?php echo htmlspecialchars($type_nom); ?>"
-                                <?php echo ($prefill['type_produit'] === $type_nom) ? ' checked' : ''; ?>>
-                            <span class="cp-type-card__icon"><i class="fas <?php echo htmlspecialchars($type_meta['icon']); ?>" aria-hidden="true"></i></span>
-                            <strong><?php echo htmlspecialchars($type_nom); ?></strong>
-                            <em><?php echo htmlspecialchars($type_meta['hint']); ?></em>
-                        </label>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <div class="form-group" style="margin-top: 16px;">
-                        <label for="quantite">Quantité souhaitée <span class="cp-optional">(optionnel)</span></label>
-                        <input type="text" id="quantite" name="quantite"
-                            value="<?php echo htmlspecialchars($prefill['quantite']); ?>"
-                            placeholder="Ex. : 5 pièces, 2 feuilles A4…">
+                        <label for="prix_propose">Prix proposé (FCFA) *</label>
+                        <input type="number" id="prix_propose" name="prix_propose" required min="0" step="1"
+                            value="<?php echo htmlspecialchars($prefill['prix_propose']); ?>"
+                            placeholder="Indiquez votre budget">
                     </div>
                 </section>
 
                 <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-truck" aria-hidden="true"></i> Livraison</h2>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="date_souhaitee">Date souhaitée <span class="cp-optional">(optionnel)</span></label>
-                            <input type="date" id="date_souhaitee" name="date_souhaitee"
-                                min="<?php echo htmlspecialchars($date_min); ?>"
-                                value="<?php echo htmlspecialchars($prefill['date_souhaitee']); ?>">
+                    <h2 class="cp-form-section-title"><i class="fas fa-pen-fancy" aria-hidden="true"></i> Personnalisez</h2>
+                    <div class="form-group">
+                        <label for="description_creation">Description de votre création</label>
+                        <textarea id="description_creation" name="description_creation" rows="4" maxlength="2000"
+                            placeholder="Décrivez votre idée : thème, texte, prénom, couleurs, date de l'événement..."><?php echo htmlspecialchars($prefill['description_creation']); ?></textarea>
+                        <p class="cp-field-help">Précisez ce que vous souhaitez pour votre création sur mesure.</p>
+                    </div>
+                </section>
+
+                <section class="cp-form-section">
+                    <h2 class="cp-form-section-title"><i class="fas fa-microphone" aria-hidden="true"></i> Votre message vocal <span class="cp-optional">(optionnel)</span></h2>
+                    <div class="cp-voice-note" id="cp-voice-note">
+                        <input type="file" id="note_vocale" name="note_vocale" class="cp-voice-note__input" accept="audio/*,.webm,.ogg,.mp4,.m4a,.mp3" hidden>
+                        <div class="cp-voice-note__panel cp-voice-note__panel--idle" id="cp-voice-idle">
+                            <button type="button" class="cp-voice-note__mic" id="cp-voice-record-btn" aria-label="Enregistrer un message vocal">
+                                <i class="fas fa-microphone" aria-hidden="true"></i>
+                            </button>
+                            <div class="cp-voice-note__hint">
+                                <strong>Appuyez pour enregistrer</strong>
+                                <span>Max 2 min</span>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="zone_livraison_id">Zone de livraison<?php echo !empty($zones_livraison) ? ' *' : ''; ?></label>
-                            <select id="zone_livraison_id" name="zone_livraison_id" <?php echo !empty($zones_livraison) ? ' required' : ''; ?>>
-                                <option value="">— Choisir une zone —</option>
-                                <?php foreach ($zones_livraison as $z): ?>
-                                <option value="<?php echo (int) $z['id']; ?>"
-                                    data-prix="<?php echo (float) $z['prix_livraison']; ?>"
-                                    <?php echo ((int) $prefill['zone_livraison_id'] === (int) $z['id']) ? ' selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($z['ville'] . ' - ' . $z['quartier']); ?>
-                                    (<?php echo number_format($z['prix_livraison'], 0, ',', ' '); ?> FCFA)
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
+                        <div class="cp-voice-note__panel cp-voice-note__panel--recording" id="cp-voice-recording" hidden>
+                            <span class="cp-voice-note__rec-dot" aria-hidden="true"></span>
+                            <span class="cp-voice-note__timer" id="cp-voice-timer">0:00</span>
+                            <div class="cp-voice-note__wave cp-voice-note__wave--live" id="cp-voice-wave-live" aria-hidden="true">
+                                <span></span><span></span><span></span><span></span><span></span>
+                            </div>
+                            <button type="button" class="cp-voice-note__stop" id="cp-voice-stop">
+                                <i class="fas fa-stop" aria-hidden="true"></i> Arrêter
+                            </button>
                         </div>
+                        <div class="cp-voice-note__panel cp-voice-note__panel--preview" id="cp-voice-preview" hidden>
+                            <button type="button" class="cp-voice-note__play" id="cp-voice-play" aria-label="Écouter le message">
+                                <i class="fas fa-play" aria-hidden="true"></i>
+                            </button>
+                            <div class="cp-voice-note__preview-body">
+                                <div class="cp-voice-note__wave cp-voice-note__wave--preview" aria-hidden="true">
+                                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                                </div>
+                                <span class="cp-voice-note__duration" id="cp-voice-duration">0:00</span>
+                            </div>
+                            <button type="button" class="cp-voice-note__delete" id="cp-voice-delete" aria-label="Supprimer le message">
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <p class="cp-voice-note__error" id="cp-voice-error" hidden role="alert"></p>
                     </div>
                 </section>
 
@@ -257,6 +348,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
                     <i class="fas fa-paper-plane" aria-hidden="true"></i> Envoyer ma demande
                 </button>
             </form>
+            </div>
         </div>
     </div>
 
@@ -276,6 +368,11 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     </div>
 
     <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <script>
+        window.cpShopConfig = {
+            userLoggedIn: <?php echo $user_logged_in ? 'true' : 'false'; ?>
+        };
+    </script>
     <script src="/js/commande-personnalisee.js<?php echo asset_version_query(); ?>"></script>
     <?php include('footer.php'); ?>
     <?php include __DIR__ . '/includes/floating_back_button.php'; ?>

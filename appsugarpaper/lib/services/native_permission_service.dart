@@ -3,7 +3,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../config/legal_urls.dart';
 import '../theme/app_colors.dart';
+import '../widgets/prominent_disclosure_dialog.dart';
 
 /// Textes alignés sur `ios/Runner/Info.plist` et la politique de confidentialité.
 class NativePermissionCopy {
@@ -22,17 +25,6 @@ class NativePermissionCopy {
       'L\'accès à la localisation est refusé pour Sugar Paper. '
       'Pour préremplir une adresse, activez la localisation '
       'dans les paramètres de votre appareil (Paramètres > Sugar Paper > Localisation).';
-
-  static const deliveryTrackingTitle = 'Suivi GPS livraison';
-  static const deliveryTrackingBody =
-      'Pendant une livraison active, Sugar Paper transmet votre position '
-      'en direct au client et à l\'équipe, y compris si vous quittez '
-      'l\'écran ou mettez l\'application en arrière-plan.\n\n'
-      'Choisissez « Autoriser tout le temps » (Android) ou « Toujours » (iPhone) '
-      'pour un suivi fiable. Sur Android, acceptez aussi de ne pas optimiser '
-      'la batterie pour Sugar Paper afin que le GPS ne s\'arrête pas.\n\n'
-      '• Le suivi s\'arrête quand vous terminez la livraison ou en changez.\n'
-      '• Une notification persistante s\'affiche sur Android pendant la course.';
 
   static const deliveryTrackingDeniedForeverTitle =
       'Localisation arrière-plan requise';
@@ -73,37 +65,6 @@ class NativePermissionCopy {
 
 /// Boîtes de dialogue explicatives avant les autorisations système (Apple 5.1.1 / Google Play).
 class NativePermissionService {
-  static Future<bool> _showRationaleDialog(
-    BuildContext context, {
-    required String title,
-    required String body,
-    required IconData icon,
-  }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        icon: Icon(icon, color: kRosePrincipal, size: 32),
-        title: Text(title),
-        content: SingleChildScrollView(child: Text(body)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Plus tard'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: kRosePrincipal,
-            ),
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-    return result == true;
-  }
-
   static Future<void> _showOpenSettingsDialog(
     BuildContext context, {
     required String title,
@@ -156,11 +117,12 @@ class NativePermissionService {
     }
 
     if (!context.mounted) return permission;
-    final accepted = await _showRationaleDialog(
+    final accepted = await ProminentDisclosureDialog.showPermissionRationale(
       context,
       title: NativePermissionCopy.locationTitle,
       body: NativePermissionCopy.locationBody,
       icon: Icons.location_on_outlined,
+      privacySectionUrl: LegalUrls.privacyPolicyGpsAnchor,
     );
     if (!accepted) return LocationPermission.denied;
 
@@ -176,6 +138,9 @@ class NativePermissionService {
   }
 
   /// Localisation livreur — « toujours » / arrière-plan pour le suivi GPS en course.
+  ///
+  /// Google Play exige une divulgation bien visible **avant** toute demande
+  /// [ACCESS_BACKGROUND_LOCATION], y compris lors d'une montée « pendant l'utilisation » → « toujours ».
   static Future<bool> requestDeliveryTrackingPermissions(
     BuildContext context,
   ) async {
@@ -200,19 +165,18 @@ class NativePermissionService {
       return false;
     }
 
-    if (permission == LocationPermission.denied && context.mounted) {
-      final accepted = await _showRationaleDialog(
-        context,
-        title: NativePermissionCopy.deliveryTrackingTitle,
-        body: NativePermissionCopy.deliveryTrackingBody,
-        icon: Icons.delivery_dining_outlined,
-      );
-      if (!accepted) {
-        return false;
-      }
+    // Divulgation bien visible obligatoire (Google Play) — toujours avant la boîte système.
+    if (!context.mounted) return false;
+    final acceptedDisclosure =
+        await ProminentDisclosureDialog.showBackgroundLocation(context);
+    if (!acceptedDisclosure) {
+      return false;
     }
 
-    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
     if (permission == LocationPermission.whileInUse) {
       if (Platform.isAndroid) {
         final bg = await Permission.locationAlways.request();
@@ -288,11 +252,12 @@ class NativePermissionService {
     }
 
     if (!context.mounted) return false;
-    final accepted = await _showRationaleDialog(
+    final accepted = await ProminentDisclosureDialog.showPermissionRationale(
       context,
       title: NativePermissionCopy.cameraTitle,
       body: NativePermissionCopy.cameraBody,
       icon: Icons.photo_camera_outlined,
+      privacySectionUrl: LegalUrls.privacyPolicy,
     );
     if (!accepted) return false;
 
@@ -325,11 +290,12 @@ class NativePermissionService {
     }
 
     if (!context.mounted) return false;
-    final accepted = await _showRationaleDialog(
+    final accepted = await ProminentDisclosureDialog.showPermissionRationale(
       context,
       title: NativePermissionCopy.contactsTitle,
       body: NativePermissionCopy.contactsBody,
       icon: Icons.contacts_outlined,
+      privacySectionUrl: LegalUrls.privacyPolicy,
     );
     if (!accepted) return false;
 

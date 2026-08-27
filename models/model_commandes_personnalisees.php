@@ -43,7 +43,38 @@ function _cp_has_image_reference_column() {
 }
 
 /**
- * Décode les images de référence (legacy string ou JSON)
+ * Vérifie si la colonne catalogue_produit_id existe dans commandes_personnalisees
+ * @return bool
+ */
+function _cp_has_catalogue_produit_id_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db ? $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'catalogue_produit_id'") : null;
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+function _cp_has_note_vocale_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db ? $db->query("SHOW COLUMNS FROM commandes_personnalisees LIKE 'note_vocale'") : null;
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+/**
  * @param string|null $image_reference
  * @return array
  */
@@ -113,11 +144,25 @@ function create_commande_personnalisee($data) {
         $placeholders[] = ':image_reference';
         $params['image_reference'] = $image_ref;
     }
+    if (_cp_has_note_vocale_column()) {
+        $cols[] = 'note_vocale';
+        $placeholders[] = ':note_vocale';
+        $params['note_vocale'] = !empty($data['note_vocale']) ? $data['note_vocale'] : null;
+    }
     $cols = array_merge($cols, ['type_produit', 'quantite', 'date_souhaitee']);
     $placeholders = array_merge($placeholders, [':type_produit', ':quantite', ':date_souhaitee']);
     $params['type_produit'] = $data['type_produit'] ?? null;
     $params['quantite'] = $data['quantite'] ?? null;
     $params['date_souhaitee'] = !empty($data['date_souhaitee']) ? $data['date_souhaitee'] : null;
+
+    if (_cp_has_catalogue_produit_id_column()) {
+        $catalogue_id = isset($data['catalogue_produit_id']) && (int) $data['catalogue_produit_id'] > 0
+            ? (int) $data['catalogue_produit_id']
+            : null;
+        $cols[] = 'catalogue_produit_id';
+        $placeholders[] = ':catalogue_produit_id';
+        $params['catalogue_produit_id'] = $catalogue_id;
+    }
 
     if ($has_zone) {
         $cols[] = 'zone_livraison_id';

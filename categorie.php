@@ -6,6 +6,7 @@ session_start_persistent();
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_categories.php';
 require_once __DIR__ . '/models/model_produits.php';
+require_once __DIR__ . '/includes/produit_prix_display.php';
 
 // Récupérer l'ID de la catégorie depuis l'URL
 $categorie_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -106,16 +107,6 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
             <?php else: ?>
                 <article class="articles  carousel11">
                     <?php foreach ($produits as $produit): ?>
-                        <?php
-                        // Vérifier si promotion disponible
-                        $has_promo = !empty($produit['prix_promotion']) && $produit['prix_promotion'] < $produit['prix'];
-                        $prix_principal = number_format($produit['prix'], 0, ',', ' ');
-                        $prix_promo_value = $has_promo ? number_format($produit['prix_promotion'], 0, ',', ' ') : '';
-                        $pourcentage_reduction = 0;
-                        if ($has_promo) {
-                            $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
-                        }
-                        ?>
                         <div class="carousel">
                             <?php echo produit_share_button_html($produit); ?>
                             <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
@@ -127,15 +118,7 @@ $seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
                                 <div class="produit-content">
                                     <p id="nom"><?php echo htmlspecialchars($produit['nom']); ?></p>
 
-                                    <p class="prix">
-                                        <?php if ($has_promo): ?>
-                                            <span class="span2"><?php echo $prix_principal; ?> FCFA</span>
-                                            <span class="prix-promo"><?php echo $prix_promo_value; ?> FCFA</span>
-                                            <span class="span3">-<?php echo $pourcentage_reduction; ?>%</span>
-                                        <?php else: ?>
-                                            <?php echo $prix_principal; ?><span class="span1"> FCFA</span>
-                                        <?php endif; ?>
-                                    </p>
+                                    <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
                                     <?php if (!empty($produit['stock'])): ?>
                                         <p class="produit-card-stock-info">
                                             <strong>Stock:</strong> <?php echo $produit['stock']; ?>

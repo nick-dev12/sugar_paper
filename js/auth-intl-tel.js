@@ -25,7 +25,7 @@
     }
   }
 
-  function initAuthIntlTel(inputId) {
+  function initAuthIntlTel(inputId, extraOptions) {
     var input = document.getElementById(inputId);
     if (!input || typeof window.intlTelInput === 'undefined') {
       return null;
@@ -40,13 +40,18 @@
       return true;
     });
 
-    var iti = window.intlTelInput(input, {
+    var baseOptions = {
       initialCountry: geoCountry,
       preferredCountries: preferred,
       nationalMode: false,
       formatOnDisplay: true,
       strictMode: false
-    });
+    };
+    var options = extraOptions && typeof extraOptions === 'object'
+      ? Object.assign({}, baseOptions, extraOptions)
+      : baseOptions;
+
+    var iti = window.intlTelInput(input, options);
 
     var form = input.closest('form');
     if (form) {

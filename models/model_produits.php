@@ -125,6 +125,144 @@ function get_all_produits_paginated($offset = 0, $limit = 20)
 }
 
 /**
+ * Vérifie si la colonne section_accueil existe
+ * @return bool
+ */
+function produits_has_section_accueil_column()
+{
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db ? $db->query("SHOW COLUMNS FROM produits LIKE 'section_accueil'") : null;
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+/**
+ * Sections accueil autorisées
+ * @return array
+ */
+function get_produit_section_accueil_allowed()
+{
+    return ['cake_topper', 'photo_impression', 'outils_patisserie'];
+}
+
+/**
+ * Normalise la section accueil d'un produit
+ * @param string|null $value
+ * @return string|null
+ */
+function normalize_produit_section_accueil($value)
+{
+    $value = trim((string) $value);
+    return in_array($value, get_produit_section_accueil_allowed(), true) ? $value : null;
+}
+
+/**
+ * Libellés admin des sections accueil
+ * @return array
+ */
+function get_produit_section_accueil_labels()
+{
+    return [
+        'cake_topper' => 'Cake toppers',
+        'photo_impression' => 'Photo et impression comestible',
+        'outils_patisserie' => 'Outils de pâtisserie',
+    ];
+}
+
+/**
+ * Sections affichant le libellé « À partir de » avant le prix
+ * @return array<int, string>
+ */
+function get_produit_sections_price_from()
+{
+    return ['cake_topper', 'photo_impression'];
+}
+
+/**
+ * @param array|string|null $produit
+ * @return bool
+ */
+function produit_uses_price_from_label($produit)
+{
+    if (is_string($produit) || $produit === null) {
+        $section = normalize_produit_section_accueil($produit ?? '');
+    } else {
+        $section = normalize_produit_section_accueil($produit['section_accueil'] ?? '');
+    }
+
+    return $section !== null && in_array($section, get_produit_sections_price_from(), true);
+}
+
+/**
+ * Produits d'une section accueil
+ * @param string $section
+ * @param int $offset
+ * @param int $limit
+ * @return array
+ */
+function get_produits_by_home_section($section, $offset = 0, $limit = 20)
+{
+    global $db;
+
+    $section = normalize_produit_section_accueil($section);
+    if (!$section || !produits_has_section_accueil_column()) {
+        return [];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom AS categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE p.statut = 'actif' AND p.section_accueil = :section
+            ORDER BY p.date_creation DESC
+            LIMIT :limit OFFSET :offset
+        ");
+        $stmt->bindValue(':section', $section, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Compte les produits d'une section accueil
+ * @param string $section
+ * @return int
+ */
+function count_produits_by_home_section($section)
+{
+    global $db;
+
+    $section = normalize_produit_section_accueil($section);
+    if (!$section || !produits_has_section_accueil_column()) {
+        return 0;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT COUNT(*) FROM produits
+            WHERE statut = 'actif' AND section_accueil = :section
+        ");
+        $stmt->execute(['section' => $section]);
+        return (int) $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        return 0;
+    }
+}
+
+/**
  * Recherche des produits par nom ou description
  * @param string $recherche Terme de recherche
  * @param int $offset Décalage pour pagination
@@ -543,6 +681,12 @@ function create_produit($data)
             $params['couleurs'] = $data['couleurs'] ?? null;
             $params['taille'] = $data['taille'] ?? null;
         }
+        $with_section = produits_has_section_accueil_column();
+        if ($with_section) {
+            $cols .= ", section_accueil";
+            $vals .= ", :section_accueil";
+            $params['section_accueil'] = normalize_produit_section_accueil($data['section_accueil'] ?? null);
+        }
         try {
             $stmt = $db->prepare("INSERT INTO produits ($cols) VALUES ($vals)");
             $result = $stmt->execute($params);
@@ -551,6 +695,10 @@ function create_produit($data)
                 $cols = "nom, description, prix, prix_promotion, stock, categorie_id, image_principale, images, poids, unite, date_creation, statut";
                 $vals = ":nom, :description, :prix, :prix_promotion, :stock, :categorie_id, :image_principale, :images, :poids, :unite, NOW(), :statut";
                 unset($params['couleurs'], $params['taille']);
+                if ($with_section) {
+                    $cols .= ", section_accueil";
+                    $vals .= ", :section_accueil";
+                }
                 $stmt = $db->prepare("INSERT INTO produits ($cols) VALUES ($vals)");
                 $result = $stmt->execute($params);
             } else {
@@ -600,6 +748,11 @@ function update_produit($id, $data)
             $params['couleurs'] = $data['couleurs'] ?? null;
             $params['taille'] = $data['taille'] ?? null;
         }
+        $with_section = produits_has_section_accueil_column();
+        if ($with_section) {
+            $sets .= ", section_accueil = :section_accueil";
+            $params['section_accueil'] = normalize_produit_section_accueil($data['section_accueil'] ?? null);
+        }
         try {
             $stmt = $db->prepare("UPDATE produits SET $sets WHERE id = :id");
             return $stmt->execute($params);
@@ -607,6 +760,9 @@ function update_produit($id, $data)
             if ($with_extras && (strpos($e->getMessage(), 'couleurs') !== false || strpos($e->getMessage(), 'taille') !== false)) {
                 $sets = "nom = :nom, description = :description, prix = :prix, prix_promotion = :prix_promotion, stock = :stock, categorie_id = :categorie_id, image_principale = :image_principale, images = :images, poids = :poids, unite = :unite, statut = :statut, date_modification = NOW()";
                 unset($params['couleurs'], $params['taille']);
+                if ($with_section) {
+                    $sets .= ", section_accueil = :section_accueil";
+                }
                 $stmt = $db->prepare("UPDATE produits SET $sets WHERE id = :id");
                 return $stmt->execute($params);
             }

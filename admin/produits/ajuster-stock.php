@@ -51,6 +51,28 @@ if (!empty($produit['prix_promotion']) && (float) $produit['prix_promotion'] < $
 $valeur_stock_actuel = $stock_actuel * $prix_produit;
 $valeur_ventes = $quantite_vendue * $prix_produit;
 
+$galerie_images = [];
+if (!empty($produit['images'])) {
+    $dec = json_decode($produit['images'], true);
+    if (is_array($dec)) {
+        $galerie_images = $dec;
+    }
+}
+if (empty($galerie_images) && !empty($produit['image_principale'])) {
+    $galerie_images = [$produit['image_principale']];
+}
+
+$prix_affichage = (float) ($produit['prix'] ?? 0);
+$prix_original = null;
+if (!empty($produit['prix_promotion']) && (float) $produit['prix_promotion'] < $prix_affichage) {
+    $prix_original = $prix_affichage;
+    $prix_affichage = (float) $produit['prix_promotion'];
+}
+$pourcentage_reduction = 0;
+if ($prix_original) {
+    $pourcentage_reduction = round((($prix_original - $prix_affichage) / $prix_original) * 100);
+}
+
 $mouvements = get_stock_mouvements(null, $produit_id, null, null, 50);
 
 $success_message = '';

@@ -761,6 +761,9 @@ body.page-home #home-populaires,
 body.page-home #home-creations,
 body.page-home #home-top-categories,
 body.page-home #home-catalogue,
+body.page-home #home-cake-topper,
+body.page-home #home-photo-impression,
+body.page-home #home-outils-patisserie,
 body.page-home #home-categories {
   scroll-margin-top: 72px;
 }
@@ -835,9 +838,9 @@ body.page-home .home-section-cta:hover {
 }
 
 /* En-têtes produits : carte blanche */
-body.page-home #home-nouveautes .home-section-head,
-body.page-home #home-populaires .home-section-head,
-body.page-home #home-catalogue .home-section-head,
+body.page-home #home-cake-topper .home-section-head,
+body.page-home #home-photo-impression .home-section-head,
+body.page-home #home-outils-patisserie .home-section-head,
 body.page-home #home-top-categories .home-section-head {
   background: #ffffff;
   border: 1px solid rgba(229, 72, 138, 0.1);
@@ -847,36 +850,36 @@ body.page-home #home-top-categories .home-section-head {
 }
 
 /* Nouveautés / Populaires / Catalogue : kicker + CTA sur la même ligne, sans titre ni description */
-body.page-home #home-nouveautes .home-section-head,
-body.page-home #home-populaires .home-section-head,
-body.page-home #home-catalogue .home-section-head {
+body.page-home #home-cake-topper .home-section-head,
+body.page-home #home-photo-impression .home-section-head,
+body.page-home #home-outils-patisserie .home-section-head {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 
-body.page-home #home-nouveautes .home-section-title,
-body.page-home #home-nouveautes .home-section-desc,
-body.page-home #home-populaires .home-section-title,
-body.page-home #home-populaires .home-section-desc,
-body.page-home #home-catalogue .home-section-title,
-body.page-home #home-catalogue .home-section-desc {
+body.page-home #home-cake-topper .home-section-title,
+body.page-home #home-cake-topper .home-section-desc,
+body.page-home #home-photo-impression .home-section-title,
+body.page-home #home-photo-impression .home-section-desc,
+body.page-home #home-outils-patisserie .home-section-title,
+body.page-home #home-outils-patisserie .home-section-desc {
   display: none;
 }
 
-body.page-home #home-nouveautes .home-section-kicker,
-body.page-home #home-populaires .home-section-kicker,
-body.page-home #home-catalogue .home-section-kicker {
+body.page-home #home-cake-topper .home-section-kicker,
+body.page-home #home-photo-impression .home-section-kicker,
+body.page-home #home-outils-patisserie .home-section-kicker {
   margin-bottom: 0;
   font-size: clamp(13px, 2.6vw, 15px);
   letter-spacing: 0.16em;
   line-height: 1.3;
 }
 
-body.page-home #home-nouveautes .home-section-cta,
-body.page-home #home-populaires .home-section-cta,
-body.page-home #home-catalogue .home-section-cta {
+body.page-home #home-cake-topper .home-section-cta,
+body.page-home #home-photo-impression .home-section-cta,
+body.page-home #home-outils-patisserie .home-section-cta {
   flex-shrink: 0;
   white-space: nowrap;
   padding: 8px 14px;
@@ -884,9 +887,9 @@ body.page-home #home-catalogue .home-section-cta {
 }
 
 @media (max-width: 420px) {
-  body.page-home #home-nouveautes .home-section-cta,
-  body.page-home #home-populaires .home-section-cta,
-  body.page-home #home-catalogue .home-section-cta {
+  body.page-home #home-cake-topper .home-section-cta,
+  body.page-home #home-photo-impression .home-section-cta,
+  body.page-home #home-outils-patisserie .home-section-cta {
     padding: 7px 11px;
     font-size: 11.5px;
     gap: 6px;
@@ -1298,6 +1301,58 @@ body.page-home .home-reveal {
   body.page-home .home-reveal {
     animation: none;
   }
+}
+
+/* ——— Sections produits accueil (grille + voir plus) ——— */
+body.page-home .home-section-products {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+body.page-home .home-section-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--home-ink-muted, #5c4a52);
+  font-size: 15px;
+}
+
+body.page-home .home-voir-plus-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px 32px;
+}
+
+body.page-home .btn-home-voir-plus {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 2px solid var(--home-rose, #E5488A);
+  background: #fff;
+  color: var(--home-rose, #E5488A);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+body.page-home .btn-home-voir-plus:hover {
+  background: var(--home-rose, #E5488A);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+body.page-home .prix--from {
+  gap: 4px 6px;
+}
+
+body.page-home .prix-from-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--home-ink-muted, #5c4a52);
+  white-space: nowrap;
 }
 
 /* ——— Mobile ——— */
