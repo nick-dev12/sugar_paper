@@ -21,6 +21,7 @@ if (!empty($result['success'])) {
         'html' => $success['html'],
         'numero' => $success['numero'],
         'count' => 0,
+        'whatsapp_url' => $success['whatsapp_url'] ?? '',
     ]);
 }
 

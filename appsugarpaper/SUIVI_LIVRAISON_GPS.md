@@ -24,25 +24,26 @@ Le suivi **continue en arrière-plan** (app minimisée ou autre écran) jusqu'à
 
 ## Permissions
 
-### Android
+### Android (Google Play conforme)
 
-- `ACCESS_FINE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`
-- `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`
-- Notification persistante pendant la course (obligatoire Android 8+)
+- `ACCESS_FINE_LOCATION` + **« Pendant l'utilisation de l'app »** (pas `ACCESS_BACKGROUND_LOCATION` dans le manifeste)
+- Suivi en arrière-plan via **service de premier plan** (`GeolocatorLocationService`) + notification persistante « Livraison en cours »
+- Écran de divulgation plein page **au clic « Commencer la livraison »** (panneau `#livreur-demarrage-panel`) puis sur `suivi.php?autostart=1`
 
 ### iOS
 
-- `NSLocationWhenInUseUsageDescription`
-- `NSLocationAlwaysAndWhenInUseUsageDescription`
+- `NSLocationWhenInUseUsageDescription` + `NSLocationAlwaysAndWhenInUseUsageDescription`
 - `UIBackgroundModes` → `location`
+- Divulgation plein page avant autorisation « Toujours » (livreur uniquement)
 
 ## Test
 
 1. Compiler l'app : `flutter run` ou installer l'APK/AAB.
 2. Se connecter en livreur dans l'app.
-3. Ouvrir une livraison avec `autostart=1`.
-4. Autoriser la localisation **Toujours** quand demandé.
-5. Mettre l'app en arrière-plan ou naviguer ailleurs dans l'app.
+3. **Prendre en charge** → panneau « Démarrer la livraison » → **Commencer la livraison**.
+4. Accepter l'écran de divulgation GPS → autoriser la localisation.
+5. Sur `suivi.php?autostart=1`, le suivi natif démarre (notification Android visible).
+6. Mettre l'app en arrière-plan ou naviguer ailleurs : la position continue d'être transmise **tant que la livraison est active**.
 6. Vérifier `regarder=1` et le lien public partagé.
 
 ## Build production

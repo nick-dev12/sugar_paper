@@ -5,4 +5,8 @@ abstract final class LegalUrls {
   static const privacyPolicyGpsAnchor =
       'https://sugar-paper.com/politique-confidentialite.php#priv-9-gps';
   static const termsOfUse = 'https://sugar-paper.com/conditions-utilisation.php';
+  static const privacyPolicyPermissions =
+      'https://sugar-paper.com/politique-confidentialite.php#priv-9-tableau';
+  static const accountDeletion =
+      'https://sugar-paper.com/politique-suppression-compte.php';
 }

@@ -270,6 +270,41 @@
             });
     }
 
+    function fallbackOpenWhatsApp(url) {
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(function () {
+            if (link.parentNode) {
+                link.parentNode.removeChild(link);
+            }
+        }, 0);
+    }
+
+    function openWhatsAppConversation(url) {
+        url = (url || '').trim();
+        if (!url || url === '#') {
+            return;
+        }
+        if (window.SugarPaperNative && typeof window.SugarPaperNative.openExternalUrl === 'function') {
+            window.SugarPaperNative.openExternalUrl(url).catch(function () {
+                fallbackOpenWhatsApp(url);
+            });
+            return;
+        }
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            window.flutter_inappwebview.callHandler('openExternalUrl', url).catch(function () {
+                fallbackOpenWhatsApp(url);
+            });
+            return;
+        }
+        fallbackOpenWhatsApp(url);
+    }
+
     function submitCheckout(form) {
         if (loading) return;
         loading = true;
@@ -287,6 +322,11 @@
                     updateBadges(0);
                     stack = ['cart', 'checkout'];
                     activatePanel('success', 'fwd');
+                    if (data.whatsapp_url) {
+                        setTimeout(function () {
+                            openWhatsAppConversation(data.whatsapp_url);
+                        }, 350);
+                    }
                 } else if (data.html) {
                     bodyCheckout.innerHTML = data.html;
                     bindCheckoutBody(data.panier_total || 0);

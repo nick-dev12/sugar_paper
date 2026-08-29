@@ -1,27 +1,124 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
 import '../theme/app_colors.dart';
 
-/// Divulgation bien visible exigée par Google Play avant [ACCESS_BACKGROUND_LOCATION].
-/// Réf. : https://support.google.com/googleplay/android-developer/answer/9888170
+/// Divulgations conformes Google Play (communiqué visible + consentement explicite).
+/// Format recommandé : « [App] collecte/transmet [données] pour [fonctionnalité], [circonstances]. »
 class ProminentDisclosureDialog {
-  /// Écran plein page, non dismissible, consentement explicite avant toute demande
-  /// de localisation en arrière-plan.
-  static Future<bool> showBackgroundLocation(
-    BuildContext context,
-  ) async {
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        fullscreenDialog: true,
-        builder: (ctx) => const _BackgroundLocationDisclosurePage(),
+  /// Localisation client (« Localiser » adresse) — écran plein page avant la permission.
+  static Future<bool> showLocationCollection(BuildContext context) async {
+    return _showFullScreenDisclosure(
+      context,
+      config: _DisclosurePageConfig(
+        icon: Icons.location_on_outlined,
+        title: 'Localisation — confirmation d\'adresse',
+        leadSentence:
+            'Sugar Paper collecte et transmet vos données de localisation GPS '
+            'pour permettre la confirmation de votre adresse de livraison ou '
+            'd\'inscription, uniquement lorsque vous appuyez sur « Localiser », '
+            '« Mettre à jour ma position » ou une action équivalente.',
+        sections: const [
+          _DisclosureSectionData(
+            title: 'Données collectées',
+            icon: Icons.my_location_outlined,
+            bullets: [
+              'Position GPS (latitude, longitude, précision).',
+              'Uniquement au moment où vous déclenchez l\'action « Localiser ».',
+              'Aucun suivi en arrière-plan pour les clients.',
+            ],
+          ),
+          _DisclosureSectionData(
+            title: 'Utilisation et partage',
+            icon: Icons.share_outlined,
+            bullets: [
+              'Préremplir votre adresse sur la carte ou dans le formulaire.',
+              'Enregistrement sur nos serveurs uniquement si vous validez le formulaire.',
+              'Aucune vente ni partage publicitaire avec des tiers.',
+            ],
+          ),
+        ],
+        consentLabel:
+            'En appuyant sur « J\'accepte », vous autorisez Sugar Paper à accéder '
+            'à votre position à cet instant, conformément à notre politique de confidentialité.',
       ),
     );
-    return result == true;
   }
 
-  /// Dialogue explicatif avant les autres autorisations sensibles (caméra, contacts, GPS usage).
+  /// Suivi livreur — collecte pendant une course (FGS Android / arrière-plan iOS).
+  static Future<bool> showDeliveryTracking(BuildContext context) async {
+    final isAndroid = !Platform.isIOS;
+    return _showFullScreenDisclosure(
+      context,
+      config: _DisclosurePageConfig(
+        icon: Icons.delivery_dining_outlined,
+        title: 'Suivi GPS livraison',
+        leadSentence: isAndroid
+            ? 'Sugar Paper collecte et transmet vos données de localisation GPS '
+                'pour permettre le suivi de livraison en direct par le client, '
+                'pendant une livraison active que vous démarrez explicitement, '
+                'y compris lorsque l\'application est en arrière-plan via un '
+                'service de premier plan et une notification persistante.'
+            : 'Sugar Paper collecte et transmet vos données de localisation GPS '
+                'pour permettre le suivi de livraison en direct par le client, '
+                'pendant une livraison active que vous démarrez explicitement, '
+                'y compris lorsque l\'application est fermée ou en arrière-plan.',
+        sections: [
+          _DisclosureSectionData(
+            title: 'Données collectées',
+            icon: Icons.my_location_outlined,
+            bullets: [
+              'Position GPS en continu (latitude, longitude, précision, horodatage).',
+              'Collecte uniquement pendant une livraison active démarrée par vous.',
+              if (isAndroid)
+                'Sur Android : service de premier plan avec notification « Livraison en cours ».'
+              else
+                'Sur iPhone : indicateur système de localisation en arrière-plan.',
+            ],
+          ),
+          _DisclosureSectionData(
+            title: 'Partage',
+            icon: Icons.people_outline,
+            bullets: const [
+              'Transmises à nos serveurs Sugar Paper.',
+              'Visibles par le client concerné via la page de suivi de sa commande.',
+              'Le suivi s\'arrête dès que vous terminez la livraison.',
+              'Aucune vente ni partage publicitaire avec des tiers.',
+            ],
+          ),
+          if (isAndroid)
+            const _DisclosureSectionData(
+              title: 'Autorisation Android',
+              icon: Icons.notifications_active_outlined,
+              bullets: [
+                'Choisissez « Pendant l\'utilisation de l\'app » lorsque Android le demande.',
+                'Une notification persistante reste affichée pendant la course.',
+                'Sugar Paper ne demande pas « Autoriser tout le temps » sur Android.',
+              ],
+            )
+          else
+            const _DisclosureSectionData(
+              title: 'Autorisation iPhone',
+              icon: Icons.settings_outlined,
+              bullets: [
+                'Choisissez « Toujours » ou « Lorsque l\'app est active » selon la boîte système.',
+                'Nécessaire pour un suivi fiable si vous quittez l\'écran pendant la course.',
+              ],
+            ),
+        ],
+        consentLabel:
+            'En appuyant sur « J\'accepte », vous autorisez la collecte de votre '
+            'position pendant la livraison active, conformément à notre politique '
+            'de confidentialité.',
+        privacyUrl: LegalUrls.privacyPolicyGpsAnchor,
+      ),
+    );
+  }
+
+  /// Dialogue pour caméra, contacts, etc.
   static Future<bool> showPermissionRationale(
     BuildContext context, {
     required String title,
@@ -41,13 +138,58 @@ class ProminentDisclosureDialog {
     );
     return result == true;
   }
+
+  static Future<bool> _showFullScreenDisclosure(
+    BuildContext context, {
+    required _DisclosurePageConfig config,
+  }) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (ctx) => _FullScreenDisclosurePage(config: config),
+      ),
+    );
+    return result == true;
+  }
 }
 
-class _BackgroundLocationDisclosurePage extends StatelessWidget {
-  const _BackgroundLocationDisclosurePage();
+class _DisclosurePageConfig {
+  const _DisclosurePageConfig({
+    required this.icon,
+    required this.title,
+    required this.leadSentence,
+    required this.sections,
+    required this.consentLabel,
+    this.privacyUrl,
+  });
 
-  Future<void> _openPrivacyPolicy() async {
-    final uri = Uri.parse(LegalUrls.privacyPolicyGpsAnchor);
+  final IconData icon;
+  final String title;
+  final String leadSentence;
+  final List<_DisclosureSectionData> sections;
+  final String consentLabel;
+  final String? privacyUrl;
+}
+
+class _DisclosureSectionData {
+  const _DisclosureSectionData({
+    required this.title,
+    required this.icon,
+    required this.bullets,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<String> bullets;
+}
+
+class _FullScreenDisclosurePage extends StatelessWidget {
+  const _FullScreenDisclosurePage({required this.config});
+
+  final _DisclosurePageConfig config;
+
+  Future<void> _openPrivacy() async {
+    final uri = Uri.parse(config.privacyUrl ?? LegalUrls.privacyPolicy);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -62,7 +204,7 @@ class _BackgroundLocationDisclosurePage extends StatelessWidget {
         backgroundColor: kSurfaceSoft,
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: const Text('Autorisation requise'),
+          title: const Text('Collecte de données'),
           backgroundColor: kRosePrincipal,
           foregroundColor: Colors.white,
           centerTitle: true,
@@ -76,67 +218,51 @@ class _BackgroundLocationDisclosurePage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        Icons.delivery_dining_outlined,
-                        size: 56,
-                        color: kRosePrincipal,
-                      ),
+                      Icon(config.icon, size: 56, color: kRosePrincipal),
                       const SizedBox(height: 16),
                       Text(
-                        'Suivi GPS livraison — localisation en arrière-plan',
+                        config.title,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: kTexteFonce,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 20),
-                      _DisclosureSection(
-                        title: 'Données collectées',
-                        icon: Icons.my_location_outlined,
-                        bullets: const [
-                          'Votre position GPS (latitude, longitude, précision, horodatage).',
-                          'Collecte en continu pendant une livraison active, y compris '
-                              'lorsque l\'application est fermée ou en arrière-plan.',
-                        ],
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: kRosePrincipal.withValues(alpha: 0.35),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          config.leadSentence,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            height: 1.45,
+                            color: kTexteFonce,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _DisclosureSection(
-                        title: 'Pourquoi nous en avons besoin',
-                        icon: Icons.info_outline,
-                        bullets: const [
-                          'Permettre au client de suivre sa commande en temps réel sur la carte.',
-                          'Uniquement lorsque vous démarrez explicitement une livraison '
-                              'depuis l\'interface livreur.',
-                          'Le suivi s\'arrête dès que vous terminez la livraison ou en '
-                              'changez.',
-                        ],
+                      ...config.sections.map(
+                        (s) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _DisclosureSection(
+                            title: s.title,
+                            icon: s.icon,
+                            bullets: s.bullets,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _DisclosureSection(
-                        title: 'Partage des données',
-                        icon: Icons.people_outline,
-                        bullets: const [
-                          'Position transmise à nos serveurs Sugar Paper.',
-                          'Visible par le client concerné via la page de suivi de sa commande.',
-                          'Aucune vente ni partage publicitaire avec des tiers.',
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _DisclosureSection(
-                        title: 'Sur Android',
-                        icon: Icons.notifications_active_outlined,
-                        bullets: const [
-                          'Une notification persistante s\'affiche pendant la course '
-                              '(exigence système).',
-                          'Choisissez « Autoriser tout le temps » lorsque Android le demande.',
-                        ],
-                      ),
-                      const SizedBox(height: 20),
                       OutlinedButton.icon(
-                        onPressed: _openPrivacyPolicy,
+                        onPressed: _openPrivacy,
                         icon: const Icon(Icons.open_in_new, size: 18),
-                        label: const Text('Lire la politique de confidentialité'),
+                        label: const Text('Politique de confidentialité'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: kRosePrincipal,
                           side: const BorderSide(color: kRosePrincipal),
@@ -153,9 +279,7 @@ class _BackgroundLocationDisclosurePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'En appuyant sur « J\'accepte », vous autorisez Sugar Paper à '
-                      'collecter votre position en arrière-plan pendant une livraison active, '
-                      'conformément à notre politique de confidentialité.',
+                      config.consentLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade700,
                       ),
@@ -169,8 +293,8 @@ class _BackgroundLocationDisclosurePage extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: const Text(
-                        'J\'accepte — continuer',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                        'J\'accepte',
+                        style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                     const SizedBox(height: 8),

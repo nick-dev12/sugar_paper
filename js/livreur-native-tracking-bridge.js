@@ -71,6 +71,12 @@
             var cfg = getCfg();
             return !!(cfg && cfg.canManage && isNativeApp());
         },
+        preparePermissions: function () {
+            if (!isNativeApp()) {
+                return Promise.resolve({ success: false, error: 'unavailable' });
+            }
+            return callNative('prepareDeliveryTrackingPermissions');
+        },
         start: function () {
             var cfg = getCfg();
             if (!cfg || !this.isAvailable()) {

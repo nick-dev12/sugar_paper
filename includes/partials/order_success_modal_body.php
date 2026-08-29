@@ -7,7 +7,7 @@ $montant = isset($montant) ? (string) $montant : '';
 <div class="ckm-success">
     <div class="ckm-success__icon"><i class="fas fa-check"></i></div>
     <h3 class="ckm-success__title">Commande confirmée</h3>
-    <p class="ckm-success__text">Merci ! Votre commande a bien été enregistrée.</p>
+    <p class="ckm-success__text">Merci ! Votre commande a bien été enregistrée. WhatsApp s'ouvre pour envoyer le récapitulatif à notre équipe.</p>
     <?php if ($numero_commande !== ''): ?>
         <p class="ckm-success__numero">N° <?php echo htmlspecialchars($numero_commande); ?></p>
     <?php endif; ?>

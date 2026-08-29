@@ -10,16 +10,6 @@ import '../widgets/prominent_disclosure_dialog.dart';
 
 /// Textes alignés sur `ios/Runner/Info.plist` et la politique de confidentialité.
 class NativePermissionCopy {
-  static const locationTitle = 'Autoriser la localisation';
-  static const locationBody =
-      'Sugar Paper utilise votre position uniquement lorsque vous appuyez sur '
-      '« Localiser », « Mettre à jour ma position » ou une action équivalente, '
-      'pour :\n\n'
-      '• confirmer votre adresse de livraison lors d\'une commande ;\n'
-      '• enregistrer votre adresse lors de l\'inscription.\n\n'
-      'La position n\'est jamais suivie en arrière-plan. Vous pouvez refuser '
-      'et saisir votre adresse manuellement.';
-
   static const locationDeniedForeverTitle = 'Localisation désactivée';
   static const locationDeniedForeverBody =
       'L\'accès à la localisation est refusé pour Sugar Paper. '
@@ -27,17 +17,18 @@ class NativePermissionCopy {
       'dans les paramètres de votre appareil (Paramètres > Sugar Paper > Localisation).';
 
   static const deliveryTrackingDeniedForeverTitle =
-      'Localisation arrière-plan requise';
+      'Localisation requise pour le suivi';
   static const deliveryTrackingDeniedForeverBody =
-      'Le suivi livraison nécessite l\'accès à la position en arrière-plan. '
-      'Ouvrez les paramètres de Sugar Paper et choisissez « Toujours » '
-      '(iOS) ou « Autoriser tout le temps » (Android).';
+      'Le suivi livraison nécessite l\'accès à la position. '
+      'Ouvrez les paramètres de Sugar Paper et autorisez la localisation '
+      '(iOS : « Toujours » ; Android : « Pendant l\'utilisation de l\'app »).';
 
   static const cameraTitle = 'Autoriser l\'appareil photo';
   static const cameraBody =
-      'Sugar Paper utilise l\'appareil photo lorsque vous appuyez sur '
-      '« Prendre une photo » pour illustrer votre profil ou joindre une image.\n\n'
-      'Exemple : photographier un gâteau personnalisé pour votre commande.';
+      'Sugar Paper collecte des images via l\'appareil photo lorsque vous '
+      'appuyez sur « Prendre une photo » pour illustrer votre profil ou '
+      'joindre une image à une commande.\n\n'
+      'Exemple : photographier un gâteau personnalisé.';
 
   static const cameraDeniedForeverTitle = 'Caméra désactivée';
   static const cameraDeniedForeverBody =
@@ -46,15 +37,14 @@ class NativePermissionCopy {
 
   static const contactsTitle = 'Autoriser l\'accès aux contacts';
   static const contactsBody =
-      'Sugar Paper utilise vos contacts uniquement lorsque vous '
+      'Sugar Paper accède à vos contacts uniquement lorsque vous '
       'appuyez sur « Importer » dans l\'espace commercial '
       'pour ajouter des clients à votre carnet.\n\n'
       '• Vous choisissez explicitement quels contacts importer.\n'
       '• Seuls le nom, le prénom, le téléphone et l\'e-mail '
       'sont enregistrés dans votre carnet clients.\n'
       '• Aucune lecture automatique du répertoire en arrière-plan.\n'
-      '• Vous pouvez refuser et importer un fichier .vcf / .csv à la place.\n\n'
-      'En continuant, iOS ou Android vous demandera l\'autorisation système.';
+      '• Vous pouvez refuser et importer un fichier .vcf / .csv à la place.';
 
   static const contactsDeniedForeverTitle = 'Contacts désactivés';
   static const contactsDeniedForeverBody =
@@ -95,13 +85,17 @@ class NativePermissionService {
     );
   }
 
-  /// Demande la localisation « pendant l'utilisation » avec explication préalable.
+  static bool _locationGranted(LocationPermission permission) {
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  /// Localisation client — écran plein page (communiqué visible Google Play) puis permission.
   static Future<LocationPermission> requestLocationWithRationale(
     BuildContext context,
   ) async {
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse) {
+    if (_locationGranted(permission)) {
       return permission;
     }
 
@@ -117,13 +111,8 @@ class NativePermissionService {
     }
 
     if (!context.mounted) return permission;
-    final accepted = await ProminentDisclosureDialog.showPermissionRationale(
-      context,
-      title: NativePermissionCopy.locationTitle,
-      body: NativePermissionCopy.locationBody,
-      icon: Icons.location_on_outlined,
-      privacySectionUrl: LegalUrls.privacyPolicyGpsAnchor,
-    );
+    final accepted =
+        await ProminentDisclosureDialog.showLocationCollection(context);
     if (!accepted) return LocationPermission.denied;
 
     permission = await Geolocator.requestPermission();
@@ -137,10 +126,12 @@ class NativePermissionService {
     return permission;
   }
 
-  /// Localisation livreur — « toujours » / arrière-plan pour le suivi GPS en course.
+  /// Suivi livreur.
   ///
-  /// Google Play exige une divulgation bien visible **avant** toute demande
-  /// [ACCESS_BACKGROUND_LOCATION], y compris lors d'une montée « pendant l'utilisation » → « toujours ».
+  /// Android : « Pendant l'utilisation » + service de premier plan (FGS location).
+  /// Pas de [ACCESS_BACKGROUND_LOCATION] — évite le rejet Play Console.
+  ///
+  /// iOS : « Toujours » autorisé après divulgation (UIBackgroundModes location).
   static Future<bool> requestDeliveryTrackingPermissions(
     BuildContext context,
   ) async {
@@ -149,8 +140,13 @@ class NativePermissionService {
     }
 
     var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.always) {
+
+    if (Platform.isAndroid && _locationGranted(permission)) {
       await _requestBatteryOptimizationExemption();
+      return true;
+    }
+
+    if (Platform.isIOS && permission == LocationPermission.always) {
       return true;
     }
 
@@ -165,11 +161,10 @@ class NativePermissionService {
       return false;
     }
 
-    // Divulgation bien visible obligatoire (Google Play) — toujours avant la boîte système.
     if (!context.mounted) return false;
-    final acceptedDisclosure =
-        await ProminentDisclosureDialog.showBackgroundLocation(context);
-    if (!acceptedDisclosure) {
+    final accepted =
+        await ProminentDisclosureDialog.showDeliveryTracking(context);
+    if (!accepted) {
       return false;
     }
 
@@ -177,33 +172,19 @@ class NativePermissionService {
       permission = await Geolocator.requestPermission();
     }
 
-    if (permission == LocationPermission.whileInUse) {
-      if (Platform.isAndroid) {
-        final bg = await Permission.locationAlways.request();
-        if (bg.isGranted) {
-          await _requestBatteryOptimizationExemption();
-          return true;
-        }
-      } else if (Platform.isIOS) {
-        permission = await Geolocator.requestPermission();
-      }
+    if (Platform.isIOS &&
+        permission == LocationPermission.whileInUse) {
+      permission = await Geolocator.requestPermission();
     }
 
-    if (permission == LocationPermission.always) {
+    if (Platform.isAndroid && _locationGranted(permission)) {
       await _requestBatteryOptimizationExemption();
       return true;
     }
 
-    if (Platform.isAndroid) {
-      final bg = await Permission.locationAlways.status;
-      if (bg.isGranted) {
-        await _requestBatteryOptimizationExemption();
-        return true;
-      }
-    }
-
-    if (permission == LocationPermission.whileInUse) {
-      await _requestBatteryOptimizationExemption();
+    if (Platform.isIOS &&
+        (permission == LocationPermission.always ||
+            permission == LocationPermission.whileInUse)) {
       return true;
     }
 
@@ -215,11 +196,9 @@ class NativePermissionService {
       );
     }
 
-    return permission == LocationPermission.always ||
-        permission == LocationPermission.whileInUse;
+    return _locationGranted(permission);
   }
 
-  /// Demande d'ignorer l'optimisation batterie (Android) pour ne pas tuer le GPS.
   static Future<void> _requestBatteryOptimizationExemption() async {
     if (!Platform.isAndroid) {
       return;
@@ -235,7 +214,6 @@ class NativePermissionService {
     }
   }
 
-  /// Demande la caméra avec explication préalable (aligné Info.plist).
   static Future<bool> requestCameraWithRationale(BuildContext context) async {
     var status = await Permission.camera.status;
     if (status.isGranted) return true;
@@ -273,7 +251,6 @@ class NativePermissionService {
     return status.isGranted;
   }
 
-  /// Demande l'accès aux contacts avec explication préalable (import clients).
   static Future<bool> requestContactsWithRationale(BuildContext context) async {
     var status = await Permission.contacts.status;
     if (status.isGranted) return true;

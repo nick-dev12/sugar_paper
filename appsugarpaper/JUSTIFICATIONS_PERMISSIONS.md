@@ -58,9 +58,9 @@ Sugar Paper utilise la caméra lorsque l'utilisateur appuie sur « Prendre une p
 Sugar Paper utilise la position lorsque l'utilisateur appuie sur « Localiser » pour confirmer une adresse de livraison ou s'inscrire. Les livreurs peuvent partager leur position en direct pendant une livraison active jusqu'à la fin de la course.
 ```
 
-**ACCESS_BACKGROUND_LOCATION** (livreurs uniquement)
+**ACCESS_BACKGROUND_LOCATION** (Android — non utilisé)
 ```
-Uniquement pour les comptes livreurs pendant une livraison en cours : partage de la position au client en temps réel, y compris si l'application est en arrière-plan. Le suivi s'arrête à la fin de la livraison ou au changement de course. Une notification persistante s'affiche sur Android pendant la course.
+Sugar Paper n'utilise pas ACCESS_BACKGROUND_LOCATION sur Android. Le suivi livreur repose sur un service de premier plan (notification « Livraison en cours ») et la permission « Pendant l'utilisation de l'app ». Déclarez uniquement la localisation approximative/précise « pendant l'utilisation » dans la Play Console.
 ```
 
 **POST_NOTIFICATIONS (Android 13+)**

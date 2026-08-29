@@ -12,6 +12,7 @@ require_once __DIR__ . '/../models/model_users.php';
 require_once __DIR__ . '/../models/model_zones_livraison.php';
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/commande_mode_helpers.php';
+require_once __DIR__ . '/produit_share.php';
 
 if (!function_exists('checkout_modals_user_logged_in')) {
     function checkout_modals_user_logged_in()
@@ -283,6 +284,15 @@ if (!function_exists('checkout_modals_success_payload')) {
                     $ligne .= ' (' . $prix_l . ')';
                 }
                 $wa_lines[] = $ligne;
+
+                $img_path = trim((string) ($prod['image_afficher'] ?? $prod['image_principale'] ?? ''));
+                if ($img_path !== '') {
+                    $img_uri = upload_image_url($img_path, 'original');
+                    $img_abs = absolute_public_url($img_uri);
+                    if ($img_abs !== '') {
+                        $wa_lines[] = '  🖼 ' . $img_abs;
+                    }
+                }
             }
         }
         $wa_lines[] = '';
@@ -313,6 +323,7 @@ if (!function_exists('checkout_modals_render_success')) {
             'html' => (string) ob_get_clean(),
             'numero' => $numero_commande,
             'count' => 0,
+            'whatsapp_url' => $data['whatsapp_url'],
         ];
     }
 }

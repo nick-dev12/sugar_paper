@@ -24,6 +24,7 @@ import 'services/native_permission_service.dart';
 import 'services/livreur_tracking_service.dart';
 import 'services/contact_picker_service.dart';
 import 'widgets/app_version_gate.dart';
+import 'widgets/app_privacy_menu.dart';
 import 'theme/app_colors.dart';
 
 /// URL du site chargée dans la WebView — voir [kMarketplaceBaseUrl] dans webview_site_config.dart
@@ -623,6 +624,20 @@ class _WebViewScreenState extends State<WebViewScreen>
     );
 
     webViewController?.addJavaScriptHandler(
+      handlerName: 'prepareDeliveryTrackingPermissions',
+      callback: (args) async {
+        if (kIsWeb || !mounted) {
+          return {'success': false, 'error': 'Non disponible'};
+        }
+        final ok =
+            await NativePermissionService.requestDeliveryTrackingPermissions(
+          context,
+        );
+        return {'success': ok};
+      },
+    );
+
+    webViewController?.addJavaScriptHandler(
       handlerName: 'startDeliveryTracking',
       callback: (args) async {
         final payload = args.isNotEmpty ? args[0] : null;
@@ -704,14 +719,65 @@ class _WebViewScreenState extends State<WebViewScreen>
   Future<Map<String, dynamic>> _handleOpenExternalUrl(String url) async {
     try {
       final uri = Uri.parse(url.trim());
-      if (!await canLaunchUrl(uri)) {
+      final launched = await _tryLaunchExternalFromWebView(uri);
+      if (!launched) {
         return {'success': false, 'error': 'Cannot launch url'};
       }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
       return {'success': true};
     } catch (e) {
       return {'success': false, 'error': e.toString()};
     }
+  }
+
+  /// Convertit wa.me / api.whatsapp.com en whatsapp:// pour ouvrir l'app native.
+  Uri? _resolveWhatsAppLaunchUri(Uri uri) {
+    final host = uri.host.toLowerCase();
+    if (host != 'wa.me' && host != 'api.whatsapp.com') {
+      return null;
+    }
+
+    var phone = (uri.queryParameters['phone'] ?? '')
+        .replaceAll(RegExp(r'\D'), '');
+    if (phone.isEmpty) {
+      final pathSegment = uri.pathSegments.isNotEmpty
+          ? uri.pathSegments.first
+          : uri.path.replaceAll('/', '');
+      if (RegExp(r'^\d+$').hasMatch(pathSegment)) {
+        phone = pathSegment;
+      }
+    }
+
+    final text = uri.queryParameters['text'];
+    if (phone.isEmpty && (text == null || text.isEmpty)) {
+      return null;
+    }
+
+    final params = <String, String>{};
+    if (phone.isNotEmpty) {
+      params['phone'] = phone;
+    }
+    if (text != null && text.isNotEmpty) {
+      params['text'] = text;
+    }
+    return Uri(scheme: 'whatsapp', host: 'send', queryParameters: params);
+  }
+
+  /// Ouvre une URL hors WebView (apps natives ou navigateur système).
+  Future<bool> _tryLaunchExternalFromWebView(Uri uri) async {
+    try {
+      final whatsappUri = _resolveWhatsAppLaunchUri(uri);
+      final candidates = <Uri>[
+        if (whatsappUri != null) whatsappUri,
+        uri,
+      ];
+      for (final candidate in candidates) {
+        if (await canLaunchUrl(candidate)) {
+          await launchUrl(candidate, mode: LaunchMode.externalApplication);
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
   }
 
   Map<String, dynamic> _normalizeSharePayload(dynamic payload) {
@@ -1101,6 +1167,20 @@ class _WebViewScreenState extends State<WebViewScreen>
                     resolve(result);
                   } else {
                     reject(new Error((result && result.error) ? result.error : 'Open url failed'));
+                  }
+                })
+                .catch(error => reject(error));
+            });
+          },
+
+          prepareDeliveryTrackingPermissions: function() {
+            return new Promise((resolve, reject) => {
+              window.flutter_inappwebview.callHandler('prepareDeliveryTrackingPermissions')
+                .then(result => {
+                  if (result && result.success) {
+                    resolve(result);
+                  } else {
+                    reject(new Error((result && result.error) ? result.error : 'Autorisation suivi refusée'));
                   }
                 })
                 .catch(error => reject(error));
@@ -1677,26 +1757,18 @@ class _WebViewScreenState extends State<WebViewScreen>
                         'geo', 'maps', 'comgooglemaps'
                       };
                       if (externalSchemes.contains(scheme)) {
-                        try {
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri,
-                                mode: LaunchMode.externalApplication);
-                          }
-                        } catch (_) {}
+                        await _tryLaunchExternalFromWebView(uri);
                         return NavigationActionPolicy.CANCEL;
                       }
                       if (scheme == 'https' || scheme == 'http') {
                         final host = uri.host.toLowerCase();
                         final path = uri.path.toLowerCase();
+                        final isWhatsAppLink =
+                            host == 'wa.me' || host == 'api.whatsapp.com';
                         final isGoogleMaps = host.contains('google.com')
                             && (path.contains('maps') || uri.query.contains('destination'));
-                        if (isGoogleMaps || host == 'maps.google.com') {
-                          try {
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri,
-                                  mode: LaunchMode.externalApplication);
-                            }
-                          } catch (_) {}
+                        if (isWhatsAppLink || isGoogleMaps || host == 'maps.google.com') {
+                          await _tryLaunchExternalFromWebView(uri);
                           return NavigationActionPolicy.CANCEL;
                         }
                       }
@@ -1739,6 +1811,24 @@ class _WebViewScreenState extends State<WebViewScreen>
                 );
               },
             ),
+
+            // Menu confidentialité (politique, CGU, suppression compte) — exigence stores
+            if (_marketplaceEntryUrlReady)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2, right: 2),
+                    child: Material(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      elevation: 1,
+                      borderRadius: const BorderRadius.all(Radius.circular(24)),
+                      child: const AppPrivacyMenu(),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

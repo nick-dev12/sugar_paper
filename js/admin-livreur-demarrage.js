@@ -753,6 +753,9 @@
         activeBtn = null;
         activeRow = null;
         formSubmitted = false;
+        if (form) {
+            delete form.dataset.nativeDeliveryPermOk;
+        }
         currentLivraisonType = 'commande';
     }
 
@@ -774,6 +777,28 @@
             setStatus('error', 'L\'adresse de livraison est obligatoire.');
             return;
         }
+
+        /* App native : divulgation GPS livreur (Google Play) avant redirection suivi.php */
+        if (window.SugarPaperNative &&
+            typeof window.SugarPaperNative.isNativeApp === 'function' &&
+            window.SugarPaperNative.isNativeApp() &&
+            typeof window.SugarPaperNative.prepareDeliveryTrackingPermissions === 'function' &&
+            form.dataset.nativeDeliveryPermOk !== '1') {
+            e.preventDefault();
+            setStatus('pending', 'Autorisation suivi livraison…');
+            window.SugarPaperNative.prepareDeliveryTrackingPermissions()
+                .then(function () {
+                    form.dataset.nativeDeliveryPermOk = '1';
+                    setStatus('ok', 'Autorisation accordée — démarrage…');
+                    formSubmitted = true;
+                    form.submit();
+                })
+                .catch(function () {
+                    setStatus('error', 'Autorisez le suivi GPS livraison pour continuer (écran « J\'accepte »).');
+                });
+            return;
+        }
+
         formSubmitted = true;
     }
 
