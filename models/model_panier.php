@@ -23,6 +23,24 @@ function _panier_has_variante_columns() {
     return $has;
 }
 
+function _panier_has_image_personnalisation_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        if (!isset($db) || !($db instanceof PDO)) {
+            $has = false;
+            return $has;
+        }
+        try {
+            $r = $db->query("SHOW COLUMNS FROM panier LIKE 'image_personnalisation'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 /**
  * Ajoute un produit au panier ou met à jour la quantité
  * @param int $user_id L'ID de l'utilisateur
@@ -37,20 +55,26 @@ function _panier_has_variante_columns() {
  * @param float $surcout_poids Surcoût poids (optionnel)
  * @param float $surcout_taille Surcoût taille (optionnel)
  * @param float|null $prix_unitaire Prix unitaire final (optionnel, pour variante + surcoûts)
+ * @param string|null $image_personnalisation Chemin relatif image personnalisée (optionnel)
  * @return bool True en cas de succès, False sinon
  */
-function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $poids = null, $taille = null, $variante_id = null, $variante_nom = null, $variante_image = null, $surcout_poids = 0, $surcout_taille = 0, $prix_unitaire = null)
+function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $poids = null, $taille = null, $variante_id = null, $variante_nom = null, $variante_image = null, $surcout_poids = 0, $surcout_taille = 0, $prix_unitaire = null, $image_personnalisation = null)
 {
     global $db;
 
     try {
         $has_cols = _panier_has_variante_columns();
+        $has_perso = _panier_has_image_personnalisation_column();
         $vid = $variante_id ? (int)$variante_id : 0;
         $match_sql = "user_id = :user_id AND produit_id = :produit_id AND COALESCE(couleur,'') = COALESCE(:couleur,'') AND COALESCE(poids,'') = COALESCE(:poids,'') AND COALESCE(taille,'') = COALESCE(:taille,'')";
         $params = ['user_id' => $user_id, 'produit_id' => $produit_id, 'couleur' => $couleur, 'poids' => $poids, 'taille' => $taille];
         if ($has_cols) {
             $match_sql = "user_id = :user_id AND produit_id = :produit_id AND COALESCE(variante_id, 0) = :vid AND COALESCE(couleur,'') = COALESCE(:couleur,'') AND COALESCE(poids,'') = COALESCE(:poids,'') AND COALESCE(taille,'') = COALESCE(:taille,'')";
             $params['vid'] = $vid;
+        }
+        if ($has_perso) {
+            $match_sql .= " AND COALESCE(image_personnalisation,'') = COALESCE(:image_personnalisation,'')";
+            $params['image_personnalisation'] = $image_personnalisation;
         }
 
         $stmt = $db->prepare("SELECT id, quantite FROM panier WHERE $match_sql");
@@ -70,6 +94,10 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
             $vals['surcout_taille'] = $surcout_taille;
             $vals['prix_unitaire'] = $prix_unitaire;
         }
+        if (_panier_has_image_personnalisation_column()) {
+            $cols .= ", image_personnalisation = :image_personnalisation";
+            $vals['image_personnalisation'] = $image_personnalisation;
+        }
 
         if ($existing) {
             $vals['id'] = $existing['id'];
@@ -88,6 +116,11 @@ function add_to_panier($user_id, $produit_id, $quantite = 1, $couleur = null, $p
                 $ins_params['surcout_poids'] = $surcout_poids;
                 $ins_params['surcout_taille'] = $surcout_taille;
                 $ins_params['prix_unitaire'] = $prix_unitaire;
+            }
+            if (_panier_has_image_personnalisation_column()) {
+                $ins_cols .= ", image_personnalisation";
+                $ins_vals .= ", :image_personnalisation";
+                $ins_params['image_personnalisation'] = $image_personnalisation;
             }
             $stmt = $db->prepare("INSERT INTO panier ($ins_cols) VALUES ($ins_vals)");
             return $stmt->execute($ins_params);
@@ -168,6 +201,9 @@ function get_panier_by_user($user_id)
         $cols = "p.*, pan.id as panier_id, pan.quantite, pan.date_ajout, pan.couleur as panier_couleur, pan.poids as panier_poids, pan.taille as panier_taille";
         if (_panier_has_variante_columns()) {
             $cols .= ", pan.variante_id as panier_variante_id, pan.variante_nom as panier_variante_nom, pan.variante_image as panier_variante_image, pan.surcout_poids as panier_surcout_poids, pan.surcout_taille as panier_surcout_taille, pan.prix_unitaire as panier_prix_unitaire";
+        }
+        if (_panier_has_image_personnalisation_column()) {
+            $cols .= ", pan.image_personnalisation as panier_image_personnalisation";
         }
         $stmt = $db->prepare("
             SELECT $cols, c.nom as categorie_nom

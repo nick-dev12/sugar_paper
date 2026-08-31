@@ -112,9 +112,22 @@ function produit_share_seo_vars($produit, $prix_affichage = null)
 
     $dims = produit_share_og_image_dimensions($produit);
 
+    $categorie = trim((string) ($produit['categorie_nom'] ?? ''));
+    $seo_title = $nom;
+    if ($categorie !== '') {
+        $seo_title .= ' — ' . $categorie;
+    }
+    $seo_title .= ' | Sugar Paper Dakar';
+
+    $keywords = $nom . ', décoration gâteau, Sugar Paper Dakar';
+    if ($categorie !== '') {
+        $keywords = $nom . ', ' . $categorie . ', cake topper, impression comestible, Sugar Paper Sénégal';
+    }
+
     return [
-        'seo_title' => $nom . ' — Sugar Paper',
+        'seo_title' => $seo_title,
         'seo_description' => $seo_description,
+        'seo_keywords' => $keywords,
         'seo_canonical' => $base . '/produit.php?id=' . (int) ($produit['id'] ?? 0),
         'seo_og_type' => 'product',
         'seo_image' => produit_share_og_image_url($produit),

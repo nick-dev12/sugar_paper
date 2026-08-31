@@ -87,9 +87,12 @@ if ($selected_catalogue_id > 0) {
 $show_order_form = $selected_catalogue_id > 0;
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
-$seo_title = 'Commande personnalisée gâteau - Sugar Paper';
-$seo_description = 'Commande personnalisée de décoration pour gâteaux : anniversaire, mariage, cérémonies. Produits décoratifs comestibles et non comestibles à grande échelle.';
+$cp_seo = get_seo_commande_perso_meta();
+$seo_title = $cp_seo['title'];
+$seo_description = $cp_seo['description'];
+$seo_keywords = $cp_seo['keywords'];
 $seo_canonical = $base . '/commande-personnalisee.php';
 ?>
 <!DOCTYPE html>

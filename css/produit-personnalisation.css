@@ -1,0 +1,365 @@
+/* Modal personnalisation photo comestible — fiche produit */
+
+.produit-actions-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+}
+
+.produit-actions-row .btn-add-panier {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+}
+
+.btn-personnaliser {
+    flex: 0 0 auto;
+    padding: 14px 20px;
+    border: 2px solid var(--couleur-dominante, #e5488a);
+    border-radius: 25px;
+    background: #ffffff;
+    color: var(--couleur-dominante, #e5488a);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(229, 72, 138, 0.12);
+}
+
+.btn-personnaliser:hover,
+.btn-personnaliser:focus-visible {
+    background: rgba(229, 72, 138, 0.08);
+    transform: translateY(-1px);
+}
+
+.btn-personnaliser.is-active {
+    background: rgba(229, 72, 138, 0.12);
+    border-color: #c23a72;
+}
+
+.perso-status {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(145, 138, 68, 0.12);
+    border: 1px solid rgba(145, 138, 68, 0.35);
+    color: #6b2f20;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.perso-status.is-visible {
+    display: flex;
+}
+
+.perso-status-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.perso-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.perso-modal.is-open {
+    display: flex;
+}
+
+.perso-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+}
+
+.perso-modal-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 100%);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px 22px 20px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    animation: persoModalIn 0.28s ease;
+}
+
+@keyframes persoModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.perso-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: #333;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.perso-modal-close:hover {
+    background: rgba(229, 72, 138, 0.15);
+    color: #c23a72;
+}
+
+.perso-modal-title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--titres, #1a1a1a);
+    font-family: var(--font-titres, inherit);
+    padding-right: 36px;
+}
+
+.perso-modal-subtitle {
+    margin: 0 0 18px;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.gateau-preview {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 18px;
+    line-height: 0;
+}
+
+.gateau-preview-base {
+    width: 100%;
+    height: auto;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Zone d'impression calibrée pixel-perfect (1024×1024) : centre 50%/27%, ~38%×11.5% */
+.gateau-preview-print {
+    position: absolute;
+    top: 27%;
+    left: 50%;
+    width: 38%;
+    aspect-ratio: 3.3 / 1;
+    height: auto;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    overflow: hidden;
+    z-index: 2;
+    background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.7) 0 8px, rgba(240, 240, 240, 0.9) 8px 16px);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.08);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.gateau-preview-print.has-image {
+    opacity: 1;
+    background: transparent;
+    box-shadow:
+        inset 0 1px 6px rgba(0, 0, 0, 0.1),
+        inset 0 -2px 5px rgba(255, 255, 255, 0.25),
+        0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.gateau-preview-print img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    border-radius: 50%;
+}
+
+/* Reflet léger pour fondre l'impression dans le glaçage */
+.gateau-preview-print.has-image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    background: linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.04) 38%,
+        rgba(0, 0, 0, 0.06) 100%
+    );
+    mix-blend-mode: soft-light;
+}
+
+.gateau-preview-rope {
+    display: none;
+}
+
+.perso-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 16px;
+    margin-bottom: 16px;
+    border: 2px dashed rgba(229, 72, 138, 0.45);
+    border-radius: 14px;
+    background: rgba(229, 72, 138, 0.04);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    text-align: center;
+}
+
+.perso-upload:hover,
+.perso-upload:focus-within {
+    border-color: var(--couleur-dominante, #e5488a);
+    background: rgba(229, 72, 138, 0.08);
+}
+
+.perso-upload input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.perso-upload-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(229, 72, 138, 0.12);
+    color: var(--couleur-dominante, #e5488a);
+    font-size: 20px;
+}
+
+.perso-upload-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--titres, #1a1a1a);
+}
+
+.perso-upload-hint {
+    font-size: 12px;
+    color: #777;
+}
+
+.perso-upload-filename {
+    font-size: 12px;
+    color: #6b2f20;
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.perso-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.perso-btn {
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+.perso-btn-secondary {
+    background: #f2f2f2;
+    color: #444;
+}
+
+.perso-btn-secondary:hover {
+    background: #e8e8e8;
+}
+
+.perso-btn-primary {
+    background: var(--couleur-dominante, #e5488a);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(229, 72, 138, 0.28);
+}
+
+.perso-btn-primary:hover:not(:disabled) {
+    background: rgba(229, 72, 138, 0.92);
+}
+
+.perso-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.perso-loading {
+    display: none;
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.perso-loading.is-visible {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .produit-actions-row {
+        flex-direction: column;
+    }
+
+    .btn-personnaliser {
+        width: 100%;
+        padding: 13px 18px;
+    }
+
+    .perso-modal-dialog {
+        padding: 20px 16px 16px;
+    }
+
+    .perso-modal-title {
+        font-size: 19px;
+    }
+
+    .gateau-preview {
+        max-width: 320px;
+    }
+
+    .gateau-preview-print {
+        width: 38%;
+        top: 27%;
+    }
+}

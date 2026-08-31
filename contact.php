@@ -50,9 +50,12 @@ $adresse_contact = 'Hann Mariste 2 LOT R/01';
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
-$seo_title = 'Contact - Sugar Paper';
-$seo_description = 'Contactez Sugar Paper pour vos commandes de produits décoratifs pour gâteaux. Personnalisation gâteaux d\'anniversaire, mariage, cérémonies. Hann Mariste 2 LOT R/01.';
+$contact_seo = get_seo_contact_meta();
+$seo_title = $contact_seo['title'];
+$seo_description = $contact_seo['description'];
+$seo_keywords = $contact_seo['keywords'];
 $seo_canonical = $base . '/contact.php';
 ?>
 <!DOCTYPE html>

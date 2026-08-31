@@ -42,12 +42,25 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
-require_once __DIR__ . '/includes/produit_share.php';
+require_once __DIR__ . '/includes/seo_config.php';
+require_once __DIR__ . '/includes/seo_schema.php';
 $base = get_site_base_url();
-$seo_title = $categorie_nom . ' - Sugar Paper';
-$desc_cat = !empty($categorie['description']) ? strip_tags($categorie['description']) : 'Produits décoratifs pour gâteaux ' . $categorie_nom . ' : anniversaire, mariage, cérémonies. Sugar Paper - Personnalisez vos gâteaux.';
-$seo_description = mb_substr($desc_cat, 0, 160);
-$seo_canonical = $base . '/categorie.php?id=' . (int)$categorie_id;
+$categorie_nom = isset($categorie['nom']) ? $categorie['nom'] : 'Catégorie';
+$seo_title = $categorie_nom . ' — Décoration gâteau | Sugar Paper Dakar';
+$desc_cat = !empty($categorie['description']) ? strip_tags($categorie['description']) : 'Découvrez nos produits ' . $categorie_nom . ' pour la décoration de gâteaux à Dakar : cake topper, impression comestible et accessoires pâtisserie au Sénégal.';
+$seo_description = function_exists('mb_substr') ? mb_substr($desc_cat, 0, 160) : substr($desc_cat, 0, 160);
+$seo_keywords = $categorie_nom . ', décoration gâteau, cake topper Dakar, Sugar Paper Sénégal';
+$seo_canonical = $base . '/categorie.php?id=' . (int) $categorie_id;
+$seo_schema_graphs = array_merge(
+    seo_schema_default_graphs(),
+    [
+        seo_schema_build_breadcrumb([
+            ['name' => 'Accueil', 'url' => $base . '/'],
+            ['name' => 'Produits', 'url' => $base . '/produits.php'],
+            ['name' => $categorie_nom, 'url' => $seo_canonical],
+        ]),
+    ]
+);
 ?>
 
 <!DOCTYPE html>

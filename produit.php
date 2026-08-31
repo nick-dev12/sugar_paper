@@ -11,6 +11,7 @@ require_once __DIR__ . '/models/model_visites.php';
 require_once __DIR__ . '/models/model_variantes.php';
 require_once __DIR__ . '/controllers/controller_panier.php';
 require_once __DIR__ . '/includes/guest_client.php';
+require_once __DIR__ . '/includes/produit_personnalisation.php';
 
 // Récupérer l'ID du produit depuis l'URL ou POST
 $produit_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -74,6 +75,8 @@ if ($prix_original) {
     $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
 }
 $show_price_from = produit_uses_price_from_label($produit);
+$supports_photo_perso = produit_personnalisation_enabled() && produit_supports_photo_personnalisation($produit);
+$gateau_modele_url = produit_personnalisation_modele_url();
 
 // Récupérer les variantes du produit
 $variantes = get_variantes_by_produit($produit_id);
@@ -94,7 +97,19 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 // Meta SEO + Open Graph (aperçu riche WhatsApp / réseaux sociaux)
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/produit_share.php';
+require_once __DIR__ . '/includes/seo_schema.php';
 extract(produit_share_seo_vars($produit, $prix_affichage));
+$seo_schema_graphs = array_merge(
+    seo_schema_default_graphs(),
+    [
+        seo_schema_build_product($produit, $prix_affichage),
+        seo_schema_build_breadcrumb([
+            ['name' => 'Accueil', 'url' => rtrim(get_site_base_url(), '/') . '/'],
+            ['name' => 'Produits', 'url' => rtrim(get_site_base_url(), '/') . '/produits.php'],
+            ['name' => trim((string) ($produit['nom'] ?? 'Produit')), 'url' => $seo_canonical],
+        ]),
+    ]
+);
 ?>
 
 <!DOCTYPE html>
@@ -116,6 +131,9 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <?php if ($supports_photo_perso): ?>
+    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <?php if (!$user_logged_in): ?>
         <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
@@ -1492,7 +1510,7 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
 
 
                 <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
-                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form">
+                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form"<?php echo $supports_photo_perso ? ' enctype="multipart/form-data"' : ''; ?>>
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                     <?php if ($has_variantes): ?>
@@ -1618,6 +1636,14 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                     <!-- Sélection de quantité et ajout au panier -->
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
+                    <?php if ($supports_photo_perso): ?>
+                    <input type="hidden" name="option_image_personnalisation" id="option-image-personnalisation" value="">
+                    <input type="file" name="image_personnalisation" id="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+                    <div class="perso-status" id="perso-status" aria-live="polite">
+                        <img src="" alt="" class="perso-status-thumb" id="perso-status-thumb" width="36" height="36">
+                        <span>Personnalisation ajoutée — votre photo sera imprimée sur le gâteau</span>
+                    </div>
+                    <?php endif; ?>
                     <div class="quantite-section">
                         <label class="quantite-label">Quantité:</label>
                         <div class="quantite-controls">
@@ -1640,10 +1666,18 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
                     </div>
 
 
-                    <button type="submit" class="btn-add-panier" id="btn-add-panier">
-                        <i class="fa-solid fa-bag-shopping"></i>
-                        Passer la commande
-                    </button>
+                    <div class="produit-actions-row">
+                        <button type="submit" class="btn-add-panier" id="btn-add-panier">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                            Passer la commande
+                        </button>
+                        <?php if ($supports_photo_perso): ?>
+                        <button type="button" class="btn-personnaliser" id="btn-personnaliser">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Personnalisez
+                        </button>
+                        <?php endif; ?>
+                    </div>
                 </form>
 
                 <!-- Description (en bas) -->
@@ -1693,6 +1727,39 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             </div>
         <?php endif; ?>
     </div>
+
+    <?php if ($supports_photo_perso): ?>
+    <div class="perso-modal" id="modal-personnalisation" aria-hidden="true" role="dialog" aria-labelledby="perso-modal-title">
+        <div class="perso-modal-backdrop" aria-hidden="true"></div>
+        <div class="perso-modal-dialog">
+            <button type="button" class="perso-modal-close" id="perso-modal-close" aria-label="Fermer">&times;</button>
+            <h2 class="perso-modal-title" id="perso-modal-title">Personnalisez votre impression</h2>
+            <p class="perso-modal-subtitle">Importez votre photo de référence : elle s’affichera sur le dessus du gâteau, comme pour une impression comestible.</p>
+
+            <div class="gateau-preview" aria-hidden="false">
+                <img src="<?php echo htmlspecialchars($gateau_modele_url); ?>" alt="Modèle de gâteau" class="gateau-preview-base" id="gateau-preview-base">
+                <div class="gateau-preview-print" id="gateau-preview-print">
+                    <img src="" alt="Aperçu de votre photo sur le gâteau" id="gateau-preview-print-img">
+                </div>
+            </div>
+
+            <label class="perso-upload" id="perso-upload-label" tabindex="0">
+                <input type="file" id="perso-image-input" accept="image/jpeg,image/png,image/webp,image/gif">
+                <span class="perso-upload-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
+                <span class="perso-upload-text">Importer une image de référence</span>
+                <span class="perso-upload-hint">JPG, PNG ou WebP — photo, logo, illustration…</span>
+                <span class="perso-upload-filename" id="perso-upload-filename"></span>
+            </label>
+
+            <p class="perso-loading" id="perso-loading" hidden>Préparation de l’image…</p>
+
+            <div class="perso-modal-actions">
+                <button type="button" class="perso-btn perso-btn-secondary" id="perso-cancel">Annuler</button>
+                <button type="button" class="perso-btn perso-btn-primary" id="perso-validate" disabled>Valider la personnalisation</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php include('footer.php') ?>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
@@ -1997,6 +2064,9 @@ extract(produit_share_seo_vars($produit, $prix_affichage));
             }
         });
     </script>
+    <?php if ($supports_photo_perso): ?>
+    <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 
 </body>
 

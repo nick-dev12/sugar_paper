@@ -9,6 +9,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_variantes.php';
 require_once __DIR__ . '/../includes/panier_invite.php';
 require_once __DIR__ . '/../includes/guest_client.php';
+require_once __DIR__ . '/../includes/produit_personnalisation.php';
 
 /**
  * Traite l'ajout d'un produit au panier
@@ -41,6 +42,32 @@ function process_add_to_panier()
     $option_prix_unitaire = isset($_POST['option_prix_unitaire']) && is_numeric($_POST['option_prix_unitaire']) ? (float)$_POST['option_prix_unitaire'] : null;
     $option_surcout_poids = isset($_POST['option_surcout_poids']) && is_numeric($_POST['option_surcout_poids']) ? (float)$_POST['option_surcout_poids'] : 0;
     $option_surcout_taille = isset($_POST['option_surcout_taille']) && is_numeric($_POST['option_surcout_taille']) ? (float)$_POST['option_surcout_taille'] : 0;
+    $option_image_personnalisation = isset($_POST['option_image_personnalisation']) ? trim($_POST['option_image_personnalisation']) : null;
+    if ($option_image_personnalisation === '' || $option_image_personnalisation === 'pending') {
+        $option_image_personnalisation = null;
+    }
+    if ($option_image_personnalisation !== null && !produit_personnalisation_path_is_valid($option_image_personnalisation)) {
+        return ['success' => false, 'message' => 'Image de personnalisation invalide.'];
+    }
+
+    if ($option_image_personnalisation === null && produit_supports_photo_personnalisation($produit) && isset($_FILES['image_personnalisation']) && is_array($_FILES['image_personnalisation'])) {
+        $upload_dir = produit_personnalisation_upload_dir();
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        require_once __DIR__ . '/../includes/image_optimizer.php';
+        $upload_result = upload_optimize_image_file(
+            $_FILES['image_personnalisation'],
+            $upload_dir,
+            produit_personnalisation_upload_subdir(),
+            'perso_prod_'
+        );
+        if (!empty($upload_result['success'])) {
+            $option_image_personnalisation = (string) ($upload_result['relative_path'] ?? '');
+        } elseif ((int) ($_FILES['image_personnalisation']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            return ['success' => false, 'message' => $upload_result['message'] ?? 'Impossible d’enregistrer l’image de personnalisation.'];
+        }
+    }
 
     if ($quantite <= 0) {
         return ['success' => false, 'message' => 'La quantité doit être supérieure à 0.'];
@@ -108,7 +135,7 @@ function process_add_to_panier()
     $vimg = $variante ? $variante['image'] : $option_variante_image;
 
     if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
-        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final)) {
+        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final, $option_image_personnalisation)) {
         return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
     }
     return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];

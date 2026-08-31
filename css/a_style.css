@@ -989,6 +989,14 @@ ul {
   margin: 0 auto;
   text-align: center;
   padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer_bottom_container .site-country-badge {
+  opacity: 0.9;
 }
 .footer_copy {
   color: var(--texte-fonce);

@@ -27,10 +27,29 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 }
 
 require_once __DIR__ . '/includes/site_url.php';
+require_once __DIR__ . '/includes/seo_config.php';
+require_once __DIR__ . '/includes/seo_schema.php';
 $base = get_site_base_url();
-$seo_title = $section_config['title'] . ' - Sugar Paper';
-$seo_description = $section_config['desc'];
+$section_seo = get_seo_section_meta($section_key);
+$seo_title = $section_seo ? $section_seo['title'] : ($section_config['title'] . ' | Sugar Paper Dakar');
+$seo_description = $section_seo ? $section_seo['description'] : $section_config['desc'];
+$seo_keywords = $section_seo ? $section_seo['keywords'] : get_seo_default_keywords();
 $seo_canonical = $base . '/section-produits.php?section=' . rawurlencode($section_key);
+$seo_schema_graphs = array_merge(
+    seo_schema_default_graphs(),
+    [
+        seo_schema_build_collection_page(
+            $section_config['title'],
+            $seo_description,
+            $seo_canonical
+        ),
+        seo_schema_build_breadcrumb([
+            ['name' => 'Accueil', 'url' => $base . '/'],
+            ['name' => 'Produits', 'url' => $base . '/produits.php'],
+            ['name' => $section_config['title'], 'url' => $seo_canonical],
+        ]),
+    ]
+);
 $page_icon = $section_config['page_icon'] ?? 'fa-box-open';
 ?>
 <!DOCTYPE html>
@@ -47,6 +66,7 @@ $page_icon = $section_config['page_icon'] ?? 'fa-box-open';
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/seo-content.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         .page-header {
@@ -151,6 +171,7 @@ $page_icon = $section_config['page_icon'] ?? 'fa-box-open';
     <?php endif; ?>
 
     <div class="produits-container-wrapper">
+        <?php echo render_section_seo_intro_html($section_key); ?>
         <section class="section00">
             <section class="produit_vedetes">
                 <article class="articles carousel11" id="produits-container">

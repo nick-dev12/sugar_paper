@@ -1,0 +1,24 @@
+/* Texte intro SEO — lisible, discret, bon pour l'indexation */
+.seo-content-intro {
+    max-width: 820px;
+    margin: 0 auto 28px;
+    padding: 18px 22px;
+    background: rgba(145, 138, 68, 0.08);
+    border-left: 4px solid #918a44;
+    border-radius: 0 8px 8px 0;
+    color: #333;
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.seo-content-intro p {
+    margin: 0;
+}
+
+.home-section-seo-intro {
+    max-width: 720px;
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(0, 0, 0, 0.72);
+}

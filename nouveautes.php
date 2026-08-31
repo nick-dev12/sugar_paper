@@ -20,10 +20,12 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
-require_once __DIR__ . '/includes/produit_share.php';
+require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
-$seo_title = 'Nouveautés décoration gâteaux - Sugar Paper';
-$seo_description = 'Découvrez les derniers produits décoratifs pour gâteaux : décoration d\'anniversaire, mariage, cérémonies. Comestible et non comestible.';
+$nouveautes_seo = get_seo_nouveautes_meta();
+$seo_title = $nouveautes_seo['title'];
+$seo_description = $nouveautes_seo['description'];
+$seo_keywords = $nouveautes_seo['keywords'];
 $seo_canonical = $base . '/nouveautes.php';
 ?>
 <!DOCTYPE html>

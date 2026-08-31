@@ -1,16 +1,20 @@
 <?php
 /**
  * Meta tags SEO pour le référencement
- * Usage: include avec les variables $seo_title, $seo_description, $seo_keywords (optionnel), $seo_image (optionnel), $seo_canonical (optionnel), $seo_noindex (optionnel)
+ * Usage: include avec les variables $seo_title, $seo_description, $seo_keywords (optionnel), $seo_image (optionnel), $seo_canonical (optionnel), $seo_noindex (optionnel), $seo_schema_graphs (optionnel)
  */
 include __DIR__ . '/favicon.php';
 if (!function_exists('get_site_base_url')) {
     require_once __DIR__ . '/site_url.php';
 }
+require_once __DIR__ . '/seo_config.php';
+require_once __DIR__ . '/seo_schema.php';
+
 $base = get_site_base_url();
-$seo_title = isset($seo_title) ? $seo_title : 'Sugar Paper - Décoration de gâteaux personnalisée';
-$seo_description = isset($seo_description) ? $seo_description : 'Sugar Paper : produits décoratifs pour gâteaux d\'anniversaire, mariage et cérémonies. Décoration comestible et non comestible, personnalisation à grande échelle. Personnalisez vos gâteaux !';
-$seo_keywords = isset($seo_keywords) ? $seo_keywords : 'décoration gâteau, gâteau anniversaire, gâteau mariage, gâteau cérémonie, produit décoratif gâteau, décoration comestible, décoration non comestible, personnalisation gâteau, Sugar Paper, papier sucre';
+$home_meta = get_seo_home_meta();
+$seo_title = isset($seo_title) ? $seo_title : $home_meta['title'];
+$seo_description = isset($seo_description) ? $seo_description : $home_meta['description'];
+$seo_keywords = isset($seo_keywords) ? $seo_keywords : get_seo_default_keywords();
 $seo_image = isset($seo_image) ? $seo_image : $base . '/image/sugar_paper.jpg';
 $seo_canonical = isset($seo_canonical) ? $seo_canonical : '';
 $seo_noindex = isset($seo_noindex) && $seo_noindex;
@@ -65,3 +69,21 @@ $seo_og_url = $seo_canonical !== '' ? $seo_canonical : $base . ($_SERVER['REQUES
 <?php if ($seo_image_alt !== ''): ?>
 <meta name="twitter:image:alt" content="<?php echo htmlspecialchars($seo_image_alt); ?>">
 <?php endif; ?>
+<?php
+$org = get_seo_site_organization();
+?>
+<meta name="geo.region" content="SN-DK">
+<meta name="geo.placename" content="Dakar">
+<meta name="geo.position" content="<?php echo htmlspecialchars($org['geo']['latitude'] . ';' . $org['geo']['longitude']); ?>">
+<meta name="ICBM" content="<?php echo htmlspecialchars($org['geo']['latitude'] . ', ' . $org['geo']['longitude']); ?>">
+<?php
+$schema_graphs = [];
+if (empty($seo_noindex)) {
+    if (!empty($seo_schema_graphs) && is_array($seo_schema_graphs)) {
+        $schema_graphs = $seo_schema_graphs;
+    } else {
+        $schema_graphs = seo_schema_default_graphs();
+    }
+    seo_schema_render_scripts($schema_graphs);
+}
+?>

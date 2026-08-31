@@ -7,6 +7,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/produit_share.php';
 require_once __DIR__ . '/produit_prix_display.php';
+require_once __DIR__ . '/seo_config.php';
 
 /**
  * @return array<string, array<string, string>>
@@ -149,6 +150,12 @@ function render_home_product_section($section_key, $limit = 20, $return_url = '/
                 <span class="home-section-kicker"><?php echo htmlspecialchars($config['kicker']); ?></span>
                 <h2 class="home-section-title"><?php echo htmlspecialchars($config['title']); ?></h2>
                 <p class="home-section-desc"><?php echo htmlspecialchars($config['desc']); ?></p>
+                <?php
+                $section_seo = get_seo_section_meta($section_key);
+                if ($section_seo && !empty($section_seo['intro'])):
+                ?>
+                <p class="home-section-seo-intro"><?php echo htmlspecialchars($section_seo['intro']); ?></p>
+                <?php endif; ?>
             </div>
             <a href="<?php echo htmlspecialchars($config['cta_href']); ?>" class="home-section-cta">
                 <?php echo htmlspecialchars($config['cta_label']); ?> <i class="fas fa-arrow-right"></i>

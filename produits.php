@@ -34,10 +34,12 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
-require_once __DIR__ . '/includes/produit_share.php';
+require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
-$seo_title = 'Produits décoratifs pour gâteaux - Sugar Paper';
-$seo_description = 'Catalogue de produits décoratifs pour gâteaux : gâteaux d\'anniversaire, mariage, cérémonies. Décoration comestible et non comestible. Personnalisation à grande échelle.';
+$catalogue_seo = get_seo_produits_meta();
+$seo_title = $catalogue_seo['title'];
+$seo_description = $catalogue_seo['description'];
+$seo_keywords = $catalogue_seo['keywords'];
 $seo_canonical = $base . '/produits.php';
 ?>
 

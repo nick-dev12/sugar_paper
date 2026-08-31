@@ -14,10 +14,12 @@ if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
 
 // Meta SEO
 require_once __DIR__ . '/includes/site_url.php';
-require_once __DIR__ . '/includes/produit_share.php';
+require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
-$seo_title = 'Sugar Paper - Décoration de gâteaux personnalisée';
-$seo_description = 'Sugar Paper : produits décoratifs pour gâteaux d\'anniversaire, mariage et cérémonies. Décoration comestible et non comestible à grande échelle. Personnalisez vos gâteaux !';
+$home_seo = get_seo_home_meta();
+$seo_title = $home_seo['title'];
+$seo_description = $home_seo['description'];
+$seo_keywords = $home_seo['keywords'];
 $seo_canonical = $base . '/';
 ?>
 
@@ -47,6 +49,7 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/seo-content.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-perf.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
 
@@ -152,7 +155,7 @@ $seo_canonical = $base . '/';
                             <i class="fas fa-arrow-right" aria-hidden="true"></i>
                         </a>
                     </div>
-                    <aside class="commande-perso-visual">
+                    <a href="commande-personnalisee.php" class="commande-perso-visual" aria-label="Faire une commande personnalisée">
                         <div class="commande-perso-atelier" aria-hidden="true">
                             <div class="commande-perso-cake">
                                 <i class="fas fa-cake-candles"></i>
@@ -185,7 +188,7 @@ $seo_canonical = $base . '/';
                                 </span>
                             </li>
                         </ol>
-                    </aside>
+                    </a>
                 </div>
             </div>
         </div>

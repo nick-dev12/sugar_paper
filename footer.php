@@ -78,6 +78,7 @@
     </div>
     <div class="footer_bottom">
         <div class="container footer_bottom_container">
+            <?php $country_badge_variant = 'dark'; include __DIR__ . '/includes/site_country_badge.php'; ?>
             <p class="footer_copy">
                 2026 By Sugar Paper Team | All rights reserved
             </p>

@@ -504,7 +504,7 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
 </style>
 
 <div class="info">
-
+    <?php $country_badge_variant = 'light'; include __DIR__ . '/includes/site_country_badge.php'; ?>
 </div>
 <nav class="nav-planete-gateau">
     <a class="logo" href="/index.php">
