@@ -154,6 +154,13 @@ html.is-native-app body {
   transition: padding-bottom 0.12s ease-out;
 }
 
+/* Boutique publique : ne pas écraser le padding de #bottomNav (user/admin OK via .user-content) */
+@media (max-width: 992px) {
+  html.is-native-app.has-bottom-nav body {
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + var(--native-kb, 0px));
+  }
+}
+
 html.is-native-app input,
 html.is-native-app textarea,
 html.is-native-app select {

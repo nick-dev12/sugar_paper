@@ -104,6 +104,16 @@ function image_db_apply_path_mapping($db, $old_rel, $new_rel) {
     $affected += image_db_replace_column_exact($db, 'section4_config', 'image_fond', basename($old_rel), basename($new_rel));
     $affected += image_db_replace_column_exact($db, 'trending_config', 'image', basename($old_rel), basename($new_rel));
 
+    $affected += image_db_replace_column_exact($db, 'admin', 'photo_profil', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'employes', 'photo_chemin', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'panier', 'image_personnalisation', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'commande_produits', 'image_personnalisation', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'cp_catalogue_produits', 'image', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'logos', 'image', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'employe_absence_justificatifs', 'fichier_chemin', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'employe_documents', 'fichier_chemin', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'videos', 'image_preview', basename($old_rel), basename($new_rel));
+
     return $affected;
 }
 
@@ -316,5 +326,60 @@ function image_db_sync_all_image_paths($db) {
     $total += image_db_sync_table_column($db, 'section4_config', 'image_fond', $details, true, 'section4');
     $total += image_db_sync_table_column($db, 'trending_config', 'image', $details, true, 'trending');
 
+    $total += image_db_sync_table_column($db, 'admin', 'photo_profil', $details);
+    $total += image_db_sync_table_column($db, 'employes', 'photo_chemin', $details);
+    $total += image_db_sync_table_column($db, 'panier', 'image_personnalisation', $details);
+    $total += image_db_sync_table_column($db, 'commande_produits', 'image_personnalisation', $details);
+    $total += image_db_sync_table_column($db, 'cp_catalogue_produits', 'image', $details);
+    $total += image_db_sync_table_column($db, 'logos', 'image', $details);
+    $total += image_db_sync_table_column($db, 'employe_absence_justificatifs', 'fichier_chemin', $details);
+    $total += image_db_sync_table_column($db, 'employe_documents', 'fichier_chemin', $details);
+    $total += image_db_sync_video_thumbnails($db, $details);
+
     return ['updated' => $total, 'details' => $details];
+}
+
+/**
+ * Miniatures vidéo : nom de fichier seul dans upload/videos/thumbnails/.
+ */
+function image_db_sync_video_thumbnails($db, &$details) {
+    $key = 'videos.image_preview';
+    $details[$key] = 0;
+    if (!image_db_table_has_column($db, 'videos', 'image_preview')) {
+        return 0;
+    }
+
+    $stmt = $db->query("SELECT id, image_preview FROM videos WHERE image_preview IS NOT NULL AND image_preview != ''");
+    if (!$stmt) {
+        return 0;
+    }
+
+    $count = 0;
+    $update = $db->prepare('UPDATE videos SET image_preview = :new_value WHERE id = :id');
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $old = basename(trim(str_replace('\\', '/', (string) ($row['image_preview'] ?? ''))));
+        if ($old === '') {
+            continue;
+        }
+        $new = basename(image_optimizer_normalize_db_path('videos/thumbnails/' . $old));
+        if ($new === '' || $new === $old) {
+            continue;
+        }
+        $update->execute(['new_value' => $new, 'id' => (int) $row['id']]);
+        $count++;
+    }
+    $details[$key] = $count;
+    return $count;
+}
+
+/**
+ * Nom de la base courante (diagnostic CLI).
+ */
+function image_db_current_database($db) {
+    try {
+        $name = $db->query('SELECT DATABASE()')->fetchColumn();
+        return is_string($name) ? $name : '';
+    } catch (PDOException $e) {
+        return '';
+    }
 }

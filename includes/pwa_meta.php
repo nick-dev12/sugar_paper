@@ -20,6 +20,6 @@ $asset_version = get_asset_version();
 <meta name="application-name" content="Sugar Paper">
 <link rel="manifest" href="/manifest.json">
 <?php /* Mode application : WebView Flutter → optimisations scroll + clavier */ ?>
-<script>(function(){try{var n=(window.__SUGARPAPER_NATIVE_APP===true)||(/SugarPaperApp/i.test(navigator.userAgent||''));if(n){document.documentElement.classList.add('is-native-app');}}catch(e){}})();</script>
+<script>(function(){try{var m=document.querySelector('meta[name="viewport"]');if(m&&m.content.indexOf('viewport-fit')===-1){m.setAttribute('content',m.content+(m.content? ', ':'')+'viewport-fit=cover');}var n=(window.__SUGARPAPER_NATIVE_APP===true)||(/SugarPaperApp/i.test(navigator.userAgent||''));if(n){document.documentElement.classList.add('is-native-app');}}catch(e){}})();</script>
 <link rel="stylesheet" href="/css/app-performance.css?v=<?php echo htmlspecialchars((string) $asset_version, ENT_QUOTES, 'UTF-8'); ?>">
 <script src="/js/app-native-perf.js?v=<?php echo htmlspecialchars((string) $asset_version, ENT_QUOTES, 'UTF-8'); ?>" defer></script>

@@ -6,6 +6,7 @@
 
 // Inclusion du fichier de connexion à la BDD
 require_once __DIR__ . '/../conn/conn.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
  * Rôles autorisés pour les comptes admin
@@ -569,11 +570,13 @@ function admin_photo_profil_process_upload($admin_id, $file)
         return ['ok' => false, 'msg' => 'Impossible de préparer le dossier des photos.'];
     }
 
-    $new_base = 'admin_' . $admin_id . '_' . bin2hex(random_bytes(5)) . '.' . $map[$mime];
-    $abs_new = $upload_dir . $new_base;
-    if (!move_uploaded_file($tmp, $abs_new)) {
-        return ['ok' => false, 'msg' => 'Impossible d’enregistrer la photo sur le serveur.'];
+    $result = upload_optimize_image_file($file, $upload_dir, 'admin_photos', 'admin_' . $admin_id . '_');
+    if (empty($result['success']) || empty($result['relative_path'])) {
+        return ['ok' => false, 'msg' => (string) ($result['message'] ?? 'Impossible d’enregistrer la photo sur le serveur.')];
     }
+
+    $relatif = (string) $result['relative_path'];
+    $new_base = basename($relatif);
 
     foreach (glob($upload_dir . 'admin_' . $admin_id . '_*') ?: [] as $old_abs) {
         if (!is_string($old_abs) || !is_file($old_abs)) {
@@ -585,9 +588,8 @@ function admin_photo_profil_process_upload($admin_id, $file)
         @unlink($old_abs);
     }
 
-    $relatif = 'admin_photos/' . $new_base;
     if (!update_admin_photo_profil($admin_id, $relatif)) {
-        @unlink($abs_new);
+        image_optimizer_delete_with_variants($relatif);
         return ['ok' => false, 'msg' => 'Erreur d’enregistrement en base de données.'];
     }
 

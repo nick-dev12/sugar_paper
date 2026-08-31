@@ -65,6 +65,20 @@ deploy_git_pull() {
   fi
 }
 
+deploy_migrations() {
+  if [[ ! -f "${DEPLOY_DIR}/migrations/run_all_migrations.php" ]]; then
+    log_warn "migrations/run_all_migrations.php absent — migrations ignorées"
+    return 0
+  fi
+
+  log "Migrations BDD (run_all_migrations.php --continue)"
+  if php "${DEPLOY_DIR}/migrations/run_all_migrations.php" --continue; then
+    log_ok "Migrations BDD à jour"
+  else
+    log_fail "Migrations BDD — relancez : php migrations/run_all_migrations.php --continue"
+  fi
+}
+
 deploy_composer() {
   if command -v composer >/dev/null 2>&1 && [[ -f "${DEPLOY_DIR}/composer.json" ]]; then
     log "composer install"
@@ -283,6 +297,7 @@ log "Répertoire : ${DEPLOY_DIR}"
 
 ensure_git_safe_directory || true
 deploy_git_pull || true
+deploy_migrations
 deploy_composer
 verify_secrets_quick
 deploy_tracking_server

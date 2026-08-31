@@ -14,6 +14,10 @@
     padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
   }
 
+  html.is-native-app.has-bottom-nav body {
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px) + var(--native-kb, 0px));
+  }
+
   html.has-bottom-nav .user-content {
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }

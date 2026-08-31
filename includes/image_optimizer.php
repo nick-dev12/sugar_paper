@@ -353,6 +353,38 @@ function upload_subdir_image_url($subdir, $filename, $variant = 'original') {
     return upload_image_url($subdir . '/' . $filename, $variant);
 }
 
+/**
+ * Alias compatible poid_lourd — URL avec variante md/sm.
+ */
+function upload_image_url_from_src($src, $variant = 'md') {
+    return upload_image_url($src, $variant);
+}
+
+/**
+ * Optimise une miniature déjà générée sur disque (ex. FFmpeg → JPG).
+ *
+ * @return string|null Nom de fichier final (basename)
+ */
+function image_optimizer_process_disk_thumbnail($absolute_path, $dest_dir, $relative_subdir, $fixed_stem) {
+    if (!is_file($absolute_path)) {
+        return null;
+    }
+    $result = image_optimizer_process_tmp($absolute_path, $dest_dir, $relative_subdir, 'thumb_', $fixed_stem);
+    if (empty($result['success'])) {
+        return basename($absolute_path);
+    }
+    $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
+    if ($ext !== 'webp' && is_file($absolute_path)) {
+        @unlink($absolute_path);
+    }
+    $filename = (string) ($result['filename'] ?? '');
+    if ($filename !== '') {
+        return $filename;
+    }
+    $relative = (string) ($result['relative_path'] ?? '');
+    return $relative !== '' ? basename($relative) : null;
+}
+
 function image_optimizer_delete_with_variants($relative_path) {
     $relative_path = trim(str_replace('\\', '/', (string) $relative_path), '/');
     if ($relative_path === '') {

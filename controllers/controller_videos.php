@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../models/model_videos.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
  * Traite le formulaire d'ajout/modification de vidéo
@@ -288,11 +289,21 @@ function upload_video_file($file)
         $thumbnail_path = $thumbnails_dir . $thumbnail_name;
 
         if (generate_video_thumbnail($file_path, $thumbnail_path, 1)) {
-            $thumbnail_filename = $thumbnail_name;
+            $thumbnail_filename = image_optimizer_process_disk_thumbnail(
+                $thumbnail_path,
+                $thumbnails_dir,
+                'videos/thumbnails',
+                pathinfo($thumbnail_name, PATHINFO_FILENAME)
+            );
         } else {
             for ($try = 2; $try <= 5; $try++) {
                 if (generate_video_thumbnail($file_path, $thumbnail_path, $try)) {
-                    $thumbnail_filename = $thumbnail_name;
+                    $thumbnail_filename = image_optimizer_process_disk_thumbnail(
+                        $thumbnail_path,
+                        $thumbnails_dir,
+                        'videos/thumbnails',
+                        pathinfo($thumbnail_name, PATHINFO_FILENAME)
+                    );
                     break;
                 }
             }

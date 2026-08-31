@@ -12,6 +12,7 @@ require_once __DIR__ . '/../models/model_employe_conges.php';
 require_once __DIR__ . '/../models/model_bulletin_paie.php';
 require_once __DIR__ . '/../models/model_employe_transport.php';
 require_once __DIR__ . '/../includes/fouta_upload_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 define('EMPLOYE_PHOTO_UPLOAD_MAX_BYTES', FOUTA_UPLOAD_IMAGE_MAX_BYTES);
 define('EMPLOYE_PHOTO_FIELD', 'photo_employe');
@@ -187,17 +188,28 @@ function employe_document_process_upload($employe_id, $file) {
     if (!is_dir($upload_dir_abs) && !@mkdir($upload_dir_abs, 0755, true) && !is_dir($upload_dir_abs)) {
         return ['ok' => false, 'msg' => 'Impossible de préparer le dossier des documents.', 'path' => null];
     }
-    $ext = $insp['ext'];
-    $new_base = 'employe_' . $employe_id . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
-    $abs_new = $upload_dir_abs . $new_base;
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
         return ['ok' => false, 'msg' => 'Fichier téléversé invalide.', 'path' => null];
     }
-    if (!move_uploaded_file($file['tmp_name'], $abs_new)) {
-        return ['ok' => false, 'msg' => 'Impossible d’enregistrer le fichier sur le serveur.', 'path' => null];
-    }
+
     $mime = isset($insp['mime']) ? (string) $insp['mime'] : '';
-    return ['ok' => true, 'msg' => '', 'path' => 'employes_documents/' . $new_base, 'mime' => $mime];
+    $ext = $insp['ext'];
+    $pdf_mimes = ['application/pdf', 'application/x-pdf'];
+    if (in_array($mime, $pdf_mimes, true)) {
+        $new_base = 'employe_' . $employe_id . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $abs_new = $upload_dir_abs . $new_base;
+        if (!move_uploaded_file($file['tmp_name'], $abs_new)) {
+            return ['ok' => false, 'msg' => 'Impossible d’enregistrer le fichier sur le serveur.', 'path' => null];
+        }
+        return ['ok' => true, 'msg' => '', 'path' => 'employes_documents/' . $new_base, 'mime' => $mime];
+    }
+
+    $result = upload_optimize_image_file($file, $upload_dir_abs, 'employes_documents', 'employe_' . $employe_id . '_');
+    if (empty($result['success']) || empty($result['relative_path'])) {
+        return ['ok' => false, 'msg' => (string) ($result['message'] ?? 'Impossible d’enregistrer le fichier sur le serveur.'), 'path' => null];
+    }
+
+    return ['ok' => true, 'msg' => '', 'path' => (string) $result['relative_path'], 'mime' => $mime !== '' ? $mime : 'image/webp'];
 }
 
 /**
@@ -897,17 +909,17 @@ function employe_photo_process_for_employe($employe_id, $file) {
         return ['ok' => false, 'msg' => 'Impossible de préparer le dossier des photos RH.'];
     }
 
-    $ext = $insp['ext'];
-    $new_base = 'employe_' . $employe_id . '_' . bin2hex(random_bytes(5)) . '.' . $ext;
-    $abs_new = $upload_dir_abs . $new_base;
-
     if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
         return ['ok' => false, 'msg' => 'Fichier téléversé invalide.'];
     }
 
-    if (!move_uploaded_file($file['tmp_name'], $abs_new)) {
-        return ['ok' => false, 'msg' => 'Impossible d’enregistrer la photo sur le serveur.'];
+    $result = upload_optimize_image_file($file, $upload_dir_abs, 'employes_photos', 'employe_' . $employe_id . '_');
+    if (empty($result['success']) || empty($result['relative_path'])) {
+        return ['ok' => false, 'msg' => (string) ($result['message'] ?? 'Impossible d’enregistrer la photo sur le serveur.')];
     }
+
+    $relatif = (string) $result['relative_path'];
+    $new_base = basename($relatif);
 
     $pattern = $upload_dir_abs . 'employe_' . $employe_id . '_*';
     foreach (glob($pattern) ?: [] as $old_abs) {
@@ -920,9 +932,8 @@ function employe_photo_process_for_employe($employe_id, $file) {
         @unlink($old_abs);
     }
 
-    $relatif = 'employes_photos/' . $new_base;
     if (!employe_set_photo_chemin($employe_id, $relatif)) {
-        @unlink($abs_new);
+        image_optimizer_delete_with_variants($relatif);
         return ['ok' => false, 'msg' => 'Erreur d’enregistrement du chemin photo en base de données.'];
     }
 

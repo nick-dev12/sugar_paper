@@ -214,6 +214,19 @@ function video_ensure_preview_image(array $video)
         return null;
     }
 
+    require_once __DIR__ . '/../includes/image_optimizer.php';
+    $optimized = image_optimizer_process_disk_thumbnail(
+        $thumb_path,
+        $thumbnails_dir,
+        'videos/thumbnails',
+        pathinfo($thumb_name, PATHINFO_FILENAME)
+    );
+    if ($optimized === null || $optimized === '') {
+        return null;
+    }
+
+    $thumb_name = $optimized;
+
     if ($video_id > 0) {
         try {
             $stmt = $db->prepare('UPDATE videos SET image_preview = :preview WHERE id = :id');

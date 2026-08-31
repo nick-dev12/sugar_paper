@@ -409,6 +409,163 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
         .forgot-password-link a:hover {
             text-decoration: underline;
         }
+
+        @media (max-width: 992px) {
+            body.auth-page {
+                padding: 14px;
+            }
+
+            .auth-header {
+                padding: 8px 16px;
+            }
+
+            .auth-header .logo img {
+                height: 46px;
+                max-width: 120px;
+            }
+
+            .auth-content {
+                padding-top: 68px;
+                align-items: flex-start;
+            }
+
+            .container {
+                padding: 24px 18px;
+                border-radius: 16px;
+                max-width: 100%;
+            }
+
+            .header {
+                margin-bottom: 16px;
+            }
+
+            .header .icon {
+                width: 56px;
+                height: 56px;
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.25rem;
+                margin-bottom: 4px;
+            }
+
+            .header p {
+                font-size: 0.8rem;
+            }
+
+            .form-group {
+                margin-bottom: 14px;
+            }
+
+            .form-group label {
+                font-size: 0.8rem;
+                margin-bottom: 5px;
+            }
+
+            .form-group input {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .btn-submit {
+                padding: 11px;
+                font-size: 0.9rem;
+                margin-top: 4px;
+            }
+
+            .footer-text {
+                margin-top: 16px;
+                font-size: 0.8rem;
+            }
+
+            .error-message,
+            .success-message {
+                padding: 10px 12px;
+                font-size: 0.82rem;
+                margin-bottom: 14px;
+            }
+
+            .checkbox-group {
+                margin-bottom: 14px;
+                gap: 8px;
+            }
+
+            .checkbox-group label {
+                font-size: 0.8rem;
+            }
+
+            .forgot-password-link a {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body.auth-page {
+                padding: 10px;
+            }
+
+            .auth-header {
+                padding: 6px 12px;
+            }
+
+            .auth-header .logo img {
+                height: 38px;
+                max-width: 100px;
+            }
+
+            .auth-content {
+                padding-top: 56px;
+            }
+
+            .container {
+                padding: 18px 14px;
+                border-radius: 14px;
+            }
+
+            .header {
+                margin-bottom: 12px;
+            }
+
+            .header .icon {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+
+            .header h1 {
+                font-size: 1.1rem;
+            }
+
+            .header p {
+                font-size: 0.75rem;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group label {
+                font-size: 0.75rem;
+            }
+
+            .form-group input {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
+
+            .btn-submit {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+
+            .footer-text {
+                margin-top: 14px;
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 
@@ -597,7 +754,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
     </script>
     <?php include __DIR__ . '/../includes/auth_intl_tel_scripts.php'; ?>
     <?php include __DIR__ . '/../includes/google_auth_scripts.php'; ?>
-    <?php include __DIR__ . '/../includes/social_floating.php'; ?>
+    <?php $skip_jotform_ai_assistant = true; include __DIR__ . '/../includes/social_floating.php'; ?>
 </body>
 
 </html>

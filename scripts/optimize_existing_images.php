@@ -8,13 +8,14 @@
  *   php scripts/optimize_existing_images.php slider
  *   php scripts/optimize_existing_images.php --dry-run
  *   php scripts/optimize_existing_images.php produits --dry-run
+ *   php scripts/optimize_existing_images.php --skip-sync
  *
  * Options :
- *   --dry-run   Simulation : ni conversion, ni écriture BDD, ni suppression.
- *   --force     Supprime l'original même si aucune ligne BDD n'a été mise à jour.
+ *   --dry-run    Simulation : ni conversion, ni écriture BDD, ni suppression.
+ *   --force      Supprime l'original même si aucune ligne BDD n'a été mise à jour.
+ *   --skip-sync  Ne lance pas la synchronisation BDD finale.
  *
- * Sans argument, les dossiers administrables du site sont traités :
- * produits, catégories, slider, bannière d'accueil et mise en avant.
+ * Sans argument, tous les dossiers images du site sont traités.
  */
 
 if (PHP_SAPI !== 'cli') {
@@ -36,11 +37,27 @@ if ($upload_root === false || !is_dir($upload_root)) {
 $args = array_slice($argv, 1);
 $dry_run = in_array('--dry-run', $args, true);
 $force_delete = in_array('--force', $args, true);
+$skip_sync = in_array('--skip-sync', $args, true);
 $positional = array_values(array_filter($args, static function ($arg) {
     return strpos((string) $arg, '--') !== 0;
 }));
 
-$allowed_targets = ['produits', 'categories', 'slider', 'section4', 'trending', 'commandes-personnalisees'];
+$allowed_targets = [
+    'produits',
+    'categories',
+    'slider',
+    'section4',
+    'trending',
+    'commandes-personnalisees',
+    'produits-personnalises',
+    'catalogue-personnalise',
+    'admin_photos',
+    'employes_photos',
+    'employes_documents',
+    'employe_absences',
+    'logos',
+    'videos/thumbnails',
+];
 $requested_target = isset($positional[0]) ? trim((string) $positional[0], "/\\ \t\n\r\0\x0B") : '';
 if ($requested_target !== '' && !in_array($requested_target, $allowed_targets, true)) {
     fwrite(STDERR, 'Cible invalide. Valeurs : ' . implode(', ', $allowed_targets) . ".\n");
@@ -57,6 +74,11 @@ if (!isset($db) || !($db instanceof PDO)) {
     exit(1);
 }
 
+$db_name = image_db_current_database($db);
+if ($db_name !== '') {
+    echo "Base connectée : {$db_name}\n";
+}
+
 $processed = 0;
 $skipped = 0;
 $failed = 0;
@@ -65,7 +87,7 @@ $saved_bytes = 0;
 $mapping_log = __DIR__ . '/optimize_image_mapping.jsonl';
 
 foreach ($targets as $target) {
-    $scan_dir = $upload_root . DIRECTORY_SEPARATOR . $target;
+    $scan_dir = $upload_root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target);
     if (!is_dir($scan_dir)) {
         echo "Ignoré : upload/{$target}/ n'existe pas.\n";
         continue;
@@ -179,4 +201,16 @@ echo "{$database_updates} chemin(s) BDD mis à jour, " . round($saved_bytes / 10
 if ($processed > 0) {
     echo "Journal : {$mapping_log}\n";
 }
+
+if (!$dry_run && !$skip_sync) {
+    echo "\nSynchronisation finale des chemins BDD...\n";
+    $sync = image_db_sync_all_image_paths($db);
+    echo "Chemins synchronisés : {$sync['updated']}\n";
+    foreach ($sync['details'] as $column => $count) {
+        if ((int) $count > 0) {
+            echo "  - {$column} : {$count}\n";
+        }
+    }
+}
+
 exit($failed > 0 ? 2 : 0);

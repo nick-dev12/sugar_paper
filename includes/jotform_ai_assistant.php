@@ -16,7 +16,12 @@ $jotform_request_uri = str_replace('\\', '/', $_SERVER['REQUEST_URI'] ?? '');
 $jotform_is_admin_area = (strpos($jotform_script_path, '/admin/') !== false)
     || (strpos($jotform_request_uri, '/admin/') !== false);
 
-if ($jotform_is_admin_area) {
+$jotform_is_auth_page = (strpos($jotform_script_path, '/user/connexion.php') !== false)
+    || (strpos($jotform_script_path, '/user/inscription.php') !== false)
+    || (strpos($jotform_script_path, '/user/mot-de-passe-oublie.php') !== false)
+    || preg_match('#/user/(connexion|inscription|mot-de-passe-oublie)\.php#', $jotform_request_uri);
+
+if ($jotform_is_admin_area || $jotform_is_auth_page) {
     return;
 }
 

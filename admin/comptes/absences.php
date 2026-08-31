@@ -27,6 +27,7 @@ require_once __DIR__ . '/../../models/model_employes.php';
 require_once __DIR__ . '/../../models/model_employe_absences.php';
 require_once __DIR__ . '/../../models/model_bulletin_paie.php';
 require_once __DIR__ . '/../../includes/fouta_upload_limits.php';
+require_once __DIR__ . '/../../includes/image_optimizer.php';
 
 /**
  * Peut recevoir une absence : compte admin actif, pas le rôle « admin ».
@@ -59,9 +60,11 @@ if (!is_dir($upload_dir)) {
 }
 
 /**
+ * Téléverse et optimise un justificatif image (WebP + variantes).
+ *
  * @return array{0:?string,1:?string,2:?string}|string Erreur message string
  */
-function absences_traiter_upload_justif(array $file, $max_bytes = null) {
+function absences_traiter_upload_justif(array $file, $upload_dir_abs, $max_bytes = null) {
     if ($max_bytes === null) {
         $max_bytes = FOUTA_UPLOAD_IMAGE_MAX_BYTES;
     }
@@ -83,15 +86,21 @@ function absences_traiter_upload_justif(array $file, $max_bytes = null) {
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
         'image/webp' => 'webp',
+        'image/gif' => 'gif',
     ];
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime = $finfo->file($file['tmp_name']);
     if (!isset($allowed[$mime])) {
-        return 'Format non autorisé. Utilisez JPEG, PNG ou WebP.';
+        return 'Format non autorisé. Utilisez JPEG, PNG, WebP ou GIF.';
     }
-    $ext = $allowed[$mime];
-    $basename = 'justif_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-    return [$basename, $file['name'] ?? $basename, $mime];
+
+    $result = upload_optimize_image_file($file, $upload_dir_abs, 'employe_absences', 'justif_');
+    if (empty($result['success']) || empty($result['relative_path'])) {
+        return (string) ($result['message'] ?? 'Impossible d’enregistrer le justificatif.');
+    }
+
+    $rel_path = (string) $result['relative_path'];
+    return [$rel_path, $file['name'] ?? basename($rel_path), 'image/webp'];
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -174,22 +183,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $orig_name = null;
             $mime_st = null;
             if (!empty($_FILES['justif_fichier']) && is_array($_FILES['justif_fichier'])) {
-                $up = absences_traiter_upload_justif($_FILES['justif_fichier']);
+                $up = absences_traiter_upload_justif($_FILES['justif_fichier'], $upload_dir);
                 if (is_string($up)) {
                     $_SESSION['error_message'] = $up;
                     header('Location: absences.php');
                     exit;
                 }
-                list($basename, $orig_name, $mime_st) = $up;
-                if ($basename !== null && $basename !== '') {
-                    $dest = $upload_dir . DIRECTORY_SEPARATOR . $basename;
-                    if (!move_uploaded_file($_FILES['justif_fichier']['tmp_name'], $dest)) {
-                        $_SESSION['error_message'] = 'Échec de l’enregistrement du fichier.';
-                        header('Location: absences.php');
-                        exit;
-                    }
-                    $rel_path = $upload_subdir . '/' . $basename;
-                }
+                list($rel_path, $orig_name, $mime_st) = $up;
             }
             if (($texte === '') && ($rel_path === null || $rel_path === '')) {
                 $_SESSION['error_message'] = 'Saisissez un texte de justification ou joignez une image.';
@@ -198,8 +198,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($jid) {
                     $_SESSION['success_message'] = 'Justificatif enregistré.';
                 } else {
-                    if ($rel_path && is_file($upload_dir . DIRECTORY_SEPARATOR . basename($rel_path))) {
-                        @unlink($upload_dir . DIRECTORY_SEPARATOR . basename($rel_path));
+                    if ($rel_path) {
+                        image_optimizer_delete_with_variants($rel_path);
                     }
                     $_SESSION['error_message'] = 'Impossible d’enregistrer le justificatif.';
                 }

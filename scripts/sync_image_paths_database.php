@@ -20,6 +20,10 @@ if (!isset($db) || !($db instanceof PDO)) {
 }
 
 $result = image_db_sync_all_image_paths($db);
+$db_name = image_db_current_database($db);
+if ($db_name !== '') {
+    echo 'Base connectée : ' . $db_name . "\n";
+}
 echo "Chemins mis à jour : {$result['updated']}\n";
 foreach ($result['details'] as $column => $count) {
     echo " - {$column} : {$count}\n";
