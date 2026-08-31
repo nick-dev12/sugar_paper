@@ -143,6 +143,7 @@ function render_produit_listing_actions($produit, $return_url = '/index.php')
             <input type="hidden" name="option_image_personnalisation" class="option-image-personnalisation" value="">
             <input type="hidden" name="option_perso_meta" class="option-perso-meta" value="">
             <input type="file" name="image_personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+            <input type="file" name="image_personnalisation_source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
             <button type="button" class="btn-add-cart btn-personnaliser-card js-open-perso-modal" data-perso-form="<?php echo htmlspecialchars($form_id); ?>">
                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation
             </button>
@@ -237,7 +238,7 @@ function render_commande_personnalisation_preview($ligne_or_path, array $options
     ?>
     <div class="<?php echo htmlspecialchars($class); ?>">
         <div class="commande-perso-preview__head">
-            <span class="commande-perso-preview__badge"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisé</span>
+            <span class="commande-perso-preview__badge"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Aperçu composé</span>
             <?php if ($show_download): ?>
                 <a class="commande-perso-preview__download" href="<?php echo htmlspecialchars($download_url); ?>" download target="_blank" rel="noopener noreferrer">
                     <i class="fas fa-download" aria-hidden="true"></i> Télécharger
@@ -264,8 +265,94 @@ function get_produit_personnalisation_paper_formats()
 }
 
 /**
+ * Chemin relatif de l'image source importée (fichier client, distinct de l'aperçu composé).
+ *
+ * @param array $ligne
+ * @return string
+ */
+function commande_ligne_personnalisation_source_path(array $ligne)
+{
+    $candidates = [
+        $ligne['image_personnalisation_source'] ?? null,
+        $ligne['panier_image_personnalisation_source'] ?? null,
+    ];
+    foreach ($candidates as $path) {
+        $path = trim((string) $path);
+        if ($path !== '' && produit_personnalisation_path_is_valid($path)) {
+            return $path;
+        }
+    }
+    return '';
+}
+
+/**
  * @param array|string|null $raw
- * @return array{format:string,shape:string,width_cm:float,height_cm:float}|null
+ * @return array<string, mixed>|null
+ */
+function produit_personnalisation_text_normalize(array $text)
+{
+    $allowed_fonts = ['Outfit', 'Fraunces', 'Pacifico', 'Bebas Neue', 'Dancing Script', 'Playfair Display', 'Lobster'];
+    $font = isset($text['font']) ? trim((string) $text['font']) : 'Outfit';
+    if (!in_array($font, $allowed_fonts, true)) {
+        $font = 'Outfit';
+    }
+    $color = isset($text['textColor']) ? trim((string) $text['textColor']) : (isset($text['text_color']) ? trim((string) $text['text_color']) : '#E5488A');
+    if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
+        $color = '#E5488A';
+    }
+
+    return [
+        'id' => isset($text['id']) ? substr(trim((string) $text['id']), 0, 40) : '',
+        'text' => isset($text['text']) ? mb_substr((string) $text['text'], 0, 500) : '',
+        'font' => $font,
+        'textSizePct' => max(20, min(100, (int) ($text['textSizePct'] ?? 50))),
+        'textPosX' => max(0, min(100, (int) ($text['textPosX'] ?? 50))),
+        'textPosY' => max(0, min(100, (int) ($text['textPosY'] ?? 50))),
+        'textRotation' => max(-180, min(180, (int) ($text['textRotation'] ?? 0))),
+        'wrapOnCircle' => !empty($text['wrapOnCircle']),
+        'wrapArcPosition' => (isset($text['wrapArcPosition']) && $text['wrapArcPosition'] === 'bottom') ? 'bottom' : 'top',
+        'textColor' => $color,
+    ];
+}
+
+/**
+ * @param array $ligne_or_path
+ * @param array $options label (string)
+ * @return void
+ */
+function render_commande_personnalisation_source_preview($ligne_or_path, array $options = [])
+{
+    $path = is_array($ligne_or_path)
+        ? commande_ligne_personnalisation_source_path($ligne_or_path)
+        : trim((string) $ligne_or_path);
+
+    if ($path === '' || !produit_personnalisation_path_is_valid($path)) {
+        return;
+    }
+
+    $label = isset($options['label']) ? (string) $options['label'] : 'Image importée';
+    $compact = !empty($options['compact']);
+    $url = produit_personnalisation_public_url($path);
+    $download_url = '/upload/' . ltrim(str_replace('\\', '/', $path), '/');
+    $class = 'commande-perso-preview commande-perso-preview--source' . ($compact ? ' commande-perso-preview--compact' : '');
+    ?>
+    <div class="<?php echo htmlspecialchars($class); ?>">
+        <div class="commande-perso-preview__head">
+            <span class="commande-perso-preview__badge"><i class="fa-solid fa-file-image" aria-hidden="true"></i> <?php echo htmlspecialchars($label); ?></span>
+            <a class="commande-perso-preview__download" href="<?php echo htmlspecialchars($download_url); ?>" download target="_blank" rel="noopener noreferrer">
+                <i class="fas fa-download" aria-hidden="true"></i> Télécharger
+            </a>
+        </div>
+        <a class="commande-perso-preview__link" href="<?php echo htmlspecialchars($url); ?>" target="_blank" rel="noopener noreferrer" title="Voir en grand">
+            <img class="commande-perso-preview__img" src="<?php echo htmlspecialchars($url); ?>" alt="<?php echo htmlspecialchars($label); ?>">
+        </a>
+    </div>
+    <?php
+}
+
+/**
+ * @param array|string|null $raw
+ * @return array{format:string,shape:string,width_cm:float,height_cm:float,texts?:array<int,array<string,mixed>>}|null
  */
 function produit_personnalisation_meta_decode($raw)
 {
@@ -321,7 +408,23 @@ function produit_personnalisation_meta_normalize(array $data)
         'shape' => $shape,
         'width_cm' => round($width, 1),
         'height_cm' => round($height, 1),
-    ];
+    ] + (function ($data) {
+        if (!isset($data['texts']) || !is_array($data['texts'])) {
+            return [];
+        }
+        $texts = [];
+        foreach ($data['texts'] as $text_row) {
+            if (!is_array($text_row)) {
+                continue;
+            }
+            $normalized = produit_personnalisation_text_normalize($text_row);
+            if (trim((string) ($normalized['text'] ?? '')) === '') {
+                continue;
+            }
+            $texts[] = $normalized;
+        }
+        return $texts !== [] ? ['texts' => array_values($texts)] : [];
+    })($data);
 }
 
 /**

@@ -112,6 +112,20 @@ function _commande_produits_has_personnalisation_meta_column() {
     return $has;
 }
 
+function _commande_produits_has_image_personnalisation_source_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commande_produits LIKE 'image_personnalisation_source'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 /**
  * Génère un numéro de commande unique
  * @return string Le numéro de commande
@@ -285,7 +299,9 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
 
             $has_perso = _commande_produits_has_image_personnalisation_column();
             $has_meta = _commande_produits_has_personnalisation_meta_column();
+            $has_perso_src = _commande_produits_has_image_personnalisation_source_column();
             $image_personnalisation = null;
+            $image_personnalisation_source = null;
             $personnalisation_meta = null;
             if ($has_perso) {
                 $raw_perso = $item['panier_image_personnalisation'] ?? $item['image_personnalisation'] ?? null;
@@ -297,6 +313,17 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                     }
                 }
                 $params['image_personnalisation'] = $image_personnalisation;
+            }
+            if ($has_perso_src) {
+                $raw_src = $item['panier_image_personnalisation_source'] ?? $item['image_personnalisation_source'] ?? null;
+                if ($raw_src !== null && trim((string) $raw_src) !== '') {
+                    require_once __DIR__ . '/../includes/produit_personnalisation.php';
+                    $path_src = trim((string) $raw_src);
+                    if (produit_personnalisation_path_is_valid($path_src)) {
+                        $image_personnalisation_source = $path_src;
+                    }
+                }
+                $params['image_personnalisation_source'] = $image_personnalisation_source;
             }
             if ($has_meta) {
                 $raw_meta = $item['panier_personnalisation_meta'] ?? $item['personnalisation_meta'] ?? null;
@@ -323,6 +350,10 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             if ($has_perso) {
                 $cols .= ', image_personnalisation';
                 $vals .= ', :image_personnalisation';
+            }
+            if ($has_perso_src) {
+                $cols .= ', image_personnalisation_source';
+                $vals .= ', :image_personnalisation_source';
             }
             if ($has_meta) {
                 $cols .= ', personnalisation_meta';
@@ -628,6 +659,7 @@ function get_commandes_by_categorie($user_id, $categorie_id = null) {
         if ($has_opts) $cols .= ", cp.couleur, cp.poids as choix_poids, cp.taille";
         if ($has_var) $cols .= ", cp.variante_nom, cp.surcout_poids, cp.surcout_taille";
         if (_commande_produits_has_image_personnalisation_column()) $cols .= ", cp.image_personnalisation";
+        if (_commande_produits_has_image_personnalisation_source_column()) $cols .= ", cp.image_personnalisation_source";
         if (_commande_produits_has_personnalisation_meta_column()) $cols .= ", cp.personnalisation_meta";
         $join_pv = $has_var ? "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id" : "";
         $sql = "

@@ -1648,6 +1648,7 @@ $seo_schema_graphs = array_merge(
                     <input type="hidden" name="option_image_personnalisation" id="option-image-personnalisation" class="option-image-personnalisation" value="">
                     <input type="hidden" name="option_perso_meta" id="option-perso-meta" class="option-perso-meta" value="">
                     <input type="file" name="image_personnalisation" id="form-image-personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+                    <input type="file" name="image_personnalisation_source" id="form-image-personnalisation-source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                     <div class="perso-status" id="perso-status" aria-live="polite">
                         <img src="" alt="" class="perso-status-thumb" id="perso-status-thumb" width="36" height="36">
                         <span>Personnalisation ajoutée — votre photo sera imprimée sur le gâteau</span>

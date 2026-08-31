@@ -107,7 +107,9 @@ function image_db_apply_path_mapping($db, $old_rel, $new_rel) {
     $affected += image_db_replace_column_exact($db, 'admin', 'photo_profil', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'employes', 'photo_chemin', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'panier', 'image_personnalisation', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'panier', 'image_personnalisation_source', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'commande_produits', 'image_personnalisation', $old_rel, $new_rel);
+    $affected += image_db_replace_column_exact($db, 'commande_produits', 'image_personnalisation_source', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'cp_catalogue_produits', 'image', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'logos', 'image', $old_rel, $new_rel);
     $affected += image_db_replace_column_exact($db, 'employe_absence_justificatifs', 'fichier_chemin', $old_rel, $new_rel);
@@ -329,7 +331,9 @@ function image_db_sync_all_image_paths($db) {
     $total += image_db_sync_table_column($db, 'admin', 'photo_profil', $details);
     $total += image_db_sync_table_column($db, 'employes', 'photo_chemin', $details);
     $total += image_db_sync_table_column($db, 'panier', 'image_personnalisation', $details);
+    $total += image_db_sync_table_column($db, 'panier', 'image_personnalisation_source', $details);
     $total += image_db_sync_table_column($db, 'commande_produits', 'image_personnalisation', $details);
+    $total += image_db_sync_table_column($db, 'commande_produits', 'image_personnalisation_source', $details);
     $total += image_db_sync_table_column($db, 'cp_catalogue_produits', 'image', $details);
     $total += image_db_sync_table_column($db, 'logos', 'image', $details);
     $total += image_db_sync_table_column($db, 'employe_absence_justificatifs', 'fichier_chemin', $details);

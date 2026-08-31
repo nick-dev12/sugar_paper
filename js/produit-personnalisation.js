@@ -21,7 +21,12 @@
     var uploadLabel = document.getElementById('perso-upload-label');
     var filenameEl = document.getElementById('perso-upload-filename');
     var canvas = document.getElementById('perso-preview-canvas');
+    var previewViewport = document.getElementById('perso-preview-viewport');
+    var textManipulator = document.getElementById('perso-text-manipulator');
+    var textManipBox = document.getElementById('perso-text-manip-box');
     var textInput = document.getElementById('perso-text-input');
+    var textListEl = document.getElementById('perso-text-list');
+    var textAddBtn = document.getElementById('perso-text-add');
     var dimWidth = document.getElementById('perso-dim-width');
     var dimHeight = document.getElementById('perso-dim-height');
     var dimDiameter = document.getElementById('perso-dim-diameter');
@@ -57,6 +62,7 @@
     var activeForm = null;
     var previewObjectUrl = '';
     var loadedImage = null;
+    var sourceUploadFile = null;
     var hasCustomization = false;
 
     var state = {
@@ -64,18 +70,546 @@
         shape: 'circle',
         widthCm: 15,
         heightCm: 15,
-        text: '',
-        font: 'Outfit',
-        textSizePct: 50,
-        textPosX: 50,
-        textPosY: 50,
-        textRotation: 0,
-        wrapOnCircle: false,
-        wrapArcPosition: 'top',
-        textColor: '#E5488A'
+        texts: [],
+        activeTextId: ''
     };
 
-    var CANVAS_SIZE = 400;
+    var CANVAS_SIZE = 640;
+    var lastRenderLayout = null;
+    var manipDrag = null;
+
+    function clampPct(value) {
+        return Math.max(0, Math.min(100, Math.round(value)));
+    }
+
+    function clampSizePct(value) {
+        return Math.max(20, Math.min(100, Math.round(value)));
+    }
+
+    function clampRotation(value) {
+        var n = Math.round(value);
+        while (n > 180) {
+            n -= 360;
+        }
+        while (n < -180) {
+            n += 360;
+        }
+        return n;
+    }
+
+    function getCanvasDisplayScale() {
+        if (!canvas) {
+            return 1;
+        }
+        var rect = canvas.getBoundingClientRect();
+        if (!rect.width) {
+            return 1;
+        }
+        return rect.width / CANVAS_SIZE;
+    }
+
+    function clientToCanvas(clientX, clientY) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = CANVAS_SIZE / (rect.width || CANVAS_SIZE);
+        var scaleY = CANVAS_SIZE / (rect.height || CANVAS_SIZE);
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function canvasPointToViewport(cx, cy) {
+        var canvasRect = canvas.getBoundingClientRect();
+        var vpRect = previewViewport ? previewViewport.getBoundingClientRect() : canvasRect;
+        var scale = getCanvasDisplayScale();
+        return {
+            x: canvasRect.left - vpRect.left + cx * scale,
+            y: canvasRect.top - vpRect.top + cy * scale,
+            scale: scale
+        };
+    }
+
+    function measureStraightTextLayout(ctx, bounds, textObj) {
+        var text = (textObj.text || '').replace(/\r\n/g, '\n');
+        if (text.trim() === '') {
+            return null;
+        }
+
+        var fontSize = getTextFontSize(bounds, textObj);
+        var lines = text.split('\n');
+        var lineHeight = fontSize * 1.25;
+        ctx.save();
+        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+        var maxLineW = 0;
+        lines.forEach(function (line) {
+            maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
+        });
+        ctx.restore();
+
+        return {
+            cx: bounds.x + bounds.w * ((textObj.textPosX || 50) / 100),
+            cy: bounds.y + bounds.h * ((textObj.textPosY || 50) / 100),
+            width: Math.min(maxLineW, bounds.w * 0.92),
+            height: Math.max(lineHeight, lines.length * lineHeight),
+            rotation: textObj.textRotation || 0
+        };
+    }
+
+    function measureWrapTextLayout(bounds, textObj) {
+        var maxR = Math.min(bounds.w, bounds.h) / 2;
+        var radius = Math.max(20, maxR * (0.25 + 0.7 * ((textObj.textPosY || 50) / 100)));
+        var arcOffset = (((textObj.textPosX || 50) - 50) / 50) * Math.PI * 0.75;
+        var rotOffset = ((textObj.textRotation || 0) * Math.PI) / 180;
+        var baseAngle = textObj.wrapArcPosition === 'bottom' ? Math.PI / 2 : -Math.PI / 2;
+        var angle = baseAngle + arcOffset + rotOffset;
+        return {
+            cx: bounds.cx + Math.cos(angle) * radius,
+            cy: bounds.cy + Math.sin(angle) * radius,
+            width: Math.max(48, radius * 0.55),
+            height: Math.max(32, radius * 0.28),
+            rotation: (angle * 180 / Math.PI) + (textObj.wrapArcPosition === 'bottom' ? 90 : -90),
+            wrap: true
+        };
+    }
+
+    function getTextLayout(textObj) {
+        if (!lastRenderLayout || !canvas || !textObj) {
+            return null;
+        }
+        if ((textObj.text || '').trim() === '') {
+            return null;
+        }
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return null;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        if (textObj.wrapOnCircle && state.shape === 'circle') {
+            return measureWrapTextLayout(bounds, textObj);
+        }
+        return measureStraightTextLayout(ctx, bounds, textObj);
+    }
+
+    function pointInRotatedRect(px, py, cx, cy, w, h, rotDeg) {
+        var rad = -(rotDeg * Math.PI) / 180;
+        var dx = px - cx;
+        var dy = py - cy;
+        var lx = dx * Math.cos(rad) - dy * Math.sin(rad);
+        var ly = dx * Math.sin(rad) + dy * Math.cos(rad);
+        return Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2;
+    }
+
+    function hitTestTextAt(canvasX, canvasY) {
+        if (!lastRenderLayout || !canvas) {
+            return null;
+        }
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return null;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        for (var i = state.texts.length - 1; i >= 0; i--) {
+            var textObj = state.texts[i];
+            if ((textObj.text || '').trim() === '') {
+                continue;
+            }
+            var layout;
+            if (textObj.wrapOnCircle && state.shape === 'circle') {
+                layout = measureWrapTextLayout(bounds, textObj);
+            } else {
+                layout = measureStraightTextLayout(ctx, bounds, textObj);
+            }
+            if (!layout) {
+                continue;
+            }
+            if (pointInRotatedRect(canvasX, canvasY, layout.cx, layout.cy, layout.width + 20, layout.height + 20, layout.rotation)) {
+                return textObj.id;
+            }
+        }
+        return null;
+    }
+
+    function hideTextManipulator() {
+        if (!textManipulator) {
+            return;
+        }
+        textManipulator.hidden = true;
+        textManipulator.setAttribute('aria-hidden', 'true');
+        textManipulator.classList.remove('is-visible');
+    }
+
+    function updateTextManipulator() {
+        if (!textManipulator || !textManipBox || !previewViewport || !canvas) {
+            return;
+        }
+        if (!modal.classList.contains('is-open')) {
+            hideTextManipulator();
+            return;
+        }
+
+        var active = getActiveText();
+        if (!active || (active.text || '').trim() === '') {
+            hideTextManipulator();
+            return;
+        }
+
+        var layout = getTextLayout(active);
+        if (!layout) {
+            hideTextManipulator();
+            return;
+        }
+
+        var vp = canvasPointToViewport(layout.cx, layout.cy);
+        var boxW = Math.max(40, layout.width * vp.scale + 12);
+        var boxH = Math.max(28, layout.height * vp.scale + 12);
+
+        textManipulator.hidden = false;
+        textManipulator.setAttribute('aria-hidden', 'false');
+        textManipulator.classList.add('is-visible');
+
+        textManipBox.classList.toggle('is-wrap-mode', !!(active.wrapOnCircle && state.shape === 'circle'));
+        textManipBox.style.width = boxW + 'px';
+        textManipBox.style.height = boxH + 'px';
+        textManipBox.style.left = (vp.x - boxW / 2) + 'px';
+        textManipBox.style.top = (vp.y - boxH / 2) + 'px';
+        textManipBox.style.transform = 'rotate(' + layout.rotation + 'deg)';
+    }
+
+    function applyTextMove(active, canvasX, canvasY) {
+        if (!lastRenderLayout || !active) {
+            return;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        if (active.wrapOnCircle && state.shape === 'circle') {
+            var dx = canvasX - bounds.cx;
+            var dy = canvasY - bounds.cy;
+            var dist = Math.hypot(dx, dy);
+            var maxR = Math.min(bounds.w, bounds.h) / 2;
+            active.textPosY = clampPct(((dist / maxR - 0.25) / 0.7) * 100);
+            var angle = Math.atan2(dy, dx);
+            var base = active.wrapArcPosition === 'bottom' ? Math.PI / 2 : -Math.PI / 2;
+            var arcOffset = angle - base - (((active.textRotation || 0) * Math.PI) / 180);
+            active.textPosX = clampPct(50 + (arcOffset / (Math.PI * 0.75)) * 50);
+            return;
+        }
+        active.textPosX = clampPct(((canvasX - bounds.x) / bounds.w) * 100);
+        active.textPosY = clampPct(((canvasY - bounds.y) / bounds.h) * 100);
+    }
+
+    function applyTextRotate(active, canvasX, canvasY, layout) {
+        if (!active || !layout) {
+            return;
+        }
+        var angle = Math.atan2(canvasY - layout.cy, canvasX - layout.cx) * 180 / Math.PI + 90;
+        active.textRotation = clampRotation(angle);
+    }
+
+    function applyTextResize(active, canvasX, canvasY, layout, startDist, startSize) {
+        if (!active || !layout || startDist <= 0) {
+            return;
+        }
+        var dist = Math.hypot(canvasX - layout.cx, canvasY - layout.cy);
+        var ratio = dist / startDist;
+        active.textSizePct = clampSizePct(startSize * ratio);
+    }
+
+    function finishManipDrag() {
+        if (!manipDrag) {
+            return;
+        }
+        if (textManipBox) {
+            textManipBox.classList.remove('is-dragging');
+        }
+        manipDrag = null;
+        syncControlsFromActiveText();
+        renderTextList();
+    }
+
+    function startManipDrag(mode, handle, clientX, clientY) {
+        var active = getActiveText();
+        if (!active || !lastRenderLayout) {
+            return;
+        }
+        syncActiveTextFromControls();
+        var layout = getTextLayout(active);
+        if (!layout) {
+            return;
+        }
+        var canvasPt = clientToCanvas(clientX, clientY);
+        manipDrag = {
+            mode: mode,
+            handle: handle || '',
+            textId: active.id,
+            startX: canvasPt.x,
+            startY: canvasPt.y,
+            startPosX: active.textPosX,
+            startPosY: active.textPosY,
+            startRotation: active.textRotation,
+            startSizePct: active.textSizePct,
+            layoutCx: layout.cx,
+            layoutCy: layout.cy,
+            startDist: Math.max(12, Math.hypot(canvasPt.x - layout.cx, canvasPt.y - layout.cy))
+        };
+        if (textManipBox) {
+            textManipBox.classList.add('is-dragging');
+        }
+    }
+
+    function onManipPointerMove(clientX, clientY) {
+        if (!manipDrag) {
+            return;
+        }
+        var active = getActiveText();
+        if (!active || active.id !== manipDrag.textId) {
+            return;
+        }
+        var canvasPt = clientToCanvas(clientX, clientY);
+        var layout = getTextLayout(active);
+
+        if (manipDrag.mode === 'move') {
+            applyTextMove(active, canvasPt.x, canvasPt.y);
+        } else if (manipDrag.mode === 'rotate') {
+            if (layout) {
+                applyTextRotate(active, canvasPt.x, canvasPt.y, layout);
+            }
+        } else if (manipDrag.mode === 'resize') {
+            if (layout) {
+                applyTextResize(active, canvasPt.x, canvasPt.y, layout, manipDrag.startDist, manipDrag.startSizePct);
+            }
+        }
+
+        syncControlsFromActiveText();
+        renderPreview();
+    }
+
+    function bindTextManipulatorEvents() {
+        if (!canvas || !textManipBox) {
+            return;
+        }
+
+        canvas.addEventListener('pointerdown', function (event) {
+            if (!modal.classList.contains('is-open') || event.button > 0) {
+                return;
+            }
+            var canvasPt = clientToCanvas(event.clientX, event.clientY);
+            var hitId = hitTestTextAt(canvasPt.x, canvasPt.y);
+            if (hitId && hitId !== state.activeTextId) {
+                selectText(hitId);
+            }
+            if (hitId) {
+                startManipDrag('move', 'box', event.clientX, event.clientY);
+                if (canvas.setPointerCapture) {
+                    try {
+                        canvas.setPointerCapture(event.pointerId);
+                    } catch (err) {
+                        /* ignore */
+                    }
+                }
+                event.preventDefault();
+            }
+        });
+
+        textManipBox.addEventListener('pointerdown', function (event) {
+            if (!modal.classList.contains('is-open')) {
+                return;
+            }
+            var handleEl = event.target.closest('.perso-text-handle');
+            var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
+            var mode = 'move';
+            if (handle === 'rotate') {
+                mode = 'rotate';
+            } else if (handle && handle !== '') {
+                mode = 'resize';
+            }
+            startManipDrag(mode, handle, event.clientX, event.clientY);
+            if (textManipBox.setPointerCapture) {
+                try {
+                    textManipBox.setPointerCapture(event.pointerId);
+                } catch (err) {
+                    /* ignore */
+                }
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        textManipBox.addEventListener('pointerup', function (event) {
+            finishManipDrag();
+            if (textManipBox.releasePointerCapture) {
+                try {
+                    textManipBox.releasePointerCapture(event.pointerId);
+                } catch (err) {
+                    /* ignore */
+                }
+            }
+        });
+
+        textManipBox.addEventListener('pointercancel', function () {
+            finishManipDrag();
+        });
+
+        window.addEventListener('pointermove', function (event) {
+            if (!manipDrag) {
+                return;
+            }
+            onManipPointerMove(event.clientX, event.clientY);
+        });
+
+        window.addEventListener('pointerup', function () {
+            finishManipDrag();
+        });
+
+        window.addEventListener('resize', function () {
+            updateTextManipulator();
+        });
+    }
+
+    function createTextId() {
+        return 'txt_' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function createDefaultText(offsetY) {
+        offsetY = typeof offsetY === 'number' ? offsetY : 50;
+        return {
+            id: createTextId(),
+            text: '',
+            font: 'Outfit',
+            textSizePct: 50,
+            textPosX: 50,
+            textPosY: Math.max(10, Math.min(90, offsetY)),
+            textRotation: 0,
+            wrapOnCircle: false,
+            wrapArcPosition: 'top',
+            textColor: '#E5488A'
+        };
+    }
+
+    function getActiveText() {
+        for (var i = 0; i < state.texts.length; i++) {
+            if (state.texts[i].id === state.activeTextId) {
+                return state.texts[i];
+            }
+        }
+        return state.texts[0] || null;
+    }
+
+    function syncActiveTextFromControls() {
+        var active = getActiveText();
+        if (!active) {
+            return;
+        }
+        if (textInput) {
+            active.text = textInput.value;
+        }
+        if (textSize) {
+            active.textSizePct = parseInt(textSize.value, 10) || 50;
+        }
+        if (textPosX) {
+            active.textPosX = parseInt(textPosX.value, 10) || 50;
+        }
+        if (textPosY) {
+            active.textPosY = parseInt(textPosY.value, 10) || 50;
+        }
+        if (textRotation) {
+            active.textRotation = parseInt(textRotation.value, 10) || 0;
+        }
+        if (textWrapCircle) {
+            active.wrapOnCircle = !!textWrapCircle.checked;
+        }
+    }
+
+    function syncControlsFromActiveText() {
+        var active = getActiveText();
+        if (!active) {
+            return;
+        }
+        if (textInput) {
+            textInput.value = active.text || '';
+        }
+        setRangeInput(textSize, textSizeVal, active.textSizePct);
+        setRangeInput(textPosX, textPosXVal, active.textPosX);
+        setRangeInput(textPosY, textPosYVal, active.textPosY);
+        setRangeInput(textRotation, textRotationVal, active.textRotation);
+        setTextColor(active.textColor || '#E5488A', true);
+        if (textWrapCircle) {
+            textWrapCircle.checked = !!(active.wrapOnCircle && state.shape === 'circle');
+        }
+        fontBtns.forEach(function (btn) {
+            btn.classList.toggle('is-active', btn.getAttribute('data-font') === active.font);
+        });
+        syncWrapButton();
+        wrapPosBtns.forEach(function (btn) {
+            var pos = btn.getAttribute('data-wrap-pos') === 'bottom' ? 'bottom' : 'top';
+            var isActive = (active.wrapArcPosition || 'top') === pos;
+            btn.classList.toggle('is-active', isActive);
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        updateWrapUi();
+    }
+
+    function renderTextList() {
+        if (!textListEl) {
+            return;
+        }
+        textListEl.innerHTML = '';
+        state.texts.forEach(function (textObj, index) {
+            var item = document.createElement('div');
+            item.className = 'perso-text-item' + (textObj.id === state.activeTextId ? ' is-active' : '');
+            item.setAttribute('role', 'listitem');
+            item.dataset.textId = textObj.id;
+
+            var label = document.createElement('span');
+            label.className = 'perso-text-item-label';
+            var preview = (textObj.text || '').trim().replace(/\s+/g, ' ');
+            label.textContent = preview !== '' ? preview : ('Texte ' + (index + 1));
+
+            var removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'perso-text-item-remove';
+            removeBtn.setAttribute('aria-label', 'Supprimer ce texte');
+            removeBtn.innerHTML = '&times;';
+            removeBtn.dataset.removeId = textObj.id;
+
+            item.appendChild(label);
+            if (state.texts.length > 1) {
+                item.appendChild(removeBtn);
+            }
+            textListEl.appendChild(item);
+        });
+    }
+
+    function selectText(textId) {
+        syncActiveTextFromControls();
+        state.activeTextId = textId;
+        syncControlsFromActiveText();
+        renderTextList();
+        renderPreview();
+    }
+
+    function addTextBlock() {
+        syncActiveTextFromControls();
+        var offset = 40 + (state.texts.length * 8);
+        var textObj = createDefaultText(Math.min(85, offset));
+        state.texts.push(textObj);
+        state.activeTextId = textObj.id;
+        syncControlsFromActiveText();
+        renderTextList();
+        renderPreview();
+    }
+
+    function removeTextBlock(textId) {
+        if (state.texts.length <= 1) {
+            return;
+        }
+        syncActiveTextFromControls();
+        state.texts = state.texts.filter(function (t) { return t.id !== textId; });
+        if (!getActiveText()) {
+            state.activeTextId = state.texts[0].id;
+        }
+        syncControlsFromActiveText();
+        renderTextList();
+        renderPreview();
+    }
 
     function isListingForm(form) {
         return !!(form && form.classList && form.classList.contains('perso-cart-form'));
@@ -87,6 +621,7 @@
                 hiddenPath: document.getElementById('option-image-personnalisation'),
                 hiddenMeta: document.getElementById('option-perso-meta'),
                 formFileInput: document.getElementById('form-image-personnalisation'),
+                formSourceFileInput: document.getElementById('form-image-personnalisation-source'),
                 statusBox: document.getElementById('perso-status'),
                 statusThumb: document.getElementById('perso-status-thumb'),
                 btnOpen: document.getElementById('btn-personnaliser')
@@ -97,6 +632,7 @@
             hiddenPath: form.querySelector('.option-image-personnalisation') || document.getElementById('option-image-personnalisation'),
             hiddenMeta: form.querySelector('.option-perso-meta') || document.getElementById('option-perso-meta'),
             formFileInput: form.querySelector('.form-image-personnalisation') || document.getElementById('form-image-personnalisation'),
+            formSourceFileInput: form.querySelector('.form-image-personnalisation-source') || document.getElementById('form-image-personnalisation-source'),
             statusBox: document.getElementById('perso-status'),
             statusThumb: document.getElementById('perso-status-thumb'),
             btnOpen: form.querySelector('.js-open-perso-modal') || document.getElementById('btn-personnaliser')
@@ -146,11 +682,26 @@
 
     function buildMetaObject() {
         clampDimensions();
+        syncActiveTextFromControls();
         return {
             format: state.paperFormat,
             shape: state.shape,
             width_cm: state.widthCm,
-            height_cm: state.heightCm
+            height_cm: state.heightCm,
+            texts: state.texts.map(function (t) {
+                return {
+                    id: t.id,
+                    text: t.text,
+                    font: t.font,
+                    textSizePct: t.textSizePct,
+                    textPosX: t.textPosX,
+                    textPosY: t.textPosY,
+                    textRotation: t.textRotation,
+                    wrapOnCircle: t.wrapOnCircle,
+                    wrapArcPosition: t.wrapArcPosition,
+                    textColor: t.textColor
+                };
+            })
         };
     }
 
@@ -225,8 +776,12 @@
             dimHeightWrap.hidden = isCircle;
         }
 
-        if (!isCircle && state.wrapOnCircle) {
-            state.wrapOnCircle = false;
+        if (!isCircle) {
+            state.texts.forEach(function (t) {
+                if (t.wrapOnCircle) {
+                    t.wrapOnCircle = false;
+                }
+            });
             syncWrapButton();
         }
 
@@ -242,7 +797,8 @@
     }
 
     function updateWrapUi() {
-        var wrapActive = state.wrapOnCircle && state.shape === 'circle';
+        var active = getActiveText();
+        var wrapActive = !!(active && active.wrapOnCircle && state.shape === 'circle');
 
         if (textControls) {
             textControls.classList.toggle('is-wrap-active', wrapActive);
@@ -272,43 +828,13 @@
         state.shape = 'circle';
         state.widthCm = 15;
         state.heightCm = 15;
-        state.text = '';
-        state.font = 'Outfit';
-        state.textSizePct = 50;
-        state.textPosX = 50;
-        state.textPosY = 50;
-        state.textRotation = 0;
-        state.wrapOnCircle = false;
-        state.wrapArcPosition = 'top';
-        state.textColor = '#E5488A';
+        state.texts = [createDefaultText()];
+        state.activeTextId = state.texts[0].id;
         loadedImage = null;
+        sourceUploadFile = null;
         hasCustomization = false;
 
-        if (textInput) {
-            textInput.value = '';
-        }
-        setRangeInput(textSize, textSizeVal, 50);
-        setRangeInput(textPosX, textPosXVal, 50);
-        setRangeInput(textPosY, textPosYVal, 50);
-        setRangeInput(textRotation, textRotationVal, 0);
-        if (textWrapCircle) {
-            textWrapCircle.checked = false;
-        }
-        if (wrapCircleBtn) {
-            wrapCircleBtn.classList.remove('is-active');
-            wrapCircleBtn.setAttribute('aria-pressed', 'false');
-        }
-        wrapPosBtns.forEach(function (btn) {
-            var isTop = btn.getAttribute('data-wrap-pos') === 'top';
-            btn.classList.toggle('is-active', isTop);
-            btn.setAttribute('aria-pressed', isTop ? 'true' : 'false');
-        });
-        if (textColorInput) {
-            textColorInput.value = '#E5488A';
-        }
-        colorSwatches.forEach(function (sw) {
-            sw.classList.toggle('is-active', sw.getAttribute('data-color') === '#E5488A');
-        });
+        syncControlsFromActiveText();
         if (filenameEl) {
             filenameEl.textContent = '';
         }
@@ -316,10 +842,7 @@
             fileInput.value = '';
         }
 
-        fontBtns.forEach(function (btn) {
-            btn.classList.toggle('is-active', btn.getAttribute('data-font') === 'Outfit');
-        });
-
+        renderTextList();
         updatePaperUi();
         updateShapeUi();
         revokePreviewUrl();
@@ -366,29 +889,33 @@
         };
     }
 
-    function getTextFontSize(bounds) {
-        return Math.max(10, (state.textSizePct / 100) * Math.min(bounds.w, bounds.h) * 0.45);
+    function getTextFontSize(bounds, textObj) {
+        return Math.max(10, ((textObj.textSizePct || 50) / 100) * Math.min(bounds.w, bounds.h) * 0.45);
     }
 
-    function getTextFillStyle() {
-        return state.textColor || '#E5488A';
+    function getTextFillStyle(textObj) {
+        return textObj.textColor || '#E5488A';
     }
 
     function syncWrapButton() {
         if (!wrapCircleBtn || !textWrapCircle) {
             return;
         }
-        var on = state.wrapOnCircle && state.shape === 'circle';
+        var active = getActiveText();
+        var on = !!(active && active.wrapOnCircle && state.shape === 'circle');
         textWrapCircle.checked = on;
         wrapCircleBtn.classList.toggle('is-active', on);
         wrapCircleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
     }
 
-    function setTextColor(color) {
+    function setTextColor(color, skipRender) {
         if (!color) {
             return;
         }
-        state.textColor = color;
+        var active = getActiveText();
+        if (active) {
+            active.textColor = color;
+        }
         if (textColorInput) {
             textColorInput.value = color;
         }
@@ -405,11 +932,13 @@
                 sw.classList.remove('is-active');
             });
         }
-        renderPreview();
+        if (!skipRender) {
+            renderPreview();
+        }
     }
 
-    function applyTextShadow(ctx) {
-        if (loadedImage && !state.wrapOnCircle) {
+    function applyTextShadow(ctx, textObj) {
+        if (loadedImage && !(textObj && textObj.wrapOnCircle)) {
             ctx.shadowColor = 'rgba(0,0,0,0.45)';
             ctx.shadowBlur = 4;
         }
@@ -450,31 +979,36 @@
         ctx.setLineDash([]);
     }
 
-    function drawTextStraight(ctx, bounds) {
-        var text = state.text.trim();
-        if (text === '') {
+    function drawTextStraight(ctx, bounds, textObj) {
+        var text = (textObj.text || '').replace(/\r\n/g, '\n');
+        if (text.trim() === '') {
             return;
         }
 
-        var fontSize = getTextFontSize(bounds);
-        var tx = bounds.x + bounds.w * (state.textPosX / 100);
-        var ty = bounds.y + bounds.h * (state.textPosY / 100);
+        var fontSize = getTextFontSize(bounds, textObj);
+        var tx = bounds.x + bounds.w * ((textObj.textPosX || 50) / 100);
+        var ty = bounds.y + bounds.h * ((textObj.textPosY || 50) / 100);
+        var lines = text.split('\n');
+        var lineHeight = fontSize * 1.25;
+        var startY = -((lines.length - 1) * lineHeight) / 2;
 
         ctx.save();
         ctx.translate(tx, ty);
-        ctx.rotate((state.textRotation * Math.PI) / 180);
-        ctx.font = '600 ' + fontSize + 'px "' + state.font + '", sans-serif';
-        ctx.fillStyle = getTextFillStyle();
+        ctx.rotate(((textObj.textRotation || 0) * Math.PI) / 180);
+        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+        ctx.fillStyle = getTextFillStyle(textObj);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        applyTextShadow(ctx);
-        ctx.fillText(text, 0, 0, bounds.w * 0.92);
+        applyTextShadow(ctx, textObj);
+        lines.forEach(function (line, index) {
+            ctx.fillText(line, 0, startY + index * lineHeight, bounds.w * 0.92);
+        });
         clearTextShadow(ctx);
         ctx.restore();
     }
 
-    function drawTextOnCircle(ctx, bounds) {
-        var text = state.text.trim();
+    function drawTextOnCircle(ctx, bounds, textObj) {
+        var text = (textObj.text || '').replace(/\r\n/g, '\n').replace(/\n/g, ' ').trim();
         if (text === '') {
             return;
         }
@@ -482,13 +1016,13 @@
         var cx = bounds.cx;
         var cy = bounds.cy;
         var maxR = Math.min(bounds.w, bounds.h) / 2;
-        var radius = Math.max(20, maxR * (0.25 + 0.7 * (state.textPosY / 100)));
-        var fontSize = getTextFontSize(bounds);
-        var fillStyle = getTextFillStyle();
+        var radius = Math.max(20, maxR * (0.25 + 0.7 * ((textObj.textPosY || 50) / 100)));
+        var fontSize = getTextFontSize(bounds, textObj);
+        var fillStyle = getTextFillStyle(textObj);
         var chars = text.split('');
 
         ctx.save();
-        ctx.font = '600 ' + fontSize + 'px "' + state.font + '", sans-serif';
+        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
         ctx.fillStyle = fillStyle;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -505,9 +1039,9 @@
 
         var anglePerPx = 1 / radius;
         var totalAngle = Math.min(totalWidth * anglePerPx, Math.PI * 1.85);
-        var arcOffset = ((state.textPosX - 50) / 50) * Math.PI * 0.75;
-        var rotOffset = (state.textRotation * Math.PI) / 180;
-        var isBottom = state.wrapArcPosition === 'bottom';
+        var arcOffset = (((textObj.textPosX || 50) - 50) / 50) * Math.PI * 0.75;
+        var rotOffset = ((textObj.textRotation || 0) * Math.PI) / 180;
+        var isBottom = textObj.wrapArcPosition === 'bottom';
 
         if (isBottom) {
             var angleBottom = Math.PI / 2 + arcOffset + rotOffset + totalAngle / 2;
@@ -617,22 +1151,37 @@
             ctx.fill();
         }
 
-        if (state.text.trim() !== '') {
-            if (state.wrapOnCircle && state.shape === 'circle') {
-                drawTextOnCircle(ctx, bounds);
-            } else {
-                drawTextStraight(ctx, bounds);
-            }
+        if (state.texts.some(function (t) { return (t.text || '').trim() !== ''; })) {
+            state.texts.forEach(function (textObj) {
+                if ((textObj.text || '').trim() === '') {
+                    return;
+                }
+                if (textObj.wrapOnCircle && state.shape === 'circle') {
+                    drawTextOnCircle(ctx, bounds, textObj);
+                } else {
+                    drawTextStraight(ctx, bounds, textObj);
+                }
+            });
         }
 
         ctx.restore();
         drawShapeOutline(ctx, bounds);
 
+        lastRenderLayout = {
+            paperBounds: paperBounds,
+            designBounds: bounds
+        };
+        updateTextManipulator();
         updateValidateState();
     }
 
     function hasContent() {
-        return !!(loadedImage || (state.text && state.text.trim() !== ''));
+        if (loadedImage) {
+            return true;
+        }
+        return state.texts.some(function (t) {
+            return (t.text || '').trim() !== '';
+        });
     }
 
     function updateValidateState() {
@@ -710,6 +1259,8 @@
     }
 
     function closeModal() {
+        finishManipDrag();
+        hideTextManipulator();
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
@@ -720,6 +1271,7 @@
             return;
         }
 
+        sourceUploadFile = file;
         revokePreviewUrl();
         previewObjectUrl = URL.createObjectURL(file);
 
@@ -744,6 +1296,7 @@
         }
 
         var ctxForm = getActiveContext();
+        syncActiveTextFromControls();
         syncMetaToForm();
 
         canvasToFile(function (file) {
@@ -755,6 +1308,10 @@
             if (!assignFileToForm(file, ctxForm.formFileInput)) {
                 window.alert('Votre navigateur ne permet pas d\'ajouter cette image. Essayez un autre navigateur.');
                 return;
+            }
+
+            if (sourceUploadFile && ctxForm.formSourceFileInput) {
+                assignFileToForm(sourceUploadFile, ctxForm.formSourceFileInput);
             }
 
             updateStatus(true, canvas.toDataURL('image/png'));
@@ -770,21 +1327,20 @@
         });
     }
 
-    function bindRange(input, valEl, stateKey, parser, asCm) {
+    function bindTextRange(input, valEl, key, parser) {
         if (!input) {
             return;
         }
         input.addEventListener('input', function () {
-            state[stateKey] = parser(input.value);
-            if (state.shape === 'circle' && (stateKey === 'widthCm' || stateKey === 'heightCm')) {
-                state.heightCm = state.widthCm;
+            var active = getActiveText();
+            if (!active) {
+                return;
             }
+            active[key] = parser(input.value);
             if (valEl) {
-                valEl.textContent = asCm ? formatCm(state[stateKey]) : String(state[stateKey]);
+                valEl.textContent = String(active[key]);
             }
-            if (stateKey === 'widthCm' && dimDiameterVal && state.shape === 'circle') {
-                setRangeInput(dimDiameter, dimDiameterVal, state.widthCm, true);
-            }
+            renderTextList();
             renderPreview();
         });
     }
@@ -816,8 +1372,10 @@
             if (state.shape === 'circle') {
                 state.heightCm = state.widthCm;
             }
-            if (state.shape !== 'circle' && state.wrapOnCircle) {
-                state.wrapOnCircle = false;
+            if (state.shape !== 'circle') {
+                state.texts.forEach(function (t) {
+                    t.wrapOnCircle = false;
+                });
             }
             updateShapeUi();
             syncWrapButton();
@@ -828,7 +1386,10 @@
 
     fontBtns.forEach(function (btn) {
         btn.addEventListener('click', function () {
-            state.font = btn.getAttribute('data-font') || 'Outfit';
+            var active = getActiveText();
+            if (active) {
+                active.font = btn.getAttribute('data-font') || 'Outfit';
+            }
             fontBtns.forEach(function (b) {
                 b.classList.toggle('is-active', b === btn);
             });
@@ -836,18 +1397,64 @@
         });
     });
 
+    function bindRange(input, valEl, stateKey, parser, asCm) {
+        if (!input) {
+            return;
+        }
+        input.addEventListener('input', function () {
+            state[stateKey] = parser(input.value);
+            if (state.shape === 'circle' && (stateKey === 'widthCm' || stateKey === 'heightCm')) {
+                state.heightCm = state.widthCm;
+            }
+            if (valEl) {
+                valEl.textContent = asCm ? formatCm(state[stateKey]) : String(state[stateKey]);
+            }
+            if (stateKey === 'widthCm' && dimDiameterVal && state.shape === 'circle') {
+                setRangeInput(dimDiameter, dimDiameterVal, state.widthCm, true);
+            }
+            renderPreview();
+        });
+    }
+
     bindRange(dimWidth, dimWidthVal, 'widthCm', function (v) { return parseFloat(v) || 15; }, true);
     bindRange(dimHeight, dimHeightVal, 'heightCm', function (v) { return parseFloat(v) || 15; }, true);
     bindRange(dimDiameter, dimDiameterVal, 'widthCm', function (v) { return parseFloat(v) || 15; }, true);
-    bindRange(textSize, textSizeVal, 'textSizePct', function (v) { return parseInt(v, 10) || 50; });
-    bindRange(textPosX, textPosXVal, 'textPosX', function (v) { return parseInt(v, 10) || 50; });
-    bindRange(textPosY, textPosYVal, 'textPosY', function (v) { return parseInt(v, 10) || 50; });
-    bindRange(textRotation, textRotationVal, 'textRotation', function (v) { return parseInt(v, 10) || 0; });
+    bindTextRange(textSize, textSizeVal, 'textSizePct', function (v) { return parseInt(v, 10) || 50; });
+    bindTextRange(textPosX, textPosXVal, 'textPosX', function (v) { return parseInt(v, 10) || 50; });
+    bindTextRange(textPosY, textPosYVal, 'textPosY', function (v) { return parseInt(v, 10) || 50; });
+    bindTextRange(textRotation, textRotationVal, 'textRotation', function (v) { return parseInt(v, 10) || 0; });
 
     if (textInput) {
         textInput.addEventListener('input', function () {
-            state.text = textInput.value;
+            var active = getActiveText();
+            if (active) {
+                active.text = textInput.value;
+            }
+            renderTextList();
             renderPreview();
+        });
+    }
+
+    if (textAddBtn) {
+        textAddBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            addTextBlock();
+        });
+    }
+
+    if (textListEl) {
+        textListEl.addEventListener('click', function (event) {
+            var removeBtn = event.target.closest('.perso-text-item-remove');
+            if (removeBtn && removeBtn.dataset.removeId) {
+                event.preventDefault();
+                event.stopPropagation();
+                removeTextBlock(removeBtn.dataset.removeId);
+                return;
+            }
+            var item = event.target.closest('.perso-text-item');
+            if (item && item.dataset.textId) {
+                selectText(item.dataset.textId);
+            }
         });
     }
 
@@ -858,7 +1465,11 @@
             if (state.shape !== 'circle') {
                 return;
             }
-            state.wrapOnCircle = !state.wrapOnCircle;
+            var active = getActiveText();
+            if (!active) {
+                return;
+            }
+            active.wrapOnCircle = !active.wrapOnCircle;
             syncWrapButton();
             updateWrapUi();
             renderPreview();
@@ -869,14 +1480,15 @@
         btn.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();
-            if (!state.wrapOnCircle || state.shape !== 'circle') {
+            var active = getActiveText();
+            if (!active || !active.wrapOnCircle || state.shape !== 'circle') {
                 return;
             }
-            state.wrapArcPosition = btn.getAttribute('data-wrap-pos') === 'bottom' ? 'bottom' : 'top';
+            active.wrapArcPosition = btn.getAttribute('data-wrap-pos') === 'bottom' ? 'bottom' : 'top';
             wrapPosBtns.forEach(function (b) {
-                var active = b === btn;
-                b.classList.toggle('is-active', active);
-                b.setAttribute('aria-pressed', active ? 'true' : 'false');
+                var isActive = b === btn;
+                b.classList.toggle('is-active', isActive);
+                b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
             });
             renderPreview();
         });
@@ -931,6 +1543,12 @@
         });
     }
 
+    bindTextManipulatorEvents();
+
+    state.texts = [createDefaultText()];
+    state.activeTextId = state.texts[0].id;
+    renderTextList();
+    syncControlsFromActiveText();
     updatePaperUi();
     updateShapeUi();
     updateWrapUi();

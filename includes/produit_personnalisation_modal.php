@@ -69,7 +69,9 @@
 
                 <section class="perso-tool-section">
                     <h3 class="perso-tool-title"><i class="fa-solid fa-font" aria-hidden="true"></i> Texte</h3>
-                    <input type="text" class="perso-text-input" id="perso-text-input" maxlength="80" placeholder="Votre texte ici…" autocomplete="off">
+                    <div class="perso-text-list" id="perso-text-list" role="list" aria-label="Textes ajoutés"></div>
+                    <button type="button" class="perso-text-add-btn" id="perso-text-add"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter un texte</button>
+                    <textarea class="perso-text-input" id="perso-text-input" maxlength="500" rows="3" placeholder="Votre texte ici… (Entrée = retour à la ligne)" autocomplete="off"></textarea>
 
                     <div class="perso-text-controls">
                         <div class="perso-dimension-field">
@@ -138,9 +140,23 @@
 
             <div class="perso-preview-panel">
                 <p class="perso-preview-label">Aperçu en direct</p>
+                <p class="perso-preview-hint">Sélectionnez un texte puis déplacez-le, redimensionnez-le ou faites-le pivoter directement sur l'aperçu.</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="perso-preview-viewport">
-                        <canvas id="perso-preview-canvas" width="400" height="400" aria-label="Aperçu de la personnalisation"></canvas>
+                        <canvas id="perso-preview-canvas" width="640" height="640" aria-label="Aperçu de la personnalisation"></canvas>
+                        <div class="perso-text-manipulator" id="perso-text-manipulator" hidden aria-hidden="true">
+                            <div class="perso-text-manip-box" id="perso-text-manip-box">
+                                <span class="perso-text-handle perso-text-handle--nw" data-handle="nw" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--ne" data-handle="ne" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--sw" data-handle="sw" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--se" data-handle="se" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--n" data-handle="n" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--s" data-handle="s" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--e" data-handle="e" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--w" data-handle="w" aria-hidden="true"></span>
+                                <span class="perso-text-handle perso-text-handle--rotate" data-handle="rotate" aria-label="Pivoter le texte"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

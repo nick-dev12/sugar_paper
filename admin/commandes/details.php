@@ -421,7 +421,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                         <?php endif; ?>
                         <?php if ($perso_path !== ''): ?>
                             <?php render_commande_personnalisation_specs($produit, ['compact' => true]); ?>
-                            <?php render_commande_personnalisation_preview($produit, ['compact' => true]); ?>
+                            <?php
+                            $perso_src = commande_ligne_personnalisation_source_path($produit);
+                            if ($perso_src !== '') {
+                                render_commande_personnalisation_source_preview($produit, ['compact' => true]);
+                            }
+                            render_commande_personnalisation_preview($produit, ['compact' => true]);
+                            ?>
                         <?php endif; ?>
                     </div>
                     <div class="produit-total">

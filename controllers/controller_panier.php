@@ -87,6 +87,26 @@ function process_add_to_panier()
         }
     }
 
+    $option_image_personnalisation_source = null;
+    if (produit_supports_photo_personnalisation($produit) && isset($_FILES['image_personnalisation_source']) && is_array($_FILES['image_personnalisation_source'])) {
+        $upload_dir = produit_personnalisation_upload_dir();
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        require_once __DIR__ . '/../includes/image_optimizer.php';
+        $src_result = upload_optimize_image_file(
+            $_FILES['image_personnalisation_source'],
+            $upload_dir,
+            produit_personnalisation_upload_subdir(),
+            'perso_src_'
+        );
+        if (!empty($src_result['success'])) {
+            $option_image_personnalisation_source = (string) ($src_result['relative_path'] ?? '');
+        } elseif ((int) ($_FILES['image_personnalisation_source']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            return ['success' => false, 'message' => $src_result['message'] ?? 'Impossible d’enregistrer l’image importée.'];
+        }
+    }
+
     $couleurs_options = [];
     $poids_options = parse_options_with_surcharge($produit['poids'] ?? null);
     $taille_options = parse_options_with_surcharge($produit['taille'] ?? null);
@@ -153,7 +173,7 @@ function process_add_to_panier()
     }
 
     if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,
-        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final, $option_image_personnalisation, $option_perso_meta)) {
+        $vid, $vnom, $vimg, $surcout_poids, $surcout_taille, $prix_final, $option_image_personnalisation, $option_perso_meta, $option_image_personnalisation_source)) {
         return ['success' => true, 'message' => 'Produit ajouté au panier avec succès.'];
     }
     return ['success' => false, 'message' => 'Erreur lors de l\'ajout au panier.'];

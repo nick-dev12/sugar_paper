@@ -211,4 +211,9 @@ return [
         'label' => 'Métadonnées personnalisation (format, forme, dimensions)',
         'script' => 'run_add_personnalisation_meta.php',
     ],
+    [
+        'id' => 'personnalisation_source_image',
+        'label' => 'Image source importée (personnalisation produit)',
+        'script' => 'run_add_personnalisation_source_image.php',
+    ],
 ];

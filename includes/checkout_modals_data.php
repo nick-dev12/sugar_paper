@@ -295,7 +295,16 @@ if (!function_exists('checkout_modals_success_payload')) {
                     $perso_uri = produit_personnalisation_public_url($perso_path);
                     $perso_abs = absolute_public_url($perso_uri);
                     if ($perso_abs !== '') {
-                        $wa_lines[] = '  🎨 Personnalisation : ' . $perso_abs;
+                        $wa_lines[] = '  🎨 Aperçu personnalisation : ' . $perso_abs;
+                    }
+                }
+
+                $perso_src = commande_ligne_personnalisation_source_path($prod);
+                if ($perso_src !== '') {
+                    $src_uri = produit_personnalisation_public_url($perso_src);
+                    $src_abs = absolute_public_url($src_uri);
+                    if ($src_abs !== '') {
+                        $wa_lines[] = '  📷 Image importée : ' . $src_abs;
                     }
                 }
 

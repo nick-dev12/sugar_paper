@@ -320,6 +320,7 @@ $section_uses_cp = ($section_key === 'cake_topper');
                                     + '<input type="hidden" name="option_image_personnalisation" class="option-image-personnalisation" value="">'
                                     + '<input type="hidden" name="option_perso_meta" class="option-perso-meta" value="">'
                                     + '<input type="file" name="image_personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'
+                                    + '<input type="file" name="image_personnalisation_source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'
                                     + '<button type="button" class="btn-add-cart btn-personnaliser-card js-open-perso-modal" data-perso-form="perso-form-' + produit.id + '">'
                                     + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation</button>'
                                     + '</form>';
