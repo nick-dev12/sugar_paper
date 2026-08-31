@@ -2,6 +2,8 @@
  * Grille responsive catalogue — index, categorie, produit (similaires)
  * Mobile : 2 cartes / ligne, 4px des bords écran
  * Tablette : 3 cartes / ligne
+ * Desktop : 3 cartes / ligne (1025px – 1299px)
+ * Grand écran : 4 cartes / ligne (≥ 1300px)
  */
 
 /* Conteneurs produits : grille commune */
@@ -15,6 +17,74 @@
 .section00 .produit_vedetes .articles.carousel11,
 .produits-similaires .articles.carousel11 {
   box-sizing: border-box;
+}
+
+/* Desktop moyen : 3 colonnes */
+@media (min-width: 1025px) and (max-width: 1299px) {
+  .produit_vedete .articles.carousel1-flex-mode,
+  .produit_vedete .articles.carousel11,
+  .produit_vedetes .articles.carousel11,
+  .carousel-produits-outer .carousel1.carousel1-flex-mode,
+  .carousel11,
+  .home-section-grid,
+  .carousel11#produits-container,
+  .section00 .produit_vedetes .articles.carousel11,
+  .produits-similaires .articles.carousel11 {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(10px, 1.5vw, 16px) !important;
+    padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 16px) !important;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .produit_vedete .articles .carousel,
+  .produit_vedetes .articles .carousel,
+  .carousel11 .carousel,
+  .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel,
+  .produits-similaires .articles .carousel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: none !important;
+    margin: 0 !important;
+  }
+}
+
+/* Grand écran : 4 colonnes */
+@media (min-width: 1300px) {
+  .produit_vedete .articles.carousel1-flex-mode,
+  .produit_vedete .articles.carousel11,
+  .produit_vedetes .articles.carousel11,
+  .carousel-produits-outer .carousel1.carousel1-flex-mode,
+  .carousel11,
+  .home-section-grid,
+  .carousel11#produits-container,
+  .section00 .produit_vedetes .articles.carousel11,
+  .produits-similaires .articles.carousel11 {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(12px, 1.4vw, 18px) !important;
+    padding: clamp(8px, 1.5vw, 16px) clamp(12px, 2vw, 20px) !important;
+    justify-content: stretch !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .produit_vedete .articles .carousel,
+  .produit_vedetes .articles .carousel,
+  .carousel11 .carousel,
+  .carousel-produits-outer .carousel1.carousel1-flex-mode .carousel,
+  .produits-similaires .articles .carousel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: none !important;
+    margin: 0 !important;
+  }
 }
 
 @media (min-width: 800px) and (max-width: 1024px) {

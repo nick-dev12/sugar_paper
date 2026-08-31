@@ -38,15 +38,15 @@
   box-sizing: border-box;
 }
 
-/* Desktop : cartes flexibles dans le conteneur */
+/* Desktop : cartes en grille (catalogue-responsive.css) */
 @media (min-width: 1025px) {
   .carousel1-flex-mode .carousel,
   .produit_vedete .articles .carousel,
   .produit_vedetes .articles .carousel,
   .carousel11 .carousel {
-    width: 300px;
-    max-width: 300px;
-    flex: 0 0 300px;
+    width: 100%;
+    max-width: 100%;
+    flex: none;
   }
 }
 

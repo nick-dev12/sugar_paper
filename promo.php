@@ -41,6 +41,7 @@ $seo_canonical = $base . '/promo.php';
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         .page-header {
