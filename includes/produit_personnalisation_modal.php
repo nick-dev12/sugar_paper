@@ -142,12 +142,13 @@
 
             <div class="perso-preview-panel">
                 <p class="perso-preview-label">Aperçu en direct</p>
-                <p class="perso-preview-hint">Manipulez l'image ou le texte directement sur l'aperçu : glisser pour déplacer, poignées ou molette pour zoomer.</p>
+                <p class="perso-preview-hint">Manipulez l'image ou le texte sur l'aperçu. Utilisez la croix × pour supprimer un élément sélectionné.</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="perso-preview-viewport">
                         <canvas id="perso-preview-canvas" width="640" height="640" aria-label="Aperçu de la personnalisation"></canvas>
                         <div class="perso-image-manipulator" id="perso-image-manipulator" hidden aria-hidden="true">
                             <div class="perso-image-manip-box" id="perso-image-manip-box">
+                                <button type="button" class="perso-manip-delete" id="perso-image-delete" aria-label="Supprimer l'image">&times;</button>
                                 <span class="perso-image-handle perso-image-handle--nw" data-handle="nw" aria-hidden="true"></span>
                                 <span class="perso-image-handle perso-image-handle--ne" data-handle="ne" aria-hidden="true"></span>
                                 <span class="perso-image-handle perso-image-handle--sw" data-handle="sw" aria-hidden="true"></span>
@@ -156,6 +157,7 @@
                         </div>
                         <div class="perso-text-manipulator" id="perso-text-manipulator" hidden aria-hidden="true">
                             <div class="perso-text-manip-box" id="perso-text-manip-box">
+                                <button type="button" class="perso-manip-delete" id="perso-text-delete" aria-label="Supprimer ce texte">&times;</button>
                                 <span class="perso-text-handle perso-text-handle--nw" data-handle="nw" aria-hidden="true"></span>
                                 <span class="perso-text-handle perso-text-handle--ne" data-handle="ne" aria-hidden="true"></span>
                                 <span class="perso-text-handle perso-text-handle--sw" data-handle="sw" aria-hidden="true"></span>

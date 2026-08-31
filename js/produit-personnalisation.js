@@ -28,6 +28,8 @@
     var imageManipBox = document.getElementById('perso-image-manip-box');
     var imageHintEl = document.getElementById('perso-image-hint');
     var imageResetBtn = document.getElementById('perso-image-reset');
+    var imageDeleteBtn = document.getElementById('perso-image-delete');
+    var textDeleteBtn = document.getElementById('perso-text-delete');
     var textInput = document.getElementById('perso-text-input');
     var textListEl = document.getElementById('perso-text-list');
     var textAddBtn = document.getElementById('perso-text-add');
@@ -199,6 +201,43 @@
         }
         var dist = Math.hypot(canvasX - params.cx, canvasY - params.cy);
         applyImageZoomAt(clampImageScale(startScale * (dist / startDist)), params.cx, params.cy);
+    }
+
+    function removeImage() {
+        finishManipDrag();
+        loadedImage = null;
+        sourceUploadFile = null;
+        resetImageTransform();
+        revokePreviewUrl();
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        if (filenameEl) {
+            filenameEl.textContent = '';
+        }
+        hideImageManipulator();
+        state.editTarget = 'text';
+        updateImageUi();
+        syncMetaToForm();
+        updateValidateState();
+        renderPreview();
+    }
+
+    function resetSingleTextBlock(textObj) {
+        var offsetY = textObj.textPosY || 50;
+        var fresh = createDefaultText(offsetY);
+        fresh.id = textObj.id;
+        return fresh;
+    }
+
+    function textBlockCanBeRemoved(textObj) {
+        if (!textObj) {
+            return false;
+        }
+        if (state.texts.length > 1) {
+            return true;
+        }
+        return (textObj.text || '').trim() !== '';
     }
 
     function selectImage() {
@@ -448,6 +487,9 @@
         textManipBox.style.left = (vp.x - boxW / 2) + 'px';
         textManipBox.style.top = (vp.y - boxH / 2) + 'px';
         textManipBox.style.transform = 'rotate(' + layout.rotation + 'deg)';
+        if (textDeleteBtn) {
+            textDeleteBtn.hidden = !textBlockCanBeRemoved(active);
+        }
     }
 
     function applyTextMove(active, canvasX, canvasY) {
@@ -626,6 +668,9 @@
             if (!modal.classList.contains('is-open') || event.button > 0) {
                 return;
             }
+            if (event.target.closest('.perso-manip-delete')) {
+                return;
+            }
             touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
 
             if (Object.keys(touchPointers).length >= 2 && loadedImage) {
@@ -713,6 +758,9 @@
             if (!modal.classList.contains('is-open')) {
                 return;
             }
+            if (event.target.closest('.perso-manip-delete')) {
+                return;
+            }
             state.editTarget = 'text';
             hideImageManipulator();
             var handleEl = event.target.closest('.perso-text-handle');
@@ -738,6 +786,9 @@
         if (imageManipBox) {
             imageManipBox.addEventListener('pointerdown', function (event) {
                 if (!modal.classList.contains('is-open') || !loadedImage) {
+                    return;
+                }
+                if (event.target.closest('.perso-manip-delete')) {
                     return;
                 }
                 selectImage();
@@ -911,7 +962,7 @@
             removeBtn.dataset.removeId = textObj.id;
 
             item.appendChild(label);
-            if (state.texts.length > 1) {
+            if (textBlockCanBeRemoved(textObj)) {
                 item.appendChild(removeBtn);
             }
             textListEl.appendChild(item);
@@ -940,17 +991,43 @@
     }
 
     function removeTextBlock(textId) {
-        if (state.texts.length <= 1) {
+        syncActiveTextFromControls();
+        var target = null;
+        for (var i = 0; i < state.texts.length; i++) {
+            if (state.texts[i].id === textId) {
+                target = state.texts[i];
+                break;
+            }
+        }
+        if (!target || !textBlockCanBeRemoved(target)) {
             return;
         }
-        syncActiveTextFromControls();
-        state.texts = state.texts.filter(function (t) { return t.id !== textId; });
-        if (!getActiveText()) {
+
+        if (state.texts.length <= 1) {
+            state.texts[0] = resetSingleTextBlock(target);
             state.activeTextId = state.texts[0].id;
+        } else {
+            state.texts = state.texts.filter(function (t) { return t.id !== textId; });
+            if (!getActiveText()) {
+                state.activeTextId = state.texts[0].id;
+            }
         }
+
+        finishManipDrag();
+        state.editTarget = 'text';
         syncControlsFromActiveText();
         renderTextList();
+        hideTextManipulator();
+        updateTextManipulator();
         renderPreview();
+    }
+
+    function removeActiveText() {
+        var active = getActiveText();
+        if (!active) {
+            return;
+        }
+        removeTextBlock(active.id);
     }
 
     function isListingForm(form) {
@@ -1908,6 +1985,22 @@
             resetImageTransform();
             selectImage();
             renderPreview();
+        });
+    }
+
+    if (imageDeleteBtn) {
+        imageDeleteBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            removeImage();
+        });
+    }
+
+    if (textDeleteBtn) {
+        textDeleteBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            removeActiveText();
         });
     }
 
