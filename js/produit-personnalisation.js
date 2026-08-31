@@ -24,6 +24,10 @@
     var previewViewport = document.getElementById('perso-preview-viewport');
     var textManipulator = document.getElementById('perso-text-manipulator');
     var textManipBox = document.getElementById('perso-text-manip-box');
+    var imageManipulator = document.getElementById('perso-image-manipulator');
+    var imageManipBox = document.getElementById('perso-image-manip-box');
+    var imageHintEl = document.getElementById('perso-image-hint');
+    var imageResetBtn = document.getElementById('perso-image-reset');
     var textInput = document.getElementById('perso-text-input');
     var textListEl = document.getElementById('perso-text-list');
     var textAddBtn = document.getElementById('perso-text-add');
@@ -71,12 +75,19 @@
         widthCm: 15,
         heightCm: 15,
         texts: [],
-        activeTextId: ''
+        activeTextId: '',
+        imageOffsetX: 50,
+        imageOffsetY: 50,
+        imageScalePct: 100,
+        editTarget: 'text'
     };
 
     var CANVAS_SIZE = 640;
     var lastRenderLayout = null;
     var manipDrag = null;
+    var touchPointers = {};
+    var IMAGE_SCALE_MIN = 50;
+    var IMAGE_SCALE_MAX = 400;
 
     function clampPct(value) {
         return Math.max(0, Math.min(100, Math.round(value)));
@@ -95,6 +106,166 @@
             n += 360;
         }
         return n;
+    }
+
+    function clampImageOffset(value) {
+        return Math.max(-50, Math.min(150, Math.round(value)));
+    }
+
+    function clampImageScale(value) {
+        return Math.max(IMAGE_SCALE_MIN, Math.min(IMAGE_SCALE_MAX, Math.round(value)));
+    }
+
+    function resetImageTransform() {
+        state.imageOffsetX = 50;
+        state.imageOffsetY = 50;
+        state.imageScalePct = 100;
+    }
+
+    function getImageDrawParams(bounds, img) {
+        if (!img || !bounds) {
+            return null;
+        }
+        var coverScale = Math.max(bounds.w / img.width, bounds.h / img.height);
+        var userScale = (state.imageScalePct || 100) / 100;
+        var scale = coverScale * userScale;
+        var dw = img.width * scale;
+        var dh = img.height * scale;
+        var cx = bounds.x + bounds.w * ((state.imageOffsetX || 50) / 100);
+        var cy = bounds.y + bounds.h * ((state.imageOffsetY || 50) / 100);
+        return {
+            x: cx - dw / 2,
+            y: cy - dh / 2,
+            w: dw,
+            h: dh,
+            cx: cx,
+            cy: cy
+        };
+    }
+
+    function pointInDesignBounds(canvasX, canvasY) {
+        if (!lastRenderLayout) {
+            return false;
+        }
+        var b = lastRenderLayout.designBounds;
+        if (state.shape === 'circle') {
+            var dx = canvasX - b.cx;
+            var dy = canvasY - b.cy;
+            return (dx * dx + dy * dy) <= (b.r * b.r);
+        }
+        return canvasX >= b.x && canvasX <= b.x + b.w && canvasY >= b.y && canvasY <= b.y + b.h;
+    }
+
+    function applyImageMove(canvasX, canvasY) {
+        if (!lastRenderLayout) {
+            return;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        state.imageOffsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
+        state.imageOffsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
+    }
+
+    function applyImageZoomAt(newScalePct, focalX, focalY) {
+        if (!loadedImage || !lastRenderLayout) {
+            return;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        var before = getImageDrawParams(bounds, loadedImage);
+        if (!before || before.w <= 0 || before.h <= 0) {
+            state.imageScalePct = clampImageScale(newScalePct);
+            return;
+        }
+        var fracX = (focalX - before.x) / before.w;
+        var fracY = (focalY - before.y) / before.h;
+        state.imageScalePct = clampImageScale(newScalePct);
+        var after = getImageDrawParams(bounds, loadedImage);
+        if (!after) {
+            return;
+        }
+        var newCx = focalX - fracX * after.w + after.w / 2;
+        var newCy = focalY - fracY * after.h + after.h / 2;
+        state.imageOffsetX = clampImageOffset(((newCx - bounds.x) / bounds.w) * 100);
+        state.imageOffsetY = clampImageOffset(((newCy - bounds.y) / bounds.h) * 100);
+    }
+
+    function applyImageResize(canvasX, canvasY, startDist, startScale) {
+        if (!loadedImage || !lastRenderLayout || startDist <= 0) {
+            return;
+        }
+        var bounds = lastRenderLayout.designBounds;
+        var params = getImageDrawParams(bounds, loadedImage);
+        if (!params) {
+            return;
+        }
+        var dist = Math.hypot(canvasX - params.cx, canvasY - params.cy);
+        applyImageZoomAt(clampImageScale(startScale * (dist / startDist)), params.cx, params.cy);
+    }
+
+    function selectImage() {
+        syncActiveTextFromControls();
+        state.editTarget = 'image';
+        hideTextManipulator();
+        updateImageManipulator();
+        updateImageUi();
+    }
+
+    function hideImageManipulator() {
+        if (!imageManipulator) {
+            return;
+        }
+        imageManipulator.hidden = true;
+        imageManipulator.setAttribute('aria-hidden', 'true');
+        imageManipulator.classList.remove('is-visible');
+    }
+
+    function updateImageUi() {
+        var hasImg = !!loadedImage;
+        if (imageHintEl) {
+            imageHintEl.hidden = !hasImg;
+        }
+        if (imageResetBtn) {
+            imageResetBtn.hidden = !hasImg;
+        }
+    }
+
+    function updateImageManipulator() {
+        if (!imageManipulator || !imageManipBox || !previewViewport || !canvas) {
+            return;
+        }
+        if (!modal.classList.contains('is-open') || !loadedImage || state.editTarget !== 'image' || !lastRenderLayout) {
+            hideImageManipulator();
+            return;
+        }
+
+        var params = getImageDrawParams(lastRenderLayout.designBounds, loadedImage);
+        if (!params) {
+            hideImageManipulator();
+            return;
+        }
+
+        var tl = canvasPointToViewport(params.x, params.y);
+        var br = canvasPointToViewport(params.x + params.w, params.y + params.h);
+        var boxW = Math.max(48, br.x - tl.x);
+        var boxH = Math.max(48, br.y - tl.y);
+
+        imageManipulator.hidden = false;
+        imageManipulator.setAttribute('aria-hidden', 'false');
+        imageManipulator.classList.add('is-visible');
+        imageManipBox.style.width = boxW + 'px';
+        imageManipBox.style.height = boxH + 'px';
+        imageManipBox.style.left = tl.x + 'px';
+        imageManipBox.style.top = tl.y + 'px';
+        imageManipBox.style.transform = 'none';
+    }
+
+    function getPinchDistance() {
+        var ids = Object.keys(touchPointers);
+        if (ids.length < 2) {
+            return 0;
+        }
+        var a = touchPointers[ids[0]];
+        var b = touchPointers[ids[1]];
+        return Math.hypot(a.x - b.x, a.y - b.y);
     }
 
     function getCanvasDisplayScale() {
@@ -246,6 +417,10 @@
             hideTextManipulator();
             return;
         }
+        if (state.editTarget !== 'text') {
+            hideTextManipulator();
+            return;
+        }
 
         var active = getActiveText();
         if (!active || (active.text || '').trim() === '') {
@@ -320,14 +495,55 @@
         if (textManipBox) {
             textManipBox.classList.remove('is-dragging');
         }
+        if (imageManipBox) {
+            imageManipBox.classList.remove('is-dragging');
+        }
+        var wasImage = manipDrag.target === 'image';
         manipDrag = null;
         syncControlsFromActiveText();
         renderTextList();
+        if (wasImage) {
+            updateImageManipulator();
+        } else {
+            updateTextManipulator();
+        }
     }
 
-    function startManipDrag(mode, handle, clientX, clientY) {
+    function startManipDrag(target, mode, handle, clientX, clientY) {
+        if (!lastRenderLayout) {
+            return;
+        }
+        var canvasPt = clientToCanvas(clientX, clientY);
+
+        if (target === 'image') {
+            if (!loadedImage) {
+                return;
+            }
+            var imgParams = getImageDrawParams(lastRenderLayout.designBounds, loadedImage);
+            if (!imgParams) {
+                return;
+            }
+            manipDrag = {
+                target: 'image',
+                mode: mode,
+                handle: handle || '',
+                startX: canvasPt.x,
+                startY: canvasPt.y,
+                startOffsetX: state.imageOffsetX,
+                startOffsetY: state.imageOffsetY,
+                startScalePct: state.imageScalePct,
+                imgCx: imgParams.cx,
+                imgCy: imgParams.cy,
+                startDist: Math.max(16, Math.hypot(canvasPt.x - imgParams.cx, canvasPt.y - imgParams.cy))
+            };
+            if (imageManipBox) {
+                imageManipBox.classList.add('is-dragging');
+            }
+            return;
+        }
+
         var active = getActiveText();
-        if (!active || !lastRenderLayout) {
+        if (!active) {
             return;
         }
         syncActiveTextFromControls();
@@ -335,8 +551,8 @@
         if (!layout) {
             return;
         }
-        var canvasPt = clientToCanvas(clientX, clientY);
         manipDrag = {
+            target: 'text',
             mode: mode,
             handle: handle || '',
             textId: active.id,
@@ -359,11 +575,30 @@
         if (!manipDrag) {
             return;
         }
+        var canvasPt = clientToCanvas(clientX, clientY);
+
+        if (manipDrag.target === 'image') {
+            if (manipDrag.mode === 'move') {
+                applyImageMove(canvasPt.x, canvasPt.y);
+            } else if (manipDrag.mode === 'resize') {
+                applyImageResize(canvasPt.x, canvasPt.y, manipDrag.startDist, manipDrag.startScalePct);
+            } else if (manipDrag.mode === 'pinch') {
+                var dist = getPinchDistance();
+                if (dist > 0 && manipDrag.pinchStartDist > 0) {
+                    var midX = (touchPointers[Object.keys(touchPointers)[0]].x + touchPointers[Object.keys(touchPointers)[1]].x) / 2;
+                    var midY = (touchPointers[Object.keys(touchPointers)[0]].y + touchPointers[Object.keys(touchPointers)[1]].y) / 2;
+                    var midCanvas = clientToCanvas(midX, midY);
+                    applyImageZoomAt(manipDrag.pinchStartScale * (dist / manipDrag.pinchStartDist), midCanvas.x, midCanvas.y);
+                }
+            }
+            renderPreview();
+            return;
+        }
+
         var active = getActiveText();
         if (!active || active.id !== manipDrag.textId) {
             return;
         }
-        var canvasPt = clientToCanvas(clientX, clientY);
         var layout = getTextLayout(active);
 
         if (manipDrag.mode === 'move') {
@@ -391,13 +626,28 @@
             if (!modal.classList.contains('is-open') || event.button > 0) {
                 return;
             }
+            touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
+
+            if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+                finishManipDrag();
+                selectImage();
+                manipDrag = {
+                    target: 'image',
+                    mode: 'pinch',
+                    pinchStartDist: getPinchDistance(),
+                    pinchStartScale: state.imageScalePct
+                };
+                event.preventDefault();
+                return;
+            }
+
             var canvasPt = clientToCanvas(event.clientX, event.clientY);
             var hitId = hitTestTextAt(canvasPt.x, canvasPt.y);
             if (hitId && hitId !== state.activeTextId) {
                 selectText(hitId);
             }
             if (hitId) {
-                startManipDrag('move', 'box', event.clientX, event.clientY);
+                startManipDrag('text', 'move', 'box', event.clientX, event.clientY);
                 if (canvas.setPointerCapture) {
                     try {
                         canvas.setPointerCapture(event.pointerId);
@@ -406,13 +656,65 @@
                     }
                 }
                 event.preventDefault();
+                return;
+            }
+            if (loadedImage && pointInDesignBounds(canvasPt.x, canvasPt.y)) {
+                selectImage();
+                startManipDrag('image', 'move', 'box', event.clientX, event.clientY);
+                if (canvas.setPointerCapture) {
+                    try {
+                        canvas.setPointerCapture(event.pointerId);
+                    } catch (err) {
+                        /* ignore */
+                    }
+                }
+                event.preventDefault();
+                return;
             }
         });
+
+        canvas.addEventListener('pointermove', function (event) {
+            if (touchPointers[event.pointerId]) {
+                touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
+            }
+            if (manipDrag && manipDrag.mode === 'pinch' && Object.keys(touchPointers).length >= 2) {
+                onManipPointerMove(event.clientX, event.clientY);
+                event.preventDefault();
+            }
+        });
+
+        canvas.addEventListener('pointerup', function (event) {
+            delete touchPointers[event.pointerId];
+            if (Object.keys(touchPointers).length < 2 && manipDrag && manipDrag.mode === 'pinch') {
+                finishManipDrag();
+            }
+        });
+
+        canvas.addEventListener('pointercancel', function (event) {
+            delete touchPointers[event.pointerId];
+        });
+
+        canvas.addEventListener('wheel', function (event) {
+            if (!modal.classList.contains('is-open') || !loadedImage) {
+                return;
+            }
+            var canvasPt = clientToCanvas(event.clientX, event.clientY);
+            if (!pointInDesignBounds(canvasPt.x, canvasPt.y)) {
+                return;
+            }
+            event.preventDefault();
+            selectImage();
+            var delta = event.deltaY > 0 ? -6 : 6;
+            applyImageZoomAt(state.imageScalePct + delta, canvasPt.x, canvasPt.y);
+            renderPreview();
+        }, { passive: false });
 
         textManipBox.addEventListener('pointerdown', function (event) {
             if (!modal.classList.contains('is-open')) {
                 return;
             }
+            state.editTarget = 'text';
+            hideImageManipulator();
             var handleEl = event.target.closest('.perso-text-handle');
             var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
             var mode = 'move';
@@ -421,7 +723,7 @@
             } else if (handle && handle !== '') {
                 mode = 'resize';
             }
-            startManipDrag(mode, handle, event.clientX, event.clientY);
+            startManipDrag('text', mode, handle, event.clientX, event.clientY);
             if (textManipBox.setPointerCapture) {
                 try {
                     textManipBox.setPointerCapture(event.pointerId);
@@ -432,6 +734,43 @@
             event.preventDefault();
             event.stopPropagation();
         });
+
+        if (imageManipBox) {
+            imageManipBox.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open') || !loadedImage) {
+                    return;
+                }
+                selectImage();
+                var handleEl = event.target.closest('.perso-image-handle');
+                var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
+                var mode = handle ? 'resize' : 'move';
+                startManipDrag('image', mode, handle, event.clientX, event.clientY);
+                if (imageManipBox.setPointerCapture) {
+                    try {
+                        imageManipBox.setPointerCapture(event.pointerId);
+                    } catch (err) {
+                        /* ignore */
+                    }
+                }
+                event.preventDefault();
+                event.stopPropagation();
+            });
+
+            imageManipBox.addEventListener('pointerup', function (event) {
+                finishManipDrag();
+                if (imageManipBox.releasePointerCapture) {
+                    try {
+                        imageManipBox.releasePointerCapture(event.pointerId);
+                    } catch (err) {
+                        /* ignore */
+                    }
+                }
+            });
+
+            imageManipBox.addEventListener('pointercancel', function () {
+                finishManipDrag();
+            });
+        }
 
         textManipBox.addEventListener('pointerup', function (event) {
             finishManipDrag();
@@ -461,6 +800,7 @@
 
         window.addEventListener('resize', function () {
             updateTextManipulator();
+            updateImageManipulator();
         });
     }
 
@@ -581,6 +921,8 @@
     function selectText(textId) {
         syncActiveTextFromControls();
         state.activeTextId = textId;
+        state.editTarget = 'text';
+        hideImageManipulator();
         syncControlsFromActiveText();
         renderTextList();
         renderPreview();
@@ -701,7 +1043,12 @@
                     wrapArcPosition: t.wrapArcPosition,
                     textColor: t.textColor
                 };
-            })
+            }),
+            image: {
+                offset_x: state.imageOffsetX,
+                offset_y: state.imageOffsetY,
+                scale_pct: state.imageScalePct
+            }
         };
     }
 
@@ -830,6 +1177,10 @@
         state.heightCm = 15;
         state.texts = [createDefaultText()];
         state.activeTextId = state.texts[0].id;
+        state.imageOffsetX = 50;
+        state.imageOffsetY = 50;
+        state.imageScalePct = 100;
+        state.editTarget = 'text';
         loadedImage = null;
         sourceUploadFile = null;
         hasCustomization = false;
@@ -847,6 +1198,8 @@
         updateShapeUi();
         revokePreviewUrl();
         updateWrapUi();
+        updateImageUi();
+        hideImageManipulator();
         syncMetaToForm();
         updateValidateState();
         renderPreview();
@@ -1133,13 +1486,10 @@
         applyShapeClip(ctx, bounds);
 
         if (loadedImage) {
-            var img = loadedImage;
-            var scale = Math.max(bounds.w / img.width, bounds.h / img.height);
-            var dw = img.width * scale;
-            var dh = img.height * scale;
-            var dx = bounds.x + (bounds.w - dw) / 2;
-            var dy = bounds.y + (bounds.h - dh) / 2;
-            ctx.drawImage(img, dx, dy, dw, dh);
+            var imgParams = getImageDrawParams(bounds, loadedImage);
+            if (imgParams) {
+                ctx.drawImage(loadedImage, imgParams.x, imgParams.y, imgParams.w, imgParams.h);
+            }
         } else {
             ctx.fillStyle = 'rgba(229, 72, 138, 0.08)';
             ctx.beginPath();
@@ -1172,6 +1522,7 @@
             designBounds: bounds
         };
         updateTextManipulator();
+        updateImageManipulator();
         updateValidateState();
     }
 
@@ -1261,6 +1612,8 @@
     function closeModal() {
         finishManipDrag();
         hideTextManipulator();
+        hideImageManipulator();
+        touchPointers = {};
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
@@ -1278,9 +1631,12 @@
         var img = new Image();
         img.onload = function () {
             loadedImage = img;
+            resetImageTransform();
+            selectImage();
             if (filenameEl) {
                 filenameEl.textContent = file.name;
             }
+            updateImageUi();
             renderPreview();
         };
         img.onerror = function () {
@@ -1543,6 +1899,18 @@
         });
     }
 
+    if (imageResetBtn) {
+        imageResetBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            if (!loadedImage) {
+                return;
+            }
+            resetImageTransform();
+            selectImage();
+            renderPreview();
+        });
+    }
+
     bindTextManipulatorEvents();
 
     state.texts = [createDefaultText()];
@@ -1552,6 +1920,7 @@
     updatePaperUi();
     updateShapeUi();
     updateWrapUi();
+    updateImageUi();
     syncWrapButton();
     syncMetaToForm();
 })();

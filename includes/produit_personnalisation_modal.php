@@ -20,6 +20,8 @@
                         <span class="perso-upload-compact-hint">JPG, PNG, WebP</span>
                         <span class="perso-upload-filename" id="perso-upload-filename"></span>
                     </label>
+                    <p class="perso-image-hint" id="perso-image-hint" hidden>Glissez l'image sur l'aperçu pour la repositionner. Molette ou pincement pour zoomer.</p>
+                    <button type="button" class="perso-image-reset-btn" id="perso-image-reset" hidden>Réinitialiser le cadrage</button>
                 </section>
 
                 <section class="perso-tool-section">
@@ -140,10 +142,18 @@
 
             <div class="perso-preview-panel">
                 <p class="perso-preview-label">Aperçu en direct</p>
-                <p class="perso-preview-hint">Sélectionnez un texte puis déplacez-le, redimensionnez-le ou faites-le pivoter directement sur l'aperçu.</p>
+                <p class="perso-preview-hint">Manipulez l'image ou le texte directement sur l'aperçu : glisser pour déplacer, poignées ou molette pour zoomer.</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="perso-preview-viewport">
                         <canvas id="perso-preview-canvas" width="640" height="640" aria-label="Aperçu de la personnalisation"></canvas>
+                        <div class="perso-image-manipulator" id="perso-image-manipulator" hidden aria-hidden="true">
+                            <div class="perso-image-manip-box" id="perso-image-manip-box">
+                                <span class="perso-image-handle perso-image-handle--nw" data-handle="nw" aria-hidden="true"></span>
+                                <span class="perso-image-handle perso-image-handle--ne" data-handle="ne" aria-hidden="true"></span>
+                                <span class="perso-image-handle perso-image-handle--sw" data-handle="sw" aria-hidden="true"></span>
+                                <span class="perso-image-handle perso-image-handle--se" data-handle="se" aria-hidden="true"></span>
+                            </div>
+                        </div>
                         <div class="perso-text-manipulator" id="perso-text-manipulator" hidden aria-hidden="true">
                             <div class="perso-text-manip-box" id="perso-text-manip-box">
                                 <span class="perso-text-handle perso-text-handle--nw" data-handle="nw" aria-hidden="true"></span>

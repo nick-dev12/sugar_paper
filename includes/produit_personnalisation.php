@@ -370,6 +370,19 @@ function produit_personnalisation_meta_decode($raw)
     return produit_personnalisation_meta_normalize($dec);
 }
 
+function produit_personnalisation_image_normalize(array $data)
+{
+    $offset_x = isset($data['offset_x']) ? (int) $data['offset_x'] : (isset($data['offsetX']) ? (int) $data['offsetX'] : 50);
+    $offset_y = isset($data['offset_y']) ? (int) $data['offset_y'] : (isset($data['offsetY']) ? (int) $data['offsetY'] : 50);
+    $scale_pct = isset($data['scale_pct']) ? (int) $data['scale_pct'] : (isset($data['scalePct']) ? (int) $data['scalePct'] : 100);
+
+    return [
+        'offset_x' => max(-50, min(150, $offset_x)),
+        'offset_y' => max(-50, min(150, $offset_y)),
+        'scale_pct' => max(50, min(400, $scale_pct)),
+    ];
+}
+
 /**
  * @param array $data
  * @return array{format:string,shape:string,width_cm:float,height_cm:float}
@@ -424,6 +437,15 @@ function produit_personnalisation_meta_normalize(array $data)
             $texts[] = $normalized;
         }
         return $texts !== [] ? ['texts' => array_values($texts)] : [];
+    })($data) + (function ($data) {
+        if (!isset($data['image']) || !is_array($data['image'])) {
+            return [];
+        }
+        $image = produit_personnalisation_image_normalize($data['image']);
+        if ($image['offset_x'] === 50 && $image['offset_y'] === 50 && $image['scale_pct'] === 100) {
+            return [];
+        }
+        return ['image' => $image];
     })($data);
 }
 

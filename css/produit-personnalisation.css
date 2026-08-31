@@ -906,6 +906,75 @@
     display: none;
 }
 
+.perso-image-hint {
+    margin: 10px 0 0;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #777;
+}
+
+.perso-image-reset-btn {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px dashed rgba(152, 138, 68, 0.55);
+    border-radius: 10px;
+    background: rgba(145, 138, 68, 0.08);
+    color: #6b2f20;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.perso-image-reset-btn:hover {
+    background: rgba(145, 138, 68, 0.16);
+    border-color: #918a44;
+}
+
+.perso-image-manipulator {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.perso-image-manipulator.is-visible .perso-image-manip-box {
+    pointer-events: auto;
+}
+
+.perso-image-manip-box {
+    position: absolute;
+    box-sizing: border-box;
+    border: 2px dashed rgba(145, 138, 68, 0.95);
+    background: rgba(145, 138, 68, 0.08);
+    cursor: move;
+    touch-action: none;
+}
+
+.perso-image-manip-box.is-dragging {
+    cursor: grabbing;
+}
+
+.perso-image-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    background: #ffffff;
+    border: 2px solid #918a44;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+    touch-action: none;
+    pointer-events: auto;
+}
+
+.perso-image-handle--nw { left: 0; top: 0; cursor: nwse-resize; }
+.perso-image-handle--ne { left: 100%; top: 0; cursor: nesw-resize; }
+.perso-image-handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
+.perso-image-handle--se { left: 100%; top: 100%; cursor: nwse-resize; }
+
 /* ——— Actions ——— */
 
 .perso-modal-actions {
