@@ -829,7 +829,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 4;
+    z-index: 5;
 }
 
 .perso-text-manipulator.is-visible .perso-text-manip-box {

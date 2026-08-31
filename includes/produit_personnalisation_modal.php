@@ -142,7 +142,7 @@
 
             <div class="perso-preview-panel">
                 <p class="perso-preview-label">Aperçu en direct</p>
-                <p class="perso-preview-hint">Manipulez l'image ou le texte sur l'aperçu. Utilisez la croix × pour supprimer un élément sélectionné.</p>
+                <p class="perso-preview-hint">Texte prioritaire sur l'image. Cliquez sur un texte pour le sélectionner, sur la zone sans texte pour l'image, ailleurs pour tout désélectionner.</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="perso-preview-viewport">
                         <canvas id="perso-preview-canvas" width="640" height="640" aria-label="Aperçu de la personnalisation"></canvas>

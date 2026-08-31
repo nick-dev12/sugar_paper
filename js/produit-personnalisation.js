@@ -409,6 +409,26 @@
         return Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2;
     }
 
+    function getEmptyTextLayout(bounds, textObj) {
+        return {
+            cx: bounds.x + bounds.w * ((textObj.textPosX || 50) / 100),
+            cy: bounds.y + bounds.h * ((textObj.textPosY || 50) / 100),
+            width: 56,
+            height: 36,
+            rotation: textObj.textRotation || 0
+        };
+    }
+
+    function getTextHitLayout(textObj, ctx, bounds) {
+        if ((textObj.text || '').trim() !== '') {
+            if (textObj.wrapOnCircle && state.shape === 'circle') {
+                return measureWrapTextLayout(bounds, textObj);
+            }
+            return measureStraightTextLayout(ctx, bounds, textObj);
+        }
+        return getEmptyTextLayout(bounds, textObj);
+    }
+
     function hitTestTextAt(canvasX, canvasY) {
         if (!lastRenderLayout || !canvas) {
             return null;
@@ -420,15 +440,7 @@
         var bounds = lastRenderLayout.designBounds;
         for (var i = state.texts.length - 1; i >= 0; i--) {
             var textObj = state.texts[i];
-            if ((textObj.text || '').trim() === '') {
-                continue;
-            }
-            var layout;
-            if (textObj.wrapOnCircle && state.shape === 'circle') {
-                layout = measureWrapTextLayout(bounds, textObj);
-            } else {
-                layout = measureStraightTextLayout(ctx, bounds, textObj);
-            }
+            var layout = getTextHitLayout(textObj, ctx, bounds);
             if (!layout) {
                 continue;
             }
@@ -437,6 +449,37 @@
             }
         }
         return null;
+    }
+
+    function deselectAll() {
+        finishManipDrag();
+        state.editTarget = '';
+        hideTextManipulator();
+        hideImageManipulator();
+    }
+
+    function handleViewportPointerDown(clientX, clientY, startDrag) {
+        var canvasPt = clientToCanvas(clientX, clientY);
+        var hitId = hitTestTextAt(canvasPt.x, canvasPt.y);
+
+        if (hitId) {
+            selectText(hitId);
+            if (startDrag) {
+                startManipDrag('text', 'move', 'box', clientX, clientY);
+            }
+            return 'text';
+        }
+
+        if (loadedImage && pointInDesignBounds(canvasPt.x, canvasPt.y)) {
+            selectImage();
+            if (startDrag) {
+                startManipDrag('image', 'move', 'box', clientX, clientY);
+            }
+            return 'image';
+        }
+
+        deselectAll();
+        return 'none';
     }
 
     function hideTextManipulator() {
@@ -462,12 +505,15 @@
         }
 
         var active = getActiveText();
-        if (!active || (active.text || '').trim() === '') {
+        if (!active) {
             hideTextManipulator();
             return;
         }
 
         var layout = getTextLayout(active);
+        if (!layout) {
+            layout = getEmptyTextLayout(lastRenderLayout.designBounds, active);
+        }
         if (!layout) {
             hideTextManipulator();
             return;
@@ -687,12 +733,10 @@
             }
 
             var canvasPt = clientToCanvas(event.clientX, event.clientY);
-            var hitId = hitTestTextAt(canvasPt.x, canvasPt.y);
-            if (hitId && hitId !== state.activeTextId) {
-                selectText(hitId);
-            }
-            if (hitId) {
-                startManipDrag('text', 'move', 'box', event.clientX, event.clientY);
+            var selection = handleViewportPointerDown(event.clientX, event.clientY, false);
+
+            if (selection === 'text' || selection === 'image') {
+                startManipDrag(selection, 'move', 'box', event.clientX, event.clientY);
                 if (canvas.setPointerCapture) {
                     try {
                         canvas.setPointerCapture(event.pointerId);
@@ -701,20 +745,6 @@
                     }
                 }
                 event.preventDefault();
-                return;
-            }
-            if (loadedImage && pointInDesignBounds(canvasPt.x, canvasPt.y)) {
-                selectImage();
-                startManipDrag('image', 'move', 'box', event.clientX, event.clientY);
-                if (canvas.setPointerCapture) {
-                    try {
-                        canvas.setPointerCapture(event.pointerId);
-                    } catch (err) {
-                        /* ignore */
-                    }
-                }
-                event.preventDefault();
-                return;
             }
         });
 
@@ -791,6 +821,30 @@
                 if (event.target.closest('.perso-manip-delete')) {
                     return;
                 }
+                var canvasPt = clientToCanvas(event.clientX, event.clientY);
+                var hitId = hitTestTextAt(canvasPt.x, canvasPt.y);
+                if (hitId) {
+                    selectText(hitId);
+                    var handleEl = event.target.closest('.perso-text-handle');
+                    var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
+                    var mode = 'move';
+                    if (handle === 'rotate') {
+                        mode = 'rotate';
+                    } else if (handle && handle !== '') {
+                        mode = 'resize';
+                    }
+                    startManipDrag('text', mode, handle, event.clientX, event.clientY);
+                    if (canvas && canvas.setPointerCapture) {
+                        try {
+                            canvas.setPointerCapture(event.pointerId);
+                        } catch (err) {
+                            /* ignore */
+                        }
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
                 selectImage();
                 var handleEl = event.target.closest('.perso-image-handle');
                 var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
@@ -853,6 +907,25 @@
             updateTextManipulator();
             updateImageManipulator();
         });
+
+        if (modal) {
+            modal.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                if (event.target.closest(
+                    '#perso-preview-canvas, .perso-text-manip-box, .perso-image-manip-box, .perso-manip-delete'
+                )) {
+                    return;
+                }
+                if (event.target.closest(
+                    'input, textarea, button, label, select, .perso-text-item, .perso-upload-compact, .perso-font-btn, .perso-paper-btn, .perso-shape-btn, .perso-wrap-btn, .perso-wrap-pos-btn, .perso-color-swatch, .perso-text-add-btn, .perso-image-reset-btn, .perso-modal-close, .perso-btn'
+                )) {
+                    return;
+                }
+                deselectAll();
+            });
+        }
     }
 
     function createTextId() {
@@ -984,10 +1057,7 @@
         var offset = 40 + (state.texts.length * 8);
         var textObj = createDefaultText(Math.min(85, offset));
         state.texts.push(textObj);
-        state.activeTextId = textObj.id;
-        syncControlsFromActiveText();
-        renderTextList();
-        renderPreview();
+        selectText(textObj.id);
     }
 
     function removeTextBlock(textId) {
@@ -1257,7 +1327,7 @@
         state.imageOffsetX = 50;
         state.imageOffsetY = 50;
         state.imageScalePct = 100;
-        state.editTarget = 'text';
+        state.editTarget = '';
         loadedImage = null;
         sourceUploadFile = null;
         hasCustomization = false;
@@ -1709,7 +1779,7 @@
         img.onload = function () {
             loadedImage = img;
             resetImageTransform();
-            selectImage();
+            deselectAll();
             if (filenameEl) {
                 filenameEl.textContent = file.name;
             }
