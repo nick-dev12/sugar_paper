@@ -2,6 +2,7 @@
 /**
  * Corps de la modale commande.
  */
+require_once __DIR__ . '/../produit_personnalisation.php';
 $user = $user ?? false;
 $panier_items = isset($panier_items) && is_array($panier_items) ? $panier_items : [];
 $panier_total = isset($panier_total) ? (float) $panier_total : 0;
@@ -132,13 +133,27 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
                     : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
                 $prix_total_item = $prix_unitaire * $item['quantite'];
                 $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : ($item['image_principale'] ?? '');
+                $perso_path = commande_ligne_personnalisation_path($item);
+                $display_img = $perso_path !== '' ? produit_personnalisation_public_url($perso_path) : upload_image_url($item_img, 'sm');
                 $item_nom = !empty($item['panier_variante_nom']) ? $item['nom'] . ' - ' . $item['panier_variante_nom'] : ($item['nom'] ?? 'Produit');
                 ?>
                 <div class="ckm-recap-item">
-                    <img src="<?php echo htmlspecialchars(upload_image_url($item_img, 'sm')); ?>" alt=""
+                    <img src="<?php echo htmlspecialchars($display_img); ?>" alt=""
                         onerror="this.src='/image/produit1.jpg'">
                     <div>
                         <strong><?php echo htmlspecialchars($item_nom); ?></strong>
+                        <?php if ($perso_path !== ''): ?>
+                            <span class="ckm-recap-item__perso">
+                                <img src="<?php echo htmlspecialchars(produit_personnalisation_public_url($perso_path)); ?>" alt="">
+                                Personnalisé
+                            </span>
+                            <?php
+                            $perso_meta = commande_ligne_personnalisation_meta($item);
+                            if ($perso_meta):
+                            ?>
+                            <span class="ckm-recap-item__perso-specs"><?php echo htmlspecialchars(produit_personnalisation_meta_label($perso_meta)); ?></span>
+                            <?php endif; ?>
+                        <?php endif; ?>
                         <span><?php echo (int) $item['quantite']; ?> × <?php echo number_format($prix_unitaire, 0, ',', ' '); ?> FCFA</span>
                     </div>
                     <em><?php echo number_format($prix_total_item, 0, ',', ' '); ?></em>

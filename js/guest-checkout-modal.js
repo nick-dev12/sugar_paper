@@ -51,7 +51,8 @@
         var names = [
             'produit_id', 'quantite', 'option_couleur', 'option_poids', 'option_taille',
             'option_variante_id', 'option_variante_nom', 'option_variante_image',
-            'option_prix_unitaire', 'option_surcout_poids', 'option_surcout_taille', 'action'
+            'option_prix_unitaire', 'option_surcout_poids', 'option_surcout_taille',
+            'option_perso_meta', 'option_image_personnalisation', 'action'
         ];
         names.forEach(function (name) {
             var el = sourceForm.querySelector('[name="' + name + '"]');

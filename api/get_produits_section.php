@@ -11,6 +11,7 @@ require_once __DIR__ . '/../conn/conn.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../includes/produit_share.php';
 require_once __DIR__ . '/../includes/produit_prix_display.php';
+require_once __DIR__ . '/../includes/cake_topper_cp.php';
 require_once __DIR__ . '/../models/model_produits.php';
 
 $section = isset($_GET['section']) ? normalize_produit_section_accueil($_GET['section']) : null;
@@ -43,7 +44,7 @@ foreach ($produits as $produit) {
 
     $share_data = produit_share_build_data($produit);
 
-    $produits_formatted[] = [
+    $item = [
         'id' => $produit['id'],
         'nom' => $produit['nom'],
         'prix' => $produit['prix'],
@@ -64,7 +65,23 @@ foreach ($produits as $produit) {
         'share_title' => $share_data['share_title'] ?? ($produit['nom'] ?? ''),
         'share_text' => $share_data['share_text'] ?? '',
         'share_image' => $share_data['share_image'] ?? '',
+        'uses_cp_modal' => false,
     ];
+
+    if (produit_listing_uses_cake_topper_cp($produit)) {
+        $ctx = resolve_cp_modal_context_for_produit($produit);
+        $item['uses_cp_modal'] = true;
+        $item['cp'] = [
+            'catalogue_produit_id' => (int) $ctx['catalogue_produit_id'],
+            'boutique_produit_id' => (int) $ctx['boutique_produit_id'],
+            'nom' => $ctx['nom'],
+            'image' => $ctx['image'],
+            'prix_min' => (float) $ctx['prix_min'],
+            'prix_max' => (float) $ctx['prix_max'],
+        ];
+    }
+
+    $produits_formatted[] = $item;
 }
 
 echo json_encode([

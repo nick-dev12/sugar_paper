@@ -4,6 +4,7 @@
  * Variables : $panier_items, $panier_total, $nombre_total_articles,
  *             $user_logged_in, $ckm_message, $ckm_message_type
  */
+require_once __DIR__ . '/../produit_personnalisation.php';
 $panier_items = isset($panier_items) && is_array($panier_items) ? $panier_items : [];
 $panier_total = isset($panier_total) ? (float) $panier_total : 0;
 $nombre_total_articles = isset($nombre_total_articles) ? (int) $nombre_total_articles : 0;
@@ -35,16 +36,33 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
                     : (!empty($item['prix_promotion']) && $item['prix_promotion'] < $item['prix'] ? $item['prix_promotion'] : $item['prix']);
                 $prix_total_item = $prix_unitaire * $item['quantite'];
                 $item_img = !empty($item['panier_variante_image']) ? $item['panier_variante_image'] : ($item['image_principale'] ?? '');
+                $perso_path = commande_ligne_personnalisation_path($item);
+                $display_img = $perso_path !== '' ? produit_personnalisation_public_url($perso_path) : upload_image_url($item_img, 'sm');
                 $item_nom = !empty($item['panier_variante_nom'])
                     ? $item['nom'] . ' → ' . $item['panier_variante_nom']
                     : ($item['nom'] ?? 'Produit');
                 ?>
                 <article class="ckm-item" data-item-id="<?php echo (int) $item['panier_id']; ?>">
-                    <img class="ckm-item__img" src="<?php echo htmlspecialchars(upload_image_url($item_img, 'sm')); ?>"
+                    <img class="ckm-item__img" src="<?php echo htmlspecialchars($display_img); ?>"
                         alt="<?php echo htmlspecialchars($item_nom); ?>"
                         onerror="this.src='/image/produit1.jpg'">
                     <div class="ckm-item__body">
                         <h3 class="ckm-item__name"><?php echo htmlspecialchars($item_nom); ?></h3>
+                        <?php if ($perso_path !== ''): ?>
+                            <p class="ckm-item__perso">
+                                <span class="ckm-item__perso-badge"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisé</span>
+                                <img class="ckm-item__perso-thumb" src="<?php echo htmlspecialchars(produit_personnalisation_public_url($perso_path)); ?>" alt="Aperçu personnalisation">
+                            </p>
+                            <?php
+                            $perso_meta = commande_ligne_personnalisation_meta($item);
+                            if ($perso_meta):
+                            ?>
+                            <p class="ckm-item__perso-specs">
+                                <i class="fa-solid fa-ruler-combined" aria-hidden="true"></i>
+                                <?php echo htmlspecialchars(produit_personnalisation_meta_label($perso_meta)); ?>
+                            </p>
+                            <?php endif; ?>
+                        <?php endif; ?>
                         <?php if (!empty($item['categorie_nom'])): ?>
                             <p class="ckm-item__cat"><?php echo htmlspecialchars($item['categorie_nom']); ?></p>
                         <?php endif; ?>

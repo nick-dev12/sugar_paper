@@ -7,7 +7,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/produit_share.php';
 require_once __DIR__ . '/produit_prix_display.php';
-require_once __DIR__ . '/seo_config.php';
+require_once __DIR__ . '/produit_personnalisation.php';
 
 /**
  * @return array<string, array<string, string>>
@@ -114,14 +114,7 @@ function render_home_product_card($produit, $return_url = '/index.php')
                 <?php echo produit_render_listing_prix_html($produit); ?>
             </div>
         </a>
-        <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-            <input type="hidden" name="produit_id" value="<?php echo (int) $produit['id']; ?>">
-            <input type="hidden" name="quantite" value="1">
-            <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($return_url); ?>">
-            <button type="submit" class="btn-add-cart">
-                <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
-            </button>
-        </form>
+        <?php render_produit_listing_actions($produit, $return_url); ?>
     </div>
     <?php
 }
@@ -150,12 +143,6 @@ function render_home_product_section($section_key, $limit = 20, $return_url = '/
                 <span class="home-section-kicker"><?php echo htmlspecialchars($config['kicker']); ?></span>
                 <h2 class="home-section-title"><?php echo htmlspecialchars($config['title']); ?></h2>
                 <p class="home-section-desc"><?php echo htmlspecialchars($config['desc']); ?></p>
-                <?php
-                $section_seo = get_seo_section_meta($section_key);
-                if ($section_seo && !empty($section_seo['intro'])):
-                ?>
-                <p class="home-section-seo-intro"><?php echo htmlspecialchars($section_seo['intro']); ?></p>
-                <?php endif; ?>
             </div>
             <a href="<?php echo htmlspecialchars($config['cta_href']); ?>" class="home-section-cta">
                 <?php echo htmlspecialchars($config['cta_label']); ?> <i class="fas fa-arrow-right"></i>

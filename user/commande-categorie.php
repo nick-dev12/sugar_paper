@@ -21,6 +21,7 @@ require_once __DIR__ . '/../models/model_categories.php';
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../includes/format_commande_options.php';
+require_once __DIR__ . '/../includes/produit_personnalisation.php';
 
 $user_id = $_SESSION['user_id'];
 $commande_id = isset($_GET['commande_id']) ? (int) $_GET['commande_id'] : null;
@@ -75,6 +76,7 @@ $all_categories = get_all_categories();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/user-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/user-mes-commandes.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <style>
         .categorie-section {
             background: var(--glass-bg);
@@ -433,15 +435,19 @@ $all_categories = get_all_categories();
                             <?php
                             $produit_nom = $produit['nom'] ?? $produit['produit_nom'] ?? 'Produit sans nom';
                             $produit_nom_affichage = !empty($produit['variante_nom']) ? $produit_nom . ' → ' . $produit['variante_nom'] : $produit_nom;
-                            $produit_image = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? '');
+                            $perso_path = commande_ligne_personnalisation_path($produit);
+                            $produit_image = commande_ligne_image_url($produit, 'md');
                             ?>
                             <div class="produit-card-commande">
                                 <div class="produit-card-header">
-                                    <img src="<?php echo htmlspecialchars(upload_image_url($produit_image ?? '', 'md')); ?>"
+                                    <img src="<?php echo htmlspecialchars($produit_image); ?>"
                                         alt="<?php echo htmlspecialchars($produit_nom_affichage); ?>" class="produit-card-image"
                                         onerror="this.src='/image/produit1.jpg'">
                                     <div class="produit-card-info">
                                         <h4 class="produit-card-nom"><?php echo htmlspecialchars($produit_nom_affichage); ?></h4>
+                                        <?php if ($perso_path !== ''): ?>
+                                            <span class="commande-perso-preview__badge"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisé</span>
+                                        <?php endif; ?>
                                         <div class="produit-card-commande-info">
                                             <?php
                                             $numero_commande = $produit['numero_commande'] ?? null;
@@ -534,6 +540,10 @@ $all_categories = get_all_categories();
                                                 <?php endforeach; ?>
                                             </div>
                                         </div>
+                                    <?php endif; ?>
+                                    <?php if ($perso_path !== ''): ?>
+                                        <?php render_commande_personnalisation_specs($produit, ['compact' => true]); ?>
+                                        <?php render_commande_personnalisation_preview($produit, ['show_download' => true, 'compact' => true]); ?>
                                     <?php endif; ?>
                                 </div>
 

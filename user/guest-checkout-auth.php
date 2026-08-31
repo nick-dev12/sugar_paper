@@ -33,10 +33,33 @@ if (!$result['success']) {
     exit;
 }
 
+$next_after = isset($_POST['next']) ? trim((string) $_POST['next']) : '';
+
+if ($checkout_action === 'auth_only') {
+    if ($is_ajax) {
+        modal_json_response([
+            'ok' => true,
+            'auth_only' => true,
+            'logged_in' => true,
+            'user_id' => $guest_user_id,
+        ]);
+    }
+    header('Location: ' . checkout_modals_after_login_url($return_url));
+    exit;
+}
+
 if ($checkout_action === 'add_to_panier') {
     require_once __DIR__ . '/../controllers/controller_panier.php';
     $add_result = process_add_to_panier();
     if ($add_result['success']) {
+        if ($is_ajax && $next_after === 'checkout') {
+            modal_json_response([
+                'ok' => true,
+                'open' => 'checkout',
+                'logged_in' => true,
+                'user_id' => $guest_user_id,
+            ]);
+        }
         $redirect = checkout_modals_after_login_url($return_url);
         if ($is_ajax) {
             modal_json_response([

@@ -196,4 +196,19 @@ return [
         'label' => 'Assignation sections accueil depuis categories produits',
         'script' => 'run_backfill_produits_section_accueil.php',
     ],
+    [
+        'id' => 'panier_image_personnalisation',
+        'label' => 'Image personnalisation sur lignes panier',
+        'script' => 'run_add_panier_image_personnalisation.php',
+    ],
+    [
+        'id' => 'commande_produits_image_personnalisation',
+        'label' => 'Image personnalisation sur lignes commande_produits',
+        'script' => 'run_add_commande_produits_image_personnalisation.php',
+    ],
+    [
+        'id' => 'personnalisation_meta',
+        'label' => 'Métadonnées personnalisation (format, forme, dimensions)',
+        'script' => 'run_add_personnalisation_meta.php',
+    ],
 ];

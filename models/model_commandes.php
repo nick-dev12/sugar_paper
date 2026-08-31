@@ -84,6 +84,34 @@ function _commande_produits_has_variante_columns() {
     return $has;
 }
 
+function _commande_produits_has_image_personnalisation_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commande_produits LIKE 'image_personnalisation'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
+function _commande_produits_has_personnalisation_meta_column() {
+    static $has = null;
+    if ($has === null) {
+        global $db;
+        try {
+            $r = $db->query("SHOW COLUMNS FROM commande_produits LIKE 'personnalisation_meta'");
+            $has = $r && $r->rowCount() > 0;
+        } catch (PDOException $e) {
+            $has = false;
+        }
+    }
+    return $has;
+}
+
 /**
  * Génère un numéro de commande unique
  * @return string Le numéro de commande
@@ -254,6 +282,33 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
                 $params['surcout_poids'] = $surcout_poids;
                 $params['surcout_taille'] = $surcout_taille;
             }
+
+            $has_perso = _commande_produits_has_image_personnalisation_column();
+            $has_meta = _commande_produits_has_personnalisation_meta_column();
+            $image_personnalisation = null;
+            $personnalisation_meta = null;
+            if ($has_perso) {
+                $raw_perso = $item['panier_image_personnalisation'] ?? $item['image_personnalisation'] ?? null;
+                if ($raw_perso !== null && trim((string) $raw_perso) !== '') {
+                    require_once __DIR__ . '/../includes/produit_personnalisation.php';
+                    $path_perso = trim((string) $raw_perso);
+                    if (produit_personnalisation_path_is_valid($path_perso)) {
+                        $image_personnalisation = $path_perso;
+                    }
+                }
+                $params['image_personnalisation'] = $image_personnalisation;
+            }
+            if ($has_meta) {
+                $raw_meta = $item['panier_personnalisation_meta'] ?? $item['personnalisation_meta'] ?? null;
+                if ($raw_meta !== null && trim((string) $raw_meta) !== '') {
+                    require_once __DIR__ . '/../includes/produit_personnalisation.php';
+                    $decoded = produit_personnalisation_meta_decode($raw_meta);
+                    if ($decoded) {
+                        $personnalisation_meta = produit_personnalisation_meta_encode($decoded);
+                    }
+                }
+                $params['personnalisation_meta'] = $personnalisation_meta;
+            }
             
             $cols = 'commande_id, produit_id, quantite, prix_unitaire, prix_total';
             $vals = ':commande_id, :produit_id, :quantite, :prix_unitaire, :prix_total';
@@ -264,6 +319,14 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
             if ($has_variantes) {
                 $cols .= ', variante_id, variante_nom, surcout_poids, surcout_taille';
                 $vals .= ', :variante_id, :variante_nom, :surcout_poids, :surcout_taille';
+            }
+            if ($has_perso) {
+                $cols .= ', image_personnalisation';
+                $vals .= ', :image_personnalisation';
+            }
+            if ($has_meta) {
+                $cols .= ', personnalisation_meta';
+                $vals .= ', :personnalisation_meta';
             }
             $stmt = $db->prepare("INSERT INTO commande_produits ($cols) VALUES ($vals)");
             $stmt->execute($params);
@@ -411,11 +474,13 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
         $has_options = _commande_produits_has_option_columns();
         $has_variantes = _commande_produits_has_variante_columns();
         $has_nom_produit = _commande_produits_has_nom_produit();
+        $has_perso = _commande_produits_has_image_personnalisation_column();
         $cols = 'commande_id, produit_id, quantite, prix_unitaire, prix_total';
         $vals = ':commande_id, :produit_id, :quantite, :prix_unitaire, :prix_total';
         if ($has_nom_produit) { $cols .= ', nom_produit'; $vals .= ', :nom_produit'; }
         if ($has_options) { $cols .= ', couleur, poids, taille'; $vals .= ', NULL, NULL, NULL'; }
         if ($has_variantes) { $cols .= ', variante_id, variante_nom, surcout_poids, surcout_taille'; $vals .= ', NULL, NULL, 0, 0'; }
+        if ($has_perso) { $cols .= ', image_personnalisation'; $vals .= ', :image_personnalisation'; }
 
         foreach ($panier_items as $item) {
             $prix_unitaire = (float) $item['panier_prix_unitaire'];
@@ -429,6 +494,9 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
             ];
             if ($has_nom_produit) {
                 $params['nom_produit'] = $item['nom_produit'] ?? null;
+            }
+            if ($has_perso) {
+                $params['image_personnalisation'] = null;
             }
             $stmt = $db->prepare("INSERT INTO commande_produits ($cols) VALUES ($vals)");
             $stmt->execute($params);
@@ -559,6 +627,8 @@ function get_commandes_by_categorie($user_id, $categorie_id = null) {
         $cols = "c.id as categorie_id, c.nom as categorie_nom, cmd.id as commande_id, cmd.numero_commande, cmd.date_commande, cmd.statut as statut_commande, cmd.montant_total, cp.produit_id, $produit_nom_col, $img, p.poids, p.unite, cp.quantite, cp.prix_unitaire, cp.prix_total";
         if ($has_opts) $cols .= ", cp.couleur, cp.poids as choix_poids, cp.taille";
         if ($has_var) $cols .= ", cp.variante_nom, cp.surcout_poids, cp.surcout_taille";
+        if (_commande_produits_has_image_personnalisation_column()) $cols .= ", cp.image_personnalisation";
+        if (_commande_produits_has_personnalisation_meta_column()) $cols .= ", cp.personnalisation_meta";
         $join_pv = $has_var ? "LEFT JOIN produits_variantes pv ON cp.variante_id = pv.id AND pv.produit_id = p.id" : "";
         $sql = "
             SELECT $cols

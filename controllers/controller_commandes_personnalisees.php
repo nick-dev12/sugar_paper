@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_cp_catalogue.php';
+require_once __DIR__ . '/../includes/cake_topper_cp.php';
 require_once __DIR__ . '/../includes/image_optimizer.php';
 
 /**
@@ -330,6 +331,7 @@ function process_commande_personnalisee() {
     $prix_propose = isset($_POST['prix_propose']) ? trim($_POST['prix_propose']) : '';
     $type_produit = isset($_POST['type_produit']) ? trim($_POST['type_produit']) : '';
     $catalogue_produit_id = isset($_POST['catalogue_produit_id']) ? (int) $_POST['catalogue_produit_id'] : 0;
+    $boutique_produit_id = isset($_POST['boutique_produit_id']) ? (int) $_POST['boutique_produit_id'] : 0;
     $description_creation = isset($_POST['description_creation']) ? trim($_POST['description_creation']) : '';
     $description = '';
     $quantite = null;
@@ -346,18 +348,28 @@ function process_commande_personnalisee() {
         $errors[] = 'Session expirée. Veuillez renvoyer le formulaire.';
     }
 
-    if ($catalogue_produit_id <= 0) {
-        $errors[] = 'Veuillez sélectionner un produit dans le catalogue.';
+    if ($csrf === '' || empty($_SESSION['cp_form_csrf']) || !hash_equals((string) $_SESSION['cp_form_csrf'], $csrf)) {
+        $errors[] = 'Session expirée. Veuillez renvoyer le formulaire.';
+    }
+
+    $cp_ctx = cake_topper_cp_resolve_submission_context($catalogue_produit_id, $boutique_produit_id);
+    if (!$cp_ctx['ok']) {
+        $errors[] = $cp_ctx['message'];
     }
 
     $catalogue_produit = null;
-    if ($catalogue_produit_id > 0) {
-        $catalogue_produit = get_cp_produit_by_id($catalogue_produit_id, true);
-        if (!$catalogue_produit) {
-            $errors[] = 'Le produit sélectionné n\'est plus disponible.';
-            $catalogue_produit_id = 0;
+    if (empty($errors)) {
+        $catalogue_produit_id = (int) $cp_ctx['catalogue_produit_id'];
+        $boutique_produit_id = (int) $cp_ctx['boutique_produit_id'];
+        $type_produit = $cp_ctx['type_produit'];
+        if ($cp_ctx['catalogue_row']) {
+            $catalogue_produit = $cp_ctx['catalogue_row'];
         } else {
-            $type_produit = trim($catalogue_produit['nom']);
+            $catalogue_produit = [
+                'nom' => $type_produit,
+                'prix_min' => $cp_ctx['prix_min'],
+                'prix_max' => $cp_ctx['prix_max'],
+            ];
         }
     }
 
@@ -417,7 +429,11 @@ function process_commande_personnalisee() {
 
     if (empty($errors) && $catalogue_produit) {
         $prix_aff = number_format((float) $prix_propose, 0, ',', ' ');
-        $description = 'Produit catalogue : ' . $type_produit . '. Prix proposé : ' . $prix_aff . ' FCFA.';
+        if ($boutique_produit_id > 0 && $catalogue_produit_id <= 0) {
+            $description = 'Produit boutique #' . $boutique_produit_id . ' : ' . $type_produit . '. Prix proposé : ' . $prix_aff . ' FCFA.';
+        } else {
+            $description = 'Produit catalogue : ' . $type_produit . '. Prix proposé : ' . $prix_aff . ' FCFA.';
+        }
         if ($description_creation !== '') {
             $description .= ' Personnalisation : ' . $description_creation;
         }

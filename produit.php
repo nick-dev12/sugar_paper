@@ -75,6 +75,7 @@ if ($prix_original) {
     $pourcentage_reduction = round((($produit['prix'] - $produit['prix_promotion']) / $produit['prix']) * 100);
 }
 $show_price_from = produit_uses_price_from_label($produit);
+$supports_cake_topper_cp = produit_supports_cake_topper_commande_perso($produit);
 $supports_photo_perso = produit_personnalisation_enabled() && produit_supports_photo_personnalisation($produit);
 $gateau_modele_url = produit_personnalisation_modele_url();
 
@@ -131,8 +132,12 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
-    <?php if ($supports_photo_perso): ?>
+    <?php if ($supports_photo_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
+    <?php endif; ?>
+    <?php if ($supports_cake_topper_cp): ?>
+    <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <?php if (!$user_logged_in): ?>
@@ -1509,7 +1514,10 @@ $seo_schema_graphs = array_merge(
 
 
 
-                <!-- Options (couleur, poids, taille) : affichées pour tous les utilisateurs -->
+                <!-- Options (couleur, poids, taille) et commande -->
+                <?php if ($supports_cake_topper_cp): ?>
+                    <?php render_produit_detail_cp_action($produit); ?>
+                <?php else: ?>
                 <form method="POST" action="" id="add-to-panier-form" class="produit-add-form"<?php echo $supports_photo_perso ? ' enctype="multipart/form-data"' : ''; ?>>
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
@@ -1637,8 +1645,9 @@ $seo_schema_graphs = array_merge(
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
                     <?php if ($supports_photo_perso): ?>
-                    <input type="hidden" name="option_image_personnalisation" id="option-image-personnalisation" value="">
-                    <input type="file" name="image_personnalisation" id="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+                    <input type="hidden" name="option_image_personnalisation" id="option-image-personnalisation" class="option-image-personnalisation" value="">
+                    <input type="hidden" name="option_perso_meta" id="option-perso-meta" class="option-perso-meta" value="">
+                    <input type="file" name="image_personnalisation" id="form-image-personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                     <div class="perso-status" id="perso-status" aria-live="polite">
                         <img src="" alt="" class="perso-status-thumb" id="perso-status-thumb" width="36" height="36">
                         <span>Personnalisation ajoutée — votre photo sera imprimée sur le gâteau</span>
@@ -1672,13 +1681,14 @@ $seo_schema_graphs = array_merge(
                             Passer la commande
                         </button>
                         <?php if ($supports_photo_perso): ?>
-                        <button type="button" class="btn-personnaliser" id="btn-personnaliser">
+                        <button type="button" class="btn-personnaliser js-open-perso-modal" id="btn-personnaliser" data-perso-form="add-to-panier-form">
                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-                            Personnalisez
+                            Personnalisation
                         </button>
                         <?php endif; ?>
                     </div>
                 </form>
+                <?php endif; ?>
 
                 <!-- Description (en bas) -->
                 <!-- <?php if (!empty($produit['description'])): ?>
@@ -1728,37 +1738,17 @@ $seo_schema_graphs = array_merge(
         <?php endif; ?>
     </div>
 
+    <?php if ($supports_cake_topper_cp): ?>
+    <?php
+    if (!defined('CP_FORM_MODAL_ASSETS')) {
+        define('CP_FORM_MODAL_ASSETS', true);
+    }
+    render_cp_form_modal_assets();
+    ?>
+    <?php endif; ?>
+
     <?php if ($supports_photo_perso): ?>
-    <div class="perso-modal" id="modal-personnalisation" aria-hidden="true" role="dialog" aria-labelledby="perso-modal-title">
-        <div class="perso-modal-backdrop" aria-hidden="true"></div>
-        <div class="perso-modal-dialog">
-            <button type="button" class="perso-modal-close" id="perso-modal-close" aria-label="Fermer">&times;</button>
-            <h2 class="perso-modal-title" id="perso-modal-title">Personnalisez votre impression</h2>
-            <p class="perso-modal-subtitle">Importez votre photo de référence : elle s’affichera sur le dessus du gâteau, comme pour une impression comestible.</p>
-
-            <div class="gateau-preview" aria-hidden="false">
-                <img src="<?php echo htmlspecialchars($gateau_modele_url); ?>" alt="Modèle de gâteau" class="gateau-preview-base" id="gateau-preview-base">
-                <div class="gateau-preview-print" id="gateau-preview-print">
-                    <img src="" alt="Aperçu de votre photo sur le gâteau" id="gateau-preview-print-img">
-                </div>
-            </div>
-
-            <label class="perso-upload" id="perso-upload-label" tabindex="0">
-                <input type="file" id="perso-image-input" accept="image/jpeg,image/png,image/webp,image/gif">
-                <span class="perso-upload-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
-                <span class="perso-upload-text">Importer une image de référence</span>
-                <span class="perso-upload-hint">JPG, PNG ou WebP — photo, logo, illustration…</span>
-                <span class="perso-upload-filename" id="perso-upload-filename"></span>
-            </label>
-
-            <p class="perso-loading" id="perso-loading" hidden>Préparation de l’image…</p>
-
-            <div class="perso-modal-actions">
-                <button type="button" class="perso-btn perso-btn-secondary" id="perso-cancel">Annuler</button>
-                <button type="button" class="perso-btn perso-btn-primary" id="perso-validate" disabled>Valider la personnalisation</button>
-            </div>
-        </div>
-    </div>
+    <?php render_produit_personnalisation_modal(); ?>
     <?php endif; ?>
 
     <?php include('footer.php') ?>

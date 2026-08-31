@@ -31,6 +31,7 @@ require_once __DIR__ . '/../../includes/format_commande_options.php';
 require_once __DIR__ . '/../../includes/commande_mode_helpers.php';
 require_once __DIR__ . '/../../includes/geo_location.php';
 require_once __DIR__ . '/../../includes/admin_permissions.php';
+require_once __DIR__ . '/../../includes/produit_personnalisation.php';
 $commande = get_commande_by_id($commande_id);
 $produits = get_produits_by_commande($commande_id);
 $produits = is_array($produits) ? $produits : [];
@@ -165,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/platform-share-modal.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <style>
         .detail-mode-badge {
             display: inline-flex;
@@ -341,10 +343,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
 
         <div class="produits-list">
             <?php foreach ($produits as $produit): ?>
-                <?php $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? ''); ?>
-                <?php $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? ''); ?>
+                <?php
+                $img_src = !empty($produit['image_afficher']) ? $produit['image_afficher'] : ($produit['image_principale'] ?? '');
+                $perso_path = commande_ligne_personnalisation_path($produit);
+                $img_affichage = $perso_path !== '' ? produit_personnalisation_public_url($perso_path) : upload_image_url($img_src ?? '', 'sm');
+                $nom_affichage = !empty($produit['variante_nom']) ? $produit['produit_nom'] . ' → ' . $produit['variante_nom'] : ($produit['produit_nom'] ?? '');
+                ?>
                 <div class="produit-item">
-                    <img src="<?php echo htmlspecialchars(upload_image_url($img_src ?? '', 'sm')); ?>"
+                    <img src="<?php echo htmlspecialchars($img_affichage); ?>"
                         alt="<?php echo htmlspecialchars($nom_affichage ?? ''); ?>"
                         onerror="this.src='/image/produit1.jpg'">
                     <div class="produit-info">
@@ -412,6 +418,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_annulee && !$is_archivee) {
                             </div>
                             <?php endif; ?>
                         </div>
+                        <?php endif; ?>
+                        <?php if ($perso_path !== ''): ?>
+                            <?php render_commande_personnalisation_specs($produit, ['compact' => true]); ?>
+                            <?php render_commande_personnalisation_preview($produit, ['compact' => true]); ?>
                         <?php endif; ?>
                     </div>
                     <div class="produit-total">

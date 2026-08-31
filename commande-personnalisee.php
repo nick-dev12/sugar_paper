@@ -8,7 +8,7 @@ require_once __DIR__ . '/includes/session_user.php';
 session_start_persistent();
 
 require_once __DIR__ . '/controllers/controller_commandes_personnalisees.php';
-require_once __DIR__ . '/models/model_cp_catalogue.php';
+require_once __DIR__ . '/includes/cake_topper_cp.php';
 require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/includes/asset_version.php';
 require_once __DIR__ . '/includes/guest_client.php';
@@ -42,6 +42,7 @@ $prefill = [
     'prix_propose' => '',
     'type_produit' => '',
     'catalogue_produit_id' => '',
+    'boutique_produit_id' => '',
     'description_creation' => '',
 ];
 
@@ -63,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prefill['prix_propose'] = $_POST['prix_propose'] ?? '';
     $prefill['type_produit'] = $_POST['type_produit'] ?? '';
     $prefill['catalogue_produit_id'] = $_POST['catalogue_produit_id'] ?? '';
+    $prefill['boutique_produit_id'] = $_POST['boutique_produit_id'] ?? '';
     $prefill['description_creation'] = $_POST['description_creation'] ?? '';
 }
 
@@ -86,6 +88,20 @@ if ($selected_catalogue_id > 0) {
 
 $show_order_form = $selected_catalogue_id > 0;
 
+$cp_modal = [
+    'csrf' => $cp_csrf,
+    'user_logged_in' => $user_logged_in,
+    'prefill' => $prefill,
+    'form_action' => '',
+    'show_order_form' => $show_order_form,
+    'selected_catalogue_id' => $selected_catalogue_id,
+    'selected_catalogue_nom' => $selected_catalogue_nom,
+    'selected_catalogue_image' => $selected_catalogue_image,
+    'selected_prix_min' => $selected_prix_min,
+    'selected_prix_max' => $selected_prix_max,
+    'selected_boutique_id' => (int) ($prefill['boutique_produit_id'] ?? 0),
+];
+
 require_once __DIR__ . '/includes/site_url.php';
 require_once __DIR__ . '/includes/seo_config.php';
 $base = get_site_base_url();
@@ -105,7 +121,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <?php include __DIR__ . '/includes/seo_meta.php'; ?>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
@@ -114,6 +130,7 @@ $seo_canonical = $base . '/commande-personnalisee.php';
     <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
     <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
 </head>
 
 <body class="page-cp">
@@ -209,150 +226,8 @@ $seo_canonical = $base . '/commande-personnalisee.php';
             </div>
         </section>
 
-        <div class="cp-modal-overlay<?php echo $show_order_form ? ' is-visible' : ''; ?>" id="cp-modal-overlay"<?php echo !$show_order_form ? ' hidden' : ''; ?> aria-hidden="<?php echo $show_order_form ? 'false' : 'true'; ?>">
-            <button type="button" class="cp-modal-backdrop" id="cp-modal-backdrop" aria-label="Fermer le formulaire"></button>
-            <div class="cp-form-wrap cp-form-wrap--modal" id="cp-form-wrap" role="dialog" aria-modal="true" aria-labelledby="cp-form-product-name">
-            <form method="POST" action="" class="form-commande-perso form-commande-perso--modal" id="form-commande-perso" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($cp_csrf); ?>">
-                <input type="hidden" name="catalogue_produit_id" id="catalogue_produit_id" value="<?php echo $selected_catalogue_id > 0 ? (int) $selected_catalogue_id : ''; ?>">
-                <input type="hidden" name="type_produit" id="type_produit" value="<?php echo htmlspecialchars($selected_catalogue_nom); ?>">
+        <?php include __DIR__ . '/includes/partials/cp_commande_modal.php'; ?>
 
-                <div class="cp-form-product-head" id="cp-form-product-head">
-                    <?php if ($selected_catalogue_image !== ''): ?>
-                    <img src="<?php echo htmlspecialchars($selected_catalogue_image); ?>" alt="" class="cp-form-product-head__img" id="cp-form-product-image">
-                    <?php else: ?>
-                    <img src="" alt="" class="cp-form-product-head__img" id="cp-form-product-image" hidden>
-                    <?php endif; ?>
-                    <div>
-                        <p class="cp-form-product-head__label">Produit sélectionné</p>
-                        <p class="cp-form-product-head__name" id="cp-form-product-name"><?php echo htmlspecialchars($selected_catalogue_nom); ?></p>
-                        <p class="cp-form-product-head__range" id="cp-form-product-range">
-                            <?php if ($selected_prix_max > 0): ?>
-                            Fourchette : <?php echo number_format($selected_prix_min, 0, ',', ' '); ?> — <?php echo number_format($selected_prix_max, 0, ',', ' '); ?> FCFA
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                    <button type="button" class="cp-form-product-head__close" id="cp-clear-selection" aria-label="Fermer le formulaire">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <?php if (!$user_logged_in): ?>
-                <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-user-circle" aria-hidden="true"></i> Vos coordonnées</h2>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="nom">Nom *</label>
-                            <input type="text" id="nom" name="nom" required autocomplete="name"
-                                value="<?php echo htmlspecialchars($prefill['nom']); ?>" placeholder="Votre nom">
-                        </div>
-                        <div class="form-group form-group--tel">
-                            <label for="telephone">Téléphone *</label>
-                            <div class="input-wrapper input-wrapper--intl-tel cp-tel-intl">
-                                <input type="tel" id="telephone" name="telephone" required autocomplete="tel"
-                                    value="<?php echo htmlspecialchars($prefill['telephone']); ?>"
-                                    placeholder="77 123 45 67">
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <?php endif; ?>
-
-                <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-tag" aria-hidden="true"></i> Votre prix</h2>
-                    <div class="form-group">
-                        <label for="prix_propose">Prix proposé (FCFA) *</label>
-                        <input type="number" id="prix_propose" name="prix_propose" required min="0" step="1"
-                            value="<?php echo htmlspecialchars($prefill['prix_propose']); ?>"
-                            placeholder="Indiquez votre budget">
-                    </div>
-                </section>
-
-                <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-pen-fancy" aria-hidden="true"></i> Personnalisez</h2>
-                    <div class="form-group">
-                        <label for="description_creation">Description de votre création</label>
-                        <textarea id="description_creation" name="description_creation" rows="4" maxlength="2000"
-                            placeholder="Décrivez votre idée : thème, texte, prénom, couleurs, date de l'événement..."><?php echo htmlspecialchars($prefill['description_creation']); ?></textarea>
-                        <p class="cp-field-help">Précisez ce que vous souhaitez pour votre création sur mesure.</p>
-                    </div>
-                </section>
-
-                <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-microphone" aria-hidden="true"></i> Votre message vocal <span class="cp-optional">(optionnel)</span></h2>
-                    <div class="cp-voice-note" id="cp-voice-note">
-                        <input type="file" id="note_vocale" name="note_vocale" class="cp-voice-note__input" accept="audio/*,.webm,.ogg,.mp4,.m4a,.mp3" hidden>
-                        <div class="cp-voice-note__panel cp-voice-note__panel--idle" id="cp-voice-idle">
-                            <button type="button" class="cp-voice-note__mic" id="cp-voice-record-btn" aria-label="Enregistrer un message vocal">
-                                <i class="fas fa-microphone" aria-hidden="true"></i>
-                            </button>
-                            <div class="cp-voice-note__hint">
-                                <strong>Appuyez pour enregistrer</strong>
-                                <span>Max 2 min</span>
-                            </div>
-                        </div>
-                        <div class="cp-voice-note__panel cp-voice-note__panel--recording" id="cp-voice-recording" hidden>
-                            <span class="cp-voice-note__rec-dot" aria-hidden="true"></span>
-                            <span class="cp-voice-note__timer" id="cp-voice-timer">0:00</span>
-                            <div class="cp-voice-note__wave cp-voice-note__wave--live" id="cp-voice-wave-live" aria-hidden="true">
-                                <span></span><span></span><span></span><span></span><span></span>
-                            </div>
-                            <button type="button" class="cp-voice-note__stop" id="cp-voice-stop">
-                                <i class="fas fa-stop" aria-hidden="true"></i> Arrêter
-                            </button>
-                        </div>
-                        <div class="cp-voice-note__panel cp-voice-note__panel--preview" id="cp-voice-preview" hidden>
-                            <button type="button" class="cp-voice-note__play" id="cp-voice-play" aria-label="Écouter le message">
-                                <i class="fas fa-play" aria-hidden="true"></i>
-                            </button>
-                            <div class="cp-voice-note__preview-body">
-                                <div class="cp-voice-note__wave cp-voice-note__wave--preview" aria-hidden="true">
-                                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                                </div>
-                                <span class="cp-voice-note__duration" id="cp-voice-duration">0:00</span>
-                            </div>
-                            <button type="button" class="cp-voice-note__delete" id="cp-voice-delete" aria-label="Supprimer le message">
-                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <p class="cp-voice-note__error" id="cp-voice-error" hidden role="alert"></p>
-                    </div>
-                </section>
-
-                <section class="cp-form-section">
-                    <h2 class="cp-form-section-title"><i class="fas fa-image" aria-hidden="true"></i> Images d’inspiration <span class="cp-optional">(optionnel)</span></h2>
-                    <div class="form-group">
-                        <div class="upload-reference-box" id="upload-reference-box">
-                            <input type="file" id="images_reference" name="images_reference[]" class="upload-reference-input"
-                                accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" multiple>
-                            <button type="button" class="upload-reference-trigger" id="upload-reference-trigger">
-                                <i class="fas fa-cloud-arrow-up" aria-hidden="true"></i>
-                                <strong>Ajouter des photos d’inspiration</strong>
-                                <span>Glissez-déposez ou cliquez — jusqu’à 6 images</span>
-                            </button>
-                            <p class="upload-help">
-                                <strong>Formats :</strong> JPG, PNG, WEBP, GIF — 5&nbsp;Mo max par image.
-                            </p>
-                            <p class="upload-counter" id="upload-counter">0 / 6 image(s) sélectionnée(s)</p>
-                            <div class="preview-reference-grid" id="preview-reference-grid" aria-live="polite"></div>
-                        </div>
-                    </div>
-                </section>
-
-                <p class="cp-legal">
-                    En envoyant, vous acceptez les
-                    <a href="/conditions-utilisation.php" target="_blank" rel="noopener">conditions d’utilisation</a>.
-                    <?php if (!$user_logged_in): ?>
-                    Un compte sera créé avec votre numéro pour suivre la demande.
-                    <?php endif; ?>
-                </p>
-
-                <button type="submit" class="btn-submit">
-                    <i class="fas fa-paper-plane" aria-hidden="true"></i> Envoyer ma demande
-                </button>
-            </form>
-            </div>
-        </div>
     </div>
 
     <div id="commande-loader-overlay" class="commande-loader-overlay" hidden aria-hidden="true" role="alertdialog" aria-modal="true" aria-labelledby="commande-loader-title" aria-describedby="commande-loader-text">
@@ -370,13 +245,15 @@ $seo_canonical = $base . '/commande-personnalisee.php';
         </div>
     </div>
 
+    <?php if (!$user_logged_in): ?>
     <?php include __DIR__ . '/includes/auth_intl_tel_scripts.php'; ?>
+    <?php endif; ?>
     <script>
         window.cpShopConfig = {
             userLoggedIn: <?php echo $user_logged_in ? 'true' : 'false'; ?>
         };
     </script>
-    <script src="/js/commande-personnalisee.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/cp-form-modal.js<?php echo asset_version_query(); ?>"></script>
     <?php include('footer.php'); ?>
     <?php include __DIR__ . '/includes/floating_back_button.php'; ?>
 </body>

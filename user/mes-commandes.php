@@ -17,6 +17,7 @@ require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/../models/model_commandes_personnalisees.php';
 require_once __DIR__ . '/../models/model_livreur_tracking.php';
 require_once __DIR__ . '/../models/model_bl.php';
+require_once __DIR__ . '/../includes/produit_personnalisation.php';
 
 $success_message = '';
 $error_message = '';
@@ -347,7 +348,7 @@ $firebase_notify_type = 'user';
                                     <div class="mc-order__thumbs">
                                         <?php foreach ($thumbs as $thumb): ?>
                                             <img
-                                                src="<?php echo htmlspecialchars(upload_image_url($thumb['image_afficher'] ?? $thumb['image_principale'] ?? '', 'xs')); ?>"
+                                                src="<?php echo htmlspecialchars(commande_ligne_image_url($thumb, 'xs')); ?>"
                                                 alt="<?php echo htmlspecialchars($thumb['nom'] ?? 'Produit'); ?>"
                                                 loading="lazy"
                                                 onerror="this.src='/image/produit1.jpg'">
@@ -581,7 +582,7 @@ $firebase_notify_type = 'user';
                                     <div class="mc-order__thumbs">
                                         <?php foreach ($thumbs as $thumb): ?>
                                             <img
-                                                src="<?php echo htmlspecialchars(upload_image_url($thumb['image_afficher'] ?? $thumb['image_principale'] ?? '', 'xs')); ?>"
+                                                src="<?php echo htmlspecialchars(commande_ligne_image_url($thumb, 'xs')); ?>"
                                                 alt="<?php echo htmlspecialchars($thumb['nom'] ?? 'Produit'); ?>"
                                                 loading="lazy"
                                                 onerror="this.src='/image/produit1.jpg'">

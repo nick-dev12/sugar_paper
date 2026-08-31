@@ -19,15 +19,23 @@ $return_url = guest_checkout_safe_redirect($return_url, '/index.php');
 
 if (modal_request_is_ajax()) {
     if ($result['success']) {
-        $rendered = checkout_modals_render_cart($result['message'] ?? 'Produit ajouté au panier.', 'success');
-        modal_json_response([
+        $next = isset($_POST['next']) ? trim((string) $_POST['next']) : '';
+        $open_target = ($next === 'checkout') ? 'checkout' : 'cart';
+        $payload = [
             'ok' => true,
-            'open' => 'cart',
-            'html' => $rendered['html'],
-            'count' => $rendered['count'],
-            'empty' => !empty($rendered['empty']),
+            'open' => $open_target,
             'message' => $result['message'] ?? 'Produit ajouté.',
-        ]);
+        ];
+        if ($open_target === 'cart') {
+            $rendered = checkout_modals_render_cart($result['message'] ?? 'Produit ajouté au panier.', 'success');
+            $payload['html'] = $rendered['html'];
+            $payload['count'] = $rendered['count'];
+            $payload['empty'] = !empty($rendered['empty']);
+        } else {
+            $rendered = checkout_modals_render_cart('', '');
+            $payload['count'] = $rendered['count'];
+        }
+        modal_json_response($payload);
     }
     modal_json_response([
         'ok' => false,

@@ -1050,7 +1050,7 @@
 .cp-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10050;
+  z-index: 12200;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1072,19 +1072,175 @@
   border: none;
   padding: 0;
   margin: 0;
-  background: rgba(20, 12, 8, 0.52);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
   cursor: pointer;
+}
+
+.cp-modal-overlay .cp-perso-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+}
+
+.cp-modal-overlay .cp-perso-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 6px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.cp-modal-overlay .cp-perso-form .cp-form-section.perso-tool-section {
+  margin-bottom: 14px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.cp-modal-overlay .cp-perso-form .cp-form-section.perso-tool-section:last-of-type {
+  margin-bottom: 10px;
+}
+
+.cp-modal-overlay .cp-form-product-head.perso-tool-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border-bottom: none;
+}
+
+.cp-modal-overlay .cp-form-product-head__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.cp-modal-overlay .cp-form-product-head__img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0;
+  border: 2px solid rgba(229, 72, 138, 0.2);
+  flex-shrink: 0;
+}
+
+.cp-modal-overlay .cp-form-product-head__label {
+  color: var(--couleur-dominante, #E5488A);
+  font-size: 0.68rem;
+}
+
+.cp-modal-overlay .cp-form-product-head__name {
+  color: #1a1a1a;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.cp-modal-overlay .cp-form-product-head__range {
+  color: #6b2f20;
+  font-size: 0.82rem;
+}
+
+.cp-modal-overlay .cp-perso-form .form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+.cp-modal-overlay .cp-perso-form .form-group input,
+.cp-modal-overlay .cp-perso-form .form-group textarea {
+  border: 1px solid rgba(229, 72, 138, 0.22);
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cp-modal-overlay .cp-perso-form .form-group input:focus,
+.cp-modal-overlay .cp-perso-form .form-group textarea:focus {
+  outline: none;
+  border-color: var(--couleur-dominante, #E5488A);
+  box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.12);
+}
+
+.cp-modal-overlay .cp-upload-perso .upload-reference-trigger {
+  border: 2px dashed rgba(229, 72, 138, 0.4);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.cp-modal-overlay .cp-upload-perso .upload-reference-trigger:hover,
+.cp-modal-overlay .cp-upload-perso.is-dragover .upload-reference-trigger {
+  border-color: var(--couleur-dominante, #E5488A);
+  background: rgba(229, 72, 138, 0.06);
+}
+
+.cp-modal-overlay .cp-upload-perso .upload-reference-trigger i {
+  color: var(--couleur-dominante, #E5488A);
+}
+
+.cp-modal-overlay .cp-voice-note {
+  border: 1px solid rgba(229, 72, 138, 0.18);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.cp-modal-overlay .cp-voice-note__mic {
+  background: rgba(229, 72, 138, 0.12);
+  color: var(--couleur-dominante, #E5488A);
+}
+
+.cp-modal-overlay .cp-perso-form .cp-legal {
+  font-size: 0.72rem;
+  color: #666;
+  margin: 8px 0 0;
+}
+
+.cp-modal-overlay .cp-perso-form .perso-modal-actions {
+  margin-top: 12px;
+  padding-top: 4px;
+}
+
+.cp-modal-overlay .cp-perso-form .perso-modal-actions .btn-submit {
+  width: 100%;
+  justify-content: center;
+}
+
+.cp-modal-overlay .cp-perso-form .cp-field-help {
+  font-size: 0.76rem;
+  color: #777;
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .cp-modal-overlay .cp-perso-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+    padding: 18px 16px 16px;
+  }
+
+  .cp-modal-overlay .perso-modal-title {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .cp-modal-overlay .cp-perso-form .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cp-form-wrap--modal {
   position: relative;
   z-index: 1;
-  display: block;
-  width: 100%;
-  max-width: 440px;
-  max-height: min(88vh, 720px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
   animation: cpModalIn 0.28s ease;
 }
 
@@ -1100,9 +1256,10 @@
 }
 
 .form-commande-perso--modal {
-  padding: 18px 16px 16px;
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .form-commande-perso--modal .cp-form-section {

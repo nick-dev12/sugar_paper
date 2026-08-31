@@ -8,6 +8,7 @@ require_once __DIR__ . '/../includes/session_user.php';
 session_start_persistent();
 require_once __DIR__ . '/../includes/image_optimizer.php';
 require_once __DIR__ . '/../includes/produit_share.php';
+require_once __DIR__ . '/../includes/produit_personnalisation.php';
 
 if (!isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0) {
     header('Location: connexion.php');
@@ -201,7 +202,7 @@ $firebase_notify_type = 'user';
                                 <div class="mc-order__thumbs">
                                     <?php foreach ($thumbs as $thumb): ?>
                                         <img
-                                            src="<?php echo htmlspecialchars(upload_image_url($thumb['image_afficher'] ?? $thumb['image_principale'] ?? '', 'xs')); ?>"
+                                            src="<?php echo htmlspecialchars(commande_ligne_image_url($thumb, 'xs')); ?>"
                                             alt="<?php echo htmlspecialchars($thumb['nom'] ?? 'Produit'); ?>"
                                             loading="lazy"
                                             onerror="this.src='/image/produit1.jpg'">

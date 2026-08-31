@@ -208,6 +208,50 @@
   color: rgba(61, 40, 0, 0.6);
 }
 
+.ckm-item__perso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.ckm-item__perso-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ckm-rose);
+  white-space: nowrap;
+}
+
+.ckm-item__perso-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(229, 72, 138, 0.35);
+}
+
+.ckm-recap-item__perso {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ckm-rose);
+}
+
+.ckm-recap-item__perso img {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  vertical-align: middle;
+  margin-right: 4px;
+  border: 1px solid rgba(229, 72, 138, 0.35);
+}
+
 .ckm-swatch {
   display: inline-block;
   width: 12px;

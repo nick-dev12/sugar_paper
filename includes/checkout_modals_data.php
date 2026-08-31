@@ -12,6 +12,7 @@ require_once __DIR__ . '/../models/model_users.php';
 require_once __DIR__ . '/../models/model_zones_livraison.php';
 require_once __DIR__ . '/../models/model_commandes.php';
 require_once __DIR__ . '/commande_mode_helpers.php';
+require_once __DIR__ . '/produit_personnalisation.php';
 require_once __DIR__ . '/produit_share.php';
 
 if (!function_exists('checkout_modals_user_logged_in')) {
@@ -284,6 +285,19 @@ if (!function_exists('checkout_modals_success_payload')) {
                     $ligne .= ' (' . $prix_l . ')';
                 }
                 $wa_lines[] = $ligne;
+
+                $perso_meta = commande_ligne_personnalisation_meta($prod);
+                if ($perso_meta) {
+                    $wa_lines[] = '  📐 ' . produit_personnalisation_meta_label($perso_meta);
+                }
+                $perso_path = commande_ligne_personnalisation_path($prod);
+                if ($perso_path !== '') {
+                    $perso_uri = produit_personnalisation_public_url($perso_path);
+                    $perso_abs = absolute_public_url($perso_uri);
+                    if ($perso_abs !== '') {
+                        $wa_lines[] = '  🎨 Personnalisation : ' . $perso_abs;
+                    }
+                }
 
                 $img_path = trim((string) ($prod['image_afficher'] ?? $prod['image_principale'] ?? ''));
                 if ($img_path !== '') {

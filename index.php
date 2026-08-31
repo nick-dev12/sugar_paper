@@ -49,8 +49,10 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/seo-content.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-perf.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
 
 </head>
@@ -444,6 +446,12 @@ $seo_canonical = $base . '/';
 
     </main>
 
+    <?php
+    require_once __DIR__ . '/includes/cake_topper_cp.php';
+    render_cp_form_modal_assets();
+    render_produit_personnalisation_modal();
+    ?>
+
     <?php include('footer.php') ?>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 
@@ -491,6 +499,9 @@ $seo_canonical = $base . '/';
     </script>
 
     <script src="/js/home-galerie-video.js<?php echo asset_version_query(); ?>" defer></script>
+    <?php if (produit_personnalisation_enabled()): ?>
+    <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
 
 </body>
 
