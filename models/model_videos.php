@@ -165,6 +165,25 @@ function delete_video($id)
 }
 
 /**
+ * URL publique de la miniature vidéo si le fichier existe sur disque
+ * @param array $video
+ * @return string
+ */
+function resolve_video_poster_url(array $video)
+{
+    if (empty($video['image_preview'])) {
+        return '';
+    }
+
+    $thumb_disk = __DIR__ . '/../upload/videos/thumbnails/' . $video['image_preview'];
+    if (is_file($thumb_disk) && filesize($thumb_disk) > 0) {
+        return '/upload/videos/thumbnails/' . rawurlencode($video['image_preview']);
+    }
+
+    return '';
+}
+
+/**
  * Garantit une miniature pour l'affichage (génère si absente, position pseudo-aléatoire dans la vidéo).
  * @param array $video Ligne vidéo (id, fichier_video, image_preview)
  * @return string|null Nom du fichier thumbnail ou null

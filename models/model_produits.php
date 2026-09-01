@@ -154,6 +154,122 @@ function get_all_produits_random($limit = 30)
 }
 
 /**
+ * Produits actifs d'une section accueil, ordre aléatoire
+ * @param string $section
+ * @param int $limit
+ * @return array
+ */
+function get_produits_by_home_section_random($section, $limit = 10)
+{
+    global $db;
+
+    $section = normalize_produit_section_accueil($section);
+    $limit = max(1, (int) $limit);
+    if (!$section || !produits_has_section_accueil_column()) {
+        return [];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom AS categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE p.statut = 'actif' AND p.section_accueil = :section
+            ORDER BY RAND()
+            LIMIT :limit
+        ");
+        $stmt->bindValue(':section', $section, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $rows ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Sélection catalogue accueil : minimum par section prioritaire, puis complément aléatoire, mélangé
+ * @param int $limit Nombre total de produits à afficher
+ * @param int $min_per_section Minimum aléatoire par section prioritaire (cake topper, photo)
+ * @return array
+ */
+function get_home_catalog_produits_mixed($limit = 30, $min_per_section = 10)
+{
+    global $db;
+
+    $limit = max(1, (int) $limit);
+    $min_per_section = max(1, (int) $min_per_section);
+
+    if (!produits_has_section_accueil_column()) {
+        return get_all_produits_random($limit);
+    }
+
+    $priority_sections = ['cake_topper', 'photo_impression'];
+    $by_id = [];
+
+    foreach ($priority_sections as $section) {
+        $section_products = get_produits_by_home_section_random($section, $min_per_section);
+        foreach ($section_products as $produit) {
+            $id = (int) ($produit['id'] ?? 0);
+            if ($id > 0) {
+                $by_id[$id] = $produit;
+            }
+        }
+    }
+
+    $remaining = $limit - count($by_id);
+    if ($remaining > 0) {
+        try {
+            $exclude_ids = array_keys($by_id);
+            $sql = "
+                SELECT p.*, c.nom AS categorie_nom
+                FROM produits p
+                LEFT JOIN categories c ON p.categorie_id = c.id
+                WHERE p.statut = 'actif'
+            ";
+            $params = [];
+
+            if (!empty($exclude_ids)) {
+                $placeholders = [];
+                foreach ($exclude_ids as $i => $exclude_id) {
+                    $key = 'exclude_' . $i;
+                    $placeholders[] = ':' . $key;
+                    $params[$key] = (int) $exclude_id;
+                }
+                $sql .= ' AND p.id NOT IN (' . implode(', ', $placeholders) . ')';
+            }
+
+            $sql .= ' ORDER BY RAND() LIMIT :limit';
+
+            $stmt = $db->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue(':' . $key, $value, PDO::PARAM_INT);
+            }
+            $stmt->bindValue(':limit', $remaining, PDO::PARAM_INT);
+            $stmt->execute();
+            $extra = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            foreach ($extra as $produit) {
+                $id = (int) ($produit['id'] ?? 0);
+                if ($id > 0 && !isset($by_id[$id])) {
+                    $by_id[$id] = $produit;
+                }
+            }
+        } catch (PDOException $e) {
+            // Conserver les produits déjà sélectionnés
+        }
+    }
+
+    $produits = array_values($by_id);
+    if (count($produits) > 1) {
+        shuffle($produits);
+    }
+
+    return array_slice($produits, 0, $limit);
+}
+
+/**
  * Vérifie si la colonne section_accueil existe
  * @return bool
  */

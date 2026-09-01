@@ -71,15 +71,15 @@ $section_uses_cp = ($section_key === 'cake_topper');
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/seo-content.css<?php echo asset_version_query(); ?>">
     <?php if ($section_uses_perso): ?>
-    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
+        <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
     <?php if ($section_uses_cp): ?>
-    <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
-    <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
-    <?php if (!isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0): ?>
-    <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
-    <?php endif; ?>
+        <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
+        <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
+        <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
+        <?php if (!isset($_SESSION['user_id']) || (int) $_SESSION['user_id'] <= 0): ?>
+            <?php include __DIR__ . '/includes/auth_intl_tel_head.php'; ?>
+        <?php endif; ?>
     <?php endif; ?>
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
@@ -162,11 +162,12 @@ $section_uses_cp = ($section_key === 'cake_topper');
     </style>
 </head>
 
-<body>
+<body class="page-section-produits">
     <?php include 'nav_bar.php'; ?>
 
     <div class="page-header">
-        <h1><i class="fas <?php echo htmlspecialchars($page_icon); ?>"></i> <?php echo htmlspecialchars($section_config['title']); ?></h1>
+        <h1><i class="fas <?php echo htmlspecialchars($page_icon); ?>"></i>
+            <?php echo htmlspecialchars($section_config['title']); ?></h1>
         <p><?php echo htmlspecialchars($section_config['desc']); ?></p>
         <a href="index.php#<?php echo htmlspecialchars($section_config['id']); ?>" class="page-header-back">
             <i class="fas fa-arrow-left"></i> Retour à l'accueil
@@ -174,14 +175,16 @@ $section_uses_cp = ($section_key === 'cake_topper');
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
-    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
-        <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
-    </div>
+        <div
+            style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
+            <i class="fas fa-check-circle"></i> Produit ajouté au panier avec succès.
+        </div>
     <?php endif; ?>
     <?php if (isset($_GET['error'])): ?>
-    <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
-        <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
-    </div>
+        <div
+            style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(229, 72, 138, 0.15); border-left: 4px solid var(--couleur-dominante); border-radius: 8px; color: var(--titres);">
+            <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_GET['error']); ?>
+        </div>
     <?php endif; ?>
 
     <div class="produits-container-wrapper">
@@ -190,62 +193,65 @@ $section_uses_cp = ($section_key === 'cake_topper');
             <section class="produit_vedetes">
                 <article class="articles carousel11" id="produits-container">
                     <?php if (empty($produits)): ?>
-                    <div class="empty-state" style="width:100%;">
-                        <i class="fas fa-box-open" style="font-size:48px;opacity:0.4;margin-bottom:16px;"></i>
-                        <p>Aucun produit dans cette section pour le moment.</p>
-                        <a href="index.php" style="display:inline-block;margin-top:16px;color:var(--couleur-dominante);">Retour à l'accueil</a>
-                    </div>
+                        <div class="empty-state" style="width:100%;">
+                            <i class="fas fa-box-open" style="font-size:48px;opacity:0.4;margin-bottom:16px;"></i>
+                            <p>Aucun produit dans cette section pour le moment.</p>
+                            <a href="index.php"
+                                style="display:inline-block;margin-top:16px;color:var(--couleur-dominante);">Retour à
+                                l'accueil</a>
+                        </div>
                     <?php else: ?>
-                    <?php foreach ($produits as $produit): ?>
-                    <div class="carousel" data-produit-id="<?php echo (int) $produit['id']; ?>">
-                        <?php echo produit_share_button_html($produit); ?>
-                        <a href="produit.php?id=<?php echo (int) $produit['id']; ?>" class="product-card-link">
-                            <div class="image-wrapper">
-                                <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                    alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                    onerror="this.src='/image/produit1.jpg'">
+                        <?php foreach ($produits as $produit): ?>
+                            <div class="carousel" data-produit-id="<?php echo (int) $produit['id']; ?>">
+                                <?php echo produit_share_button_html($produit); ?>
+                                <a href="produit.php?id=<?php echo (int) $produit['id']; ?>" class="product-card-link">
+                                    <div class="image-wrapper">
+                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
+                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
+                                            onerror="this.src='/image/produit1.jpg'">
+                                    </div>
+                                    <div class="produit-content">
+                                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
+                                        <?php if (!empty($produit['categorie_nom'])): ?>
+                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
+                                        <?php endif; ?>
+                                        <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
+                                    </div>
+                                </a>
+                                <?php render_produit_listing_actions($produit, $return_url); ?>
                             </div>
-                            <div class="produit-content">
-                                <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                <?php if (!empty($produit['categorie_nom'])): ?>
-                                <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                <?php endif; ?>
-                                <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
-                            </div>
-                        </a>
-                        <?php render_produit_listing_actions($produit, $return_url); ?>
-                    </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </article>
 
                 <?php if (!empty($produits) && $total_produits > $limit): ?>
-                <div style="text-align:center;margin-top:40px;padding:20px;">
-                    <button id="btn-voir-plus" class="btn-voir-plus" type="button">
-                        <i class="fas fa-chevron-down"></i> Voir plus
-                    </button>
-                    <p id="produits-count" class="produits-count">
-                        Affichés : <span id="count-actuel"><?php echo min($limit, $total_produits); ?></span> / <?php echo (int) $total_produits; ?> produits
-                    </p>
-                </div>
+                    <div style="text-align:center;margin-top:40px;padding:20px;">
+                        <button id="btn-voir-plus" class="btn-voir-plus" type="button">
+                            <i class="fas fa-chevron-down"></i> Voir plus
+                        </button>
+                        <p id="produits-count" class="produits-count">
+                            Affichés : <span id="count-actuel"><?php echo min($limit, $total_produits); ?></span> /
+                            <?php echo (int) $total_produits; ?> produits
+                        </p>
+                    </div>
                 <?php endif; ?>
             </section>
         </section>
     </div>
 
     <?php if ($section_uses_cp): ?>
-    <?php render_cp_form_modal_assets(); ?>
+        <?php render_cp_form_modal_assets(); ?>
     <?php endif; ?>
 
     <?php if ($section_uses_perso): ?>
-    <?php render_produit_personnalisation_modal(); ?>
+        <?php render_produit_personnalisation_modal(); ?>
     <?php endif; ?>
 
     <?php include 'footer.php'; ?>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
     <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>"></script>
     <?php if ($section_uses_perso): ?>
-    <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+        <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
     <script>
         const sectionKey = <?php echo json_encode($section_key); ?>;
@@ -276,10 +282,10 @@ $section_uses_cp = ($section_key === 'cake_topper');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
 
             fetch('api/get_produits_section.php?section=' + encodeURIComponent(sectionKey) + '&offset=' + offsetActuel + '&limit=' + limit)
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
                     if (data.success && data.produits.length > 0) {
-                        data.produits.forEach(function(produit) {
+                        data.produits.forEach(function (produit) {
                             const div = document.createElement('div');
                             div.className = 'carousel';
                             div.setAttribute('data-produit-id', produit.id);
@@ -303,34 +309,22 @@ $section_uses_cp = ($section_key === 'cake_topper');
 
                             let formHtml = '';
                             if (sectionUsesCp && produit.cp) {
-                                const cp = produit.cp;
-                                formHtml = '<button type="button" class="btn-add-cart btn-personnaliser-card js-open-cp-modal"'
-                                    + ' data-cp-catalogue-id="' + (cp.catalogue_produit_id || '') + '"'
-                                    + ' data-cp-boutique-id="' + (cp.boutique_produit_id || produit.id) + '"'
-                                    + ' data-cp-name="' + escapeHtml(cp.nom || produit.nom) + '"'
-                                    + ' data-cp-image="' + escapeHtml(cp.image || produit.image_url || '') + '"'
-                                    + ' data-cp-price-min="' + (cp.prix_min || 0) + '"'
-                                    + ' data-cp-price-max="' + (cp.prix_max || 0) + '">'
-                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnaliser</button>';
+                                formHtml = '<div class="add-to-cart-form">'
+                                    + '<a href="produit.php?id=' + produit.id + '" class="btn-add-cart btn-personnaliser-card">'
+                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnaliser</a>'
+                                    + '</div>';
                             } else if (sectionUsesPerso) {
-                                formHtml = '<form method="POST" action="/add-to-panier.php" class="add-to-cart-form perso-cart-form" id="perso-form-' + produit.id + '" enctype="multipart/form-data">'
-                                    + '<input type="hidden" name="produit_id" value="' + produit.id + '">'
-                                    + '<input type="hidden" name="quantite" value="1">'
-                                    + '<input type="hidden" name="return_url" value="' + escapeHtml(returnUrl) + '">'
-                                    + '<input type="hidden" name="option_image_personnalisation" class="option-image-personnalisation" value="">'
-                                    + '<input type="hidden" name="option_perso_meta" class="option-perso-meta" value="">'
-                                    + '<input type="file" name="image_personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'
-                                    + '<input type="file" name="image_personnalisation_source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'
-                                    + '<button type="button" class="btn-add-cart btn-personnaliser-card js-open-perso-modal" data-perso-form="perso-form-' + produit.id + '">'
-                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation</button>'
-                                    + '</form>';
+                                formHtml = '<div class="add-to-cart-form">'
+                                    + '<a href="produit.php?id=' + produit.id + '" class="btn-add-cart btn-personnaliser-card">'
+                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation</a>'
+                                    + '</div>';
                             } else {
                                 formHtml = '<form method="POST" action="/add-to-panier.php" class="add-to-cart-form">'
                                     + '<input type="hidden" name="produit_id" value="' + produit.id + '">'
                                     + '<input type="hidden" name="quantite" value="1">'
                                     + '<input type="hidden" name="return_url" value="' + escapeHtml(returnUrl) + '">'
                                     + '<button type="submit" class="btn-add-cart">'
-                                    + '<i class="fa-solid fa-cart-shopping"></i> Ajouter au panier</button>'
+                                    + '<i class="fa-solid fa-cart-shopping"></i> Commander</button>'
                                     + '</form>';
                             }
 
@@ -358,7 +352,7 @@ $section_uses_cp = ($section_key === 'cake_topper');
                         btn.style.display = 'none';
                     }
                 })
-                .catch(function() {
+                .catch(function () {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
                 });

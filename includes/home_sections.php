@@ -151,14 +151,15 @@ function render_home_product_card($produit, $return_url = '/index.php')
 }
 
 /**
- * Section accueil : tous les produits (toutes catégories confondues)
+ * Section accueil : tous les produits (priorité cake topper + photo comestible, mélangés aléatoirement)
  * @param int $limit
  * @param string $return_url
+ * @param int $min_per_priority_section Minimum aléatoire par section cake topper et photo/impression
  * @return void
  */
-function render_home_all_products_section($limit = 30, $return_url = '/index.php')
+function render_home_all_products_section($limit = 30, $return_url = '/index.php', $min_per_priority_section = 10)
 {
-    $produits = get_all_produits_random($limit);
+    $produits = get_home_catalog_produits_mixed($limit, $min_per_priority_section);
     $total = count_all_produits_actifs();
     $has_more = $total > count($produits);
     ?>

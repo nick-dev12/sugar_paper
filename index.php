@@ -250,7 +250,7 @@ $seo_canonical = $base . '/';
     <?php
     require_once __DIR__ . '/includes/home_sections.php';
     $home_return_url = $_SERVER['REQUEST_URI'] ?? '/index.php';
-    render_home_all_products_section(30, $home_return_url);
+    render_home_all_products_section(40, $home_return_url, 10);
     render_home_product_section('cake_topper', 20, $home_return_url);
     ?>
 
@@ -332,13 +332,7 @@ $seo_canonical = $base . '/';
             <div class="galerie-grid" id="videosSlider">
                 <?php foreach ($videos as $index => $video): ?>
                 <?php
-                    $poster_url = '';
-                    if (!empty($video['image_preview'])) {
-                        $thumb_disk = __DIR__ . '/upload/videos/thumbnails/' . $video['image_preview'];
-                        if (is_file($thumb_disk) && filesize($thumb_disk) > 0) {
-                            $poster_url = '/upload/videos/thumbnails/' . rawurlencode($video['image_preview']);
-                        }
-                    }
+                    $poster_url = resolve_video_poster_url($video);
                     $video_src = '/upload/videos/' . rawurlencode($video['fichier_video']);
                     $needs_poster = $poster_url === '' ? '1' : '0';
                 ?>

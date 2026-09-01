@@ -310,13 +310,15 @@ function render_produit_detail_cp_action(array $produit)
     }
 
     $ctx = resolve_cp_modal_context_for_produit($produit);
+    $produit_id = (int) ($produit['id'] ?? 0);
+    $return_url = htmlspecialchars($_SERVER['REQUEST_URI'] ?? ('produit.php?id=' . $produit_id), ENT_QUOTES, 'UTF-8');
     ?>
     <div class="produit-cp-detail produit-section-bg">
         <p class="produit-cp-detail__hint">
             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
             Décrivez votre création sur mesure : nous réalisons votre cake topper selon vos envies.
         </p>
-        <div class="produit-actions-row produit-actions-row--single">
+        <div class="produit-actions-row produit-actions-row--cp">
             <button type="button"
                 class="btn-add-panier btn-personnaliser js-open-cp-modal"
                 data-cp-catalogue-id="<?php echo (int) $ctx['catalogue_produit_id']; ?>"
@@ -328,6 +330,15 @@ function render_produit_detail_cp_action(array $produit)
                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                 Personnaliser
             </button>
+            <form method="POST" action="/add-to-panier.php" class="produit-cp-sans-perso-form">
+                <input type="hidden" name="produit_id" value="<?php echo $produit_id; ?>">
+                <input type="hidden" name="quantite" value="1">
+                <input type="hidden" name="return_url" value="<?php echo $return_url; ?>">
+                <button type="submit" class="btn-add-panier btn-commander-sans-perso">
+                    <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
+                    Commander sans personnalisation
+                </button>
+            </form>
         </div>
     </div>
     <?php

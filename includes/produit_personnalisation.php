@@ -102,6 +102,20 @@ function produit_personnalisation_public_url($relative_path)
 }
 
 /**
+ * Badge promo personnalisation (-10 %)
+ * @return void
+ */
+function render_produit_perso_promo_badge()
+{
+    ?>
+    <div class="produit-perso-promo-badge" role="note">
+        <span class="produit-perso-promo-icon" aria-hidden="true"><i class="fa-solid fa-gift"></i></span>
+        <span class="produit-perso-promo-text"><strong>-10&nbsp;%</strong> de réduction si vous personnalisez votre création</span>
+    </div>
+    <?php
+}
+
+/**
  * Actions carte produit : personnalisation ou ajout panier classique
  * @param array $produit
  * @param string $return_url
@@ -117,37 +131,23 @@ function render_produit_listing_actions($produit, $return_url = '/index.php')
     $return_url = htmlspecialchars($return_url, ENT_QUOTES, 'UTF-8');
 
     if (produit_listing_uses_cake_topper_cp($produit)) {
-        $ctx = resolve_cp_modal_context_for_produit($produit);
         ?>
-        <button type="button"
-            class="btn-add-cart btn-personnaliser-card js-open-cp-modal"
-            data-cp-catalogue-id="<?php echo (int) $ctx['catalogue_produit_id']; ?>"
-            data-cp-boutique-id="<?php echo (int) $ctx['boutique_produit_id']; ?>"
-            data-cp-name="<?php echo htmlspecialchars($ctx['nom'], ENT_QUOTES, 'UTF-8'); ?>"
-            data-cp-image="<?php echo htmlspecialchars($ctx['image'], ENT_QUOTES, 'UTF-8'); ?>"
-            data-cp-price-min="<?php echo (float) $ctx['prix_min']; ?>"
-            data-cp-price-max="<?php echo (float) $ctx['prix_max']; ?>">
-            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnaliser
-        </button>
+        <div class="add-to-cart-form">
+            <a href="produit.php?id=<?php echo $produit_id; ?>" class="btn-add-cart btn-personnaliser-card">
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnaliser
+            </a>
+        </div>
         <?php
         return;
     }
 
     if (produit_listing_uses_personnalisation($produit)) {
-        $form_id = 'perso-form-' . $produit_id;
         ?>
-        <form method="POST" action="/add-to-panier.php" class="add-to-cart-form perso-cart-form" id="<?php echo htmlspecialchars($form_id); ?>" enctype="multipart/form-data">
-            <input type="hidden" name="produit_id" value="<?php echo $produit_id; ?>">
-            <input type="hidden" name="quantite" value="1">
-            <input type="hidden" name="return_url" value="<?php echo $return_url; ?>">
-            <input type="hidden" name="option_image_personnalisation" class="option-image-personnalisation" value="">
-            <input type="hidden" name="option_perso_meta" class="option-perso-meta" value="">
-            <input type="file" name="image_personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
-            <input type="file" name="image_personnalisation_source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
-            <button type="button" class="btn-add-cart btn-personnaliser-card js-open-perso-modal" data-perso-form="<?php echo htmlspecialchars($form_id); ?>">
+        <div class="add-to-cart-form">
+            <a href="produit.php?id=<?php echo $produit_id; ?>" class="btn-add-cart btn-personnaliser-card">
                 <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation
-            </button>
-        </form>
+            </a>
+        </div>
         <?php
         return;
     }
@@ -157,7 +157,7 @@ function render_produit_listing_actions($produit, $return_url = '/index.php')
         <input type="hidden" name="quantite" value="1">
         <input type="hidden" name="return_url" value="<?php echo $return_url; ?>">
         <button type="submit" class="btn-add-cart">
-            <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+            <i class="fa-solid fa-cart-shopping"></i> Commander
         </button>
     </form>
     <?php

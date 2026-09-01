@@ -84,6 +84,109 @@
     border-color: #6b2f20;
 }
 
+.produit-perso-promo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 18px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(229, 72, 138, 0.1), rgba(145, 138, 68, 0.12));
+    border: 1px solid rgba(229, 72, 138, 0.22);
+    color: #6b2f20;
+    font-size: 14px;
+    line-height: 1.45;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.produit-perso-promo-badge strong {
+    color: var(--couleur-dominante, #E5488A);
+    font-weight: 800;
+}
+
+.produit-perso-promo-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(229, 72, 138, 0.14);
+    color: var(--couleur-dominante, #E5488A);
+    flex-shrink: 0;
+    animation: persoGiftPulse 1.4s ease-in-out infinite;
+}
+
+.produit-perso-promo-icon i {
+    font-size: 16px;
+}
+
+@keyframes persoGiftPulse {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    35% {
+        transform: scale(1.12) rotate(-10deg);
+    }
+    70% {
+        transform: scale(1.05) rotate(8deg);
+    }
+}
+
+.produit-actions-row--cp {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.produit-cp-sans-perso-form {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.btn-commander-sans-perso {
+    width: 100%;
+    padding: 14px 20px;
+    border: 2px solid rgba(229, 72, 138, 0.35);
+    border-radius: 25px;
+    background: #ffffff;
+    color: var(--couleur-dominante, #E5488A);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+}
+
+.btn-commander-sans-perso:hover,
+.btn-commander-sans-perso:focus-visible {
+    background: rgba(229, 72, 138, 0.08);
+    transform: translateY(-1px);
+}
+
+.produit-actions-row--cp .btn-personnaliser {
+    width: 100%;
+}
+
+@media (min-width: 520px) {
+    .produit-actions-row--cp {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .produit-actions-row--cp .btn-personnaliser,
+    .produit-cp-sans-perso-form {
+        flex: 1 1 calc(50% - 5px);
+    }
+}
+
 .perso-status {
     display: none;
     align-items: center;

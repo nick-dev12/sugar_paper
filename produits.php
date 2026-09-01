@@ -239,7 +239,7 @@ $seo_canonical = $base . '/produits.php';
                                     <input type="hidden" name="return_url"
                                         value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
                                     <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                        <i class="fa-solid fa-cart-shopping"></i> Commander
                                     </button>
                                 </form>
                             </div>
@@ -371,7 +371,7 @@ $seo_canonical = $base . '/produits.php';
                                     <input type="hidden" name="quantite" value="1">
                                     <input type="hidden" name="return_url" value="${returnUrl}">
                                     <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                        <i class="fa-solid fa-cart-shopping"></i> Commander
                                     </button>
                                 </form>
                             `;

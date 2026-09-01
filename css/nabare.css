@@ -696,31 +696,47 @@ nav .containernav .users img {
   .section1 {
     padding: 6px 10px;
   }
-  .section1-sections-nav {
-    display: grid;
+
+  .section1 .section1-left {
+    display: block;
+    width: 100%;
+  }
+
+  .section1 .section1-sections-nav {
+    display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     width: 100%;
     min-width: 0;
+    align-items: stretch;
   }
-  .section1-section-link {
-    display: flex;
+
+  .section1 .section1-section-link {
+    display: flex !important;
     width: 100%;
-    max-width: none;
-    flex: none;
+    max-width: 100%;
     min-width: 0;
+    box-sizing: border-box;
     justify-content: center;
-    padding: 8px 10px;
+    align-items: center;
+    padding: 8px 6px;
+    font-size: 10px;
+    gap: 4px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .section1 .section1-section-link i {
     font-size: 11px;
-    gap: 5px;
+    flex-shrink: 0;
   }
-  .section1-section-link i {
-    font-size: 12px;
-  }
-  .section1-section-link span {
+
+  .section1 .section1-section-link span {
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    min-width: 0;
   }
 }
 
@@ -758,12 +774,14 @@ nav .containernav .users img {
   .section1 {
     padding: 5px 8px;
   }
-  .section1-section-link {
-    padding: 7px 8px;
-    font-size: 10px;
-    gap: 4px;
+
+  .section1 .section1-section-link {
+    padding: 7px 5px;
+    font-size: 9px;
+    gap: 3px;
   }
-  .section1-section-link i {
-    font-size: 11px;
+
+  .section1 .section1-section-link i {
+    font-size: 10px;
   }
 }

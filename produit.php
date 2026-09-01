@@ -1389,6 +1389,9 @@ $seo_schema_graphs = array_merge(
                         <?php echo produit_render_detail_prix_html($produit, $prix_affichage, (bool) $prix_original, $pourcentage_reduction); ?>
                     </div>
                 </div>
+                <?php if ($supports_cake_topper_cp || $supports_photo_perso): ?>
+                    <?php render_produit_perso_promo_badge(); ?>
+                <?php endif; ?>
 
                 <!-- Variantes, Stock, Poids, Couleurs, Taille -->
                 <?php
@@ -1679,7 +1682,7 @@ $seo_schema_graphs = array_merge(
                     <div class="produit-actions-row">
                         <button type="submit" class="btn-add-panier" id="btn-add-panier">
                             <i class="fa-solid fa-bag-shopping"></i>
-                            Passer la commande
+                            <?php echo $supports_photo_perso ? 'Commander sans personnalisation' : 'Passer la commande'; ?>
                         </button>
                         <?php if ($supports_photo_perso): ?>
                         <button type="button" class="btn-personnaliser js-open-perso-modal" id="btn-personnaliser" data-perso-form="add-to-panier-form">
@@ -1728,7 +1731,7 @@ $seo_schema_graphs = array_merge(
                                     <input type="hidden" name="return_url"
                                         value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
                                     <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                        <i class="fa-solid fa-cart-shopping"></i> Commander
                                     </button>
                                 </form>
                             </div>

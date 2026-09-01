@@ -1534,6 +1534,16 @@ footer span {
   display: block;
 }
 
+.galerie-video.galerie-video--preview {
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.galerie-video-wrapper[data-poster-done="1"] .galerie-poster--placeholder {
+  display: none;
+}
+
 .galerie-play-overlay {
   position: absolute;
   top: 50%;

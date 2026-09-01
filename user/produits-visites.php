@@ -155,7 +155,7 @@ $produits_visites = get_produits_visites_by_user($_SESSION['user_id'], 50);
                                     <input type="hidden" name="quantite" value="1">
                                     <input type="hidden" name="return_url" value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/user/produits-visites.php'); ?>">
                                     <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Ajouter au panier
+                                        <i class="fa-solid fa-cart-shopping"></i> Commander
                                     </button>
                                 </form>
                             </div>

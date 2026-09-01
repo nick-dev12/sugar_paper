@@ -239,7 +239,23 @@
   margin-left: 0 !important;
 }
 
-/* Bouton d'action - Ajouter au panier (formulaire) */
+/* Liens d'action (Personnaliser) — annule style.css .carousel a { position:absolute } */
+.produit_vedete .articles .carousel .add-to-cart-form a.btn-add-cart,
+.produit_vedetes .articles .carousel .add-to-cart-form a.btn-add-cart,
+.carousel11 .carousel .add-to-cart-form a.btn-add-cart,
+.produits-visites-grid .carousel .add-to-cart-form a.btn-add-cart {
+  position: static !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  bottom: auto !important;
+  right: auto !important;
+  left: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Bouton d'action - Commander (formulaire ou lien) */
 .produit_vedete .articles .carousel .add-to-cart-form,
 .produit_vedetes .articles .carousel .add-to-cart-form,
 .carousel11 .carousel .add-to-cart-form,
@@ -251,7 +267,11 @@
 .produit_vedete .articles .carousel .btn-add-cart,
 .produit_vedetes .articles .carousel .btn-add-cart,
 .carousel11 .carousel .btn-add-cart,
-.produits-visites-grid .carousel .btn-add-cart {
+.produits-visites-grid .carousel .btn-add-cart,
+.produit_vedete .articles .carousel a.btn-add-cart,
+.produit_vedetes .articles .carousel a.btn-add-cart,
+.carousel11 .carousel a.btn-add-cart,
+.produits-visites-grid .carousel a.btn-add-cart {
   width: 100%;
   padding: 10px 14px;
   background: rgba(229, 72, 138, 0.7);
@@ -271,6 +291,8 @@
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(229, 72, 138, 0.25);
   font-family: inherit;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .produit_vedete .articles .carousel .btn-add-cart:hover,

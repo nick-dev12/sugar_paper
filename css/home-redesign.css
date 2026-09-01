@@ -64,8 +64,9 @@ body.page-home .home-alert--error {
   color: var(--home-ink);
 }
 
-/* ——— Commande perso — invitation atelier ——— */
+/* ——— Commande perso — invitation atelier (masquée sur l'accueil) ——— */
 body.page-home .commande-perso-showcase {
+  display: none !important;
   margin-top: clamp(16px, 2.4vw, 24px);
   padding: 0;
   background: transparent;
@@ -799,12 +800,12 @@ body.page-home .galerie-play-overlay {
 @media (min-width: 768px) {
   body.page-home .galerie-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 14px !important;
+    gap: clamp(12px, 2vw, 20px) !important;
   }
 
   body.page-home .galerie-item {
-    max-width: 240px;
-    margin-inline: auto;
+    max-width: none;
+    margin-inline: 0;
     width: 100%;
   }
 
@@ -815,12 +816,12 @@ body.page-home .galerie-play-overlay {
 
 @media (min-width: 1100px) {
   body.page-home .galerie-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 16px !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: clamp(14px, 2vw, 24px) !important;
   }
 
   body.page-home .galerie-item {
-    max-width: 220px;
+    max-width: none;
   }
 
   body.page-home .galerie-video-wrapper {
@@ -828,8 +829,8 @@ body.page-home .galerie-play-overlay {
   }
 
   body.page-home .galerie-play-overlay {
-    width: 40px !important;
-    height: 40px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 }
 
