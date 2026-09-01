@@ -125,6 +125,35 @@ function get_all_produits_paginated($offset = 0, $limit = 20)
 }
 
 /**
+ * Récupère des produits actifs dans un ordre aléatoire
+ * @param int $limit
+ * @return array
+ */
+function get_all_produits_random($limit = 30)
+{
+    global $db;
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE p.statut = 'actif'
+            ORDER BY RAND()
+            LIMIT :limit
+        ");
+
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Vérifie si la colonne section_accueil existe
  * @return bool
  */
@@ -149,7 +178,7 @@ function produits_has_section_accueil_column()
  */
 function get_produit_section_accueil_allowed()
 {
-    return ['cake_topper', 'photo_impression', 'outils_patisserie'];
+    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau'];
 }
 
 /**
@@ -173,6 +202,7 @@ function get_produit_section_accueil_labels()
         'cake_topper' => 'Cake toppers',
         'photo_impression' => 'Photo et impression comestible',
         'outils_patisserie' => 'Outils de pâtisserie',
+        'decoration_gateau' => 'Décoration de gâteau',
     ];
 }
 

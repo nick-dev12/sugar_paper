@@ -488,29 +488,104 @@ body.page-home .commande-perso-showcase .btn-commande-perso:hover {
 }
 
 @media (max-width: 576px) {
+  body.page-home .commande-perso-showcase {
+    margin-top: 10px;
+  }
+
+  body.page-home .commande-perso-showcase-inner {
+    border-radius: 14px;
+  }
+
+  body.page-home .commande-perso-content {
+    min-height: 0;
+  }
+
+  body.page-home .commande-perso-main {
+    padding: 14px 12px 8px;
+  }
+
+  body.page-home .commande-perso-badge {
+    padding: 5px 10px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  body.page-home .commande-perso-title {
+    font-size: clamp(1.35rem, 6.5vw, 1.65rem);
+    margin-bottom: 10px;
+    line-height: 1.12;
+  }
+
+  body.page-home .commande-perso-text {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  body.page-home .commande-perso-promises {
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  body.page-home .commande-perso-promises li {
+    font-size: 10px;
+    padding: 5px 8px;
+    gap: 5px;
+  }
+
+  body.page-home .commande-perso-promises i {
+    font-size: 10px;
+  }
+
   body.page-home .commande-perso-showcase .btn-commande-perso {
-    padding: 13px 16px !important;
-    font-size: 14px !important;
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+  }
+
+  body.page-home .commande-perso-visual {
+    margin: 0 10px 10px;
+    padding: 12px 12px;
+    gap: 10px;
+    border-radius: 14px;
+  }
+
+  body.page-home .commande-perso-atelier {
+    min-height: 80px;
+  }
+
+  body.page-home .commande-perso-cake {
+    width: 72px;
+    height: 72px;
+    font-size: 28px;
+  }
+
+  body.page-home .commande-perso-float {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  body.page-home .commande-perso-step {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  body.page-home .commande-perso-step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+
+  body.page-home .commande-perso-step-label {
+    font-size: 11px;
+  }
+
+  body.page-home .commande-perso-step-hint {
+    font-size: 9px;
   }
 
   body.page-home .commande-perso-stamp {
     display: none;
-  }
-
-  body.page-home .commande-perso-atelier {
-    min-height: 110px;
-  }
-
-  body.page-home .commande-perso-cake {
-    width: 96px;
-    height: 96px;
-    font-size: 36px;
-  }
-
-  body.page-home .commande-perso-float {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
   }
 }
 
@@ -853,9 +928,11 @@ body.page-home .home-section-cta:hover {
 }
 
 /* En-têtes produits : carte blanche */
+body.page-home #home-all-products .home-section-head,
 body.page-home #home-cake-topper .home-section-head,
 body.page-home #home-photo-impression .home-section-head,
 body.page-home #home-outils-patisserie .home-section-head,
+body.page-home #home-decoration-gateau .home-section-head,
 body.page-home #home-top-categories .home-section-head {
   background: #ffffff;
   border: 1px solid rgba(229, 72, 138, 0.1);
@@ -867,7 +944,8 @@ body.page-home #home-top-categories .home-section-head {
 /* Nouveautés / Populaires / Catalogue : kicker + CTA sur la même ligne, sans titre ni description */
 body.page-home #home-cake-topper .home-section-head,
 body.page-home #home-photo-impression .home-section-head,
-body.page-home #home-outils-patisserie .home-section-head {
+body.page-home #home-outils-patisserie .home-section-head,
+body.page-home #home-decoration-gateau .home-section-head {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
@@ -879,13 +957,16 @@ body.page-home #home-cake-topper .home-section-desc,
 body.page-home #home-photo-impression .home-section-title,
 body.page-home #home-photo-impression .home-section-desc,
 body.page-home #home-outils-patisserie .home-section-title,
-body.page-home #home-outils-patisserie .home-section-desc {
+body.page-home #home-outils-patisserie .home-section-desc,
+body.page-home #home-decoration-gateau .home-section-title,
+body.page-home #home-decoration-gateau .home-section-desc {
   display: none;
 }
 
 body.page-home #home-cake-topper .home-section-kicker,
 body.page-home #home-photo-impression .home-section-kicker,
-body.page-home #home-outils-patisserie .home-section-kicker {
+body.page-home #home-outils-patisserie .home-section-kicker,
+body.page-home #home-decoration-gateau .home-section-kicker {
   margin-bottom: 0;
   font-size: clamp(13px, 2.6vw, 15px);
   letter-spacing: 0.16em;
@@ -894,7 +975,8 @@ body.page-home #home-outils-patisserie .home-section-kicker {
 
 body.page-home #home-cake-topper .home-section-cta,
 body.page-home #home-photo-impression .home-section-cta,
-body.page-home #home-outils-patisserie .home-section-cta {
+body.page-home #home-outils-patisserie .home-section-cta,
+body.page-home #home-decoration-gateau .home-section-cta {
   flex-shrink: 0;
   white-space: nowrap;
   padding: 8px 14px;
@@ -904,7 +986,8 @@ body.page-home #home-outils-patisserie .home-section-cta {
 @media (max-width: 420px) {
   body.page-home #home-cake-topper .home-section-cta,
   body.page-home #home-photo-impression .home-section-cta,
-  body.page-home #home-outils-patisserie .home-section-cta {
+  body.page-home #home-outils-patisserie .home-section-cta,
+  body.page-home #home-decoration-gateau .home-section-cta {
     padding: 7px 11px;
     font-size: 11.5px;
     gap: 6px;

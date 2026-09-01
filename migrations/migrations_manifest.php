@@ -197,6 +197,11 @@ return [
         'script' => 'run_backfill_produits_section_accueil.php',
     ],
     [
+        'id' => 'produits_section_decoration_gateau',
+        'label' => 'Section accueil decoration_gateau sur produits',
+        'script' => 'run_add_produits_section_decoration_gateau.php',
+    ],
+    [
         'id' => 'panier_image_personnalisation',
         'label' => 'Image personnalisation sur lignes panier',
         'script' => 'run_add_panier_image_personnalisation.php',

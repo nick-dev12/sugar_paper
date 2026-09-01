@@ -396,7 +396,7 @@ function produit_personnalisation_meta_normalize(array $data)
     }
     $paper = $formats[$format];
     $shape = isset($data['shape']) ? strtolower(trim((string) $data['shape'])) : 'circle';
-    if (!in_array($shape, ['circle', 'square'], true)) {
+    if (!in_array($shape, ['circle', 'square', 'heart'], true)) {
         $shape = 'circle';
     }
 
@@ -467,7 +467,12 @@ function produit_personnalisation_meta_label(array $meta)
     $n = produit_personnalisation_meta_normalize($meta);
     $formats = get_produit_personnalisation_paper_formats();
     $paper = $formats[$n['format']];
-    $shape_label = $n['shape'] === 'square' ? 'Carré' : 'Cercle';
+    $shape_labels = [
+        'circle' => 'Cercle',
+        'square' => 'Carré',
+        'heart' => 'Cœur',
+    ];
+    $shape_label = $shape_labels[$n['shape']] ?? 'Cercle';
     if ($n['shape'] === 'circle') {
         $dim = 'Ø ' . number_format($n['width_cm'], 1, ',', ' ') . ' cm';
     } else {

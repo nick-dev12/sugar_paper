@@ -49,6 +49,10 @@
                             <span class="perso-shape-icon perso-shape-icon--square"></span>
                             <span>Carré</span>
                         </button>
+                        <button type="button" class="perso-shape-btn" data-shape="heart" aria-pressed="false" title="Cœur">
+                            <span class="perso-shape-icon perso-shape-icon--heart"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+                            <span>Cœur</span>
+                        </button>
                     </div>
                 </section>
 
@@ -142,7 +146,6 @@
 
             <div class="perso-preview-panel">
                 <p class="perso-preview-label">Aperçu en direct</p>
-                <p class="perso-preview-hint">Texte prioritaire sur l'image. Cliquez sur un texte pour le sélectionner, sur la zone sans texte pour l'image, ailleurs pour tout désélectionner.</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="perso-preview-viewport">
                         <canvas id="perso-preview-canvas" width="640" height="640" aria-label="Aperçu de la personnalisation"></canvas>

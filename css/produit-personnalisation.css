@@ -297,7 +297,7 @@
 .perso-paper-picker,
 .perso-shape-picker {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
 }
 
@@ -365,6 +365,17 @@
 
 .perso-shape-icon--square {
     border-radius: 4px;
+}
+
+.perso-shape-icon--heart {
+    border: none;
+    background: transparent;
+    color: var(--couleur-dominante, #E5488A);
+    font-size: 22px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .commande-perso-specs {
@@ -811,6 +822,8 @@
 #perso-preview-canvas {
     width: 100%;
     height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     display: block;
     touch-action: none;
     cursor: default;
@@ -1150,12 +1163,18 @@
         margin-bottom: 12px;
     }
 
-    .perso-preview-panel {
-        padding: 10px 12px;
+    .perso-preview-viewport {
+        width: min(240px, calc(100vw - 40px));
+        max-height: min(240px, calc(100vw - 40px));
     }
 
-    .perso-preview-viewport {
-        width: min(300px, calc(100vw - 48px));
+    .perso-preview-panel {
+        padding: 8px 10px;
+    }
+
+    .perso-preview-label {
+        margin-bottom: 6px;
+        font-size: 11px;
     }
 
     .perso-font-picker {
@@ -1163,18 +1182,51 @@
     }
 
     .perso-modal-actions {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 8px;
+        margin-top: 12px;
     }
 
     .perso-btn {
-        width: 100%;
+        flex: 1 1 0;
+        min-width: 0;
+        width: auto;
+        padding: 9px 10px;
+        font-size: 12px;
         text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
 @media (max-width: 480px) {
     .perso-modal-dialog {
         width: calc(100vw - 16px);
+    }
+
+    .perso-modal-actions {
+        gap: 6px;
+    }
+
+    .perso-btn {
+        padding: 8px 8px;
+        font-size: 11px;
+    }
+
+    .perso-preview-viewport {
+        width: min(220px, calc(100vw - 32px));
+        max-height: min(220px, calc(100vw - 32px));
+    }
+
+    .perso-shape-picker {
+        gap: 6px;
+    }
+
+    .perso-shape-btn {
+        padding: 8px 4px;
+        font-size: 10px;
     }
 }
 

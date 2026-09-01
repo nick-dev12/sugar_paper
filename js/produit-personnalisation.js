@@ -155,7 +155,18 @@
             var dy = canvasY - b.cy;
             return (dx * dx + dy * dy) <= (b.r * b.r);
         }
-        return canvasX >= b.x && canvasX <= b.x + b.w && canvasY >= b.y && canvasY <= b.y + b.h;
+        if (state.shape === 'square') {
+            return canvasX >= b.x && canvasX <= b.x + b.w && canvasY >= b.y && canvasY <= b.y + b.h;
+        }
+        if (!canvas) {
+            return false;
+        }
+        var hitCtx = canvas.getContext('2d');
+        if (!hitCtx) {
+            return false;
+        }
+        appendShapePath(hitCtx, b);
+        return hitCtx.isPointInPath(canvasX, canvasY);
     }
 
     function applyImageMove(canvasX, canvasY) {
@@ -1449,23 +1460,38 @@
         ctx.shadowColor = 'transparent';
     }
 
-    function applyShapeClip(ctx, bounds) {
+    function appendHeartPath(ctx, bounds) {
+        var x = bounds.x;
+        var y = bounds.y;
+        var w = bounds.w;
+        var h = bounds.h;
+        var cx = bounds.cx;
+        var top = y + h * 0.22;
+
+        ctx.moveTo(cx, y + h * 0.88);
+        ctx.bezierCurveTo(x - w * 0.15, y + h * 0.45, x + w * 0.02, y + h * 0.02, cx, top);
+        ctx.bezierCurveTo(x + w * 0.98, y + h * 0.02, x + w * 1.15, y + h * 0.45, cx, y + h * 0.88);
+        ctx.closePath();
+    }
+
+    function appendShapePath(ctx, bounds) {
         ctx.beginPath();
         if (state.shape === 'square') {
             ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
+        } else if (state.shape === 'heart') {
+            appendHeartPath(ctx, bounds);
         } else {
             ctx.arc(bounds.cx, bounds.cy, bounds.r, 0, Math.PI * 2);
         }
+    }
+
+    function applyShapeClip(ctx, bounds) {
+        appendShapePath(ctx, bounds);
         ctx.clip();
     }
 
     function drawShapeOutline(ctx, bounds) {
-        ctx.beginPath();
-        if (state.shape === 'square') {
-            ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
-        } else {
-            ctx.arc(bounds.cx, bounds.cy, bounds.r, 0, Math.PI * 2);
-        }
+        appendShapePath(ctx, bounds);
         ctx.strokeStyle = 'rgba(229, 72, 138, 0.55)';
         ctx.lineWidth = 2;
         ctx.stroke();
@@ -1639,12 +1665,7 @@
             }
         } else {
             ctx.fillStyle = 'rgba(229, 72, 138, 0.08)';
-            ctx.beginPath();
-            if (state.shape === 'square') {
-                ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
-            } else {
-                ctx.arc(bounds.cx, bounds.cy, bounds.r, 0, Math.PI * 2);
-            }
+            appendShapePath(ctx, bounds);
             ctx.fill();
         }
 

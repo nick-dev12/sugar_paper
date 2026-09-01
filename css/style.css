@@ -358,19 +358,22 @@ body::before {
 /* Responsive - regroupement 2 par 2, affichage réduit */
 @media (max-width: 992px) {
   .services-banner {
-    padding: 20px 15px;
-    margin: -15px 15px 0;
+    padding: 10px 10px;
+    margin: -10px 10px 0;
   }
   .services-banner-inner {
-    padding: 20px 15px;
+    padding: 10px 8px;
+    border-radius: 12px;
+    border-width: 1px;
+    box-shadow: 0 4px 16px rgba(229, 72, 138, 0.08);
   }
   .service-divider {
     display: none;
   }
   .service-item {
-    flex: 1 1 calc(50% - 8px);
+    flex: 1 1 calc(50% - 6px);
     min-width: 0;
-    padding: 12px 8px;
+    padding: 6px 4px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
   .service-item:nth-child(odd):not(:last-child) {
@@ -383,42 +386,44 @@ body::before {
     border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
   .service-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-    margin-bottom: 8px;
-  }
-  .service-item h3 {
-    font-size: 11px;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
     margin-bottom: 4px;
   }
+  .service-item h3 {
+    font-size: 9px;
+    margin-bottom: 0;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+  }
   .service-item p {
-    font-size: 11px;
+    display: none;
   }
   .commande-perso-cta {
-    margin-top: 18px !important;
+    margin-top: 14px !important;
   }
   .btn-commande-perso {
-    padding: 12px 22px !important;
-    font-size: 14px !important;
+    padding: 10px 18px !important;
+    font-size: 13px !important;
   }
   .commande-perso-cta p {
-    font-size: 12px !important;
-    margin-top: 8px !important;
+    font-size: 11px !important;
+    margin-top: 6px !important;
   }
 }
 @media (max-width: 576px) {
   .services-banner {
-    margin: -15px 10px 0;
-    padding: 10px 8px;
+    margin: -8px 8px 0;
+    padding: 8px 6px;
   }
   .services-banner-inner {
-    padding: 10px 6px;
-    border-radius: 12px;
+    padding: 8px 5px;
+    border-radius: 10px;
   }
   .service-item {
     flex: 1 1 calc(50% - 4px);
-    padding: 6px 4px;
+    padding: 5px 3px;
     min-height: 0;
   }
   .service-item:last-child {
@@ -430,30 +435,29 @@ body::before {
     border-bottom: none;
   }
   .service-icon {
-    width: 30px;
-    height: 30px;
-    font-size: 13px;
-    margin-bottom: 4px;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    margin-bottom: 3px;
   }
   .service-item h3 {
-    font-size: 9px;
+    font-size: 8px;
     margin-bottom: 0;
-    letter-spacing: 0.2px;
-    line-height: 1.2;
+    letter-spacing: 0.15px;
+    line-height: 1.15;
   }
   .service-item p {
-    font-size: 9px;
     display: none;
   }
   .commande-perso-cta {
-    margin-top: 10px !important;
+    margin-top: 8px !important;
   }
   .btn-commande-perso {
-    padding: 8px 12px !important;
-    font-size: 11px !important;
+    padding: 7px 10px !important;
+    font-size: 10px !important;
   }
   .commande-perso-cta p {
-    font-size: 10px !important;
+    font-size: 9px !important;
     margin-top: 4px !important;
   }
 }

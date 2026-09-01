@@ -90,6 +90,15 @@ function get_seo_sections_meta()
                 . 'Nos outils sont choisis pour leur durabilité et leur facilité d\'utilisation au quotidien. '
                 . 'Commandez en ligne et complétez votre arsenal de décoration avec des produits disponibles au Sénégal.',
         ],
+        'decoration_gateau' => [
+            'title' => 'Décoration de gâteau — Dakar | Sugar Paper',
+            'description' => 'Décoration de gâteau à Dakar : paillettes, sprays, rubans, bougies et accessoires festifs pour sublimer vos créations. Sugar Paper Sénégal.',
+            'keywords' => 'décoration gâteau, paillettes comestibles, spray alimentaire, ruban gâteau, bougie anniversaire, décoration gâteau Dakar, Sugar Paper',
+            'intro' => 'Parcourez notre sélection de décorations de gâteau pour donner le dernier coup de polish à vos créations. '
+                . 'Sugar Paper propose paillettes comestibles, sprays alimentaires, rubans, bougies, figurines et accessoires festifs pour anniversaires, mariages et événements. '
+                . 'Complétez vos gâteaux avec des finitions élégantes et des touches de couleur, disponibles à Dakar avec livraison au Sénégal. '
+                . 'Commandez en ligne et trouvez la décoration adaptée à chaque occasion.',
+        ],
     ];
 }
 

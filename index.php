@@ -250,6 +250,7 @@ $seo_canonical = $base . '/';
     <?php
     require_once __DIR__ . '/includes/home_sections.php';
     $home_return_url = $_SERVER['REQUEST_URI'] ?? '/index.php';
+    render_home_all_products_section(30, $home_return_url);
     render_home_product_section('cake_topper', 20, $home_return_url);
     ?>
 
@@ -442,6 +443,7 @@ $seo_canonical = $base . '/';
 
     <?php
     render_home_product_section('outils_patisserie', 20, $home_return_url);
+    render_home_product_section('decoration_gateau', 20, $home_return_url);
     ?>
 
     </main>

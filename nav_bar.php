@@ -3,6 +3,7 @@ if (!function_exists('get_asset_version')) {
     require_once __DIR__ . '/includes/asset_version.php';
 }
 require_once __DIR__ . '/includes/store_nav_account.php';
+require_once __DIR__ . '/includes/home_sections.php';
 $store_nav_account = store_nav_account_info();
 $asset_version = isset($asset_version) ? $asset_version : get_asset_version();
 $panier_count = 0;
@@ -618,6 +619,7 @@ if (file_exists(__DIR__ . '/models/model_categories.php')) {
             <i class="fa-solid fa-bars"></i>
             <span>MENU</span>
         </button>
+        <?php render_section1_sections_nav(); ?>
     </div>
     <div class="section1-right">
         <a href="/nouveautes.php" class="nav-action-btn nav-btn-nouveautes">
