@@ -18,7 +18,7 @@ function get_home_sections_config()
         'cake_topper' => [
             'id' => 'home-cake-topper',
             'kicker' => 'Décoration personnaliser',
-            'nav_label' => 'Décoration perso',
+            'nav_label' => 'Cake topper',
             'title' => 'Cake toppers',
             'desc' => 'Topper et décorations pour personnaliser vos gâteaux.',
             'cta_href' => 'section-produits.php?section=cake_topper',
@@ -110,8 +110,8 @@ function render_section1_sections_nav()
 {
     ?>
     <nav class="section1-sections-nav" aria-label="Sections produits">
-        <?php foreach (get_home_sections_config() as $config): ?>
-        <a href="/index.php#<?php echo htmlspecialchars($config['id']); ?>" class="section1-section-link">
+        <?php foreach (get_home_sections_config() as $section_key => $config): ?>
+        <a href="/<?php echo htmlspecialchars(get_home_section_page_url($section_key)); ?>" class="section1-section-link">
             <i class="fa-solid <?php echo htmlspecialchars($config['page_icon']); ?>" aria-hidden="true"></i>
             <span><?php echo htmlspecialchars($config['nav_label'] ?? $config['kicker']); ?></span>
         </a>

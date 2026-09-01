@@ -169,11 +169,19 @@
         return hitCtx.isPointInPath(canvasX, canvasY);
     }
 
-    function applyImageMove(canvasX, canvasY) {
+    function applyImageMove(canvasX, canvasY, startX, startY, startOffsetX, startOffsetY) {
         if (!lastRenderLayout) {
             return;
         }
         var bounds = lastRenderLayout.designBounds;
+        if (typeof startX === 'number' && typeof startY === 'number'
+            && typeof startOffsetX === 'number' && typeof startOffsetY === 'number') {
+            var dx = canvasX - startX;
+            var dy = canvasY - startY;
+            state.imageOffsetX = clampImageOffset(startOffsetX + (dx / bounds.w) * 100);
+            state.imageOffsetY = clampImageOffset(startOffsetY + (dy / bounds.h) * 100);
+            return;
+        }
         state.imageOffsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
         state.imageOffsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
     }
@@ -316,6 +324,48 @@
         var a = touchPointers[ids[0]];
         var b = touchPointers[ids[1]];
         return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function getPinchMidpoint() {
+        var ids = Object.keys(touchPointers);
+        if (ids.length < 2) {
+            return null;
+        }
+        var a = touchPointers[ids[0]];
+        var b = touchPointers[ids[1]];
+        return {
+            x: (a.x + b.x) / 2,
+            y: (a.y + b.y) / 2
+        };
+    }
+
+    function syncTouchPointer(event) {
+        if (!event || typeof event.pointerId === 'undefined') {
+            return;
+        }
+        if (event.type === 'pointerup' || event.type === 'pointercancel') {
+            delete touchPointers[event.pointerId];
+            return;
+        }
+        touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
+    }
+
+    function startPinchDrag() {
+        var dist = getPinchDistance();
+        if (dist <= 0 || !loadedImage) {
+            return false;
+        }
+        selectImage();
+        manipDrag = {
+            target: 'image',
+            mode: 'pinch',
+            lastPinchDist: dist
+        };
+        if (imageManipBox) {
+            imageManipBox.classList.add('is-dragging');
+            imageManipBox.style.pointerEvents = 'none';
+        }
+        return true;
     }
 
     function getCanvasDisplayScale() {
@@ -596,6 +646,7 @@
         }
         if (imageManipBox) {
             imageManipBox.classList.remove('is-dragging');
+            imageManipBox.style.pointerEvents = '';
         }
         var wasImage = manipDrag.target === 'image';
         manipDrag = null;
@@ -678,16 +729,26 @@
 
         if (manipDrag.target === 'image') {
             if (manipDrag.mode === 'move') {
-                applyImageMove(canvasPt.x, canvasPt.y);
+                applyImageMove(
+                    canvasPt.x,
+                    canvasPt.y,
+                    manipDrag.startX,
+                    manipDrag.startY,
+                    manipDrag.startOffsetX,
+                    manipDrag.startOffsetY
+                );
             } else if (manipDrag.mode === 'resize') {
                 applyImageResize(canvasPt.x, canvasPt.y, manipDrag.startDist, manipDrag.startScalePct);
             } else if (manipDrag.mode === 'pinch') {
                 var dist = getPinchDistance();
-                if (dist > 0 && manipDrag.pinchStartDist > 0) {
-                    var midX = (touchPointers[Object.keys(touchPointers)[0]].x + touchPointers[Object.keys(touchPointers)[1]].x) / 2;
-                    var midY = (touchPointers[Object.keys(touchPointers)[0]].y + touchPointers[Object.keys(touchPointers)[1]].y) / 2;
-                    var midCanvas = clientToCanvas(midX, midY);
-                    applyImageZoomAt(manipDrag.pinchStartScale * (dist / manipDrag.pinchStartDist), midCanvas.x, midCanvas.y);
+                if (dist > 8 && manipDrag.lastPinchDist > 8) {
+                    var mid = getPinchMidpoint();
+                    if (mid) {
+                        var midCanvas = clientToCanvas(mid.x, mid.y);
+                        var ratio = dist / manipDrag.lastPinchDist;
+                        applyImageZoomAt(state.imageScalePct * ratio, midCanvas.x, midCanvas.y);
+                        manipDrag.lastPinchDist = dist;
+                    }
                 }
             }
             renderPreview();
@@ -728,17 +789,7 @@
             if (event.target.closest('.perso-manip-delete')) {
                 return;
             }
-            touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
-
             if (Object.keys(touchPointers).length >= 2 && loadedImage) {
-                finishManipDrag();
-                selectImage();
-                manipDrag = {
-                    target: 'image',
-                    mode: 'pinch',
-                    pinchStartDist: getPinchDistance(),
-                    pinchStartScale: state.imageScalePct
-                };
                 event.preventDefault();
                 return;
             }
@@ -759,25 +810,23 @@
             }
         });
 
-        canvas.addEventListener('pointermove', function (event) {
-            if (touchPointers[event.pointerId]) {
-                touchPointers[event.pointerId] = { x: event.clientX, y: event.clientY };
-            }
-            if (manipDrag && manipDrag.mode === 'pinch' && Object.keys(touchPointers).length >= 2) {
-                onManipPointerMove(event.clientX, event.clientY);
-                event.preventDefault();
-            }
-        });
-
         canvas.addEventListener('pointerup', function (event) {
-            delete touchPointers[event.pointerId];
-            if (Object.keys(touchPointers).length < 2 && manipDrag && manipDrag.mode === 'pinch') {
-                finishManipDrag();
+            if (manipDrag && manipDrag.mode === 'pinch') {
+                return;
+            }
+            if (canvas.releasePointerCapture) {
+                try {
+                    canvas.releasePointerCapture(event.pointerId);
+                } catch (err) {
+                    /* ignore */
+                }
             }
         });
 
         canvas.addEventListener('pointercancel', function (event) {
-            delete touchPointers[event.pointerId];
+            if (manipDrag && manipDrag.mode === 'pinch') {
+                return;
+            }
         });
 
         canvas.addEventListener('wheel', function (event) {
@@ -830,6 +879,10 @@
                     return;
                 }
                 if (event.target.closest('.perso-manip-delete')) {
+                    return;
+                }
+                if (Object.keys(touchPointers).length >= 2 || (manipDrag && manipDrag.mode === 'pinch')) {
+                    event.preventDefault();
                     return;
                 }
                 var canvasPt = clientToCanvas(event.clientX, event.clientY);
@@ -907,12 +960,87 @@
             if (!manipDrag) {
                 return;
             }
+            if (manipDrag.mode === 'pinch') {
+                syncTouchPointer(event);
+                if (Object.keys(touchPointers).length >= 2) {
+                    onManipPointerMove(event.clientX, event.clientY);
+                }
+                return;
+            }
             onManipPointerMove(event.clientX, event.clientY);
         });
 
-        window.addEventListener('pointerup', function () {
-            finishManipDrag();
+        window.addEventListener('pointerup', function (event) {
+            syncTouchPointer(event);
+            if (manipDrag && manipDrag.mode === 'pinch') {
+                if (Object.keys(touchPointers).length >= 2) {
+                    return;
+                }
+                finishManipDrag();
+                return;
+            }
+            if (manipDrag) {
+                finishManipDrag();
+            }
         });
+
+        window.addEventListener('pointercancel', function (event) {
+            syncTouchPointer(event);
+            if (manipDrag && manipDrag.mode === 'pinch' && Object.keys(touchPointers).length >= 2) {
+                return;
+            }
+            if (manipDrag) {
+                finishManipDrag();
+            }
+        });
+
+        if (previewViewport) {
+            previewViewport.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                syncTouchPointer(event);
+                if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+                    finishManipDrag();
+                    startPinchDrag();
+                    event.preventDefault();
+                }
+            }, true);
+
+            previewViewport.addEventListener('pointermove', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                syncTouchPointer(event);
+                if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+                    if (!manipDrag || manipDrag.mode !== 'pinch') {
+                        finishManipDrag();
+                        startPinchDrag();
+                    }
+                    event.preventDefault();
+                }
+            }, true);
+
+            previewViewport.addEventListener('pointerup', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                syncTouchPointer(event);
+                if (manipDrag && manipDrag.mode === 'pinch' && Object.keys(touchPointers).length < 2) {
+                    finishManipDrag();
+                }
+            }, true);
+
+            previewViewport.addEventListener('pointercancel', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                syncTouchPointer(event);
+                if (manipDrag && manipDrag.mode === 'pinch' && Object.keys(touchPointers).length < 2) {
+                    finishManipDrag();
+                }
+            }, true);
+        }
 
         window.addEventListener('resize', function () {
             updateTextManipulator();

@@ -908,6 +908,7 @@
     align-items: center;
     justify-content: center;
     background: transparent;
+    touch-action: none;
 }
 
 @media (min-width: 901px) {
@@ -1227,7 +1228,7 @@
     }
 
     .perso-preview-viewport {
-        width: min(360px, calc(100vw - 48px));
+        width: min(380px, calc(100vw - 40px));
         margin: 0 auto;
     }
 
@@ -1267,8 +1268,8 @@
     }
 
     .perso-preview-viewport {
-        width: min(240px, calc(100vw - 40px));
-        max-height: min(240px, calc(100vw - 40px));
+        width: min(340px, calc(100vw - 32px));
+        max-height: min(340px, calc(100vw - 32px));
     }
 
     .perso-preview-panel {
@@ -1319,8 +1320,8 @@
     }
 
     .perso-preview-viewport {
-        width: min(220px, calc(100vw - 32px));
-        max-height: min(220px, calc(100vw - 32px));
+        width: min(320px, calc(100vw - 24px));
+        max-height: min(320px, calc(100vw - 24px));
     }
 
     .perso-shape-picker {
