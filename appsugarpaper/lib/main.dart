@@ -1479,8 +1479,9 @@ class _WebViewScreenState extends State<WebViewScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        // true : le Scaffold se réduit quand le clavier s'ouvre (évite superposition iOS)
-        resizeToAvoidBottomInset: true,
+        // false : la WebView garde une taille fixe. Redimensionner à chaque
+        // frame IME recrée la surface native (scintillement + lag Android/iOS).
+        resizeToAvoidBottomInset: false,
         body: Stack(
           children: [
             // WebView masquée pendant le chargement initial (évite flash blanc sous le logo).
@@ -1495,9 +1496,11 @@ class _WebViewScreenState extends State<WebViewScreen>
               },
               child: RepaintBoundary(
                 child: SafeArea(
-                  // Le bas suit le clavier via resizeToAvoidBottomInset (pas SafeArea bottom)
                   bottom: false,
-                  child: InAppWebView(
+                  child: MediaQuery.removeViewInsets(
+                    context: context,
+                    removeBottom: true,
+                    child: InAppWebView(
                   initialUrlRequest: URLRequest(
                     url: WebUri(_marketplaceEntryUrl),
                   ),
@@ -1549,55 +1552,116 @@ class _WebViewScreenState extends State<WebViewScreen>
     };
   }
 
-  /* Clavier : remonter le champ focusé + espace bas via --native-kb (iOS WebView) */
+  /* Clavier : ne pas reflow le layout pendant l'animation IME (scintillement).
+     --native-kb n'est posé qu'une fois le clavier stabilisé. */
   window.__SUGARPAPER_KB_HANDLER = true;
-  function sugarPaperKbPad() {
-    var vv = window.visualViewport;
-    if (!vv) return;
-    var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-    document.documentElement.style.setProperty('--native-kb', overlap + 'px');
-  }
-  function sugarPaperScrollFocused(el) {
-    if (!el || !el.scrollIntoView) return;
-    var vv = window.visualViewport;
-    try {
-      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
-    } catch (e1) {
-      try { el.scrollIntoView(true); } catch (e2) {}
+  (function sugarPaperKeyboard() {
+    var lastKb = -1;
+    var focused = null;
+    var settleTimer = 0;
+    var pendingOverlap = 0;
+
+    function isField(el) {
+      if (!el || el.nodeType !== 1) return false;
+      var tag = (el.tagName || '').toUpperCase();
+      if (el.isContentEditable) return true;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return false;
+      var type = (el.type || '').toLowerCase();
+      return type !== 'checkbox' && type !== 'radio' && type !== 'button' &&
+             type !== 'submit' && type !== 'reset' && type !== 'file' &&
+             type !== 'hidden' && type !== 'range' && type !== 'color';
     }
-    if (vv) {
+
+    function overlapNow(allowGuess) {
+      var vv = window.visualViewport;
+      var fromVv = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      if (fromVv > 48) return fromVv;
+      if (allowGuess && focused) {
+        return Math.round(window.innerHeight * 0.38);
+      }
+      return 0;
+    }
+
+    function applyKb(px) {
+      if (px === lastKb) return;
+      lastKb = px;
+      var root = document.documentElement;
+      root.style.setProperty('--native-kb', px + 'px');
+      if (px > 48) root.classList.add('native-kb-open');
+      else root.classList.remove('native-kb-open');
+    }
+
+    function scrollFocused() {
+      var el = focused;
+      if (!el || !el.getBoundingClientRect) return;
+      var vv = window.visualViewport;
       var rect = el.getBoundingClientRect();
-      var visibleBottom = vv.height + vv.offsetTop - 24;
-      if (rect.bottom > visibleBottom) {
-        window.scrollBy(0, rect.bottom - visibleBottom + 16);
+      var top;
+      var bottom;
+      if (vv && vv.height < window.innerHeight - 48) {
+        top = vv.offsetTop + 8;
+        bottom = vv.offsetTop + vv.height - 12;
+      } else {
+        top = 8;
+        bottom = Math.round(window.innerHeight * 0.48);
+      }
+      if (rect.bottom > bottom) {
+        window.scrollBy(0, Math.ceil(rect.bottom - bottom + 24));
+      } else if (rect.top < top) {
+        window.scrollBy(0, Math.floor(rect.top - top - 8));
       }
     }
-  }
-  document.addEventListener('focusin', function(e) {
-    var t = e.target;
-    if (!t) return;
-    var tag = (t.tagName || '').toUpperCase();
-    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !t.isContentEditable) {
-      return;
+
+    function onKeyboardSettled() {
+      applyKb(pendingOverlap);
+      scrollFocused();
     }
-    setTimeout(function() {
-      sugarPaperScrollFocused(t);
-      sugarPaperKbPad();
-    }, 300);
-  }, true);
-  document.addEventListener('focusout', function() {
-    setTimeout(function() {
-      sugarPaperKbPad();
-      if (!document.activeElement ||
-          !['INPUT','TEXTAREA','SELECT'].includes((document.activeElement.tagName || '').toUpperCase())) {
-        document.documentElement.style.setProperty('--native-kb', '0px');
+
+    function onViewportResize() {
+      pendingOverlap = overlapNow(false);
+      if (pendingOverlap > 48) {
+        document.documentElement.classList.add('native-kb-open');
       }
-    }, 120);
-  }, true);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', sugarPaperKbPad);
-    window.visualViewport.addEventListener('scroll', sugarPaperKbPad);
-  }
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(onKeyboardSettled, 180);
+    }
+
+    function onFocusIn(e) {
+      if (!isField(e.target)) return;
+      focused = e.target;
+      document.documentElement.classList.add('native-kb-open');
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        pendingOverlap = overlapNow(true);
+        onKeyboardSettled();
+      }, 280);
+    }
+
+    function onFocusOut() {
+      focused = null;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        if (isField(document.activeElement)) return;
+        pendingOverlap = overlapNow(false);
+        if (pendingOverlap < 48) applyKb(0);
+      }, 100);
+    }
+
+    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('focusout', onFocusOut, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onViewportResize, { passive: true });
+    }
+    try {
+      var meta = document.querySelector('meta[name="viewport"]');
+      if (meta) {
+        var content = meta.getAttribute('content') || '';
+        if (content.indexOf('interactive-widget') === -1) {
+          meta.setAttribute('content', content + (content ? ', ' : '') + 'interactive-widget=overlays-content');
+        }
+      }
+    } catch (err) {}
+  })();
 })();
 ''',
                       injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
@@ -1640,11 +1704,13 @@ class _WebViewScreenState extends State<WebViewScreen>
                     disableDefaultErrorPage: true,
                     // Latence tactile réduite
                     overScrollMode: OverScrollMode.NEVER,
-                    // iOS : scroll type Safari + clavier
+                    // iOS : taille de scroll fixe (pas d'insets clavier WebKit)
                     alwaysBounceVertical: true,
                     decelerationRate: ScrollViewDecelerationRate.NORMAL,
+                    underPageBackgroundColor: const Color(0xFFFFFFFF),
+                    automaticallyAdjustsScrollIndicatorInsets: false,
                     contentInsetAdjustmentBehavior:
-                        ScrollViewContentInsetAdjustmentBehavior.AUTOMATIC,
+                        ScrollViewContentInsetAdjustmentBehavior.NEVER,
                     allowsBackForwardNavigationGestures: true,
                   ),
                   onWebViewCreated: (controller) {
@@ -1775,6 +1841,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                     }
                     return NavigationActionPolicy.ALLOW;
                   },
+                ),
                 ),
                 ),
               ),

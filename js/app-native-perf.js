@@ -72,48 +72,101 @@
     if (window.__SUGARPAPER_KB_HANDLER === true) {
       return;
     }
-    function applyPad() {
-      var vv = window.visualViewport;
-      if (!vv) return;
-      var overlap = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      document.documentElement.style.setProperty('--native-kb', overlap + 'px');
+    window.__SUGARPAPER_KB_HANDLER = true;
+
+    var lastKb = -1;
+    var focused = null;
+    var settleTimer = 0;
+    var pendingOverlap = 0;
+
+    function isField(el) {
+      if (!el || el.nodeType !== 1) return false;
+      var tag = (el.tagName || '').toUpperCase();
+      if (el.isContentEditable) return true;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return false;
+      var type = (el.type || '').toLowerCase();
+      return type !== 'checkbox' && type !== 'radio' && type !== 'button' &&
+             type !== 'submit' && type !== 'reset' && type !== 'file' &&
+             type !== 'hidden' && type !== 'range' && type !== 'color';
     }
-    function scrollFocused(el) {
-      if (!el || !el.scrollIntoView) return;
+
+    function overlapNow(allowGuess) {
       var vv = window.visualViewport;
-      try {
-        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
-      } catch (e1) {
-        try { el.scrollIntoView(true); } catch (e2) {}
+      var fromVv = vv ? Math.max(0, Math.round(window.innerHeight - vv.height)) : 0;
+      if (fromVv > 48) return fromVv;
+      if (allowGuess && focused) {
+        return Math.round(window.innerHeight * 0.38);
       }
-      if (vv) {
-        var rect = el.getBoundingClientRect();
-        var visibleBottom = vv.height + vv.offsetTop - 20;
-        if (rect.bottom > visibleBottom) {
-          window.scrollBy(0, rect.bottom - visibleBottom + 12);
-        }
+      return 0;
+    }
+
+    function applyKb(px) {
+      if (px === lastKb) return;
+      lastKb = px;
+      var root = document.documentElement;
+      root.style.setProperty('--native-kb', px + 'px');
+      if (px > 48) root.classList.add('native-kb-open');
+      else root.classList.remove('native-kb-open');
+    }
+
+    function scrollFocused() {
+      var el = focused;
+      if (!el || !el.getBoundingClientRect) return;
+      var vv = window.visualViewport;
+      var rect = el.getBoundingClientRect();
+      var top;
+      var bottom;
+      if (vv && vv.height < window.innerHeight - 48) {
+        top = vv.offsetTop + 8;
+        bottom = vv.offsetTop + vv.height - 12;
+      } else {
+        top = 8;
+        bottom = Math.round(window.innerHeight * 0.48);
+      }
+      if (rect.bottom > bottom) {
+        window.scrollBy(0, Math.ceil(rect.bottom - bottom + 24));
+      } else if (rect.top < top) {
+        window.scrollBy(0, Math.floor(rect.top - top - 8));
       }
     }
+
+    function onKeyboardSettled() {
+      applyKb(pendingOverlap);
+      scrollFocused();
+    }
+
+    function onViewportResize() {
+      pendingOverlap = overlapNow(false);
+      if (pendingOverlap > 48) {
+        document.documentElement.classList.add('native-kb-open');
+      }
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(onKeyboardSettled, 180);
+    }
+
     document.addEventListener('focusin', function (e) {
-      var t = e.target;
-      if (!t) return;
-      var tag = (t.tagName || '').toUpperCase();
-      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !t.isContentEditable) {
-        return;
-      }
-      setTimeout(function () {
-        scrollFocused(t);
-        applyPad();
-      }, 300);
+      if (!isField(e.target)) return;
+      focused = e.target;
+      document.documentElement.classList.add('native-kb-open');
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        pendingOverlap = overlapNow(true);
+        onKeyboardSettled();
+      }, 280);
     }, true);
+
     document.addEventListener('focusout', function () {
-      setTimeout(function () {
-        document.documentElement.style.setProperty('--native-kb', '0px');
-      }, 120);
+      focused = null;
+      clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        if (isField(document.activeElement)) return;
+        pendingOverlap = overlapNow(false);
+        if (pendingOverlap < 48) applyKb(0);
+      }, 100);
     }, true);
+
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', applyPad);
-      window.visualViewport.addEventListener('scroll', applyPad);
+      window.visualViewport.addEventListener('resize', onViewportResize, { passive: true });
     }
   }
 

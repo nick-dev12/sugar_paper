@@ -148,10 +148,17 @@ html.is-native-app body {
   touch-action: pan-y;
 }
 
-/* Clavier natif : espace bas injecté via --native-kb (UserScript Flutter) */
+/* Clavier natif : --native-kb posé une fois le clavier stabilisé (pas pendant l'anim IME) */
 html.is-native-app body {
   padding-bottom: var(--native-kb, 0px);
-  transition: padding-bottom 0.12s ease-out;
+}
+
+/* Barres inférieures : translation GPU, pas de reflow */
+html.is-native-app.native-kb-open .bottom-nav,
+html.is-native-app.native-kb-open .shop-bottom-dock {
+  transform: translate3d(0, 110%, 0);
+  -webkit-transform: translate3d(0, 110%, 0);
+  pointer-events: none;
 }
 
 /* Boutique publique : ne pas écraser le padding de #bottomNav (user/admin OK via .user-content) */
