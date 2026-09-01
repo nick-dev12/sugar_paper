@@ -221,4 +221,9 @@ return [
         'label' => 'Image source importée (personnalisation produit)',
         'script' => 'run_add_personnalisation_source_image.php',
     ],
+    [
+        'id' => 'allow_null_produit_id_lignes',
+        'label' => 'produit_id nullable sur lignes commandes/devis/caisse',
+        'script' => 'run_allow_null_produit_id_lignes.php',
+    ],
 ];

@@ -920,19 +920,143 @@ function update_produit($id, $data)
 }
 
 /**
+ * Détache un produit des lignes liées avant suppression (conserve libellés / historique).
+ * @param int $id
+ * @param string $nom
+ * @return void
+ */
+function detach_produit_references($id, $nom)
+{
+    global $db;
+
+    $id = (int) $id;
+    $nom = trim((string) $nom);
+    if ($nom === '') {
+        $nom = 'Produit supprimé';
+    }
+
+    $delete_tables = ['panier', 'favoris', 'produits_visites', 'produits_variantes'];
+    foreach ($delete_tables as $table) {
+        try {
+            $stmt = $db->prepare("DELETE FROM `{$table}` WHERE produit_id = :id");
+            $stmt->execute(['id' => $id]);
+        } catch (PDOException $e) {
+            // Table absente sur certains environnements
+        }
+    }
+
+    $null_tables = [
+        [
+            'table' => 'stock_mouvements',
+            'set' => 'produit_id = NULL',
+        ],
+        [
+            'table' => 'bl_lignes',
+            'set' => 'produit_id = NULL, designation = COALESCE(NULLIF(TRIM(designation), \'\'), :nom)',
+        ],
+    ];
+
+    foreach ($null_tables as $item) {
+        try {
+            $stmt = $db->prepare("UPDATE `{$item['table']}` SET {$item['set']} WHERE produit_id = :id");
+            $stmt->execute(['id' => $id, 'nom' => $nom]);
+        } catch (PDOException $e) {
+            // Table ou colonne absente sur certains environnements
+        }
+    }
+
+    $updates = [
+        [
+            'table' => 'commande_produits',
+            'set' => 'produit_id = NULL, nom_produit = COALESCE(NULLIF(TRIM(nom_produit), \'\'), :nom)',
+        ],
+        [
+            'table' => 'devis_produits',
+            'set' => 'produit_id = NULL, nom_produit = COALESCE(NULLIF(TRIM(nom_produit), \'\'), :nom)',
+        ],
+        [
+            'table' => 'caisse_vente_lignes',
+            'set' => 'produit_id = NULL, designation = COALESCE(NULLIF(TRIM(designation), \'\'), :nom)',
+        ],
+    ];
+
+    foreach ($updates as $item) {
+        try {
+            $stmt = $db->prepare("UPDATE `{$item['table']}` SET {$item['set']} WHERE produit_id = :id");
+            $stmt->execute(['id' => $id, 'nom' => $nom]);
+        } catch (PDOException $e) {
+            throw new RuntimeException(
+                'Impossible de détacher le produit de ' . $item['table'] . ' : ' . $e->getMessage(),
+                0,
+                $e
+            );
+        }
+    }
+}
+
+/**
  * Supprime un produit
  * @param int $id L'ID du produit
- * @return bool True en cas de succès, False sinon
+ * @return array{success: bool, message: string}
  */
 function delete_produit($id)
 {
     global $db;
 
+    $id = (int) $id;
+    if ($id <= 0) {
+        return ['success' => false, 'message' => 'Identifiant produit invalide.'];
+    }
+
+    $produit = get_produit_by_id($id);
+    if (!$produit) {
+        return ['success' => false, 'message' => 'Produit introuvable.'];
+    }
+
+    $nom = trim((string) ($produit['nom'] ?? 'Produit supprimé'));
+    if ($nom === '') {
+        $nom = 'Produit supprimé';
+    }
+
     try {
-        $stmt = $db->prepare("DELETE FROM produits WHERE id = :id");
-        return $stmt->execute(['id' => $id]);
+        $db->beginTransaction();
+
+        detach_produit_references($id, $nom);
+
+        $stmt = $db->prepare('DELETE FROM produits WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        if ($stmt->rowCount() <= 0) {
+            $db->rollBack();
+            return ['success' => false, 'message' => 'Le produit n\'a pas pu être supprimé.'];
+        }
+
+        $db->commit();
+        return ['success' => true, 'message' => 'Produit supprimé avec succès.'];
     } catch (PDOException $e) {
-        return false;
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+
+        if ((int) ($e->errorInfo[1] ?? 0) === 1451) {
+            return [
+                'success' => false,
+                'message' => 'Impossible de supprimer ce produit car il est encore lié à des commandes ou documents. Exécutez la migration allow_null_produit_id_lignes ou désactivez le produit.',
+            ];
+        }
+
+        $detail = trim((string) $e->getMessage());
+        if ($detail !== '') {
+            return ['success' => false, 'message' => 'Une erreur est survenue lors de la suppression : ' . $detail];
+        }
+
+        return ['success' => false, 'message' => 'Une erreur est survenue lors de la suppression.'];
+    } catch (RuntimeException $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+
+        return ['success' => false, 'message' => $e->getMessage()];
     }
 }
 

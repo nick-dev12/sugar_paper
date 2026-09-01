@@ -231,7 +231,11 @@
 }
 
 .produit-card-image {
-  height: clamp(160px, 35vw, 250px);
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center center;
 }
 
 .categorie-card-image-wrap {

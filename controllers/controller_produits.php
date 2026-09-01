@@ -508,12 +508,16 @@ function process_delete_produit($produit_id) {
         image_optimizer_delete_with_variants($image_path);
     }
     
-    // Supprimer le produit
-    if (delete_produit($produit_id)) {
-        return ['success' => true, 'message' => 'Produit supprimé avec succès !'];
-    } else {
-        return ['success' => false, 'message' => 'Une erreur est survenue lors de la suppression.'];
+    // Supprimer le produit (détache d'abord commandes / devis / caisse)
+    $delete_result = delete_produit($produit_id);
+    if (!empty($delete_result['success'])) {
+        return ['success' => true, 'message' => $delete_result['message'] ?: 'Produit supprimé avec succès !'];
     }
+
+    return [
+        'success' => false,
+        'message' => $delete_result['message'] ?? 'Une erreur est survenue lors de la suppression.',
+    ];
 }
 
 /**

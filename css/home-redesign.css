@@ -1080,6 +1080,16 @@ body.page-home .carousel11 .carousel .image-wrapper {
     #faf7f8 !important;
 }
 
+body.page-home .produit_vedete .articles .carousel .image-wrapper img,
+body.page-home .produit_vedetes .articles .carousel .image-wrapper img,
+body.page-home .carousel11 .carousel .image-wrapper img {
+  object-fit: cover !important;
+  object-position: center center !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 body.page-home .btn-add-cart {
   font-family: var(--home-font-ui) !important;
   border-radius: 12px !important;

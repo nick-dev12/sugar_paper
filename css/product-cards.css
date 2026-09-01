@@ -58,23 +58,41 @@
   border-color: rgba(229, 72, 138, 0.4);
 }
 
-/* Section image avec badge */
+/* Section image — carré, image entière visible (sans rognage) */
 .produit_vedete .articles .carousel .image-wrapper,
 .produit_vedetes .articles .carousel .image-wrapper,
-.carousel11 .carousel .image-wrapper {
+.carousel11 .carousel .image-wrapper,
+.produits-visites-grid .carousel .image-wrapper,
+.carousel-produits-outer .carousel .image-wrapper,
+.produits-similaires .articles .carousel .image-wrapper {
   position: relative;
   width: 100%;
-  height: 200px !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
   overflow: hidden;
   background: #f8f8f8;
+  box-sizing: border-box;
 }
 
+.produit_vedete .articles .carousel .image-wrapper img,
+.produit_vedetes .articles .carousel .image-wrapper img,
+.carousel11 .carousel .image-wrapper img,
+.produits-visites-grid .carousel .image-wrapper img,
+.carousel-produits-outer .carousel .image-wrapper img,
+.produits-similaires .articles .carousel .image-wrapper img,
 .produit_vedete .articles .carousel img,
 .produit_vedetes .articles .carousel img,
 .carousel11 .carousel img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  object-fit: cover !important;
+  object-position: center center;
   display: block;
 }
 
@@ -413,8 +431,24 @@
   .carousel1-flex-mode .carousel .image-wrapper,
   .produit_vedete .articles .carousel .image-wrapper,
   .produit_vedetes .articles .carousel .image-wrapper,
-  .carousel11 .carousel .image-wrapper {
-    height: 150px !important;
+  .carousel11 .carousel .image-wrapper,
+  .produits-visites-grid .carousel .image-wrapper,
+  .produits-similaires .articles .carousel .image-wrapper {
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+  }
+
+  .carousel1-flex-mode .carousel .image-wrapper img,
+  .produit_vedete .articles .carousel .image-wrapper img,
+  .produit_vedetes .articles .carousel .image-wrapper img,
+  .carousel11 .carousel .image-wrapper img,
+  .produits-visites-grid .carousel .image-wrapper img,
+  .produits-similaires .articles .carousel .image-wrapper img {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
   }
 }
 
@@ -443,8 +477,24 @@
   .carousel1-flex-mode .carousel .image-wrapper,
   .produit_vedete .articles .carousel .image-wrapper,
   .produit_vedetes .articles .carousel .image-wrapper,
-  .carousel11 .carousel .image-wrapper {
-    height: 130px !important;
+  .carousel11 .carousel .image-wrapper,
+  .produits-visites-grid .carousel .image-wrapper,
+  .produits-similaires .articles .carousel .image-wrapper {
+    height: auto !important;
+    aspect-ratio: 1 / 1;
+  }
+
+  .carousel1-flex-mode .carousel .image-wrapper img,
+  .produit_vedete .articles .carousel .image-wrapper img,
+  .produit_vedetes .articles .carousel .image-wrapper img,
+  .carousel11 .carousel .image-wrapper img,
+  .produits-visites-grid .carousel .image-wrapper img,
+  .produits-similaires .articles .carousel .image-wrapper img {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
   }
 }
 
