@@ -173,15 +173,71 @@ function get_seo_promo_meta()
 }
 
 /**
+ * Tronque un texte pour l'aperçu SEO (multibyte si disponible).
+ *
+ * @param string $text
+ * @param int $max_chars
+ * @return array{0: string, 1: string, 2: bool} preview, full, needs_more
+ */
+function seo_truncate_intro_text($text, $max_chars = 300)
+{
+    $text = trim((string) $text);
+    $max_chars = max(1, (int) $max_chars);
+
+    if ($text === '') {
+        return ['', '', false];
+    }
+
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($text) <= $max_chars) {
+            return [$text, $text, false];
+        }
+
+        return [rtrim(mb_substr($text, 0, $max_chars)), $text, true];
+    }
+
+    if (strlen($text) <= $max_chars) {
+        return [$text, $text, false];
+    }
+
+    return [rtrim(substr($text, 0, $max_chars)), $text, true];
+}
+
+/**
+ * Intro SEO dans l'en-tête de page section (texte blanc, aperçu tronqué).
+ *
  * @param string $section_key
+ * @param int $max_chars
  * @return string
  */
-function render_section_seo_intro_html($section_key)
+function render_section_seo_intro_header_html($section_key, $max_chars = 300)
 {
     $meta = get_seo_section_meta($section_key);
     if (!$meta || empty($meta['intro'])) {
         return '';
     }
 
-    return '<div class="seo-content-intro"><p>' . htmlspecialchars($meta['intro']) . '</p></div>';
+    list($preview, $full, $needs_more) = seo_truncate_intro_text($meta['intro'], $max_chars);
+    $display_text = $needs_more ? $preview . '…' : $full;
+
+    $html = '<div class="page-header-seo-intro" data-preview-text="' . htmlspecialchars($display_text, ENT_QUOTES, 'UTF-8') . '"'
+        . ' data-full-text="' . htmlspecialchars($full, ENT_QUOTES, 'UTF-8') . '">';
+    $html .= '<p class="page-header-seo-text">' . htmlspecialchars($display_text) . '</p>';
+
+    if ($needs_more) {
+        $html .= '<button type="button" class="page-header-seo-toggle" aria-expanded="false">Voir plus</button>';
+    }
+
+    $html .= '</div>';
+
+    return $html;
+}
+
+/**
+ * @param string $section_key
+ * @return string
+ */
+function render_section_seo_intro_html($section_key)
+{
+    return render_section_seo_intro_header_html($section_key);
 }

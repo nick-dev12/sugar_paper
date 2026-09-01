@@ -85,10 +85,10 @@ $section_uses_cp = ($section_key === 'cake_topper');
     <style>
         .page-header {
             background: var(--couleur-dominante);
-            padding: 40px 20px;
+            padding: 40px 20px 32px;
             text-align: center;
             color: #ffffff;
-            margin-bottom: 40px;
+            margin-bottom: 0;
         }
 
         .page-header h1 {
@@ -119,6 +119,18 @@ $section_uses_cp = ($section_key === 'cake_topper');
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 20px 100px;
+        }
+
+        .page-section-produits .produits-container-wrapper .section00 {
+            padding-top: 8px;
+            padding-bottom: 40px;
+        }
+
+        @media (max-width: 799px) {
+            .page-section-produits .produits-container-wrapper .section00 {
+                padding-top: 4px;
+                padding-bottom: 32px;
+            }
         }
 
         .empty-state {
@@ -174,6 +186,8 @@ $section_uses_cp = ($section_key === 'cake_topper');
         </a>
     </div>
 
+    <?php echo render_section_seo_intro_header_html($section_key); ?>
+
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
         <div
             style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">
@@ -188,7 +202,6 @@ $section_uses_cp = ($section_key === 'cake_topper');
     <?php endif; ?>
 
     <div class="produits-container-wrapper">
-        <?php echo render_section_seo_intro_html($section_key); ?>
         <section class="section00">
             <section class="produit_vedetes">
                 <article class="articles carousel11" id="produits-container">
@@ -362,6 +375,33 @@ $section_uses_cp = ($section_key === 'cake_topper');
         if (btnVoirPlus) {
             btnVoirPlus.addEventListener('click', chargerPlusProduits);
         }
+
+        document.querySelectorAll('.page-header-seo-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var wrap = btn.closest('.page-header-seo-intro');
+                if (!wrap) {
+                    return;
+                }
+                var textEl = wrap.querySelector('.page-header-seo-text');
+                var previewText = wrap.getAttribute('data-preview-text') || '';
+                var fullText = wrap.getAttribute('data-full-text') || '';
+                var expanded = btn.getAttribute('aria-expanded') === 'true';
+
+                if (expanded) {
+                    if (textEl) {
+                        textEl.textContent = previewText;
+                    }
+                    btn.textContent = 'Voir plus';
+                    btn.setAttribute('aria-expanded', 'false');
+                } else {
+                    if (textEl) {
+                        textEl.textContent = fullText;
+                    }
+                    btn.textContent = 'Voir moins';
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            });
+        });
     </script>
 </body>
 
