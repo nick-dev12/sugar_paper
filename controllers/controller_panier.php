@@ -68,7 +68,7 @@ function process_add_to_panier()
         $option_perso_meta = $decoded_meta ? produit_personnalisation_meta_encode($decoded_meta) : null;
     }
 
-    if ($option_image_personnalisation === null && produit_supports_photo_personnalisation($produit) && isset($_FILES['image_personnalisation']) && is_array($_FILES['image_personnalisation'])) {
+    if ($option_image_personnalisation === null && produit_supports_sheet_personnalisation($produit) && isset($_FILES['image_personnalisation']) && is_array($_FILES['image_personnalisation'])) {
         $upload_dir = produit_personnalisation_upload_dir();
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
@@ -88,7 +88,7 @@ function process_add_to_panier()
     }
 
     $option_image_personnalisation_source = null;
-    if (produit_supports_photo_personnalisation($produit) && isset($_FILES['image_personnalisation_source']) && is_array($_FILES['image_personnalisation_source'])) {
+    if (produit_supports_sheet_personnalisation($produit) && isset($_FILES['image_personnalisation_source']) && is_array($_FILES['image_personnalisation_source'])) {
         $upload_dir = produit_personnalisation_upload_dir();
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
@@ -163,13 +163,23 @@ function process_add_to_panier()
     $vnom = $variante ? $variante['nom'] : $option_variante_nom;
     $vimg = $variante ? $variante['image'] : $option_variante_image;
 
-    if ($option_image_personnalisation && $option_perso_meta === null && produit_supports_photo_personnalisation($produit)) {
-        $option_perso_meta = produit_personnalisation_meta_encode([
-            'format' => 'a4',
-            'shape' => 'circle',
-            'width_cm' => 15,
-            'height_cm' => 15,
-        ]);
+    if ($option_image_personnalisation && $option_perso_meta === null && produit_supports_sheet_personnalisation($produit)) {
+        if (produit_supports_cupcakes_personnalisation($produit)) {
+            $option_perso_meta = produit_personnalisation_meta_encode([
+                'type' => 'cupcakes',
+                'format' => 'a4',
+                'shape' => 'circle',
+                'diameter_cm' => 5,
+                'image_mode' => 'shared',
+            ]);
+        } else {
+            $option_perso_meta = produit_personnalisation_meta_encode([
+                'format' => 'a4',
+                'shape' => 'circle',
+                'width_cm' => 15,
+                'height_cm' => 15,
+            ]);
+        }
     }
 
     if (add_to_panier($user_id, $produit_id, $quantite, $option_couleur ?: null, $option_poids ?: null, $option_taille ?: null,

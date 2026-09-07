@@ -25,6 +25,31 @@ function produit_supports_photo_personnalisation($produit)
 }
 
 /**
+ * Personnalisation cupcakes (12 cercles sur feuille)
+ * @param array|null $produit
+ * @return bool
+ */
+function produit_supports_cupcakes_personnalisation($produit)
+{
+    if (!is_array($produit)) {
+        return false;
+    }
+
+    return normalize_produit_section_accueil($produit['section_accueil'] ?? '') === 'cupcakes';
+}
+
+/**
+ * Personnalisation feuille (photo OU cupcakes)
+ * @param array|null $produit
+ * @return bool
+ */
+function produit_supports_sheet_personnalisation($produit)
+{
+    return produit_supports_photo_personnalisation($produit)
+        || produit_supports_cupcakes_personnalisation($produit);
+}
+
+/**
  * Bouton personnalisation sur les cartes catalogue / accueil (section photo_impression uniquement)
  * @param array|string|null $produit
  * @return bool
@@ -35,7 +60,7 @@ function produit_listing_uses_personnalisation($produit)
         return false;
     }
 
-    return produit_supports_photo_personnalisation($produit);
+    return produit_supports_sheet_personnalisation($produit);
 }
 
 /**
@@ -174,6 +199,19 @@ function render_produit_personnalisation_modal()
     }
 
     include __DIR__ . '/produit_personnalisation_modal.php';
+}
+
+/**
+ * Modal personnalisation cupcakes
+ * @return void
+ */
+function render_produit_personnalisation_cupcakes_modal()
+{
+    if (!produit_personnalisation_enabled()) {
+        return;
+    }
+
+    include __DIR__ . '/produit_personnalisation_cupcakes_modal.php';
 }
 
 /**
@@ -389,6 +427,11 @@ function produit_personnalisation_image_normalize(array $data)
  */
 function produit_personnalisation_meta_normalize(array $data)
 {
+    $type = isset($data['type']) ? strtolower(trim((string) $data['type'])) : '';
+    if ($type === 'cupcakes') {
+        return produit_personnalisation_cupcakes_meta_normalize($data);
+    }
+
     $formats = get_produit_personnalisation_paper_formats();
     $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
     if (!isset($formats[$format])) {
@@ -450,6 +493,57 @@ function produit_personnalisation_meta_normalize(array $data)
 }
 
 /**
+ * Meta cupcakes : 12 cercles, diamètre global max 5 cm
+ * @param array $data
+ * @return array
+ */
+function produit_personnalisation_cupcakes_meta_normalize(array $data)
+{
+    $formats = get_produit_personnalisation_paper_formats();
+    $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
+    if (!isset($formats[$format])) {
+        $format = 'a4';
+    }
+    $shape = isset($data['shape']) ? strtolower(trim((string) $data['shape'])) : 'circle';
+    if (!in_array($shape, ['circle', 'heart'], true)) {
+        $shape = 'circle';
+    }
+    $image_mode = isset($data['image_mode']) ? strtolower(trim((string) $data['image_mode'])) : 'shared';
+    if (!in_array($image_mode, ['shared', 'per_circle'], true)) {
+        $image_mode = 'shared';
+    }
+
+    $diameter = isset($data['diameter_cm'])
+        ? (float) $data['diameter_cm']
+        : (isset($data['width_cm']) ? (float) $data['width_cm'] : 5.0);
+    $diameter = max(1, min(5, $diameter));
+
+    $circles = [];
+    $raw_circles = isset($data['circles']) && is_array($data['circles']) ? $data['circles'] : [];
+    for ($i = 0; $i < 12; $i++) {
+        $row = isset($raw_circles[$i]) && is_array($raw_circles[$i]) ? $raw_circles[$i] : [];
+        $circles[] = produit_personnalisation_image_normalize($row);
+    }
+
+    $out = [
+        'type' => 'cupcakes',
+        'format' => $format,
+        'shape' => $shape,
+        'diameter_cm' => round($diameter, 1),
+        'width_cm' => round($diameter, 1),
+        'height_cm' => round($diameter, 1),
+        'image_mode' => $image_mode,
+        'circles' => $circles,
+    ];
+
+    if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
+        $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    }
+
+    return $out;
+}
+
+/**
  * @param array $meta
  * @return string
  */
@@ -467,6 +561,15 @@ function produit_personnalisation_meta_label(array $meta)
     $n = produit_personnalisation_meta_normalize($meta);
     $formats = get_produit_personnalisation_paper_formats();
     $paper = $formats[$n['format']];
+
+    if (($n['type'] ?? '') === 'cupcakes') {
+        $shape_labels = ['circle' => 'Cercle', 'heart' => 'Cœur'];
+        $shape_label = $shape_labels[$n['shape']] ?? 'Cercle';
+        $mode = ($n['image_mode'] ?? 'shared') === 'per_circle' ? 'image par cercle' : 'image unique';
+        return $paper['label'] . ' · Cupcakes · 12 × ' . $shape_label
+            . ' Ø ' . number_format((float) ($n['diameter_cm'] ?? $n['width_cm']), 1, ',', ' ') . ' cm · ' . $mode;
+    }
+
     $shape_labels = [
         'circle' => 'Cercle',
         'square' => 'Carré',

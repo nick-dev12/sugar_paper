@@ -163,22 +163,32 @@ function get_produits_by_home_section_random($section, $limit = 10)
 {
     global $db;
 
-    $section = normalize_produit_section_accueil($section);
+    $keys = get_home_section_query_keys($section);
     $limit = max(1, (int) $limit);
-    if (!$section || !produits_has_section_accueil_column()) {
+    if (empty($keys) || !produits_has_section_accueil_column()) {
         return [];
     }
 
     try {
+        $placeholders = [];
+        $params = [];
+        foreach ($keys as $i => $key) {
+            $ph = ':section_' . $i;
+            $placeholders[] = $ph;
+            $params[$ph] = $key;
+        }
+        $in = implode(', ', $placeholders);
         $stmt = $db->prepare("
             SELECT p.*, c.nom AS categorie_nom
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
-            WHERE p.statut = 'actif' AND p.section_accueil = :section
+            WHERE p.statut = 'actif' AND p.section_accueil IN ($in)
             ORDER BY RAND()
             LIMIT :limit
         ");
-        $stmt->bindValue(':section', $section, PDO::PARAM_STR);
+        foreach ($params as $ph => $val) {
+            $stmt->bindValue($ph, $val, PDO::PARAM_STR);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -294,7 +304,7 @@ function produits_has_section_accueil_column()
  */
 function get_produit_section_accueil_allowed()
 {
-    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau'];
+    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes'];
 }
 
 /**
@@ -319,6 +329,7 @@ function get_produit_section_accueil_labels()
         'photo_impression' => 'Photo et impression comestible',
         'outils_patisserie' => 'Outils de pâtisserie',
         'decoration_gateau' => 'Décoration de gâteau',
+        'cupcakes' => 'Cupcakes',
     ];
 }
 
@@ -328,7 +339,28 @@ function get_produit_section_accueil_labels()
  */
 function get_produit_sections_price_from()
 {
-    return ['cake_topper', 'photo_impression'];
+    return ['cake_topper', 'photo_impression', 'cupcakes'];
+}
+
+/**
+ * Sections réellement affichées sous une clé de section accueil
+ * (ex. cupcakes apparaissent avec photo_impression)
+ * @param string|null $section
+ * @return array<int, string>
+ */
+function get_home_section_query_keys($section)
+{
+    $section = normalize_produit_section_accueil($section);
+    if (!$section) {
+        return [];
+    }
+    if ($section === 'photo_impression') {
+        return ['photo_impression', 'cupcakes'];
+    }
+    if ($section === 'cupcakes') {
+        return ['cupcakes'];
+    }
+    return [$section];
 }
 
 /**
@@ -357,21 +389,31 @@ function get_produits_by_home_section($section, $offset = 0, $limit = 20)
 {
     global $db;
 
-    $section = normalize_produit_section_accueil($section);
-    if (!$section || !produits_has_section_accueil_column()) {
+    $keys = get_home_section_query_keys($section);
+    if (empty($keys) || !produits_has_section_accueil_column()) {
         return [];
     }
 
     try {
+        $placeholders = [];
+        $params = [];
+        foreach ($keys as $i => $key) {
+            $ph = ':section_' . $i;
+            $placeholders[] = $ph;
+            $params[$ph] = $key;
+        }
+        $in = implode(', ', $placeholders);
         $stmt = $db->prepare("
             SELECT p.*, c.nom AS categorie_nom
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
-            WHERE p.statut = 'actif' AND p.section_accueil = :section
+            WHERE p.statut = 'actif' AND p.section_accueil IN ($in)
             ORDER BY p.date_creation DESC
             LIMIT :limit OFFSET :offset
         ");
-        $stmt->bindValue(':section', $section, PDO::PARAM_STR);
+        foreach ($params as $ph => $val) {
+            $stmt->bindValue($ph, $val, PDO::PARAM_STR);
+        }
         $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int) $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -391,17 +433,25 @@ function count_produits_by_home_section($section)
 {
     global $db;
 
-    $section = normalize_produit_section_accueil($section);
-    if (!$section || !produits_has_section_accueil_column()) {
+    $keys = get_home_section_query_keys($section);
+    if (empty($keys) || !produits_has_section_accueil_column()) {
         return 0;
     }
 
     try {
+        $placeholders = [];
+        $params = [];
+        foreach ($keys as $i => $key) {
+            $ph = ':section_' . $i;
+            $placeholders[] = $ph;
+            $params[$ph] = $key;
+        }
+        $in = implode(', ', $placeholders);
         $stmt = $db->prepare("
             SELECT COUNT(*) FROM produits
-            WHERE statut = 'actif' AND section_accueil = :section
+            WHERE statut = 'actif' AND section_accueil IN ($in)
         ");
-        $stmt->execute(['section' => $section]);
+        $stmt->execute($params);
         return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
         return 0;

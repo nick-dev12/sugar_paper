@@ -77,6 +77,8 @@ if ($prix_original) {
 $show_price_from = produit_uses_price_from_label($produit);
 $supports_cake_topper_cp = produit_supports_cake_topper_commande_perso($produit);
 $supports_photo_perso = produit_personnalisation_enabled() && produit_supports_photo_personnalisation($produit);
+$supports_cupcakes_perso = produit_personnalisation_enabled() && produit_supports_cupcakes_personnalisation($produit);
+$supports_any_sheet_perso = $supports_photo_perso || $supports_cupcakes_perso;
 $gateau_modele_url = produit_personnalisation_modele_url();
 
 // Récupérer les variantes du produit
@@ -132,7 +134,7 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
-    <?php if ($supports_photo_perso || $supports_cake_topper_cp): ?>
+    <?php if ($supports_photo_perso || $supports_cupcakes_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
     <?php if ($supports_cake_topper_cp): ?>
@@ -1647,14 +1649,16 @@ $seo_schema_graphs = array_merge(
                     <!-- Sélection de quantité et ajout au panier -->
                     <input type="hidden" name="option_prix_unitaire" id="option-prix-unitaire"
                         value="<?php echo $prix_affichage; ?>">
-                    <?php if ($supports_photo_perso): ?>
+                    <?php if ($supports_any_sheet_perso): ?>
                     <input type="hidden" name="option_image_personnalisation" id="option-image-personnalisation" class="option-image-personnalisation" value="">
                     <input type="hidden" name="option_perso_meta" id="option-perso-meta" class="option-perso-meta" value="">
                     <input type="file" name="image_personnalisation" id="form-image-personnalisation" class="form-image-personnalisation" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                     <input type="file" name="image_personnalisation_source" id="form-image-personnalisation-source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                     <div class="perso-status" id="perso-status" aria-live="polite">
                         <img src="" alt="" class="perso-status-thumb" id="perso-status-thumb" width="36" height="36">
-                        <span>Personnalisation ajoutée — votre photo sera imprimée sur le gâteau</span>
+                        <span><?php echo $supports_cupcakes_perso
+                            ? 'Personnalisation cupcakes ajoutée — votre feuille sera imprimée'
+                            : 'Personnalisation ajoutée — votre photo sera imprimée sur le gâteau'; ?></span>
                     </div>
                     <?php endif; ?>
                     <div class="quantite-section">
@@ -1682,10 +1686,15 @@ $seo_schema_graphs = array_merge(
                     <div class="produit-actions-row">
                         <button type="submit" class="btn-add-panier" id="btn-add-panier">
                             <i class="fa-solid fa-bag-shopping"></i>
-                            <?php echo $supports_photo_perso ? 'Commander sans personnalisation' : 'Passer la commande'; ?>
+                            <?php echo $supports_any_sheet_perso ? 'Commander sans personnalisation' : 'Passer la commande'; ?>
                         </button>
                         <?php if ($supports_photo_perso): ?>
                         <button type="button" class="btn-personnaliser js-open-perso-modal" id="btn-personnaliser" data-perso-form="add-to-panier-form">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Personnalisation
+                        </button>
+                        <?php elseif ($supports_cupcakes_perso): ?>
+                        <button type="button" class="btn-personnaliser js-open-cupcakes-perso-modal" id="btn-personnaliser-cupcakes" data-perso-form="add-to-panier-form">
                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                             Personnalisation
                         </button>
@@ -1753,6 +1762,10 @@ $seo_schema_graphs = array_merge(
 
     <?php if ($supports_photo_perso): ?>
     <?php render_produit_personnalisation_modal(); ?>
+    <?php endif; ?>
+
+    <?php if ($supports_cupcakes_perso): ?>
+    <?php render_produit_personnalisation_cupcakes_modal(); ?>
     <?php endif; ?>
 
     <?php include('footer.php') ?>
@@ -2060,6 +2073,9 @@ $seo_schema_graphs = array_merge(
     </script>
     <?php if ($supports_photo_perso): ?>
     <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
+    <?php if ($supports_cupcakes_perso): ?>
+    <script src="/js/produit-personnalisation-cupcakes.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
 
 </body>

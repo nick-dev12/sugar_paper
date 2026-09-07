@@ -226,4 +226,9 @@ return [
         'label' => 'produit_id nullable sur lignes commandes/devis/caisse',
         'script' => 'run_allow_null_produit_id_lignes.php',
     ],
+    [
+        'id' => 'produits_section_cupcakes',
+        'label' => 'Section accueil cupcakes sur produits',
+        'script' => 'run_add_produits_section_cupcakes.php',
+    ],
 ];
