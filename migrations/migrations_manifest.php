@@ -231,4 +231,9 @@ return [
         'label' => 'Section accueil cupcakes sur produits',
         'script' => 'run_add_produits_section_cupcakes.php',
     ],
+    [
+        'id' => 'produits_section_contours_gateau',
+        'label' => 'Section accueil contours de gâteau sur produits',
+        'script' => 'run_add_produits_section_contours_gateau.php',
+    ],
 ];

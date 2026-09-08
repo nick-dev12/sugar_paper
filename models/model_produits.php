@@ -304,7 +304,7 @@ function produits_has_section_accueil_column()
  */
 function get_produit_section_accueil_allowed()
 {
-    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes'];
+    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes', 'contours_gateau'];
 }
 
 /**
@@ -330,6 +330,7 @@ function get_produit_section_accueil_labels()
         'outils_patisserie' => 'Outils de pâtisserie',
         'decoration_gateau' => 'Décoration de gâteau',
         'cupcakes' => 'Cupcakes',
+        'contours_gateau' => 'Contours de gâteau',
     ];
 }
 
@@ -339,7 +340,7 @@ function get_produit_section_accueil_labels()
  */
 function get_produit_sections_price_from()
 {
-    return ['cake_topper', 'photo_impression', 'cupcakes'];
+    return ['cake_topper', 'photo_impression', 'cupcakes', 'contours_gateau'];
 }
 
 /**
@@ -355,10 +356,13 @@ function get_home_section_query_keys($section)
         return [];
     }
     if ($section === 'photo_impression') {
-        return ['photo_impression', 'cupcakes'];
+        return ['photo_impression', 'cupcakes', 'contours_gateau'];
     }
     if ($section === 'cupcakes') {
         return ['cupcakes'];
+    }
+    if ($section === 'contours_gateau') {
+        return ['contours_gateau'];
     }
     return [$section];
 }

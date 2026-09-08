@@ -172,6 +172,13 @@ function process_add_to_panier()
                 'diameter_cm' => 5,
                 'image_mode' => 'shared',
             ]);
+        } elseif (produit_supports_contours_personnalisation($produit)) {
+            $option_perso_meta = produit_personnalisation_meta_encode([
+                'type' => 'contours_gateau',
+                'format' => 'a4',
+                'height_cm' => 5,
+                'image_mode' => 'shared',
+            ]);
         } else {
             $option_perso_meta = produit_personnalisation_meta_encode([
                 'format' => 'a4',

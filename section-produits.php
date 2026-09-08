@@ -11,7 +11,7 @@ require_once __DIR__ . '/includes/home_sections.php';
 require_once __DIR__ . '/includes/produit_personnalisation.php';
 
 $section_key = isset($_GET['section']) ? normalize_produit_section_accueil($_GET['section']) : null;
-if ($section_key === 'cupcakes') {
+if ($section_key === 'cupcakes' || $section_key === 'contours_gateau') {
     header('Location: section-produits.php?section=photo_impression');
     exit;
 }

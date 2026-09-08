@@ -78,7 +78,8 @@ $show_price_from = produit_uses_price_from_label($produit);
 $supports_cake_topper_cp = produit_supports_cake_topper_commande_perso($produit);
 $supports_photo_perso = produit_personnalisation_enabled() && produit_supports_photo_personnalisation($produit);
 $supports_cupcakes_perso = produit_personnalisation_enabled() && produit_supports_cupcakes_personnalisation($produit);
-$supports_any_sheet_perso = $supports_photo_perso || $supports_cupcakes_perso;
+$supports_contours_perso = produit_personnalisation_enabled() && produit_supports_contours_personnalisation($produit);
+$supports_any_sheet_perso = $supports_photo_perso || $supports_cupcakes_perso || $supports_contours_perso;
 $gateau_modele_url = produit_personnalisation_modele_url();
 
 // Récupérer les variantes du produit
@@ -134,7 +135,7 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
-    <?php if ($supports_photo_perso || $supports_cupcakes_perso || $supports_cake_topper_cp): ?>
+    <?php if ($supports_photo_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
     <?php if ($supports_cake_topper_cp): ?>
@@ -1656,9 +1657,15 @@ $seo_schema_graphs = array_merge(
                     <input type="file" name="image_personnalisation_source" id="form-image-personnalisation-source" class="form-image-personnalisation-source" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
                     <div class="perso-status" id="perso-status" aria-live="polite">
                         <img src="" alt="" class="perso-status-thumb" id="perso-status-thumb" width="36" height="36">
-                        <span><?php echo $supports_cupcakes_perso
-                            ? 'Personnalisation cupcakes ajoutée — votre feuille sera imprimée'
-                            : 'Personnalisation ajoutée — votre photo sera imprimée sur le gâteau'; ?></span>
+                        <span><?php
+                            if ($supports_cupcakes_perso) {
+                                echo 'Personnalisation cupcakes ajoutée — votre feuille sera imprimée';
+                            } elseif ($supports_contours_perso) {
+                                echo 'Personnalisation contours ajoutée — votre feuille sera imprimée';
+                            } else {
+                                echo 'Personnalisation ajoutée — votre photo sera imprimée sur le gâteau';
+                            }
+                        ?></span>
                     </div>
                     <?php endif; ?>
                     <div class="quantite-section">
@@ -1695,6 +1702,11 @@ $seo_schema_graphs = array_merge(
                         </button>
                         <?php elseif ($supports_cupcakes_perso): ?>
                         <button type="button" class="btn-personnaliser js-open-cupcakes-perso-modal" id="btn-personnaliser-cupcakes" data-perso-form="add-to-panier-form">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Personnalisation
+                        </button>
+                        <?php elseif ($supports_contours_perso): ?>
+                        <button type="button" class="btn-personnaliser js-open-contours-perso-modal" id="btn-personnaliser-contours" data-perso-form="add-to-panier-form">
                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                             Personnalisation
                         </button>
@@ -1766,6 +1778,10 @@ $seo_schema_graphs = array_merge(
 
     <?php if ($supports_cupcakes_perso): ?>
     <?php render_produit_personnalisation_cupcakes_modal(); ?>
+    <?php endif; ?>
+
+    <?php if ($supports_contours_perso): ?>
+    <?php render_produit_personnalisation_contours_modal(); ?>
     <?php endif; ?>
 
     <?php include('footer.php') ?>
@@ -2076,6 +2092,9 @@ $seo_schema_graphs = array_merge(
     <?php endif; ?>
     <?php if ($supports_cupcakes_perso): ?>
     <script src="/js/produit-personnalisation-cupcakes.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
+    <?php if ($supports_contours_perso): ?>
+    <script src="/js/produit-personnalisation-contours.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
 
 </body>

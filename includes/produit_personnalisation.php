@@ -39,14 +39,29 @@ function produit_supports_cupcakes_personnalisation($produit)
 }
 
 /**
- * Personnalisation feuille (photo OU cupcakes)
+ * Personnalisation contours de gâteau (3 bandes sur feuille A3/A4)
+ * @param array|null $produit
+ * @return bool
+ */
+function produit_supports_contours_personnalisation($produit)
+{
+    if (!is_array($produit)) {
+        return false;
+    }
+
+    return normalize_produit_section_accueil($produit['section_accueil'] ?? '') === 'contours_gateau';
+}
+
+/**
+ * Personnalisation feuille (photo OU cupcakes OU contours)
  * @param array|null $produit
  * @return bool
  */
 function produit_supports_sheet_personnalisation($produit)
 {
     return produit_supports_photo_personnalisation($produit)
-        || produit_supports_cupcakes_personnalisation($produit);
+        || produit_supports_cupcakes_personnalisation($produit)
+        || produit_supports_contours_personnalisation($produit);
 }
 
 /**
@@ -212,6 +227,19 @@ function render_produit_personnalisation_cupcakes_modal()
     }
 
     include __DIR__ . '/produit_personnalisation_cupcakes_modal.php';
+}
+
+/**
+ * Modal personnalisation contours de gâteau
+ * @return void
+ */
+function render_produit_personnalisation_contours_modal()
+{
+    if (!produit_personnalisation_enabled()) {
+        return;
+    }
+
+    include __DIR__ . '/produit_personnalisation_contours_modal.php';
 }
 
 /**
@@ -431,6 +459,9 @@ function produit_personnalisation_meta_normalize(array $data)
     if ($type === 'cupcakes') {
         return produit_personnalisation_cupcakes_meta_normalize($data);
     }
+    if ($type === 'contours_gateau') {
+        return produit_personnalisation_contours_meta_normalize($data);
+    }
 
     $formats = get_produit_personnalisation_paper_formats();
     $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
@@ -544,6 +575,59 @@ function produit_personnalisation_cupcakes_meta_normalize(array $data)
 }
 
 /**
+ * Meta contours : 3 bandes sur feuille A3/A4
+ * @param array $data
+ * @return array
+ */
+function produit_personnalisation_contours_meta_normalize(array $data)
+{
+    $formats = get_produit_personnalisation_paper_formats();
+    $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
+    if (!isset($formats[$format])) {
+        $format = 'a4';
+    }
+    $paper = $formats[$format];
+
+    $image_mode = isset($data['image_mode']) ? strtolower(trim((string) $data['image_mode'])) : 'shared';
+    if (!in_array($image_mode, ['shared', 'per_contour'], true)) {
+        $image_mode = 'shared';
+    }
+
+    $edge = 0.7;
+    $gap = 0.9;
+    $usable_h = max(1.0, (float) $paper['height_cm'] - $edge * 2);
+    $max_h = max(2.0, min(12.0, ($usable_h - 2 * $gap) / 3));
+    $height = isset($data['height_cm']) ? (float) $data['height_cm'] : 5.0;
+    $height = max(2.0, min($height, $max_h));
+
+    $usable_w = max(1.0, (float) $paper['width_cm'] - $edge * 2);
+    $width = isset($data['width_cm']) ? (float) $data['width_cm'] : $usable_w;
+    $width = max(5.0, min($width, $usable_w));
+
+    $contours = [];
+    $raw_contours = isset($data['contours']) && is_array($data['contours']) ? $data['contours'] : [];
+    for ($i = 0; $i < 3; $i++) {
+        $row = isset($raw_contours[$i]) && is_array($raw_contours[$i]) ? $raw_contours[$i] : [];
+        $contours[] = produit_personnalisation_image_normalize($row);
+    }
+
+    $out = [
+        'type' => 'contours_gateau',
+        'format' => $format,
+        'height_cm' => round($height, 1),
+        'width_cm' => round($width, 1),
+        'image_mode' => $image_mode,
+        'contours' => $contours,
+    ];
+
+    if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
+        $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    }
+
+    return $out;
+}
+
+/**
  * @param array $meta
  * @return string
  */
@@ -568,6 +652,12 @@ function produit_personnalisation_meta_label(array $meta)
         $mode = ($n['image_mode'] ?? 'shared') === 'per_circle' ? 'image par cercle' : 'image unique';
         return $paper['label'] . ' · Cupcakes · 12 × ' . $shape_label
             . ' Ø ' . number_format((float) ($n['diameter_cm'] ?? $n['width_cm']), 1, ',', ' ') . ' cm · ' . $mode;
+    }
+
+    if (($n['type'] ?? '') === 'contours_gateau') {
+        $mode = ($n['image_mode'] ?? 'shared') === 'per_contour' ? 'image par contour' : 'image unique';
+        return $paper['label'] . ' · Contours · 3 × '
+            . number_format((float) ($n['height_cm'] ?? 5), 1, ',', ' ') . ' cm de haut · ' . $mode;
     }
 
     $shape_labels = [
