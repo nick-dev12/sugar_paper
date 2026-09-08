@@ -7,6 +7,9 @@ require_once __DIR__ . '/../../includes/session_user.php';
 
 session_start_persistent();
 
+require_once __DIR__ . '/../../includes/video_upload_limits.php';
+video_upload_apply_php_limits();
+
 // Vérifier si l'admin est connecté
 if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
     header('Location: ../login.php');
@@ -69,6 +72,40 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     .btn-primary.loading .btn-content { display: none; }
     .btn-primary.loading .btn-loader { display: inline-flex; }
     .btn-primary.loading { pointer-events: none; }
+    .badge-hero-banner {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 6px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #918a44;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .video-hero-banner-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        cursor: pointer;
+        padding: 12px;
+        border: 1px solid rgba(107, 47, 32, 0.15);
+        border-radius: 10px;
+        background: rgba(145, 138, 68, 0.08);
+    }
+    .video-hero-banner-label input {
+        margin-top: 3px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+    .video-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
     </style>
 </head>
 
@@ -143,6 +180,11 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                     <span class="<?php echo $video['statut'] === 'actif' ? 'badge-actif' : 'badge-inactif'; ?>">
                         <?php echo strtoupper($video['statut']); ?>
                     </span>
+                    <?php if (!empty($video['hero_banner'])): ?>
+                    <span class="badge-hero-banner" title="Affichée dans la bannière d'accueil">
+                        <i class="fas fa-image"></i> Bannière
+                    </span>
+                    <?php endif; ?>
                 </div>
 
                 <div class="video-card-actions">
@@ -217,7 +259,7 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                             <?php if (!$video_to_edit): ?>required<?php endif; ?> onchange="previewVideoFromFile(this)">
                     </div>
                     <small style="display: block; color: #666; font-size: 12px; margin-top: 5px;">
-                        Tous les formats vidéo sont acceptés, sans limite de taille
+                        Formats vidéo acceptés — taille maximum <?php echo video_upload_max_mo_int(); ?> Mo
                     </small>
                     <?php if ($video_to_edit && !empty($video_to_edit['fichier_video'])): ?>
                     <p style="margin-top: 10px; color: #666; font-size: 12px;">
@@ -257,6 +299,27 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                             Inactif
                         </option>
                     </select>
+                </div>
+
+                <?php
+                $hero_checked = false;
+                if (isset($_POST['hero_banner'])) {
+                    $hero_checked = !empty($_POST['hero_banner']);
+                } elseif ($video_to_edit) {
+                    $hero_checked = !empty($video_to_edit['hero_banner']);
+                }
+                ?>
+                <div class="form-group">
+                    <label class="video-hero-banner-label" for="hero_banner">
+                        <input type="checkbox" id="hero_banner" name="hero_banner" value="1"
+                            <?php echo $hero_checked ? 'checked' : ''; ?>>
+                        <span>
+                            <strong><i class="fas fa-panorama"></i> Afficher dans la bannière d'accueil</strong>
+                            <small style="display:block;color:#666;font-size:12px;margin-top:4px;font-weight:400;">
+                                Une seule vidéo à la fois. Si une autre est déjà cochée, elle sera automatiquement désactivée.
+                            </small>
+                        </span>
+                    </label>
                 </div>
 
                 <div class="form-actions">

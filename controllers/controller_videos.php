@@ -5,7 +5,9 @@
  */
 
 require_once __DIR__ . '/../models/model_videos.php';
-require_once __DIR__ . '/../includes/image_optimizer.php';
+require_once __DIR__ . '/../includes/video_upload_limits.php';
+
+video_upload_apply_php_limits();
 
 /**
  * Traite le formulaire d'ajout/modification de vidéo
@@ -19,9 +21,7 @@ function process_video_form()
 
     // Vérifier si le POST a été tronqué à cause de post_max_size
     if (empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
-        $max_post_size = ini_get('post_max_size');
-        $max_upload_size = ini_get('upload_max_filesize');
-        return ['success' => false, 'message' => 'Le fichier est trop volumineux. Configuration PHP actuelle: post_max_size=' . $max_post_size . ', upload_max_filesize=' . $max_upload_size . '. Augmentez ces valeurs dans votre php.ini (recherchez "php.ini" via WampServer → PHP → php.ini) et REDÉMARREZ Apache après modification. Consultez le fichier GUIDE_CONFIGURATION_PHP.md pour plus d\'informations.'];
+        return ['success' => false, 'message' => video_upload_limit_error_message()];
     }
 
     // Récupération des données
@@ -118,7 +118,8 @@ function process_video_form()
     $data = [
         'titre' => $titre,
         'fichier_video' => $fichier_video,
-        'statut' => $statut
+        'statut' => $statut,
+        'hero_banner' => !empty($_POST['hero_banner']) ? 1 : 0,
     ];
 
     // Ajouter image_preview si disponible
@@ -237,6 +238,9 @@ function generate_video_thumbnail($video_path, $output_path, $time_offset = 1)
  */
 function upload_video_file($file)
 {
+    require_once __DIR__ . '/../includes/video_upload_limits.php';
+    video_upload_apply_php_limits();
+
     $upload_dir = __DIR__ . '/../upload/videos/';
     $thumbnails_dir = __DIR__ . '/../upload/videos/thumbnails/';
 
@@ -267,6 +271,15 @@ function upload_video_file($file)
             : 'Erreur lors de l\'upload (code: ' . $file['error'] . ')';
 
         return ['success' => false, 'filename' => null, 'thumbnail' => null, 'message' => $error_message];
+    }
+
+    if (!video_upload_size_is_valid($file['size'] ?? 0)) {
+        return [
+            'success' => false,
+            'filename' => null,
+            'thumbnail' => null,
+            'message' => 'La vidéo dépasse la taille maximale autorisée (' . video_upload_max_mo_int() . ' Mo).',
+        ];
     }
 
     // Récupérer l'extension du fichier original

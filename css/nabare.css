@@ -705,7 +705,7 @@ nav .containernav .users img {
   .section1 .section1-sections-nav {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 10px;
     width: 100%;
     min-width: 0;
     align-items: stretch;
@@ -719,16 +719,18 @@ nav .containernav .users img {
     box-sizing: border-box;
     justify-content: center;
     align-items: center;
-    padding: 8px 6px;
-    font-size: 10px;
-    gap: 4px;
+    padding: 14px 12px;
+    font-size: 13px;
+    gap: 7px;
     white-space: normal;
     text-align: center;
-    line-height: 1.2;
+    line-height: 1.25;
+    min-height: 48px;
+    border-radius: 10px;
   }
 
   .section1 .section1-section-link i {
-    font-size: 11px;
+    font-size: 15px;
     flex-shrink: 0;
   }
 
@@ -775,13 +777,18 @@ nav .containernav .users img {
     padding: 5px 8px;
   }
 
+  .section1 .section1-sections-nav {
+    gap: 8px;
+  }
+
   .section1 .section1-section-link {
-    padding: 7px 5px;
-    font-size: 9px;
-    gap: 3px;
+    padding: 12px 10px;
+    font-size: 12px;
+    gap: 6px;
+    min-height: 46px;
   }
 
   .section1 .section1-section-link i {
-    font-size: 10px;
+    font-size: 14px;
   }
 }

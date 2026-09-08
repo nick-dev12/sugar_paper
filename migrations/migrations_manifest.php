@@ -236,4 +236,9 @@ return [
         'label' => 'Section accueil contours de gâteau sur produits',
         'script' => 'run_add_produits_section_contours_gateau.php',
     ],
+    [
+        'id' => 'videos_hero_banner',
+        'label' => 'Vidéo bannière accueil (hero_banner)',
+        'script' => 'run_add_videos_hero_banner.php',
+    ],
 ];

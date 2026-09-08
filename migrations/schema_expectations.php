@@ -77,5 +77,6 @@ return [
         ['produits', 'section_accueil'],
         ['panier', 'variante_id'],
         ['commande_produits', 'nom_produit'],
+        ['videos', 'hero_banner'],
     ],
 ];

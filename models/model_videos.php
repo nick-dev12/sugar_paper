@@ -62,6 +62,81 @@ function get_video_by_id($id)
 }
 
 /**
+ * Vérifie si la colonne hero_banner existe
+ * @return bool
+ */
+function videos_has_hero_banner_column()
+{
+    static $has = null;
+    if ($has !== null) {
+        return $has;
+    }
+
+    global $db;
+    try {
+        $r = $db ? $db->query("SHOW COLUMNS FROM videos LIKE 'hero_banner'") : null;
+        $has = $r && (bool) $r->fetchColumn();
+    } catch (PDOException $e) {
+        $has = false;
+    }
+
+    return $has;
+}
+
+/**
+ * Récupère la vidéo sélectionnée pour la bannière d'accueil
+ * @return array|null
+ */
+function get_hero_banner_video()
+{
+    global $db;
+
+    if (!videos_has_hero_banner_column()) {
+        return null;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM videos
+            WHERE hero_banner = 1 AND statut = 'actif'
+            ORDER BY date_modification DESC, date_creation DESC
+            LIMIT 1
+        ");
+        $stmt->execute();
+        $video = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $video ? $video : null;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * Désactive hero_banner sur toutes les vidéos (sauf éventuellement une)
+ * @param int $except_id
+ * @return void
+ */
+function clear_other_videos_hero_banner($except_id = 0)
+{
+    global $db;
+
+    if (!videos_has_hero_banner_column()) {
+        return;
+    }
+
+    try {
+        $except_id = (int) $except_id;
+        if ($except_id > 0) {
+            $stmt = $db->prepare('UPDATE videos SET hero_banner = 0 WHERE id != :id AND hero_banner = 1');
+            $stmt->execute(['id' => $except_id]);
+        } else {
+            $db->exec('UPDATE videos SET hero_banner = 0 WHERE hero_banner = 1');
+        }
+    } catch (PDOException $e) {
+        // ignore
+    }
+}
+
+/**
  * Crée une nouvelle vidéo
  * @param array $data Les données de la vidéo
  * @return int|false L'ID de la vidéo créée ou False en cas d'erreur
@@ -71,20 +146,40 @@ function create_video($data)
     global $db;
 
     try {
-        $stmt = $db->prepare("
-            INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation) 
-            VALUES (:titre, :fichier_video, :image_preview, :statut, NOW())
-        ");
+        $hero_banner = !empty($data['hero_banner']) ? 1 : 0;
+        $with_hero = videos_has_hero_banner_column();
 
-        $result = $stmt->execute([
-            'titre' => $data['titre'],
-            'fichier_video' => $data['fichier_video'],
-            'image_preview' => $data['image_preview'] ?? null,
-            'statut' => $data['statut'] ?? 'actif'
-        ]);
+        if ($with_hero) {
+            $stmt = $db->prepare("
+                INSERT INTO videos (titre, fichier_video, image_preview, statut, hero_banner, date_creation)
+                VALUES (:titre, :fichier_video, :image_preview, :statut, :hero_banner, NOW())
+            ");
+            $result = $stmt->execute([
+                'titre' => $data['titre'],
+                'fichier_video' => $data['fichier_video'],
+                'image_preview' => $data['image_preview'] ?? null,
+                'statut' => $data['statut'] ?? 'actif',
+                'hero_banner' => $hero_banner,
+            ]);
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation)
+                VALUES (:titre, :fichier_video, :image_preview, :statut, NOW())
+            ");
+            $result = $stmt->execute([
+                'titre' => $data['titre'],
+                'fichier_video' => $data['fichier_video'],
+                'image_preview' => $data['image_preview'] ?? null,
+                'statut' => $data['statut'] ?? 'actif',
+            ]);
+        }
 
         if ($result) {
-            return $db->lastInsertId();
+            $new_id = (int) $db->lastInsertId();
+            if ($with_hero && $hero_banner === 1 && $new_id > 0) {
+                clear_other_videos_hero_banner($new_id);
+            }
+            return $new_id;
         }
 
         return false;
@@ -104,25 +199,35 @@ function update_video($id, $data)
     global $db;
 
     try {
-        // Construire la requête dynamiquement selon les champs présents
         $fields = ['titre = :titre', 'fichier_video = :fichier_video', 'statut = :statut', 'date_modification = NOW()'];
         $params = [
             'id' => $id,
             'titre' => $data['titre'],
             'fichier_video' => $data['fichier_video'],
-            'statut' => $data['statut'] ?? 'actif'
+            'statut' => $data['statut'] ?? 'actif',
         ];
 
-        // Ajouter image_preview si présent dans les données
         if (isset($data['image_preview'])) {
             $fields[] = 'image_preview = :image_preview';
             $params['image_preview'] = $data['image_preview'];
         }
 
-        $sql = "UPDATE videos SET " . implode(', ', $fields) . " WHERE id = :id";
-        $stmt = $db->prepare($sql);
+        $hero_banner = null;
+        if (videos_has_hero_banner_column() && array_key_exists('hero_banner', $data)) {
+            $hero_banner = !empty($data['hero_banner']) ? 1 : 0;
+            $fields[] = 'hero_banner = :hero_banner';
+            $params['hero_banner'] = $hero_banner;
+        }
 
-        return $stmt->execute($params);
+        $sql = 'UPDATE videos SET ' . implode(', ', $fields) . ' WHERE id = :id';
+        $stmt = $db->prepare($sql);
+        $ok = $stmt->execute($params);
+
+        if ($ok && $hero_banner === 1) {
+            clear_other_videos_hero_banner((int) $id);
+        }
+
+        return $ok;
     } catch (PDOException $e) {
         return false;
     }

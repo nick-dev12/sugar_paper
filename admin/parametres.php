@@ -44,13 +44,6 @@ if (isset($_SESSION['success_message'])) {
     <section class="produits-section">
         <div class="section-title">
             <h2><i class="fas fa-cog"></i> Paramètres et Configurations</h2>
-            <p class="section-subtitle">
-                <?php if ($is_contable_params): ?>
-                Configurez les paramètres des bulletins de paie (RH).
-                <?php else: ?>
-                Configurez les différentes sections de votre site web
-                <?php endif; ?>
-            </p>
         </div>
 
         <?php if (!empty($success_message)): ?>
@@ -67,10 +60,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-home"></i>
                 </div>
                 <h3 class="parametre-title">Bannière d'Accueil</h3>
-                <p class="parametre-description">
-                    Personnalisez la bannière principale de votre page d'accueil : modifiez le titre, le texte
-                    d'accroche et l'image de fond pour créer une première impression mémorable.
-                </p>
                 <a href="parametres/section4.php" class="parametre-link">
                     <i class="fas fa-edit"></i> Modifier la bannière
                 </a>
@@ -82,10 +71,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-star"></i>
                 </div>
                 <h3 class="parametre-title">Section Mise en Avant</h3>
-                <p class="parametre-description">
-                    Configurez la section de mise en avant des produits : définissez le label, le titre promotionnel, le
-                    texte du bouton d'action et l'image illustrative.
-                </p>
                 <a href="parametres/trending.php" class="parametre-link">
                     <i class="fas fa-edit"></i> Modifier la section
                 </a>
@@ -97,10 +82,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-sliders-h"></i>
                 </div>
                 <h3 class="parametre-title">Slider Principal</h3>
-                <p class="parametre-description">
-                    Gérez le slider d'images en haut de la page d'accueil : ajoutez, modifiez ou supprimez les slides
-                    avec leurs titres, textes et boutons d'action.
-                </p>
                 <a href="slider/index.php" class="parametre-link">
                     <i class="fas fa-edit"></i> Gérer le slider
                 </a>
@@ -112,10 +93,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-video"></i>
                 </div>
                 <h3 class="parametre-title">Section Vidéos</h3>
-                <p class="parametre-description">
-                    Gérez les vidéos du carrousel "Ils ont découvert ICON" : ajoutez, modifiez ou supprimez des vidéos
-                    YouTube, Vimeo ou locales avec leurs images de prévisualisation.
-                </p>
                 <a href="parametres/videos.php" class="parametre-link">
                     <i class="fas fa-edit"></i> Gérer les vidéos
                 </a>
@@ -128,10 +105,6 @@ if (isset($_SESSION['success_message'])) {
                     <i class="fas fa-file-invoice-dollar"></i>
                 </div>
                 <h3 class="parametre-title">Bulletins de paie (RH)</h3>
-                <p class="parametre-description">
-                    Configurez l'en-tête employeur, les rubriques affichées sur les bulletins, les taux de retenues,
-                    la prime de transport et les jours de présence de référence.
-                </p>
                 <a href="parametres/bulletin_paie.php" class="parametre-link">
                     <i class="fas fa-sliders-h"></i> Paramètres bulletin de paie
                 </a>

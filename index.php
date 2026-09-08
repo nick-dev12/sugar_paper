@@ -276,7 +276,7 @@ $seo_canonical = $base . '/';
     $section4_titre = trim($section4_config['titre'] ?? '');
     $section4_texte = trim($section4_config['texte'] ?? '');
 
-    // Chemin de l'image de fond
+    // Chemin de l'image de fond (fallback si aucune vidéo bannière)
     $image_fond_path = '/image/market.png';
     if (!empty($section4_config['image_fond'])) {
         $resolved_fond = upload_subdir_image_url('section4', $section4_config['image_fond'], 'original');
@@ -285,10 +285,52 @@ $seo_canonical = $base . '/';
             $image_fond_path = $resolved_fond;
         }
     }
+
+    $hero_banner_video = null;
+    $hero_banner_video_url = '';
+    $hero_banner_video_type = 'video/mp4';
+    $hero_banner_poster = '';
+    if (file_exists(__DIR__ . '/models/model_videos.php')) {
+        require_once __DIR__ . '/models/model_videos.php';
+        $hero_banner_video = get_hero_banner_video();
+        if ($hero_banner_video && !empty($hero_banner_video['fichier_video'])) {
+            $hero_disk = __DIR__ . '/upload/videos/' . $hero_banner_video['fichier_video'];
+            if (is_file($hero_disk)) {
+                $hero_banner_video_url = '/upload/videos/' . rawurlencode($hero_banner_video['fichier_video']);
+                $hero_ext = strtolower(pathinfo($hero_banner_video['fichier_video'], PATHINFO_EXTENSION));
+                $hero_mimes = [
+                    'mp4' => 'video/mp4',
+                    'webm' => 'video/webm',
+                    'ogg' => 'video/ogg',
+                    'ogv' => 'video/ogg',
+                    'mov' => 'video/quicktime',
+                ];
+                $hero_banner_video_type = $hero_mimes[$hero_ext] ?? 'video/mp4';
+                $hero_banner_poster = resolve_video_poster_url($hero_banner_video);
+            } else {
+                $hero_banner_video = null;
+            }
+        }
+    }
     ?>
     <?php if ($section4_actif): ?>
     <section class="section4 home-hero-banner home-reveal" aria-label="Bannière d'accueil">
         <div class="home-hero-banner__media">
+            <?php if ($hero_banner_video_url !== ''): ?>
+            <video class="home-hero-banner__video"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                <?php if ($hero_banner_poster !== ''): ?>
+                poster="<?php echo htmlspecialchars($hero_banner_poster, ENT_QUOTES, 'UTF-8'); ?>"
+                <?php endif; ?>
+                aria-label="<?php echo htmlspecialchars($section4_titre !== '' ? $section4_titre : 'Sugar Paper', ENT_QUOTES, 'UTF-8'); ?>">
+                <source src="<?php echo htmlspecialchars($hero_banner_video_url, ENT_QUOTES, 'UTF-8'); ?>"
+                    type="<?php echo htmlspecialchars($hero_banner_video_type, ENT_QUOTES, 'UTF-8'); ?>">
+            </video>
+            <?php else: ?>
             <img class="home-hero-banner__img"
                 src="<?php echo htmlspecialchars($image_fond_path, ENT_QUOTES, 'UTF-8'); ?>"
                 alt="<?php echo htmlspecialchars($section4_titre !== '' ? $section4_titre : 'Sugar Paper', ENT_QUOTES, 'UTF-8'); ?>"
@@ -296,6 +338,7 @@ $seo_canonical = $base . '/';
                 height="420"
                 fetchpriority="high"
                 decoding="async">
+            <?php endif; ?>
             <div class="home-hero-banner__overlay" aria-hidden="true"></div>
             <div class="home-hero-banner__content">
                 <span class="home-hero-banner__kicker"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i> Sugar Paper</span>

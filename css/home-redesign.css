@@ -1144,13 +1144,18 @@ body.page-home .home-hero-banner__media {
   background: linear-gradient(135deg, #2a1a22 0%, #4a2038 100%);
 }
 
-body.page-home .home-hero-banner__img {
+body.page-home .home-hero-banner__img,
+body.page-home .home-hero-banner__video {
   display: block;
   width: 100%;
   height: clamp(220px, 38vw, 400px);
   max-height: 420px;
   object-fit: cover;
   object-position: center center;
+}
+
+body.page-home .home-hero-banner__video {
+  pointer-events: none;
 }
 
 body.page-home .home-hero-banner__overlay {

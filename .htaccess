@@ -39,8 +39,8 @@ RewriteRule ^privacy-policy/?$ privacy-policy.php [L]
 <IfModule mod_php.c>
     php_value session.gc_maxlifetime 2592000
     php_value session.cookie_lifetime 2592000
-    php_value upload_max_filesize 1000M
-    php_value post_max_size 1000M
+    php_value upload_max_filesize 200M
+    php_value post_max_size 200M
     php_value max_execution_time 300
     php_value max_input_time 300
     php_value memory_limit 512M
@@ -48,8 +48,8 @@ RewriteRule ^privacy-policy/?$ privacy-policy.php [L]
 <IfModule mod_php7.c>
     php_value session.gc_maxlifetime 2592000
     php_value session.cookie_lifetime 2592000
-    php_value upload_max_filesize 1000M
-    php_value post_max_size 1000M
+    php_value upload_max_filesize 200M
+    php_value post_max_size 200M
     php_value max_execution_time 300
     php_value max_input_time 300
     php_value memory_limit 512M
@@ -57,8 +57,8 @@ RewriteRule ^privacy-policy/?$ privacy-policy.php [L]
 <IfModule mod_php8.c>
     php_value session.gc_maxlifetime 2592000
     php_value session.cookie_lifetime 2592000
-    php_value upload_max_filesize 1000M
-    php_value post_max_size 1000M
+    php_value upload_max_filesize 200M
+    php_value post_max_size 200M
     php_value max_execution_time 300
     php_value max_input_time 300
     php_value memory_limit 512M
