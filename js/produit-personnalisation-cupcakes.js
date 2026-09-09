@@ -60,6 +60,116 @@
         state.circles.push(makeSlot());
     }
 
+    var textManipBox = document.getElementById('cupcakes-text-manip-box');
+    var textEngine = null;
+    if (window.PersoTextEngine) {
+        textEngine = window.PersoTextEngine.create({
+            modal: modal,
+            prefix: 'cupcakes',
+            getShape: function () {
+                return state.shape === 'circle' ? 'circle' : 'rect';
+            },
+            getBounds: function () {
+                if (!lastRenderLayout || !lastRenderLayout.circles || !lastRenderLayout.circles.length) {
+                    return null;
+                }
+                if (state.activeIndex >= 0) {
+                    return lastRenderLayout.circles[state.activeIndex];
+                }
+                return lastRenderLayout.circles[0];
+            },
+            isModalOpen: function () {
+                return modal.classList.contains('is-open');
+            },
+            clientToCanvas: function (clientX, clientY) {
+                if (!canvas) {
+                    return { x: 0, y: 0 };
+                }
+                var rect = canvas.getBoundingClientRect();
+                var scaleX = canvas.width / rect.width;
+                var scaleY = canvas.height / rect.height;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            },
+            canvasPointToViewport: function (cx, cy) {
+                if (!canvas) {
+                    return { x: 0, y: 0 };
+                }
+                var rect = canvas.getBoundingClientRect();
+                return {
+                    x: cx * (rect.width / canvas.width),
+                    y: cy * (rect.height / canvas.height)
+                };
+            },
+            isSharedMode: function () {
+                return state.imageMode === 'shared';
+            },
+            getTextsStore: function () {
+                if (state.imageMode === 'shared') {
+                    return state.shared;
+                }
+                if (state.activeIndex < 0) {
+                    selectCircle(0, false);
+                }
+                return state.circles[state.activeIndex];
+            },
+            ensureSlotSelected: function () {
+                if (state.imageMode === 'shared') {
+                    return true;
+                }
+                if (state.activeIndex < 0) {
+                    selectCircle(0, false);
+                }
+                return state.activeIndex >= 0;
+            },
+            hasBackgroundImage: function () {
+                var slot = getActiveSlot();
+                return !!(slot && slot.image);
+            },
+            onChange: function () {
+                renderPreview();
+            }
+        });
+        textEngine.resetStore(state.shared);
+        state.circles.forEach(function (circle) {
+            textEngine.resetStore(circle);
+        });
+        textEngine.bindUiEvents();
+    }
+
+    function mapTextsForMeta(texts) {
+        if (!texts || !texts.length) {
+            return [];
+        }
+        return texts.map(function (t) {
+            return {
+                id: t.id,
+                text: t.text,
+                font: t.font,
+                textSizePct: t.textSizePct,
+                textPosX: t.textPosX,
+                textPosY: t.textPosY,
+                textRotation: t.textRotation,
+                wrapOnCircle: t.wrapOnCircle,
+                wrapArcPosition: t.wrapArcPosition,
+                textColor: t.textColor
+            };
+        }).filter(function (t) {
+            return (t.text || '').trim() !== '';
+        });
+    }
+
+    function getTextsForRender(index) {
+        var store = state.imageMode === 'shared' ? state.shared : state.circles[index];
+        return store && store.texts ? store.texts : [];
+    }
+
+    function getTextDrawShape() {
+        return state.shape === 'circle' ? 'circle' : 'rect';
+    }
+
     function makeSlot() {
         return {
             image: null,
@@ -106,6 +216,10 @@
         state.activeIndex = -1;
         manipDrag = null;
         hideImageManipulator();
+        if (textEngine) {
+            textEngine.setEditTarget('');
+            textEngine.hideManipulator();
+        }
         if (activeCircleLabel) {
             activeCircleLabel.textContent = '—';
         }
@@ -269,6 +383,9 @@
             appendShapePath(ctx, bounds);
             ctx.fill();
         }
+        if (textEngine) {
+            textEngine.drawTextsArray(ctx, bounds, getTextDrawShape(), getTextsForRender(bounds.index));
+        }
         ctx.restore();
 
         ctx.save();
@@ -288,11 +405,24 @@
     }
 
     function hasContent() {
-        if (state.imageMode === 'shared') {
-            return !!state.shared.image;
+        var hasImage = state.imageMode === 'shared'
+            ? !!state.shared.image
+            : state.circles.some(function (slot) {
+                return !!slot.image;
+            });
+        if (hasImage) {
+            return true;
         }
-        return state.circles.some(function (slot) {
-            return !!slot.image;
+        if (!textEngine) {
+            return false;
+        }
+        return textEngine.hasAnyTextContent(function () {
+            if (state.imageMode === 'shared') {
+                return [state.shared.texts || []];
+            }
+            return state.circles.map(function (slot) {
+                return slot.texts || [];
+            });
         });
     }
 
@@ -414,6 +544,10 @@
         if (!imageManipulator || !imageManipBox || !lastRenderLayout || !canvas || !previewViewport) {
             return;
         }
+        if (textEngine && textEngine.getEditTarget() === 'text') {
+            hideImageManipulator();
+            return;
+        }
         if (!hasSelection()) {
             hideImageManipulator();
             return;
@@ -481,6 +615,13 @@
             circles: layouts
         };
         updateImageManipulator();
+        if (textEngine) {
+            if (textEngine.getEditTarget() === 'text') {
+                textEngine.updateManipulator();
+            } else {
+                textEngine.hideManipulator();
+            }
+        }
         updateValidateState();
         syncMetaToForm();
     }
@@ -504,11 +645,18 @@
 
     function buildMetaObject() {
         var circlesMeta = state.circles.map(function (slot) {
-            return {
+            var row = {
                 offset_x: slot.offsetX,
                 offset_y: slot.offsetY,
                 scale_pct: slot.scalePct
             };
+            if (state.imageMode === 'per_circle') {
+                var texts = mapTextsForMeta(slot.texts);
+                if (texts.length) {
+                    row.texts = texts;
+                }
+            }
+            return row;
         });
         var meta = {
             type: 'cupcakes',
@@ -526,6 +674,10 @@
                 offset_y: state.shared.offsetY,
                 scale_pct: state.shared.scalePct
             };
+            var sharedTexts = mapTextsForMeta(state.shared.texts);
+            if (sharedTexts.length) {
+                meta.texts = sharedTexts;
+            }
         }
         return meta;
     }
@@ -641,6 +793,10 @@
             activeCircleLabel.textContent = String(index + 1);
         }
         updateImageUi();
+        if (textEngine) {
+            textEngine.setEditTarget('');
+            textEngine.syncToControls();
+        }
         renderPreview();
         var slot = getActiveSlot();
         if (openPickerIfEmpty && state.imageMode === 'per_circle' && slot && !slot.image && fileInput) {
@@ -657,6 +813,14 @@
         state.activeIndex = -1;
         if (fileInput) {
             fileInput.value = '';
+        }
+        if (textEngine) {
+            textEngine.resetStore(state.shared);
+            state.circles.forEach(function (circle) {
+                textEngine.resetStore(circle);
+            });
+            textEngine.setEditTarget('');
+            textEngine.syncToControls();
         }
         updateModeUi();
         updatePaperUi();
@@ -688,6 +852,10 @@
         manipDrag = null;
         touchPointers = {};
         hideImageManipulator();
+        if (textEngine) {
+            textEngine.finishDrag();
+            textEngine.hideManipulator();
+        }
         modal.classList.remove('is-open');
         modal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
@@ -806,6 +974,9 @@
         btn.addEventListener('click', function () {
             state.imageMode = btn.getAttribute('data-mode') || 'shared';
             updateModeUi();
+            if (textEngine) {
+                textEngine.syncToControls();
+            }
             renderPreview();
         });
     });
@@ -814,6 +985,9 @@
         btn.addEventListener('click', function () {
             state.shape = btn.getAttribute('data-shape') || 'circle';
             updateShapeUi();
+            if (textEngine) {
+                textEngine.syncToControls();
+            }
             renderPreview();
         });
     });
@@ -867,6 +1041,11 @@
                 return;
             }
             selectCircle(hit, true);
+            if (textEngine && textEngine.handleCanvasPointerDown(event)) {
+                event.preventDefault();
+                hideImageManipulator();
+                return;
+            }
             var slot = getActiveSlot();
             if (!slot || !slot.image) {
                 return;
@@ -885,6 +1064,11 @@
         });
 
         canvas.addEventListener('pointermove', function (event) {
+            if (textEngine && textEngine.getManipDrag()) {
+                textEngine.onPointerMove(event.clientX, event.clientY);
+                renderPreview();
+                return;
+            }
             if (!manipDrag) {
                 return;
             }
@@ -914,6 +1098,9 @@
         });
 
         function endDrag() {
+            if (textEngine) {
+                textEngine.finishDrag();
+            }
             manipDrag = null;
         }
         canvas.addEventListener('pointerup', endDrag);
@@ -938,8 +1125,37 @@
         }, { passive: false });
     }
 
+    if (textManipBox && textEngine) {
+        textManipBox.addEventListener('pointerdown', function (event) {
+            textEngine.handleManipBoxPointerDown(event);
+        });
+    }
+
+    window.addEventListener('pointermove', function (event) {
+        if (!textEngine || !textEngine.getManipDrag()) {
+            return;
+        }
+        textEngine.onPointerMove(event.clientX, event.clientY);
+        renderPreview();
+    });
+
+    window.addEventListener('pointerup', function () {
+        if (textEngine && textEngine.getManipDrag()) {
+            textEngine.finishDrag();
+        }
+    });
+
+    window.addEventListener('pointercancel', function () {
+        if (textEngine && textEngine.getManipDrag()) {
+            textEngine.finishDrag();
+        }
+    });
+
     if (imageManipBox) {
         imageManipBox.addEventListener('pointerdown', function (event) {
+            if (textEngine) {
+                textEngine.setEditTarget('');
+            }
             var handle = event.target.closest('.perso-image-handle');
             var slot = getActiveSlot();
             if (!slot || !slot.image || !lastRenderLayout) {

@@ -58,6 +58,11 @@
                     </div>
                     <p class="perso-field-hint">Les 3 bandes ont la même hauteur. La largeur utilise presque toute la feuille, avec marges.</p>
                 </section>
+
+                <?php
+                $perso_text_prefix = 'contours';
+                include __DIR__ . '/produit_personnalisation_text_section.php';
+                ?>
             </aside>
 
             <div class="perso-preview-panel">
@@ -74,6 +79,10 @@
                                 <span class="perso-image-handle perso-image-handle--se" data-handle="se" aria-hidden="true"></span>
                             </div>
                         </div>
+                        <?php
+                        $perso_text_prefix = 'contours';
+                        include __DIR__ . '/produit_personnalisation_text_manipulator.php';
+                        ?>
                     </div>
                 </div>
             </div>

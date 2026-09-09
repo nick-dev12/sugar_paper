@@ -2090,6 +2090,9 @@ $seo_schema_graphs = array_merge(
     <?php if ($supports_photo_perso): ?>
     <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
+    <?php if ($supports_cupcakes_perso || $supports_contours_perso): ?>
+    <script src="/js/perso-text-engine.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
     <?php if ($supports_cupcakes_perso): ?>
     <script src="/js/produit-personnalisation-cupcakes.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>

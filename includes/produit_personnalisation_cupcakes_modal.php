@@ -62,6 +62,11 @@
                     </div>
                     <p class="perso-field-hint">Les 12 formes sont redimensionnées ensemble (maximum 5 cm), avec un espacement régulier.</p>
                 </section>
+
+                <?php
+                $perso_text_prefix = 'cupcakes';
+                include __DIR__ . '/produit_personnalisation_text_section.php';
+                ?>
             </aside>
 
             <div class="perso-preview-panel">
@@ -78,6 +83,10 @@
                                 <span class="perso-image-handle perso-image-handle--se" data-handle="se" aria-hidden="true"></span>
                             </div>
                         </div>
+                        <?php
+                        $perso_text_prefix = 'cupcakes';
+                        include __DIR__ . '/produit_personnalisation_text_manipulator.php';
+                        ?>
                     </div>
                 </div>
             </div>

@@ -352,6 +352,29 @@ function commande_ligne_personnalisation_source_path(array $ligne)
 }
 
 /**
+ * @param array<int, mixed>|null $list
+ * @return array<int, array<string, mixed>>
+ */
+function produit_personnalisation_texts_normalize_list($list)
+{
+    if (!is_array($list)) {
+        return [];
+    }
+    $texts = [];
+    foreach ($list as $text_row) {
+        if (!is_array($text_row)) {
+            continue;
+        }
+        $normalized = produit_personnalisation_text_normalize($text_row);
+        if (trim((string) ($normalized['text'] ?? '')) === '') {
+            continue;
+        }
+        $texts[] = $normalized;
+    }
+    return array_values($texts);
+}
+
+/**
  * @param array|string|null $raw
  * @return array<string, mixed>|null
  */
@@ -553,7 +576,14 @@ function produit_personnalisation_cupcakes_meta_normalize(array $data)
     $raw_circles = isset($data['circles']) && is_array($data['circles']) ? $data['circles'] : [];
     for ($i = 0; $i < 12; $i++) {
         $row = isset($raw_circles[$i]) && is_array($raw_circles[$i]) ? $raw_circles[$i] : [];
-        $circles[] = produit_personnalisation_image_normalize($row);
+        $circle_out = produit_personnalisation_image_normalize($row);
+        if ($image_mode === 'per_circle') {
+            $texts = produit_personnalisation_texts_normalize_list(isset($row['texts']) ? $row['texts'] : []);
+            if ($texts !== []) {
+                $circle_out['texts'] = $texts;
+            }
+        }
+        $circles[] = $circle_out;
     }
 
     $out = [
@@ -569,6 +599,13 @@ function produit_personnalisation_cupcakes_meta_normalize(array $data)
 
     if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
         $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    }
+
+    if ($image_mode === 'shared') {
+        $texts = produit_personnalisation_texts_normalize_list(isset($data['texts']) ? $data['texts'] : []);
+        if ($texts !== []) {
+            $out['texts'] = $texts;
+        }
     }
 
     return $out;
@@ -608,7 +645,14 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $raw_contours = isset($data['contours']) && is_array($data['contours']) ? $data['contours'] : [];
     for ($i = 0; $i < 3; $i++) {
         $row = isset($raw_contours[$i]) && is_array($raw_contours[$i]) ? $raw_contours[$i] : [];
-        $contours[] = produit_personnalisation_image_normalize($row);
+        $contour_out = produit_personnalisation_image_normalize($row);
+        if ($image_mode === 'per_contour') {
+            $texts = produit_personnalisation_texts_normalize_list(isset($row['texts']) ? $row['texts'] : []);
+            if ($texts !== []) {
+                $contour_out['texts'] = $texts;
+            }
+        }
+        $contours[] = $contour_out;
     }
 
     $out = [
@@ -622,6 +666,13 @@ function produit_personnalisation_contours_meta_normalize(array $data)
 
     if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
         $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    }
+
+    if ($image_mode === 'shared') {
+        $texts = produit_personnalisation_texts_normalize_list(isset($data['texts']) ? $data['texts'] : []);
+        if ($texts !== []) {
+            $out['texts'] = $texts;
+        }
     }
 
     return $out;
