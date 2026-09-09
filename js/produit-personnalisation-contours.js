@@ -564,23 +564,93 @@
         }
     }
 
-    function canvasPointFromEvent(event) {
+    function clientToCanvas(clientX, clientY) {
         if (!canvas) {
             return null;
         }
         var rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+            return null;
+        }
+        return {
+            x: (clientX - rect.left) * (canvas.width / rect.width),
+            y: (clientY - rect.top) * (canvas.height / rect.height)
+        };
+    }
+
+    function canvasPointFromEvent(event) {
+        if (!event) {
+            return null;
+        }
         var clientX = event.clientX;
         var clientY = event.clientY;
         if (event.touches && event.touches[0]) {
             clientX = event.touches[0].clientX;
             clientY = event.touches[0].clientY;
         }
-        var scaleX = canvas.width / rect.width;
-        var scaleY = canvas.height / rect.height;
+        return clientToCanvas(clientX, clientY);
+    }
+
+    function canvasPointToViewport(cx, cy) {
+        if (!canvas) {
+            return { x: 0, y: 0 };
+        }
+        var canvasRect = canvas.getBoundingClientRect();
+        var vpRect = previewViewport ? previewViewport.getBoundingClientRect() : canvasRect;
+        var scaleX = canvasRect.width / canvas.width;
+        var scaleY = canvasRect.height / canvas.height;
         return {
-            x: (clientX - rect.left) * scaleX,
-            y: (clientY - rect.top) * scaleY
+            x: canvasRect.left - vpRect.left + cx * scaleX,
+            y: canvasRect.top - vpRect.top + cy * scaleY
         };
+    }
+
+    function getManipLayer() {
+        if (!manipDrag || !manipDrag.layerId) {
+            return getActiveLayer(getActiveSlot());
+        }
+        var slot = getActiveSlot();
+        if (!slot || !slot.layers) {
+            return null;
+        }
+        var i;
+        for (i = 0; i < slot.layers.length; i++) {
+            if (slot.layers[i].id === manipDrag.layerId) {
+                return slot.layers[i];
+            }
+        }
+        return getActiveLayer(slot);
+    }
+
+    function onImageManipPointerMove(clientX, clientY) {
+        if (!manipDrag || !lastRenderLayout || !hasSelection()) {
+            return;
+        }
+        var pt = clientToCanvas(clientX, clientY);
+        var layer = getManipLayer();
+        var bounds = lastRenderLayout.contours[state.activeIndex];
+        if (!pt || !layer || !bounds) {
+            return;
+        }
+        if (manipDrag.type === 'move') {
+            applyImageMove(layer, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
+        } else if (manipDrag.type === 'resize') {
+            var params = getImageDrawParams(bounds, layer.image, layer);
+            if (!params) {
+                return;
+            }
+            var dist = Math.hypot(pt.x - params.cx, pt.y - params.cy);
+            if (manipDrag.startDist > 0) {
+                applyImageZoomAt(layer, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
+            }
+        }
+    }
+
+    function finishImageManipDrag() {
+        if (textEngine) {
+            textEngine.finishDrag();
+        }
+        manipDrag = null;
     }
 
     function hitTestContour(x, y) {
@@ -689,16 +759,15 @@
             hideImageManipulator();
             return;
         }
-        var rect = canvas.getBoundingClientRect();
-        var scaleX = rect.width / canvas.width;
-        var scaleY = rect.height / canvas.height;
+        var tl = canvasPointToViewport(params.x, params.y);
+        var br = canvasPointToViewport(params.x + params.w, params.y + params.h);
         imageManipulator.hidden = false;
         imageManipulator.setAttribute('aria-hidden', 'false');
         imageManipulator.classList.add('is-visible');
-        imageManipBox.style.left = (params.x * scaleX) + 'px';
-        imageManipBox.style.top = (params.y * scaleY) + 'px';
-        imageManipBox.style.width = (params.w * scaleX) + 'px';
-        imageManipBox.style.height = (params.h * scaleY) + 'px';
+        imageManipBox.style.left = tl.x + 'px';
+        imageManipBox.style.top = tl.y + 'px';
+        imageManipBox.style.width = Math.max(32, br.x - tl.x) + 'px';
+        imageManipBox.style.height = Math.max(32, br.y - tl.y) + 'px';
     }
 
     function renderPreview() {
@@ -1189,19 +1258,26 @@
             var layer = slot && bounds ? activateLayer(slot, pickLayerAtPoint(slot, bounds, pt.x, pt.y)) : null;
             if (!layer || !layer.image) {
                 updateImageUi();
-                renderPreview();
+                updateImageManipulator();
                 return;
             }
+            if (textEngine) {
+                textEngine.setEditTarget('');
+            }
             updateImageUi();
-            renderPreview();
+            updateImageManipulator();
             event.preventDefault();
             manipDrag = {
                 type: 'move',
+                layerId: layer.id,
                 startX: pt.x,
                 startY: pt.y,
                 startOffsetX: layer.offsetX,
                 startOffsetY: layer.offsetY
             };
+            if (imageManipBox) {
+                imageManipBox.classList.add('is-dragging');
+            }
             try {
                 canvas.setPointerCapture(event.pointerId);
             } catch (e) { /* ignore */ }
@@ -1216,40 +1292,23 @@
             if (!manipDrag) {
                 return;
             }
-            var pt = canvasPointFromEvent(event);
-            var slot = getActiveSlot();
-            var layer = slot ? getActiveLayer(slot) : null;
-            if (!pt || !layer) {
-                return;
-            }
             event.preventDefault();
-            if (manipDrag.type === 'move') {
-                applyImageMove(layer, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
-            } else if (manipDrag.type === 'resize') {
-                var bounds = lastRenderLayout && lastRenderLayout.contours[state.activeIndex];
-                if (!bounds) {
-                    return;
-                }
-                var params = getImageDrawParams(bounds, layer.image, layer);
-                if (!params) {
-                    return;
-                }
-                var dist = Math.hypot(pt.x - params.cx, pt.y - params.cy);
-                if (manipDrag.startDist > 0) {
-                    applyImageZoomAt(layer, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
-                }
-            }
+            onImageManipPointerMove(event.clientX, event.clientY);
             renderPreview();
         });
 
-        function endDrag() {
-            if (textEngine) {
-                textEngine.finishDrag();
+        canvas.addEventListener('pointerup', function () {
+            if (imageManipBox) {
+                imageManipBox.classList.remove('is-dragging');
             }
-            manipDrag = null;
-        }
-        canvas.addEventListener('pointerup', endDrag);
-        canvas.addEventListener('pointercancel', endDrag);
+            finishImageManipDrag();
+        });
+        canvas.addEventListener('pointercancel', function () {
+            if (imageManipBox) {
+                imageManipBox.classList.remove('is-dragging');
+            }
+            finishImageManipDrag();
+        });
 
         canvas.addEventListener('dblclick', function (event) {
             if (!hasSelection()) {
@@ -1304,10 +1363,15 @@
     }
 
     window.addEventListener('pointermove', function (event) {
-        if (!textEngine || !textEngine.getManipDrag()) {
+        if (textEngine && textEngine.getManipDrag()) {
+            textEngine.onPointerMove(event.clientX, event.clientY);
+            renderPreview();
             return;
         }
-        textEngine.onPointerMove(event.clientX, event.clientY);
+        if (!manipDrag) {
+            return;
+        }
+        onImageManipPointerMove(event.clientX, event.clientY);
         renderPreview();
     });
 
@@ -1315,51 +1379,91 @@
         if (textEngine && textEngine.getManipDrag()) {
             textEngine.finishDrag();
         }
+        if (manipDrag) {
+            if (imageManipBox) {
+                imageManipBox.classList.remove('is-dragging');
+            }
+            finishImageManipDrag();
+        }
     });
 
     window.addEventListener('pointercancel', function () {
         if (textEngine && textEngine.getManipDrag()) {
             textEngine.finishDrag();
         }
+        if (manipDrag) {
+            if (imageManipBox) {
+                imageManipBox.classList.remove('is-dragging');
+            }
+            finishImageManipDrag();
+        }
     });
 
     if (imageManipBox) {
         imageManipBox.addEventListener('pointerdown', function (event) {
+            if (event.target.closest('.perso-manip-delete')) {
+                return;
+            }
             if (textEngine) {
                 textEngine.setEditTarget('');
             }
             var handle = event.target.closest('.perso-image-handle');
             var slot = getActiveSlot();
-            var layer = slot ? getActiveLayer(slot) : null;
-            if (!layer || !layer.image || !lastRenderLayout) {
-                return;
-            }
+            var bounds = lastRenderLayout && lastRenderLayout.contours
+                ? lastRenderLayout.contours[state.activeIndex]
+                : null;
             var pt = canvasPointFromEvent(event);
-            if (!pt) {
+            var pickedLayer = slot && bounds && pt
+                ? activateLayer(slot, pickLayerAtPoint(slot, bounds, pt.x, pt.y))
+                : null;
+            var layer = pickedLayer || (slot ? getActiveLayer(slot) : null);
+            if (!layer || !layer.image || !lastRenderLayout || !bounds) {
                 return;
             }
             event.preventDefault();
             event.stopPropagation();
+            imageManipBox.classList.add('is-dragging');
             if (handle) {
-                var bounds = lastRenderLayout.contours[state.activeIndex];
                 var params = getImageDrawParams(bounds, layer.image, layer);
                 if (!params) {
                     return;
                 }
                 manipDrag = {
                     type: 'resize',
+                    layerId: layer.id,
                     startDist: Math.hypot(pt.x - params.cx, pt.y - params.cy),
                     startScale: layer.scalePct
                 };
             } else {
                 manipDrag = {
                     type: 'move',
+                    layerId: layer.id,
                     startX: pt.x,
                     startY: pt.y,
                     startOffsetX: layer.offsetX,
                     startOffsetY: layer.offsetY
                 };
             }
+            if (imageManipBox.setPointerCapture) {
+                try {
+                    imageManipBox.setPointerCapture(event.pointerId);
+                } catch (e) { /* ignore */ }
+            }
+        });
+
+        imageManipBox.addEventListener('pointerup', function (event) {
+            imageManipBox.classList.remove('is-dragging');
+            finishImageManipDrag();
+            if (imageManipBox.releasePointerCapture) {
+                try {
+                    imageManipBox.releasePointerCapture(event.pointerId);
+                } catch (e) { /* ignore */ }
+            }
+        });
+
+        imageManipBox.addEventListener('pointercancel', function () {
+            imageManipBox.classList.remove('is-dragging');
+            finishImageManipDrag();
         });
     }
 

@@ -681,8 +681,20 @@
             return 'text';
         }
 
-        if (lastRenderLayout) {
+        if (lastRenderLayout && hasAnyLayer()) {
             var pickedLayer = pickLayerAtPoint(lastRenderLayout.designBounds, canvasPt.x, canvasPt.y);
+            if (!pickedLayer && pointInDesignBounds(canvasPt.x, canvasPt.y)) {
+                pickedLayer = getActiveLayer();
+                if (!pickedLayer || !pickedLayer.image) {
+                    var li;
+                    for (li = 0; li < state.layers.length; li++) {
+                        if (state.layers[li].image) {
+                            pickedLayer = state.layers[li];
+                            break;
+                        }
+                    }
+                }
+            }
             if (pickedLayer) {
                 activateLayer(pickedLayer);
                 selectImage();
@@ -1095,6 +1107,9 @@
                     event.preventDefault();
                     event.stopPropagation();
                     return;
+                }
+                if (lastRenderLayout) {
+                    activateLayer(pickLayerAtPoint(lastRenderLayout.designBounds, canvasPt.x, canvasPt.y));
                 }
                 selectImage();
                 var handleEl = event.target.closest('.perso-image-handle');

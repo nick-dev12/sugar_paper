@@ -1259,7 +1259,8 @@
     z-index: 3;
 }
 
-.perso-image-manipulator.is-visible .perso-image-manip-box {
+.perso-image-manipulator.is-visible .perso-image-manip-box,
+.perso-image-manipulator:not([hidden]) .perso-image-manip-box {
     pointer-events: auto;
 }
 
