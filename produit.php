@@ -135,6 +135,7 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/image-lightbox.css<?php echo asset_version_query(); ?>">
     <?php if ($supports_photo_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
@@ -1387,8 +1388,12 @@ $seo_schema_graphs = array_merge(
                 ?>
                 <div class="produit-gallery-main">
                     <img src="<?php echo htmlspecialchars(upload_image_url($galerie_images[0] ?? ($produit['image_principale'] ?? ''), 'original')); ?>"
-                        alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main"
-                        id="produit-image-main" onerror="this.src='/image/produit1.jpg'">
+                        alt="<?php echo htmlspecialchars($produit['nom']); ?>" class="produit-image-main js-sugar-lightbox-trigger"
+                        id="produit-image-main"
+                        data-lightbox-src="<?php echo htmlspecialchars(upload_image_url($galerie_images[0] ?? ($produit['image_principale'] ?? ''), 'original')); ?>"
+                        data-lightbox-alt="<?php echo htmlspecialchars($produit['nom']); ?>"
+                        role="button" tabindex="0" aria-label="Voir l'image en plein écran"
+                        onerror="this.src='/image/produit1.jpg'">
                 </div>
                 <?php if (count($galerie_images) > 1): ?>
                     <div class="produit-gallery-thumbs">
@@ -2044,7 +2049,10 @@ $seo_schema_graphs = array_merge(
                 });
                 currentIdx = idx;
                 var src = galleryThumbs[idx].getAttribute('data-src');
-                if (src) galleryMain.src = src;
+                if (src) {
+                    galleryMain.src = src;
+                    galleryMain.setAttribute('data-lightbox-src', src);
+                }
             }
             galleryThumbs.forEach(function (thumb, idx) {
                 thumb.addEventListener('click', function () {
@@ -2142,6 +2150,27 @@ $seo_schema_graphs = array_merge(
     <?php if ($supports_contours_perso): ?>
     <script src="/js/produit-personnalisation-contours.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
+    <script src="/js/image-lightbox.js<?php echo asset_version_query(); ?>"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.SugarImageLightbox) {
+                return;
+            }
+            var mainImg = document.getElementById('produit-image-main');
+            if (mainImg) {
+                SugarImageLightbox.bind(mainImg);
+            }
+            document.querySelectorAll('.gallery-thumb').forEach(function (thumb) {
+                thumb.addEventListener('dblclick', function (event) {
+                    event.preventDefault();
+                    var src = thumb.getAttribute('data-src');
+                    if (src && window.SugarImageLightbox) {
+                        SugarImageLightbox.open(src, mainImg ? mainImg.getAttribute('alt') : '');
+                    }
+                });
+            });
+        });
+    </script>
 
 </body>
 

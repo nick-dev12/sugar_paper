@@ -32,6 +32,7 @@ if (isset($result['success']) && $result['success']) {
 require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_commandes.php';
 require_once __DIR__ . '/../../models/model_mouvements_stock.php';
+require_once __DIR__ . '/../../models/model_variantes.php';
 
 $produit = get_produit_by_id($produit_id);
 if (!$produit) {
@@ -74,6 +75,37 @@ if ($prix_original) {
 }
 
 $mouvements = get_stock_mouvements(null, $produit_id, null, null, 50);
+$variantes = get_variantes_by_produit($produit_id);
+
+$couleurs_options = [];
+if (!empty($produit['couleurs'])) {
+    $cr = trim($produit['couleurs']);
+    $dec_couleurs = json_decode($cr, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($dec_couleurs)) {
+        $couleurs_options = array_values(array_filter($dec_couleurs, function ($c) {
+            return is_string($c) && preg_match('/^#[0-9A-Fa-f]{6}$/', $c);
+        }));
+    } else {
+        $couleurs_options = array_values(array_filter(array_map('trim', explode(',', $cr))));
+    }
+}
+$poids_options = parse_options_with_surcharge($produit['poids'] ?? null);
+$taille_options = parse_options_with_surcharge($produit['taille'] ?? null);
+$poids_options = array_values(array_filter($poids_options, function ($o) {
+    $v = trim((string) ($o['v'] ?? ''));
+    return $v !== '' && $v !== '[]';
+}));
+$taille_options = array_values(array_filter($taille_options, function ($o) {
+    $v = trim((string) ($o['v'] ?? ''));
+    return $v !== '' && $v !== '[]';
+}));
+
+$statut_labels = [
+    'actif' => 'Actif',
+    'inactif' => 'Inactif',
+    'rupture_stock' => 'Rupture de stock',
+];
+$statut_label = $statut_labels[$produit['statut'] ?? ''] ?? ($produit['statut'] ?? '—');
 
 $success_message = '';
 if (isset($_SESSION['success_message'])) {
@@ -92,6 +124,7 @@ if (isset($_SESSION['success_message'])) {
     <?php require_once __DIR__ . '/../../includes/asset_version.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/admin-dashboard.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/image-lightbox.css<?php echo asset_version_query(); ?>">
     <style>
         .ajuster-stock-layout {
             display: grid;
@@ -346,6 +379,243 @@ if (isset($_SESSION['success_message'])) {
             color: #918a44;
             font-weight: 600;
         }
+
+        .produit-detail-card {
+            background: linear-gradient(135deg, #fff 0%, #fafaf8 100%);
+            border: 1px solid #e5e3d8;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        .produit-detail-card h2 {
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            color: #6b2f20;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #918a44;
+        }
+
+        .produit-detail-layout {
+            display: grid;
+            grid-template-columns: minmax(220px, 320px) 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .produit-detail-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .produit-detail-gallery-main {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #e5e3d8;
+            background: #fff;
+            margin-bottom: 12px;
+        }
+
+        .produit-detail-gallery-main img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .produit-detail-gallery-thumbs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .produit-detail-gallery-thumb {
+            width: 64px;
+            height: 64px;
+            padding: 0;
+            border: 2px solid #e5e3d8;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+            cursor: zoom-in;
+        }
+
+        .produit-detail-gallery-thumb.is-active {
+            border-color: #918a44;
+            box-shadow: 0 0 0 2px rgba(145, 138, 68, 0.25);
+        }
+
+        .produit-detail-gallery-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .produit-detail-meta {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .produit-detail-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .produit-detail-meta-item {
+            background: #fff;
+            border: 1px solid #e5e3d8;
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .produit-detail-meta-item label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .produit-detail-meta-item span {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .produit-detail-description {
+            background: #fff;
+            border: 1px solid #e5e3d8;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #444;
+            white-space: pre-wrap;
+        }
+
+        .produit-detail-block {
+            margin-bottom: 18px;
+        }
+
+        .produit-detail-block h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #6b2f20;
+        }
+
+        .produit-options-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .produit-option-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid #e5e3d8;
+            background: #fff;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .produit-option-chip .surcout {
+            color: #c26638;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .produit-color-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            display: inline-block;
+        }
+
+        .produit-variantes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .produit-variante-card {
+            background: #fff;
+            border: 1px solid #e5e3d8;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .produit-variante-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+            cursor: zoom-in;
+        }
+
+        .produit-variante-card-body {
+            padding: 10px 12px;
+        }
+
+        .produit-variante-card-body strong {
+            display: block;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .produit-variante-card-body span {
+            font-size: 12px;
+            color: #918a44;
+            font-weight: 600;
+        }
+
+        .produit-detail-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .produit-detail-actions a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #918a44;
+            color: #918a44;
+            background: #fff;
+        }
+
+        .produit-detail-actions a:hover {
+            background: #918a44;
+            color: #fff;
+        }
+
+        .produit-detail-empty {
+            color: #888;
+            font-size: 13px;
+            font-style: italic;
+        }
+
         /* Responsive: cartes mouvements sur mobile */
         .mouvements-produit-cards { display: none; }
         .mouvement-produit-card {
@@ -406,14 +676,177 @@ if (isset($_SESSION['success_message'])) {
         </div>
     <?php endif; ?>
 
-    <div class="produit-preview">
-        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'sm')); ?>" alt=""
-            onerror="this.src='/image/produit1.jpg'">
-        <div class="produit-preview-info">
-            <h3><?php echo htmlspecialchars($produit['nom']); ?></h3>
-            <span class="prix"><?php echo number_format($prix_produit, 0, ',', ' '); ?> FCFA / unité</span>
+    <section class="produit-detail-card">
+        <h2><i class="fas fa-box-open"></i> Détails du produit</h2>
+        <div class="produit-detail-layout">
+            <div>
+                <?php
+                $main_gallery_src = upload_image_url($galerie_images[0] ?? ($produit['image_principale'] ?? ''), 'original');
+                ?>
+                <div class="produit-detail-gallery-main">
+                    <img src="<?php echo htmlspecialchars($main_gallery_src); ?>"
+                        alt="<?php echo htmlspecialchars($produit['nom']); ?>"
+                        id="ajuster-stock-gallery-main"
+                        class="js-sugar-lightbox-trigger"
+                        data-lightbox-src="<?php echo htmlspecialchars($main_gallery_src); ?>"
+                        data-lightbox-alt="<?php echo htmlspecialchars($produit['nom']); ?>"
+                        role="button" tabindex="0" aria-label="Voir l'image en plein écran"
+                        onerror="this.src='/image/produit1.jpg'">
+                </div>
+                <?php if (count($galerie_images) > 1): ?>
+                    <div class="produit-detail-gallery-thumbs">
+                        <?php foreach ($galerie_images as $idx => $img_path):
+                            $full_src = upload_image_url($img_path, 'original');
+                            $thumb_src = upload_image_url($img_path, 'sm');
+                        ?>
+                            <button type="button"
+                                class="produit-detail-gallery-thumb <?php echo $idx === 0 ? 'is-active' : ''; ?>"
+                                data-index="<?php echo (int) $idx; ?>"
+                                data-full-src="<?php echo htmlspecialchars($full_src); ?>"
+                                aria-label="Image <?php echo (int) $idx + 1; ?>">
+                                <img src="<?php echo htmlspecialchars($thumb_src); ?>" alt=""
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div>
+                <h3 style="margin:0 0 8px 0;font-size:22px;color:#333;"><?php echo htmlspecialchars($produit['nom']); ?></h3>
+                <p style="margin:0 0 16px 0;font-size:16px;font-weight:700;color:#918a44;">
+                    <?php if ($prix_original): ?>
+                        <span style="text-decoration:line-through;color:#999;font-weight:500;margin-right:8px;">
+                            <?php echo number_format($prix_original, 0, ',', ' '); ?> FCFA
+                        </span>
+                    <?php endif; ?>
+                    <?php echo number_format($prix_affichage, 0, ',', ' '); ?> FCFA
+                    <?php if ($prix_original && $pourcentage_reduction > 0): ?>
+                        <span style="font-size:12px;color:#c26638;">(-<?php echo (int) $pourcentage_reduction; ?> %)</span>
+                    <?php endif; ?>
+                </p>
+
+                <div class="produit-detail-meta">
+                    <div class="produit-detail-meta-item">
+                        <label>Catégorie</label>
+                        <span><?php echo htmlspecialchars($produit['categorie_nom'] ?? '—'); ?></span>
+                    </div>
+                    <div class="produit-detail-meta-item">
+                        <label>Statut</label>
+                        <span><?php echo htmlspecialchars($statut_label); ?></span>
+                    </div>
+                    <div class="produit-detail-meta-item">
+                        <label>Stock actuel</label>
+                        <span><?php echo (int) $stock_actuel; ?></span>
+                    </div>
+                    <div class="produit-detail-meta-item">
+                        <label>Unité</label>
+                        <span><?php echo htmlspecialchars(trim($produit['unite'] ?? '') !== '' ? $produit['unite'] : '—'); ?></span>
+                    </div>
+                    <?php if (!empty($produit['section_accueil'])): ?>
+                    <div class="produit-detail-meta-item">
+                        <label>Section accueil</label>
+                        <span><?php echo htmlspecialchars($produit['section_accueil']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <div class="produit-detail-meta-item">
+                        <label>ID produit</label>
+                        <span>#<?php echo (int) $produit_id; ?></span>
+                    </div>
+                </div>
+
+                <?php if (!empty(trim($produit['description'] ?? ''))): ?>
+                    <div class="produit-detail-block">
+                        <h3>Description</h3>
+                        <div class="produit-detail-description"><?php echo nl2br(htmlspecialchars($produit['description'])); ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($couleurs_options)): ?>
+                    <div class="produit-detail-block">
+                        <h3>Couleurs disponibles</h3>
+                        <div class="produit-options-list">
+                            <?php foreach ($couleurs_options as $couleur): ?>
+                                <span class="produit-option-chip">
+                                    <?php if (preg_match('/^#[0-9A-Fa-f]{6}$/', $couleur)): ?>
+                                        <span class="produit-color-swatch" style="background:<?php echo htmlspecialchars($couleur); ?>;"></span>
+                                    <?php endif; ?>
+                                    <?php echo htmlspecialchars($couleur); ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($poids_options)): ?>
+                    <div class="produit-detail-block">
+                        <h3>Options poids / format</h3>
+                        <div class="produit-options-list">
+                            <?php foreach ($poids_options as $opt): ?>
+                                <span class="produit-option-chip">
+                                    <?php echo htmlspecialchars($opt['v']); ?>
+                                    <?php if (!empty($opt['s'])): ?>
+                                        <span class="surcout">+<?php echo number_format((float) $opt['s'], 0, ',', ' '); ?> FCFA</span>
+                                    <?php endif; ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($taille_options)): ?>
+                    <div class="produit-detail-block">
+                        <h3>Options taille</h3>
+                        <div class="produit-options-list">
+                            <?php foreach ($taille_options as $opt): ?>
+                                <span class="produit-option-chip">
+                                    <?php echo htmlspecialchars($opt['v']); ?>
+                                    <?php if (!empty($opt['s'])): ?>
+                                        <span class="surcout">+<?php echo number_format((float) $opt['s'], 0, ',', ' '); ?> FCFA</span>
+                                    <?php endif; ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($variantes)): ?>
+                    <div class="produit-detail-block">
+                        <h3>Variantes (<?php echo count($variantes); ?>)</h3>
+                        <div class="produit-variantes-grid">
+                            <?php foreach ($variantes as $variante):
+                                $var_img = !empty($variante['image']) ? upload_image_url($variante['image'], 'md') : upload_image_url($produit['image_principale'] ?? '', 'md');
+                                $var_full = !empty($variante['image']) ? upload_image_url($variante['image'], 'original') : upload_image_url($produit['image_principale'] ?? '', 'original');
+                                $var_prix = (float) ($variante['prix'] ?? 0);
+                            ?>
+                                <div class="produit-variante-card">
+                                    <img src="<?php echo htmlspecialchars($var_img); ?>"
+                                        alt="<?php echo htmlspecialchars($variante['nom'] ?? ''); ?>"
+                                        class="js-sugar-lightbox-trigger"
+                                        data-lightbox-src="<?php echo htmlspecialchars($var_full); ?>"
+                                        data-lightbox-alt="<?php echo htmlspecialchars($variante['nom'] ?? ''); ?>"
+                                        role="button" tabindex="0"
+                                        onerror="this.src='/image/produit1.jpg'">
+                                    <div class="produit-variante-card-body">
+                                        <strong><?php echo htmlspecialchars($variante['nom'] ?? ''); ?></strong>
+                                        <span><?php echo number_format($var_prix, 0, ',', ' '); ?> FCFA</span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (empty($couleurs_options) && empty($poids_options) && empty($taille_options) && empty($variantes) && empty(trim($produit['description'] ?? ''))): ?>
+                    <p class="produit-detail-empty">Aucune option ou variante configurée pour ce produit.</p>
+                <?php endif; ?>
+
+                <div class="produit-detail-actions">
+                    <a href="modifier.php?id=<?php echo (int) $produit_id; ?>"><i class="fas fa-edit"></i> Modifier le produit</a>
+                    <a href="../../produit.php?id=<?php echo (int) $produit_id; ?>" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Voir sur le site</a>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
 
     <div class="ajuster-stock-layout">
         <div class="ajuster-stock-card">
@@ -549,6 +982,38 @@ if (isset($_SESSION['success_message'])) {
     </section>
 
     <?php include '../includes/footer.php'; ?>
+    <script src="/js/image-lightbox.js<?php echo asset_version_query(); ?>"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!window.SugarImageLightbox) {
+                return;
+            }
+            SugarImageLightbox.bindAll('.js-sugar-lightbox-trigger');
+
+            var mainImg = document.getElementById('ajuster-stock-gallery-main');
+            var thumbs = document.querySelectorAll('.produit-detail-gallery-thumb');
+            thumbs.forEach(function (thumb) {
+                thumb.addEventListener('click', function () {
+                    var fullSrc = thumb.getAttribute('data-full-src');
+                    if (!fullSrc || !mainImg) {
+                        return;
+                    }
+                    mainImg.src = fullSrc;
+                    mainImg.setAttribute('data-lightbox-src', fullSrc);
+                    thumbs.forEach(function (t) {
+                        t.classList.toggle('is-active', t === thumb);
+                    });
+                });
+                thumb.addEventListener('dblclick', function (event) {
+                    event.preventDefault();
+                    var fullSrc = thumb.getAttribute('data-full-src');
+                    if (fullSrc) {
+                        SugarImageLightbox.open(fullSrc, mainImg ? mainImg.getAttribute('alt') : '');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>
