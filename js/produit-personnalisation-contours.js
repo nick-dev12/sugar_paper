@@ -9,9 +9,10 @@
         return;
     }
 
+    // Feuilles en orientation paysage (largeur × hauteur)
     var PAPERS = {
-        a4: { label: 'A4', widthCm: 21, heightCm: 29.7, canvasW: 595, canvasH: 842 },
-        a3: { label: 'A3', widthCm: 29.7, heightCm: 42, canvasW: 701, canvasH: 992 }
+        a4: { label: 'A4', widthCm: 29.7, heightCm: 21, canvasW: 842, canvasH: 595 },
+        a3: { label: 'A3', widthCm: 42, heightCm: 29.7, canvasW: 992, canvasH: 701 }
     };
     var CONTOUR_COUNT = 3;
     var IMAGE_SCALE_MIN = 50;
@@ -19,7 +20,6 @@
     var EDGE_MARGIN_CM = 0.7;
     var GAP_CM = 0.9;
     var HEIGHT_MIN_CM = 2;
-    var HEIGHT_MAX_HARD_CM = 12;
     var CORNER_RATIO = 0.22;
 
     var btnClose = document.getElementById('contours-modal-close');
@@ -201,7 +201,7 @@
         var paper = getPaper();
         var usable = Math.max(1, paper.heightCm - EDGE_MARGIN_CM * 2);
         var maxFit = (usable - (CONTOUR_COUNT - 1) * GAP_CM) / CONTOUR_COUNT;
-        return Math.max(HEIGHT_MIN_CM, Math.min(HEIGHT_MAX_HARD_CM, Math.floor(maxFit * 10) / 10));
+        return Math.max(HEIGHT_MIN_CM, Math.floor(maxFit * 10) / 10);
     }
 
     function getActiveSlot() {
@@ -431,9 +431,9 @@
         var maxH = getMaxHeightCm();
         state.heightCm = clamp(state.heightCm, HEIGHT_MIN_CM, maxH);
         if (paperInfoEl) {
-            paperInfoEl.textContent = 'Feuille ' + paper.label + ' — '
+            paperInfoEl.textContent = 'Feuille ' + paper.label + ' paysage — '
                 + formatCm(paper.widthCm) + ' × ' + formatCm(paper.heightCm)
-                + ' cm · 3 contours max.';
+                + ' cm · hauteur max. contour : ' + formatCm(maxH) + ' cm';
         }
         paperBtns.forEach(function (btn) {
             var active = btn.getAttribute('data-paper') === state.format;
@@ -453,6 +453,9 @@
         }
         if (canvas) {
             canvas.style.aspectRatio = ratio;
+        }
+        if (dimHeight) {
+            dimHeight.min = String(HEIGHT_MIN_CM);
         }
     }
 
@@ -638,6 +641,7 @@
         var meta = {
             type: 'contours_gateau',
             format: state.format,
+            orientation: 'landscape',
             height_cm: state.heightCm,
             width_cm: Math.round(usableWidth * 10) / 10,
             image_mode: state.imageMode,

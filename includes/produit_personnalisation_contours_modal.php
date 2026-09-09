@@ -38,16 +38,16 @@
                 <section class="perso-tool-section">
                     <h3 class="perso-tool-title"><i class="fa-solid fa-file" aria-hidden="true"></i> Format de feuille</h3>
                     <div class="perso-paper-picker" role="group" aria-label="Choisir le format de feuille">
-                        <button type="button" class="perso-paper-btn is-active" data-paper="a4" aria-pressed="true" title="A4">
+                        <button type="button" class="perso-paper-btn is-active" data-paper="a4" aria-pressed="true" title="A4 paysage">
                             <span class="perso-paper-btn__label">A4</span>
-                            <span class="perso-paper-btn__size">21 × 29,7 cm</span>
+                            <span class="perso-paper-btn__size">29,7 × 21 cm paysage</span>
                         </button>
-                        <button type="button" class="perso-paper-btn" data-paper="a3" aria-pressed="false" title="A3">
+                        <button type="button" class="perso-paper-btn" data-paper="a3" aria-pressed="false" title="A3 paysage">
                             <span class="perso-paper-btn__label">A3</span>
-                            <span class="perso-paper-btn__size">29,7 × 42 cm</span>
+                            <span class="perso-paper-btn__size">42 × 29,7 cm paysage</span>
                         </button>
                     </div>
-                    <p class="perso-paper-info" id="contours-paper-info">Feuille A4 — 21 × 29,7 cm · 3 contours max.</p>
+                    <p class="perso-paper-info" id="contours-paper-info">Feuille A4 paysage — 29,7 × 21 cm · hauteur max. contour : 5,9 cm</p>
                 </section>
 
                 <section class="perso-tool-section">
@@ -56,7 +56,7 @@
                         <label for="contours-dim-height">Hauteur des contours <span id="contours-dim-height-val">5</span> cm</label>
                         <input type="range" id="contours-dim-height" min="2" max="8" step="0.1" value="5">
                     </div>
-                    <p class="perso-field-hint">Les 3 bandes ont la même hauteur. La largeur utilise presque toute la feuille, avec marges.</p>
+                    <p class="perso-field-hint">Les 3 bandes ont la même hauteur et s’adaptent à la feuille en paysage. La largeur utilise presque toute la feuille ; la hauteur est limitée pour tenir dans le format choisi.</p>
                 </section>
 
                 <?php
@@ -69,7 +69,7 @@
                 <p class="perso-preview-label">Aperçu en direct — cliquez un contour pour le sélectionner</p>
                 <div class="perso-preview-stage">
                     <div class="perso-preview-viewport" id="contours-preview-viewport">
-                        <canvas id="contours-preview-canvas" width="595" height="842" aria-label="Aperçu contours"></canvas>
+                        <canvas id="contours-preview-canvas" width="842" height="595" aria-label="Aperçu contours"></canvas>
                         <div class="perso-image-manipulator" id="contours-image-manipulator" hidden aria-hidden="true">
                             <div class="perso-image-manip-box" id="contours-image-manip-box">
                                 <button type="button" class="perso-manip-delete" id="contours-image-delete" aria-label="Supprimer l'image">&times;</button>

@@ -331,6 +331,27 @@ function get_produit_personnalisation_paper_formats()
 }
 
 /**
+ * Dimensions feuille contours (orientation paysage)
+ * @param string $format a4|a3
+ * @return array{label:string,width_cm:float,height_cm:float}
+ */
+function get_produit_personnalisation_contours_paper($format)
+{
+    $formats = get_produit_personnalisation_paper_formats();
+    $format = strtolower(trim((string) $format));
+    if (!isset($formats[$format])) {
+        $format = 'a4';
+    }
+    $portrait = $formats[$format];
+
+    return [
+        'label' => $portrait['label'],
+        'width_cm' => (float) $portrait['height_cm'],
+        'height_cm' => (float) $portrait['width_cm'],
+    ];
+}
+
+/**
  * Chemin relatif de l'image source importée (fichier client, distinct de l'aperçu composé).
  *
  * @param array $ligne
@@ -618,12 +639,8 @@ function produit_personnalisation_cupcakes_meta_normalize(array $data)
  */
 function produit_personnalisation_contours_meta_normalize(array $data)
 {
-    $formats = get_produit_personnalisation_paper_formats();
     $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
-    if (!isset($formats[$format])) {
-        $format = 'a4';
-    }
-    $paper = $formats[$format];
+    $paper = get_produit_personnalisation_contours_paper($format);
 
     $image_mode = isset($data['image_mode']) ? strtolower(trim((string) $data['image_mode'])) : 'shared';
     if (!in_array($image_mode, ['shared', 'per_contour'], true)) {
@@ -633,9 +650,9 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $edge = 0.7;
     $gap = 0.9;
     $usable_h = max(1.0, (float) $paper['height_cm'] - $edge * 2);
-    $max_h = max(2.0, min(12.0, ($usable_h - 2 * $gap) / 3));
+    $max_h = max(2.0, ($usable_h - 2 * $gap) / 3);
     $height = isset($data['height_cm']) ? (float) $data['height_cm'] : 5.0;
-    $height = max(2.0, min($height, $max_h));
+    $height = max(2.0, min($height, round($max_h, 1)));
 
     $usable_w = max(1.0, (float) $paper['width_cm'] - $edge * 2);
     $width = isset($data['width_cm']) ? (float) $data['width_cm'] : $usable_w;
@@ -658,6 +675,7 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $out = [
         'type' => 'contours_gateau',
         'format' => $format,
+        'orientation' => 'landscape',
         'height_cm' => round($height, 1),
         'width_cm' => round($width, 1),
         'image_mode' => $image_mode,
@@ -706,8 +724,9 @@ function produit_personnalisation_meta_label(array $meta)
     }
 
     if (($n['type'] ?? '') === 'contours_gateau') {
+        $contours_paper = get_produit_personnalisation_contours_paper($n['format'] ?? 'a4');
         $mode = ($n['image_mode'] ?? 'shared') === 'per_contour' ? 'image par contour' : 'image unique';
-        return $paper['label'] . ' · Contours · 3 × '
+        return $contours_paper['label'] . ' paysage · Contours · 3 × '
             . number_format((float) ($n['height_cm'] ?? 5), 1, ',', ' ') . ' cm de haut · ' . $mode;
     }
 

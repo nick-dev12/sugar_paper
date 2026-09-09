@@ -505,9 +505,9 @@
 }
 
 .perso-modal--contours .perso-preview-viewport {
-    width: min(340px, 100%);
+    width: min(480px, 100%);
     height: auto !important;
-    aspect-ratio: 210 / 297;
+    aspect-ratio: 297 / 210;
     max-width: 100%;
     max-height: none;
     flex-shrink: 0;
@@ -515,20 +515,20 @@
 
 @media (min-width: 901px) {
     .perso-modal--contours .perso-preview-viewport {
-        width: min(400px, 36vw);
+        width: min(520px, 42vw);
     }
 }
 
 @media (min-width: 1200px) {
     .perso-modal--contours .perso-preview-viewport {
-        width: min(440px, 32vw);
+        width: min(560px, 38vw);
     }
 }
 
 .perso-modal--contours #contours-preview-canvas {
     width: 100% !important;
     height: auto !important;
-    aspect-ratio: 210 / 297;
+    aspect-ratio: 297 / 210;
     display: block;
     cursor: default;
     background: #fff;
