@@ -575,14 +575,20 @@ function produit_personnalisation_meta_normalize(array $data)
         }
         return $texts !== [] ? ['texts' => array_values($texts)] : [];
     })($data) + (function ($data) {
-        if (!isset($data['image']) || !is_array($data['image'])) {
+        $layers = produit_personnalisation_image_layers_normalize_list(isset($data['layers']) ? $data['layers'] : []);
+        if ($layers === [] && isset($data['image']) && is_array($data['image'])) {
+            $image = produit_personnalisation_image_normalize($data['image']);
+            if (!($image['offset_x'] === 50 && $image['offset_y'] === 50 && $image['scale_pct'] === 100)) {
+                $layers = [$image];
+            }
+        }
+        if ($layers === []) {
             return [];
         }
-        $image = produit_personnalisation_image_normalize($data['image']);
-        if ($image['offset_x'] === 50 && $image['offset_y'] === 50 && $image['scale_pct'] === 100) {
-            return [];
-        }
-        return ['image' => $image];
+        return [
+            'layers' => $layers,
+            'image' => $layers[0],
+        ];
     })($data);
 }
 

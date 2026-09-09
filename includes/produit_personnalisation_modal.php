@@ -12,12 +12,12 @@
         <div class="perso-modal-layout">
             <aside class="perso-toolbar" aria-label="Outils de personnalisation">
                 <section class="perso-tool-section">
-                    <h3 class="perso-tool-title"><i class="fa-solid fa-image" aria-hidden="true"></i> Image</h3>
+                    <h3 class="perso-tool-title"><i class="fa-solid fa-image" aria-hidden="true"></i> Images</h3>
                     <label class="perso-upload-compact" id="perso-upload-label" tabindex="0">
                         <input type="file" id="perso-image-input" accept="image/jpeg,image/png,image/webp,image/gif">
                         <span class="perso-upload-compact-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
                         <span class="perso-upload-compact-text">Importer une image</span>
-                        <span class="perso-upload-compact-hint">JPG, PNG, WebP</span>
+                        <span class="perso-upload-compact-hint">JPG, PNG, WebP — chaque import ajoute une image superposée</span>
                         <span class="perso-upload-filename" id="perso-upload-filename"></span>
                     </label>
                     <p class="perso-image-hint" id="perso-image-hint" hidden>Glissez l'image sur l'aperçu pour la repositionner. Molette ou pincement pour zoomer.</p>

@@ -56,7 +56,6 @@
                         <label for="contours-dim-height">Hauteur des contours <span id="contours-dim-height-val">5</span> cm</label>
                         <input type="range" id="contours-dim-height" min="2" max="6" step="0.1" value="5">
                     </div>
-                    <p class="perso-field-hint">Les 3 bandes ont la même hauteur et s’adaptent à la feuille en paysage. La largeur utilise presque toute la feuille ; la hauteur est limitée pour tenir dans le format choisi.</p>
                 </section>
 
                 <?php

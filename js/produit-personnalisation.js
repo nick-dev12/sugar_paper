@@ -66,9 +66,6 @@
     var fontBtns = modal.querySelectorAll('.perso-font-btn');
 
     var activeForm = null;
-    var previewObjectUrl = '';
-    var loadedImage = null;
-    var sourceUploadFile = null;
     var hasCustomization = false;
 
     var state = {
@@ -78,9 +75,8 @@
         heightCm: 15,
         texts: [],
         activeTextId: '',
-        imageOffsetX: 50,
-        imageOffsetY: 50,
-        imageScalePct: 100,
+        layers: [],
+        activeLayerId: '',
         editTarget: 'text'
     };
 
@@ -122,23 +118,143 @@
         return Math.max(IMAGE_SCALE_MIN, Math.min(IMAGE_SCALE_MAX, Math.round(value)));
     }
 
-    function resetImageTransform() {
-        state.imageOffsetX = 50;
-        state.imageOffsetY = 50;
-        state.imageScalePct = 100;
+    function createImageLayer() {
+        return {
+            id: 'lyr_' + Math.random().toString(36).slice(2, 10),
+            image: null,
+            file: null,
+            objectUrl: '',
+            filename: '',
+            offsetX: 50,
+            offsetY: 50,
+            scalePct: 100
+        };
     }
 
-    function getImageDrawParams(bounds, img) {
-        if (!img || !bounds) {
+    function getActiveLayer() {
+        if (!state.layers.length) {
+            return null;
+        }
+        var i;
+        for (i = 0; i < state.layers.length; i++) {
+            if (state.layers[i].id === state.activeLayerId) {
+                return state.layers[i];
+            }
+        }
+        return state.layers[state.layers.length - 1];
+    }
+
+    function hasAnyLayer() {
+        return state.layers.some(function (layer) {
+            return !!layer.image;
+        });
+    }
+
+    function revokeLayerUrl(layer) {
+        if (layer && layer.objectUrl) {
+            URL.revokeObjectURL(layer.objectUrl);
+            layer.objectUrl = '';
+        }
+    }
+
+    function clearAllLayers() {
+        state.layers.forEach(revokeLayerUrl);
+        state.layers = [];
+        state.activeLayerId = '';
+    }
+
+    function resetLayerTransform(layer) {
+        if (!layer) {
+            return;
+        }
+        layer.offsetX = 50;
+        layer.offsetY = 50;
+        layer.scalePct = 100;
+    }
+
+    function activateLayer(layer) {
+        if (!layer) {
+            return null;
+        }
+        state.activeLayerId = layer.id;
+        return layer;
+    }
+
+    function isPointInLayerBounds(bounds, layer, x, y) {
+        if (!bounds || !layer || !layer.image) {
+            return false;
+        }
+        var params = getImageDrawParams(bounds, layer.image, layer);
+        if (!params) {
+            return false;
+        }
+        return x >= params.x && x <= params.x + params.w && y >= params.y && y <= params.y + params.h;
+    }
+
+    function getLayersAtPoint(bounds, x, y) {
+        var hits = [];
+        state.layers.forEach(function (layer) {
+            if (layer.image && isPointInLayerBounds(bounds, layer, x, y)) {
+                hits.push(layer);
+            }
+        });
+        return hits;
+    }
+
+    function pickLayerAtPoint(bounds, x, y) {
+        var hits = getLayersAtPoint(bounds, x, y);
+        if (!hits.length) {
+            return null;
+        }
+        if (hits.length === 1) {
+            return hits[0];
+        }
+        return hits[hits.length - 1];
+    }
+
+    function cycleLayerAtPoint(bounds, x, y) {
+        var hits = getLayersAtPoint(bounds, x, y);
+        if (hits.length < 2) {
+            return pickLayerAtPoint(bounds, x, y);
+        }
+        var activeIdx = -1;
+        var i;
+        for (i = 0; i < hits.length; i++) {
+            if (hits[i].id === state.activeLayerId) {
+                activeIdx = i;
+                break;
+            }
+        }
+        var nextIdx = activeIdx >= 0 ? (activeIdx - 1 + hits.length) % hits.length : hits.length - 1;
+        return hits[nextIdx];
+    }
+
+    function mapLayersForMeta(layers) {
+        if (!layers || !layers.length) {
+            return [];
+        }
+        return layers.filter(function (layer) {
+            return !!layer.image;
+        }).map(function (layer) {
+            return {
+                offset_x: layer.offsetX,
+                offset_y: layer.offsetY,
+                scale_pct: layer.scalePct
+            };
+        });
+    }
+
+    function getImageDrawParams(bounds, img, layer) {
+        if (!img || !bounds || !layer) {
             return null;
         }
         var coverScale = Math.max(bounds.w / img.width, bounds.h / img.height);
-        var userScale = (state.imageScalePct || 100) / 100;
+        var userScale = (layer.scalePct || 100) / 100;
         var scale = coverScale * userScale;
         var dw = img.width * scale;
         var dh = img.height * scale;
-        var cx = bounds.x + bounds.w * ((state.imageOffsetX || 50) / 100);
-        var cy = bounds.y + bounds.h * ((state.imageOffsetY || 50) / 100);
+        var cx = bounds.x + bounds.w * ((layer.offsetX || 50) / 100);
+        var cy = bounds.y + bounds.h * ((layer.offsetY || 50) / 100);
         return {
             x: cx - dw / 2,
             y: cy - dh / 2,
@@ -173,8 +289,8 @@
         return hitCtx.isPointInPath(canvasX, canvasY);
     }
 
-    function applyImageMove(canvasX, canvasY, startX, startY, startOffsetX, startOffsetY) {
-        if (!lastRenderLayout) {
+    function applyImageMove(layer, canvasX, canvasY, startX, startY, startOffsetX, startOffsetY) {
+        if (!lastRenderLayout || !layer) {
             return;
         }
         var bounds = lastRenderLayout.designBounds;
@@ -182,64 +298,78 @@
             && typeof startOffsetX === 'number' && typeof startOffsetY === 'number') {
             var dx = canvasX - startX;
             var dy = canvasY - startY;
-            state.imageOffsetX = clampImageOffset(startOffsetX + (dx / bounds.w) * 100);
-            state.imageOffsetY = clampImageOffset(startOffsetY + (dy / bounds.h) * 100);
+            layer.offsetX = clampImageOffset(startOffsetX + (dx / bounds.w) * 100);
+            layer.offsetY = clampImageOffset(startOffsetY + (dy / bounds.h) * 100);
             return;
         }
-        state.imageOffsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
-        state.imageOffsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
+        layer.offsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
+        layer.offsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
     }
 
-    function applyImageZoomAt(newScalePct, focalX, focalY) {
-        if (!loadedImage || !lastRenderLayout) {
+    function applyImageZoomAt(layer, newScalePct, focalX, focalY) {
+        if (!layer || !layer.image || !lastRenderLayout) {
             return;
         }
         var bounds = lastRenderLayout.designBounds;
-        var before = getImageDrawParams(bounds, loadedImage);
+        var before = getImageDrawParams(bounds, layer.image, layer);
         if (!before || before.w <= 0 || before.h <= 0) {
-            state.imageScalePct = clampImageScale(newScalePct);
+            layer.scalePct = clampImageScale(newScalePct);
             return;
         }
         var fracX = (focalX - before.x) / before.w;
         var fracY = (focalY - before.y) / before.h;
-        state.imageScalePct = clampImageScale(newScalePct);
-        var after = getImageDrawParams(bounds, loadedImage);
+        layer.scalePct = clampImageScale(newScalePct);
+        var after = getImageDrawParams(bounds, layer.image, layer);
         if (!after) {
             return;
         }
         var newCx = focalX - fracX * after.w + after.w / 2;
         var newCy = focalY - fracY * after.h + after.h / 2;
-        state.imageOffsetX = clampImageOffset(((newCx - bounds.x) / bounds.w) * 100);
-        state.imageOffsetY = clampImageOffset(((newCy - bounds.y) / bounds.h) * 100);
+        layer.offsetX = clampImageOffset(((newCx - bounds.x) / bounds.w) * 100);
+        layer.offsetY = clampImageOffset(((newCy - bounds.y) / bounds.h) * 100);
     }
 
-    function applyImageResize(canvasX, canvasY, startDist, startScale) {
-        if (!loadedImage || !lastRenderLayout || startDist <= 0) {
+    function applyImageResize(layer, canvasX, canvasY, startDist, startScale) {
+        if (!layer || !layer.image || !lastRenderLayout || startDist <= 0) {
             return;
         }
         var bounds = lastRenderLayout.designBounds;
-        var params = getImageDrawParams(bounds, loadedImage);
+        var params = getImageDrawParams(bounds, layer.image, layer);
         if (!params) {
             return;
         }
         var dist = Math.hypot(canvasX - params.cx, canvasY - params.cy);
-        applyImageZoomAt(clampImageScale(startScale * (dist / startDist)), params.cx, params.cy);
+        applyImageZoomAt(layer, clampImageScale(startScale * (dist / startDist)), params.cx, params.cy);
     }
 
-    function removeImage() {
+    function removeActiveImage() {
+        if (!state.layers.length) {
+            return;
+        }
         finishManipDrag();
-        loadedImage = null;
-        sourceUploadFile = null;
-        resetImageTransform();
-        revokePreviewUrl();
+        var activeId = state.activeLayerId;
+        var idx = -1;
+        var i;
+        for (i = 0; i < state.layers.length; i++) {
+            if (state.layers[i].id === activeId) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            idx = state.layers.length - 1;
+        }
+        revokeLayerUrl(state.layers[idx]);
+        state.layers.splice(idx, 1);
+        if (state.layers.length) {
+            state.activeLayerId = state.layers[state.layers.length - 1].id;
+        } else {
+            state.activeLayerId = '';
+            state.editTarget = 'text';
+        }
         if (fileInput) {
             fileInput.value = '';
         }
-        if (filenameEl) {
-            filenameEl.textContent = '';
-        }
-        hideImageManipulator();
-        state.editTarget = 'text';
         updateImageUi();
         syncMetaToForm();
         updateValidateState();
@@ -281,12 +411,25 @@
     }
 
     function updateImageUi() {
-        var hasImg = !!loadedImage;
+        var layer = getActiveLayer();
+        var hasImg = !!(layer && layer.image);
+        var layerCount = state.layers.filter(function (l) { return !!l.image; }).length;
         if (imageHintEl) {
             imageHintEl.hidden = !hasImg;
         }
         if (imageResetBtn) {
             imageResetBtn.hidden = !hasImg;
+        }
+        if (filenameEl) {
+            if (hasImg) {
+                var label = layer.filename || 'Image sélectionnée';
+                filenameEl.textContent = layerCount > 1 ? label + ' (' + layerCount + ' images)' : label;
+            } else {
+                filenameEl.textContent = '';
+            }
+        }
+        if (!hasImg) {
+            hideImageManipulator();
         }
     }
 
@@ -294,12 +437,13 @@
         if (!imageManipulator || !imageManipBox || !previewViewport || !canvas) {
             return;
         }
-        if (!modal.classList.contains('is-open') || !loadedImage || state.editTarget !== 'image' || !lastRenderLayout) {
+        var layer = getActiveLayer();
+        if (!modal.classList.contains('is-open') || !layer || !layer.image || state.editTarget !== 'image' || !lastRenderLayout) {
             hideImageManipulator();
             return;
         }
 
-        var params = getImageDrawParams(lastRenderLayout.designBounds, loadedImage);
+        var params = getImageDrawParams(lastRenderLayout.designBounds, layer.image, layer);
         if (!params) {
             hideImageManipulator();
             return;
@@ -356,13 +500,15 @@
 
     function startPinchDrag() {
         var dist = getPinchDistance();
-        if (dist <= 0 || !loadedImage) {
+        var layer = getActiveLayer();
+        if (dist <= 0 || !layer || !layer.image) {
             return false;
         }
         selectImage();
         manipDrag = {
             target: 'image',
             mode: 'pinch',
+            layerId: layer.id,
             lastPinchDist: dist
         };
         if (imageManipBox) {
@@ -535,12 +681,16 @@
             return 'text';
         }
 
-        if (loadedImage && pointInDesignBounds(canvasPt.x, canvasPt.y)) {
-            selectImage();
-            if (startDrag) {
-                startManipDrag('image', 'move', 'box', clientX, clientY);
+        if (lastRenderLayout) {
+            var pickedLayer = pickLayerAtPoint(lastRenderLayout.designBounds, canvasPt.x, canvasPt.y);
+            if (pickedLayer) {
+                activateLayer(pickedLayer);
+                selectImage();
+                if (startDrag) {
+                    startManipDrag('image', 'move', 'box', clientX, clientY);
+                }
+                return 'image';
             }
-            return 'image';
         }
 
         deselectAll();
@@ -670,10 +820,11 @@
         var canvasPt = clientToCanvas(clientX, clientY);
 
         if (target === 'image') {
-            if (!loadedImage) {
+            var layer = getActiveLayer();
+            if (!layer || !layer.image) {
                 return;
             }
-            var imgParams = getImageDrawParams(lastRenderLayout.designBounds, loadedImage);
+            var imgParams = getImageDrawParams(lastRenderLayout.designBounds, layer.image, layer);
             if (!imgParams) {
                 return;
             }
@@ -681,11 +832,12 @@
                 target: 'image',
                 mode: mode,
                 handle: handle || '',
+                layerId: layer.id,
                 startX: canvasPt.x,
                 startY: canvasPt.y,
-                startOffsetX: state.imageOffsetX,
-                startOffsetY: state.imageOffsetY,
-                startScalePct: state.imageScalePct,
+                startOffsetX: layer.offsetX,
+                startOffsetY: layer.offsetY,
+                startScalePct: layer.scalePct,
                 imgCx: imgParams.cx,
                 imgCy: imgParams.cy,
                 startDist: Math.max(16, Math.hypot(canvasPt.x - imgParams.cx, canvasPt.y - imgParams.cy))
@@ -732,8 +884,22 @@
         var canvasPt = clientToCanvas(clientX, clientY);
 
         if (manipDrag.target === 'image') {
+            var dragLayer = getActiveLayer();
+            if (!dragLayer || (manipDrag.layerId && dragLayer.id !== manipDrag.layerId)) {
+                var li;
+                for (li = 0; li < state.layers.length; li++) {
+                    if (state.layers[li].id === manipDrag.layerId) {
+                        dragLayer = state.layers[li];
+                        break;
+                    }
+                }
+            }
+            if (!dragLayer || !dragLayer.image) {
+                return;
+            }
             if (manipDrag.mode === 'move') {
                 applyImageMove(
+                    dragLayer,
                     canvasPt.x,
                     canvasPt.y,
                     manipDrag.startX,
@@ -742,7 +908,7 @@
                     manipDrag.startOffsetY
                 );
             } else if (manipDrag.mode === 'resize') {
-                applyImageResize(canvasPt.x, canvasPt.y, manipDrag.startDist, manipDrag.startScalePct);
+                applyImageResize(dragLayer, canvasPt.x, canvasPt.y, manipDrag.startDist, manipDrag.startScalePct);
             } else if (manipDrag.mode === 'pinch') {
                 var dist = getPinchDistance();
                 if (dist > 8 && manipDrag.lastPinchDist > 8) {
@@ -750,7 +916,7 @@
                     if (mid) {
                         var midCanvas = clientToCanvas(mid.x, mid.y);
                         var ratio = dist / manipDrag.lastPinchDist;
-                        applyImageZoomAt(state.imageScalePct * ratio, midCanvas.x, midCanvas.y);
+                        applyImageZoomAt(dragLayer, dragLayer.scalePct * ratio, midCanvas.x, midCanvas.y);
                         manipDrag.lastPinchDist = dist;
                     }
                 }
@@ -793,12 +959,11 @@
             if (event.target.closest('.perso-manip-delete')) {
                 return;
             }
-            if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+            if (Object.keys(touchPointers).length >= 2 && hasAnyLayer()) {
                 event.preventDefault();
                 return;
             }
 
-            var canvasPt = clientToCanvas(event.clientX, event.clientY);
             var selection = handleViewportPointerDown(event.clientX, event.clientY, false);
 
             if (selection === 'text' || selection === 'image') {
@@ -833,17 +998,36 @@
             }
         });
 
+        canvas.addEventListener('dblclick', function (event) {
+            if (!modal.classList.contains('is-open') || !lastRenderLayout) {
+                return;
+            }
+            var canvasPt = clientToCanvas(event.clientX, event.clientY);
+            var layer = activateLayer(cycleLayerAtPoint(lastRenderLayout.designBounds, canvasPt.x, canvasPt.y));
+            if (!layer) {
+                return;
+            }
+            event.preventDefault();
+            selectImage();
+            updateImageUi();
+            renderPreview();
+        });
+
         canvas.addEventListener('wheel', function (event) {
-            if (!modal.classList.contains('is-open') || !loadedImage) {
+            if (!modal.classList.contains('is-open') || !hasAnyLayer() || !lastRenderLayout) {
                 return;
             }
             var canvasPt = clientToCanvas(event.clientX, event.clientY);
             if (!pointInDesignBounds(canvasPt.x, canvasPt.y)) {
                 return;
             }
+            var layer = activateLayer(pickLayerAtPoint(lastRenderLayout.designBounds, canvasPt.x, canvasPt.y));
+            if (!layer) {
+                return;
+            }
             event.preventDefault();
             selectImage();
-            applyImageZoomAt(state.imageScalePct * wheelZoomFactor(event.deltaY), canvasPt.x, canvasPt.y);
+            applyImageZoomAt(layer, layer.scalePct * wheelZoomFactor(event.deltaY), canvasPt.x, canvasPt.y);
             renderPreview();
         }, { passive: false });
 
@@ -878,7 +1062,7 @@
 
         if (imageManipBox) {
             imageManipBox.addEventListener('pointerdown', function (event) {
-                if (!modal.classList.contains('is-open') || !loadedImage) {
+                if (!modal.classList.contains('is-open') || !hasAnyLayer()) {
                     return;
                 }
                 if (event.target.closest('.perso-manip-delete')) {
@@ -1003,7 +1187,7 @@
                     return;
                 }
                 syncTouchPointer(event);
-                if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+                if (Object.keys(touchPointers).length >= 2 && hasAnyLayer()) {
                     finishManipDrag();
                     startPinchDrag();
                     event.preventDefault();
@@ -1015,7 +1199,7 @@
                     return;
                 }
                 syncTouchPointer(event);
-                if (Object.keys(touchPointers).length >= 2 && loadedImage) {
+                if (Object.keys(touchPointers).length >= 2 && hasAnyLayer()) {
                     if (!manipDrag || manipDrag.mode !== 'pinch') {
                         finishManipDrag();
                         startPinchDrag();
@@ -1291,13 +1475,6 @@
         return getFormContext(activeForm);
     }
 
-    function revokePreviewUrl() {
-        if (previewObjectUrl) {
-            URL.revokeObjectURL(previewObjectUrl);
-            previewObjectUrl = '';
-        }
-    }
-
     function formatCm(value) {
         var n = Math.round(parseFloat(value) * 10) / 10;
         return String(n).replace('.', ',');
@@ -1331,7 +1508,7 @@
     function buildMetaObject() {
         clampDimensions();
         syncActiveTextFromControls();
-        return {
+        var meta = {
             format: state.paperFormat,
             shape: state.shape,
             width_cm: state.widthCm,
@@ -1349,13 +1526,14 @@
                     wrapArcPosition: t.wrapArcPosition,
                     textColor: t.textColor
                 };
-            }),
-            image: {
-                offset_x: state.imageOffsetX,
-                offset_y: state.imageOffsetY,
-                scale_pct: state.imageScalePct
-            }
+            })
         };
+        var layersMeta = mapLayersForMeta(state.layers);
+        if (layersMeta.length) {
+            meta.layers = layersMeta;
+            meta.image = layersMeta[0];
+        }
+        return meta;
     }
 
     function syncMetaToForm() {
@@ -1483,18 +1661,11 @@
         state.heightCm = 15;
         state.texts = [createDefaultText()];
         state.activeTextId = state.texts[0].id;
-        state.imageOffsetX = 50;
-        state.imageOffsetY = 50;
-        state.imageScalePct = 100;
         state.editTarget = '';
-        loadedImage = null;
-        sourceUploadFile = null;
+        clearAllLayers();
         hasCustomization = false;
 
         syncControlsFromActiveText();
-        if (filenameEl) {
-            filenameEl.textContent = '';
-        }
         if (fileInput) {
             fileInput.value = '';
         }
@@ -1502,7 +1673,6 @@
         renderTextList();
         updatePaperUi();
         updateShapeUi();
-        revokePreviewUrl();
         updateWrapUi();
         updateImageUi();
         hideImageManipulator();
@@ -1597,7 +1767,7 @@
     }
 
     function applyTextShadow(ctx, textObj) {
-        if (loadedImage && !(textObj && textObj.wrapOnCircle)) {
+        if (hasAnyLayer() && !(textObj && textObj.wrapOnCircle)) {
             ctx.shadowColor = 'rgba(0,0,0,0.45)';
             ctx.shadowBlur = 4;
         }
@@ -1806,11 +1976,16 @@
         ctx.save();
         applyShapeClip(ctx, bounds);
 
-        if (loadedImage) {
-            var imgParams = getImageDrawParams(bounds, loadedImage);
-            if (imgParams) {
-                ctx.drawImage(loadedImage, imgParams.x, imgParams.y, imgParams.w, imgParams.h);
-            }
+        if (state.layers.length) {
+            state.layers.forEach(function (layer) {
+                if (!layer.image) {
+                    return;
+                }
+                var imgParams = getImageDrawParams(bounds, layer.image, layer);
+                if (imgParams) {
+                    ctx.drawImage(layer.image, imgParams.x, imgParams.y, imgParams.w, imgParams.h);
+                }
+            });
         } else {
             ctx.fillStyle = 'rgba(229, 72, 138, 0.08)';
             appendShapePath(ctx, bounds);
@@ -1843,7 +2018,7 @@
     }
 
     function hasContent() {
-        if (loadedImage) {
+        if (hasAnyLayer()) {
             return true;
         }
         return state.texts.some(function (t) {
@@ -1935,31 +2110,37 @@
         document.body.style.overflow = '';
     }
 
-    function onFileSelected(file) {
+    function appendFileToLayers(file) {
         if (!file || !file.type || file.type.indexOf('image/') !== 0) {
             return;
         }
-
-        sourceUploadFile = file;
-        revokePreviewUrl();
-        previewObjectUrl = URL.createObjectURL(file);
-
+        var layer = createImageLayer();
+        layer.file = file;
+        layer.filename = file.name || '';
+        layer.objectUrl = URL.createObjectURL(file);
         var img = new Image();
         img.onload = function () {
-            loadedImage = img;
-            resetImageTransform();
-            deselectAll();
-            if (filenameEl) {
-                filenameEl.textContent = file.name;
+            layer.image = img;
+            state.layers.push(layer);
+            state.activeLayerId = layer.id;
+            state.editTarget = 'image';
+            updateImageUi();
+            renderPreview();
+            if (fileInput) {
+                fileInput.value = '';
             }
+        };
+        img.onerror = function () {
+            revokeLayerUrl(layer);
+            window.alert('Impossible de charger cette image.');
             updateImageUi();
             renderPreview();
         };
-        img.onerror = function () {
-            loadedImage = null;
-            window.alert('Impossible de charger cette image.');
-        };
-        img.src = previewObjectUrl;
+        img.src = layer.objectUrl;
+    }
+
+    function onFileSelected(file) {
+        appendFileToLayers(file);
     }
 
     function validateCustomization() {
@@ -1982,8 +2163,9 @@
                 return;
             }
 
-            if (sourceUploadFile && ctxForm.formSourceFileInput) {
-                assignFileToForm(sourceUploadFile, ctxForm.formSourceFileInput);
+            var sourceLayer = getActiveLayer();
+            if (sourceLayer && sourceLayer.file && ctxForm.formSourceFileInput) {
+                assignFileToForm(sourceLayer.file, ctxForm.formSourceFileInput);
             }
 
             updateStatus(true, canvas.toDataURL('image/png'));
@@ -2218,10 +2400,11 @@
     if (imageResetBtn) {
         imageResetBtn.addEventListener('click', function (event) {
             event.preventDefault();
-            if (!loadedImage) {
+            var layer = getActiveLayer();
+            if (!layer) {
                 return;
             }
-            resetImageTransform();
+            resetLayerTransform(layer);
             selectImage();
             renderPreview();
         });
@@ -2231,7 +2414,7 @@
         imageDeleteBtn.addEventListener('click', function (event) {
             event.preventDefault();
             event.stopPropagation();
-            removeImage();
+            removeActiveImage();
         });
     }
 
