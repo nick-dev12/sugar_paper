@@ -596,12 +596,73 @@
         return -1;
     }
 
+    function isPointInLayerBounds(bounds, layer, x, y) {
+        if (!bounds || !layer || !layer.image) {
+            return false;
+        }
+        var params = getImageDrawParams(bounds, layer.image, layer);
+        if (!params) {
+            return false;
+        }
+        return x >= params.x && x <= params.x + params.w && y >= params.y && y <= params.y + params.h;
+    }
+
+    function getLayersAtPoint(slot, bounds, x, y) {
+        var hits = [];
+        if (!slot || !slot.layers || !bounds) {
+            return hits;
+        }
+        slot.layers.forEach(function (layer) {
+            if (layer.image && isPointInLayerBounds(bounds, layer, x, y)) {
+                hits.push(layer);
+            }
+        });
+        return hits;
+    }
+
+    function pickLayerAtPoint(slot, bounds, x, y) {
+        var hits = getLayersAtPoint(slot, bounds, x, y);
+        if (!hits.length) {
+            return null;
+        }
+        if (hits.length === 1) {
+            return hits[0];
+        }
+        return hits[hits.length - 1];
+    }
+
+    function cycleLayerAtPoint(slot, bounds, x, y) {
+        var hits = getLayersAtPoint(slot, bounds, x, y);
+        if (hits.length < 2) {
+            return pickLayerAtPoint(slot, bounds, x, y);
+        }
+        var activeIdx = -1;
+        var i;
+        for (i = 0; i < hits.length; i++) {
+            if (hits[i].id === slot.activeLayerId) {
+                activeIdx = i;
+                break;
+            }
+        }
+        var nextIdx = activeIdx >= 0 ? (activeIdx - 1 + hits.length) % hits.length : hits.length - 1;
+        return hits[nextIdx];
+    }
+
+    function activateLayer(slot, layer) {
+        if (!slot || !layer) {
+            return null;
+        }
+        slot.activeLayerId = layer.id;
+        return layer;
+    }
+
     function hideImageManipulator() {
         if (!imageManipulator) {
             return;
         }
         imageManipulator.hidden = true;
         imageManipulator.setAttribute('aria-hidden', 'true');
+        imageManipulator.classList.remove('is-visible');
     }
 
     function updateImageManipulator() {
@@ -633,6 +694,7 @@
         var scaleY = rect.height / canvas.height;
         imageManipulator.hidden = false;
         imageManipulator.setAttribute('aria-hidden', 'false');
+        imageManipulator.classList.add('is-visible');
         imageManipBox.style.left = (params.x * scaleX) + 'px';
         imageManipBox.style.top = (params.y * scaleY) + 'px';
         imageManipBox.style.width = (params.w * scaleX) + 'px';
@@ -1121,10 +1183,17 @@
                 return;
             }
             var slot = getActiveSlot();
-            var layer = slot ? getActiveLayer(slot) : null;
+            var bounds = lastRenderLayout && lastRenderLayout.contours
+                ? lastRenderLayout.contours[state.activeIndex]
+                : null;
+            var layer = slot && bounds ? activateLayer(slot, pickLayerAtPoint(slot, bounds, pt.x, pt.y)) : null;
             if (!layer || !layer.image) {
+                updateImageUi();
+                renderPreview();
                 return;
             }
+            updateImageUi();
+            renderPreview();
             event.preventDefault();
             manipDrag = {
                 type: 'move',
@@ -1182,16 +1251,43 @@
         canvas.addEventListener('pointerup', endDrag);
         canvas.addEventListener('pointercancel', endDrag);
 
+        canvas.addEventListener('dblclick', function (event) {
+            if (!hasSelection()) {
+                return;
+            }
+            var pt = canvasPointFromEvent(event);
+            if (!pt) {
+                return;
+            }
+            var slot = getActiveSlot();
+            var bounds = lastRenderLayout && lastRenderLayout.contours
+                ? lastRenderLayout.contours[state.activeIndex]
+                : null;
+            var layer = slot && bounds ? activateLayer(slot, cycleLayerAtPoint(slot, bounds, pt.x, pt.y)) : null;
+            if (!layer) {
+                return;
+            }
+            event.preventDefault();
+            updateImageUi();
+            renderPreview();
+        });
+
         canvas.addEventListener('wheel', function (event) {
             if (!hasSelection()) {
                 return;
             }
+            var pt = canvasPointFromEvent(event);
             var slot = getActiveSlot();
+            var bounds = lastRenderLayout && lastRenderLayout.contours
+                ? lastRenderLayout.contours[state.activeIndex]
+                : null;
+            if (pt && slot && bounds) {
+                activateLayer(slot, pickLayerAtPoint(slot, bounds, pt.x, pt.y));
+            }
             var layer = slot ? getActiveLayer(slot) : null;
             if (!layer || !layer.image) {
                 return;
             }
-            var pt = canvasPointFromEvent(event);
             if (!pt) {
                 return;
             }
