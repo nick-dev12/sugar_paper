@@ -16,11 +16,11 @@
     // Canvas portrait A4 (≈ 210×297 mm à ~2.83 px/mm)
     var CANVAS_W = 595;
     var CANVAS_H = 842;
-    var IMAGE_SCALE_MIN = 50;
-    var IMAGE_SCALE_MAX = 400;
+    var IMAGE_SCALE_MIN = 10;
+    var IMAGE_SCALE_MAX = 800;
     var EDGE_MARGIN_CM = 0.7;
     var GAP_CM = 1.2;
-    var HEART_DRAW_SCALE = 1.14;
+    var HEART_DRAW_SCALE = 1.06;
 
     var btnClose = document.getElementById('cupcakes-modal-close');
     var btnCancel = document.getElementById('cupcakes-cancel');
@@ -241,7 +241,46 @@
     }
 
     function clampImageOffset(value) {
-        return clamp(Math.round(value), -50, 150);
+        return clamp(Math.round(value), -100, 200);
+    }
+
+    function wheelZoomFactor(deltaY) {
+        return Math.pow(1.002, -deltaY);
+    }
+
+    function bindModalDeselect() {
+        modal.addEventListener('pointerdown', function (event) {
+            if (!modal.classList.contains('is-open')) {
+                return;
+            }
+            if (event.target.closest(
+                '#cupcakes-preview-canvas, .perso-text-manipulator, .perso-image-manipulator, ' +
+                '.perso-text-manip-box, .perso-image-manip-box, .perso-manip-delete, ' +
+                '.perso-toolbar, .perso-modal-actions'
+            )) {
+                return;
+            }
+            if (event.target.closest(
+                'input, textarea, button, label, select, a, .perso-text-item, .perso-upload-compact, ' +
+                '.perso-font-btn, .perso-paper-btn, .perso-shape-btn, .perso-image-mode-btn, .perso-wrap-btn, ' +
+                '.perso-wrap-pos-btn, .perso-color-swatch, .perso-color-custom, .perso-text-add-btn, ' +
+                '.perso-image-reset-btn, .perso-modal-close, .perso-btn, .perso-dimension-field, .perso-text-list'
+            )) {
+                return;
+            }
+            clearSelection();
+        });
+        if (previewViewport) {
+            previewViewport.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                if (event.target === canvas || event.target.closest('.perso-text-manipulator, .perso-image-manipulator')) {
+                    return;
+                }
+                clearSelection();
+            });
+        }
     }
 
     function clampImageScale(value) {
@@ -394,29 +433,18 @@
         var w = bounds.w;
         var h = bounds.h;
         var cx = bounds.cx;
-        var tipY = y + h * 0.90;
-        var cleftY = y + h * 0.30;
+        var top = y + h * 0.22;
 
-        ctx.moveTo(cx, tipY);
+        ctx.moveTo(cx, y + h * 0.88);
         ctx.bezierCurveTo(
-            x + w * 0.02, y + h * 0.70,
-            x + w * 0.02, y + h * 0.40,
-            x + w * 0.24, y + h * 0.26
+            x - w * 0.15, y + h * 0.45,
+            x + w * 0.02, y + h * 0.02,
+            cx, top
         );
         ctx.bezierCurveTo(
-            x + w * 0.34, y + h * 0.10,
-            x + w * 0.44, y + h * 0.10,
-            cx, cleftY
-        );
-        ctx.bezierCurveTo(
-            x + w * 0.56, y + h * 0.10,
-            x + w * 0.66, y + h * 0.10,
-            x + w * 0.76, y + h * 0.26
-        );
-        ctx.bezierCurveTo(
-            x + w * 0.98, y + h * 0.40,
-            x + w * 0.98, y + h * 0.70,
-            cx, tipY
+            x + w * 0.98, y + h * 0.02,
+            x + w * 1.15, y + h * 0.45,
+            cx, y + h * 0.88
         );
         ctx.closePath();
     }
@@ -1202,8 +1230,7 @@
                 return;
             }
             event.preventDefault();
-            var delta = event.deltaY > 0 ? -8 : 8;
-            applyImageZoomAt(slot, slot.scalePct + delta, pt.x, pt.y);
+            applyImageZoomAt(slot, slot.scalePct * wheelZoomFactor(event.deltaY), pt.x, pt.y);
             renderPreview();
         }, { passive: false });
     }
@@ -1273,6 +1300,7 @@
         });
     }
 
+    bindModalDeselect();
     updateModeUi();
     updatePaperUi();
     updateShapeUi();

@@ -88,8 +88,8 @@
     var lastRenderLayout = null;
     var manipDrag = null;
     var touchPointers = {};
-    var IMAGE_SCALE_MIN = 50;
-    var IMAGE_SCALE_MAX = 400;
+    var IMAGE_SCALE_MIN = 10;
+    var IMAGE_SCALE_MAX = 800;
 
     function clampPct(value) {
         return Math.max(0, Math.min(100, Math.round(value)));
@@ -111,7 +111,11 @@
     }
 
     function clampImageOffset(value) {
-        return Math.max(-50, Math.min(150, Math.round(value)));
+        return Math.max(-100, Math.min(200, Math.round(value)));
+    }
+
+    function wheelZoomFactor(deltaY) {
+        return Math.pow(1.002, -deltaY);
     }
 
     function clampImageScale(value) {
@@ -839,8 +843,7 @@
             }
             event.preventDefault();
             selectImage();
-            var delta = event.deltaY > 0 ? -6 : 6;
-            applyImageZoomAt(state.imageScalePct + delta, canvasPt.x, canvasPt.y);
+            applyImageZoomAt(state.imageScalePct * wheelZoomFactor(event.deltaY), canvasPt.x, canvasPt.y);
             renderPreview();
         }, { passive: false });
 
@@ -1053,13 +1056,30 @@
                     return;
                 }
                 if (event.target.closest(
-                    '#perso-preview-canvas, .perso-text-manip-box, .perso-image-manip-box, .perso-manip-delete'
+                    '#perso-preview-canvas, .perso-text-manipulator, .perso-image-manipulator, ' +
+                    '.perso-text-manip-box, .perso-image-manip-box, .perso-manip-delete, ' +
+                    '.perso-toolbar, .perso-modal-actions'
                 )) {
                     return;
                 }
                 if (event.target.closest(
-                    'input, textarea, button, label, select, .perso-text-item, .perso-upload-compact, .perso-font-btn, .perso-paper-btn, .perso-shape-btn, .perso-wrap-btn, .perso-wrap-pos-btn, .perso-color-swatch, .perso-text-add-btn, .perso-image-reset-btn, .perso-modal-close, .perso-btn'
+                    'input, textarea, button, label, select, a, .perso-text-item, .perso-upload-compact, ' +
+                    '.perso-font-btn, .perso-paper-btn, .perso-shape-btn, .perso-image-mode-btn, .perso-wrap-btn, ' +
+                    '.perso-wrap-pos-btn, .perso-color-swatch, .perso-color-custom, .perso-text-add-btn, ' +
+                    '.perso-image-reset-btn, .perso-modal-close, .perso-btn, .perso-dimension-field, .perso-text-list'
                 )) {
+                    return;
+                }
+                deselectAll();
+            });
+        }
+
+        if (previewViewport) {
+            previewViewport.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                if (event.target === canvas || event.target.closest('.perso-text-manipulator, .perso-image-manipulator')) {
                     return;
                 }
                 deselectAll();

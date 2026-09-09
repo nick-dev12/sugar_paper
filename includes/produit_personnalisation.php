@@ -487,10 +487,29 @@ function produit_personnalisation_image_normalize(array $data)
     $scale_pct = isset($data['scale_pct']) ? (int) $data['scale_pct'] : (isset($data['scalePct']) ? (int) $data['scalePct'] : 100);
 
     return [
-        'offset_x' => max(-50, min(150, $offset_x)),
-        'offset_y' => max(-50, min(150, $offset_y)),
-        'scale_pct' => max(50, min(400, $scale_pct)),
+        'offset_x' => max(-100, min(200, $offset_x)),
+        'offset_y' => max(-100, min(200, $offset_y)),
+        'scale_pct' => max(10, min(800, $scale_pct)),
     ];
+}
+
+/**
+ * @param array<int, mixed>|null $layers
+ * @return array<int, array<string, int>>
+ */
+function produit_personnalisation_image_layers_normalize_list($layers)
+{
+    if (!is_array($layers)) {
+        return [];
+    }
+    $out = [];
+    foreach ($layers as $layer_row) {
+        if (!is_array($layer_row)) {
+            continue;
+        }
+        $out[] = produit_personnalisation_image_normalize($layer_row);
+    }
+    return $out;
 }
 
 /**
@@ -650,7 +669,7 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $edge = 0.7;
     $gap = 0.9;
     $usable_h = max(1.0, (float) $paper['height_cm'] - $edge * 2);
-    $max_h = max(2.0, ($usable_h - 2 * $gap) / 3);
+    $max_h = max(2.0, min(6.0, ($usable_h - 2 * $gap) / 3));
     $height = isset($data['height_cm']) ? (float) $data['height_cm'] : 5.0;
     $height = max(2.0, min($height, round($max_h, 1)));
 
@@ -662,7 +681,14 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $raw_contours = isset($data['contours']) && is_array($data['contours']) ? $data['contours'] : [];
     for ($i = 0; $i < 3; $i++) {
         $row = isset($raw_contours[$i]) && is_array($raw_contours[$i]) ? $raw_contours[$i] : [];
-        $contour_out = produit_personnalisation_image_normalize($row);
+        $contour_out = [];
+        $layers = produit_personnalisation_image_layers_normalize_list(isset($row['layers']) ? $row['layers'] : []);
+        if ($layers === [] && (isset($row['offset_x']) || isset($row['offsetX']) || isset($row['scale_pct']) || isset($row['scalePct']))) {
+            $layers = [produit_personnalisation_image_normalize($row)];
+        }
+        if ($layers !== []) {
+            $contour_out['layers'] = $layers;
+        }
         if ($image_mode === 'per_contour') {
             $texts = produit_personnalisation_texts_normalize_list(isset($row['texts']) ? $row['texts'] : []);
             if ($texts !== []) {
@@ -682,8 +708,15 @@ function produit_personnalisation_contours_meta_normalize(array $data)
         'contours' => $contours,
     ];
 
-    if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
-        $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    if ($image_mode === 'shared') {
+        $shared_layers = produit_personnalisation_image_layers_normalize_list(isset($data['layers']) ? $data['layers'] : []);
+        if ($shared_layers === [] && isset($data['image']) && is_array($data['image'])) {
+            $shared_layers = [produit_personnalisation_image_normalize($data['image'])];
+        }
+        if ($shared_layers !== []) {
+            $out['layers'] = $shared_layers;
+            $out['image'] = $shared_layers[0];
+        }
     }
 
     if ($image_mode === 'shared') {

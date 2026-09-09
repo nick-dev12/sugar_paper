@@ -15,12 +15,12 @@
         a3: { label: 'A3', widthCm: 42, heightCm: 29.7, canvasW: 992, canvasH: 701 }
     };
     var CONTOUR_COUNT = 3;
-    var IMAGE_SCALE_MIN = 50;
-    var IMAGE_SCALE_MAX = 400;
+    var IMAGE_SCALE_MIN = 10;
+    var IMAGE_SCALE_MAX = 800;
     var EDGE_MARGIN_CM = 0.7;
     var GAP_CM = 0.9;
     var HEIGHT_MIN_CM = 2;
-    var CORNER_RATIO = 0.22;
+    var HEIGHT_MAX_CM = 6;
 
     var btnClose = document.getElementById('contours-modal-close');
     var btnCancel = document.getElementById('contours-cancel');
@@ -125,7 +125,7 @@
             },
             hasBackgroundImage: function () {
                 var slot = getActiveSlot();
-                return !!(slot && slot.image);
+                return slotHasImages(slot);
             },
             onChange: function () {
                 renderPreview();
@@ -167,6 +167,14 @@
 
     function makeSlot() {
         return {
+            layers: [],
+            activeLayerId: ''
+        };
+    }
+
+    function createImageLayer() {
+        return {
+            id: 'lyr_' + Math.random().toString(36).slice(2, 10),
             image: null,
             file: null,
             objectUrl: '',
@@ -177,12 +185,73 @@
         };
     }
 
+    function getActiveLayer(slot) {
+        if (!slot || !slot.layers || !slot.layers.length) {
+            return null;
+        }
+        var i;
+        for (i = 0; i < slot.layers.length; i++) {
+            if (slot.layers[i].id === slot.activeLayerId) {
+                return slot.layers[i];
+            }
+        }
+        return slot.layers[slot.layers.length - 1];
+    }
+
+    function slotHasImages(slot) {
+        if (!slot || !slot.layers) {
+            return false;
+        }
+        return slot.layers.some(function (layer) {
+            return !!layer.image;
+        });
+    }
+
     function clamp(v, min, max) {
         return Math.max(min, Math.min(max, v));
     }
 
     function clampImageOffset(value) {
-        return clamp(Math.round(value), -50, 150);
+        return clamp(Math.round(value), -100, 200);
+    }
+
+    function wheelZoomFactor(deltaY) {
+        return Math.pow(1.002, -deltaY);
+    }
+
+    function bindModalDeselect() {
+        modal.addEventListener('pointerdown', function (event) {
+            if (!modal.classList.contains('is-open')) {
+                return;
+            }
+            if (event.target.closest(
+                '#contours-preview-canvas, .perso-text-manipulator, .perso-image-manipulator, ' +
+                '.perso-text-manip-box, .perso-image-manip-box, .perso-manip-delete, ' +
+                '.perso-toolbar, .perso-modal-actions'
+            )) {
+                return;
+            }
+            if (event.target.closest(
+                'input, textarea, button, label, select, a, .perso-text-item, .perso-upload-compact, ' +
+                '.perso-font-btn, .perso-paper-btn, .perso-shape-btn, .perso-image-mode-btn, .perso-wrap-btn, ' +
+                '.perso-wrap-pos-btn, .perso-color-swatch, .perso-color-custom, .perso-text-add-btn, ' +
+                '.perso-image-reset-btn, .perso-modal-close, .perso-btn, .perso-dimension-field, .perso-text-list'
+            )) {
+                return;
+            }
+            clearSelection();
+        });
+        if (previewViewport) {
+            previewViewport.addEventListener('pointerdown', function (event) {
+                if (!modal.classList.contains('is-open')) {
+                    return;
+                }
+                if (event.target === canvas || event.target.closest('.perso-text-manipulator, .perso-image-manipulator')) {
+                    return;
+                }
+                clearSelection();
+            });
+        }
     }
 
     function clampImageScale(value) {
@@ -201,7 +270,7 @@
         var paper = getPaper();
         var usable = Math.max(1, paper.heightCm - EDGE_MARGIN_CM * 2);
         var maxFit = (usable - (CONTOUR_COUNT - 1) * GAP_CM) / CONTOUR_COUNT;
-        return Math.max(HEIGHT_MIN_CM, Math.floor(maxFit * 10) / 10);
+        return Math.max(HEIGHT_MIN_CM, Math.min(HEIGHT_MAX_CM, Math.floor(maxFit * 10) / 10));
     }
 
     function getActiveSlot() {
@@ -233,25 +302,43 @@
         renderPreview();
     }
 
-    function resetSlotTransform(slot) {
-        slot.offsetX = 50;
-        slot.offsetY = 50;
-        slot.scalePct = 100;
+    function resetLayerTransform(layer) {
+        layer.offsetX = 50;
+        layer.offsetY = 50;
+        layer.scalePct = 100;
     }
 
-    function revokeSlotUrl(slot) {
-        if (slot.objectUrl) {
-            URL.revokeObjectURL(slot.objectUrl);
-            slot.objectUrl = '';
+    function revokeLayerUrl(layer) {
+        if (layer.objectUrl) {
+            URL.revokeObjectURL(layer.objectUrl);
+            layer.objectUrl = '';
         }
     }
 
-    function clearSlotImage(slot) {
-        revokeSlotUrl(slot);
-        slot.image = null;
-        slot.file = null;
-        slot.filename = '';
-        resetSlotTransform(slot);
+    function clearSlotImages(slot) {
+        if (!slot) {
+            return;
+        }
+        if (slot.layers) {
+            slot.layers.forEach(revokeLayerUrl);
+        }
+        slot.layers = [];
+        slot.activeLayerId = '';
+    }
+
+    function mapLayersForMeta(layers) {
+        if (!layers || !layers.length) {
+            return [];
+        }
+        return layers.filter(function (layer) {
+            return !!layer.image;
+        }).map(function (layer) {
+            return {
+                offset_x: layer.offsetX,
+                offset_y: layer.offsetY,
+                scale_pct: layer.scalePct
+            };
+        });
     }
 
     function getPaperBounds(canvasW, canvasH) {
@@ -300,42 +387,28 @@
                 h: hPx,
                 cx: startX + wPx / 2,
                 cy: y + hPx / 2,
-                r: Math.min(hPx * CORNER_RATIO, wPx * 0.08)
             });
         }
         return layouts;
     }
 
     function appendContourPath(ctx, bounds) {
-        var x = bounds.x;
-        var y = bounds.y;
-        var w = bounds.w;
-        var h = bounds.h;
-        var r = Math.max(2, Math.min(bounds.r || 8, h / 2, w / 2));
         ctx.beginPath();
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
         ctx.closePath();
     }
 
-    function getImageDrawParams(bounds, img, slot) {
-        if (!img || !bounds || !slot) {
+    function getImageDrawParams(bounds, img, layer) {
+        if (!img || !bounds || !layer) {
             return null;
         }
         var coverScale = Math.max(bounds.w / img.width, bounds.h / img.height);
-        var userScale = (slot.scalePct || 100) / 100;
+        var userScale = (layer.scalePct || 100) / 100;
         var scale = coverScale * userScale;
         var dw = img.width * scale;
         var dh = img.height * scale;
-        var cx = bounds.x + bounds.w * ((slot.offsetX || 50) / 100);
-        var cy = bounds.y + bounds.h * ((slot.offsetY || 50) / 100);
+        var cx = bounds.x + bounds.w * ((layer.offsetX || 50) / 100);
+        var cy = bounds.y + bounds.h * ((layer.offsetY || 50) / 100);
         return {
             x: cx - dw / 2,
             y: cy - dh / 2,
@@ -350,11 +423,16 @@
         ctx.save();
         appendContourPath(ctx, bounds);
         ctx.clip();
-        if (slot && slot.image) {
-            var params = getImageDrawParams(bounds, slot.image, slot);
-            if (params) {
-                ctx.drawImage(slot.image, params.x, params.y, params.w, params.h);
-            }
+        if (slot && slot.layers && slot.layers.length) {
+            slot.layers.forEach(function (layer) {
+                if (!layer.image) {
+                    return;
+                }
+                var params = getImageDrawParams(bounds, layer.image, layer);
+                if (params) {
+                    ctx.drawImage(layer.image, params.x, params.y, params.w, params.h);
+                }
+            });
         } else {
             ctx.fillStyle = 'rgba(194, 102, 56, 0.10)';
             appendContourPath(ctx, bounds);
@@ -383,10 +461,8 @@
 
     function hasContent() {
         var hasImage = state.imageMode === 'shared'
-            ? !!state.shared.image
-            : state.contours.some(function (slot) {
-                return !!slot.image;
-            });
+            ? slotHasImages(state.shared)
+            : state.contours.some(slotHasImages);
         if (hasImage) {
             return true;
         }
@@ -461,7 +537,9 @@
 
     function updateImageUi() {
         var slot = getActiveSlot();
-        var hasImg = !!(slot && slot.image);
+        var layer = slot ? getActiveLayer(slot) : null;
+        var hasImg = !!(layer && layer.image);
+        var layerCount = slot && slot.layers ? slot.layers.filter(function (l) { return !!l.image; }).length : 0;
         if (imageHintEl) {
             imageHintEl.hidden = !hasImg;
         }
@@ -470,9 +548,13 @@
         }
         if (filenameEl) {
             if (hasImg) {
-                filenameEl.textContent = slot.filename || 'Image sélectionnée';
-            } else if (state.imageMode === 'shared' && state.shared.image) {
-                filenameEl.textContent = state.shared.filename || 'Image sélectionnée';
+                var label = layer.filename || 'Image sélectionnée';
+                filenameEl.textContent = layerCount > 1 ? label + ' (' + layerCount + ' images)' : label;
+            } else if (state.imageMode === 'shared' && slotHasImages(state.shared)) {
+                var sharedLayer = getActiveLayer(state.shared);
+                var sharedCount = state.shared.layers.filter(function (l) { return !!l.image; }).length;
+                var sharedLabel = sharedLayer.filename || 'Image sélectionnée';
+                filenameEl.textContent = sharedCount > 1 ? sharedLabel + ' (' + sharedCount + ' images)' : sharedLabel;
             } else {
                 filenameEl.textContent = '';
             }
@@ -536,11 +618,12 @@
         }
         var bounds = lastRenderLayout.contours[state.activeIndex];
         var slot = getActiveSlot();
-        if (!bounds || !slot || !slot.image) {
+        var layer = slot ? getActiveLayer(slot) : null;
+        if (!bounds || !layer || !layer.image) {
             hideImageManipulator();
             return;
         }
-        var params = getImageDrawParams(bounds, slot.image, slot);
+        var params = getImageDrawParams(bounds, layer.image, layer);
         if (!params) {
             hideImageManipulator();
             return;
@@ -626,9 +709,7 @@
         var usableWidth = Math.max(1, paper.widthCm - EDGE_MARGIN_CM * 2);
         var contoursMeta = state.contours.map(function (slot) {
             var row = {
-                offset_x: slot.offsetX,
-                offset_y: slot.offsetY,
-                scale_pct: slot.scalePct
+                layers: mapLayersForMeta(slot.layers)
             };
             if (state.imageMode === 'per_contour') {
                 var texts = mapTextsForMeta(slot.texts);
@@ -648,11 +729,11 @@
             contours: contoursMeta
         };
         if (state.imageMode === 'shared') {
-            meta.image = {
-                offset_x: state.shared.offsetX,
-                offset_y: state.shared.offsetY,
-                scale_pct: state.shared.scalePct
-            };
+            var sharedLayers = mapLayersForMeta(state.shared.layers);
+            if (sharedLayers.length) {
+                meta.layers = sharedLayers;
+                meta.image = sharedLayers[0];
+            }
             var sharedTexts = mapTextsForMeta(state.shared.texts);
             if (sharedTexts.length) {
                 meta.texts = sharedTexts;
@@ -709,18 +790,19 @@
         }
     }
 
-    function loadFileIntoSlot(file, slot) {
-        if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+    function appendFileToSlot(file, slot) {
+        if (!file || !file.type || file.type.indexOf('image/') !== 0 || !slot) {
             return;
         }
-        revokeSlotUrl(slot);
-        slot.file = file;
-        slot.filename = file.name || '';
-        slot.objectUrl = URL.createObjectURL(file);
-        resetSlotTransform(slot);
+        var layer = createImageLayer();
+        layer.file = file;
+        layer.filename = file.name || '';
+        layer.objectUrl = URL.createObjectURL(file);
         var img = new Image();
         img.onload = function () {
-            slot.image = img;
+            layer.image = img;
+            slot.layers.push(layer);
+            slot.activeLayerId = layer.id;
             updateImageUi();
             renderPreview();
             if (fileInput) {
@@ -728,17 +810,17 @@
             }
         };
         img.onerror = function () {
-            clearSlotImage(slot);
+            revokeLayerUrl(layer);
             window.alert('Impossible de charger cette image.');
             updateImageUi();
             renderPreview();
         };
-        img.src = slot.objectUrl;
+        img.src = layer.objectUrl;
     }
 
     function onFileSelected(file) {
         if (state.imageMode === 'shared') {
-            loadFileIntoSlot(file, state.shared);
+            appendFileToSlot(file, state.shared);
             if (!hasSelection()) {
                 state.activeIndex = 0;
                 if (activeLabel) {
@@ -759,7 +841,7 @@
         if (!slot) {
             return;
         }
-        loadFileIntoSlot(file, slot);
+        appendFileToSlot(file, slot);
     }
 
     function selectContour(index, openPickerIfEmpty) {
@@ -778,14 +860,14 @@
         }
         renderPreview();
         var slot = getActiveSlot();
-        if (openPickerIfEmpty && state.imageMode === 'per_contour' && slot && !slot.image && fileInput) {
+        if (openPickerIfEmpty && state.imageMode === 'per_contour' && slot && !slotHasImages(slot) && fileInput) {
             fileInput.click();
         }
     }
 
     function resetState() {
-        clearSlotImage(state.shared);
-        state.contours.forEach(clearSlotImage);
+        clearSlotImages(state.shared);
+        state.contours.forEach(clearSlotImages);
         state.format = 'a4';
         state.heightCm = 5;
         state.imageMode = 'shared';
@@ -837,57 +919,75 @@
         document.body.style.overflow = '';
     }
 
-    function applyImageMove(slot, canvasX, canvasY, startX, startY, startOffsetX, startOffsetY) {
-        if (!lastRenderLayout || !hasSelection()) {
-            return;
-        }
-        var bounds = lastRenderLayout.contours[state.activeIndex];
-        if (!bounds || !slot) {
-            return;
-        }
-        if (typeof startX === 'number') {
-            var dx = canvasX - startX;
-            var dy = canvasY - startY;
-            slot.offsetX = clampImageOffset(startOffsetX + (dx / bounds.w) * 100);
-            slot.offsetY = clampImageOffset(startOffsetY + (dy / bounds.h) * 100);
-            return;
-        }
-        slot.offsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
-        slot.offsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
-    }
-
-    function applyImageZoomAt(slot, newScalePct, focalX, focalY) {
-        if (!slot || !slot.image || !lastRenderLayout) {
+    function applyImageMove(layer, canvasX, canvasY, startX, startY, startOffsetX, startOffsetY) {
+        if (!lastRenderLayout || !hasSelection() || !layer) {
             return;
         }
         var bounds = lastRenderLayout.contours[state.activeIndex];
         if (!bounds) {
             return;
         }
-        var before = getImageDrawParams(bounds, slot.image, slot);
+        if (typeof startX === 'number') {
+            var dx = canvasX - startX;
+            var dy = canvasY - startY;
+            layer.offsetX = clampImageOffset(startOffsetX + (dx / bounds.w) * 100);
+            layer.offsetY = clampImageOffset(startOffsetY + (dy / bounds.h) * 100);
+            return;
+        }
+        layer.offsetX = clampImageOffset(((canvasX - bounds.x) / bounds.w) * 100);
+        layer.offsetY = clampImageOffset(((canvasY - bounds.y) / bounds.h) * 100);
+    }
+
+    function applyImageZoomAt(layer, newScalePct, focalX, focalY) {
+        if (!layer || !layer.image || !lastRenderLayout) {
+            return;
+        }
+        var bounds = lastRenderLayout.contours[state.activeIndex];
+        if (!bounds) {
+            return;
+        }
+        var before = getImageDrawParams(bounds, layer.image, layer);
         if (!before || before.w <= 0 || before.h <= 0) {
-            slot.scalePct = clampImageScale(newScalePct);
+            layer.scalePct = clampImageScale(newScalePct);
             return;
         }
         var fracX = (focalX - before.x) / before.w;
         var fracY = (focalY - before.y) / before.h;
-        slot.scalePct = clampImageScale(newScalePct);
-        var after = getImageDrawParams(bounds, slot.image, slot);
+        layer.scalePct = clampImageScale(newScalePct);
+        var after = getImageDrawParams(bounds, layer.image, layer);
         if (!after) {
             return;
         }
         var newCx = focalX - fracX * after.w + after.w / 2;
         var newCy = focalY - fracY * after.h + after.h / 2;
-        slot.offsetX = clampImageOffset(((newCx - bounds.x) / bounds.w) * 100);
-        slot.offsetY = clampImageOffset(((newCy - bounds.y) / bounds.h) * 100);
+        layer.offsetX = clampImageOffset(((newCx - bounds.x) / bounds.w) * 100);
+        layer.offsetY = clampImageOffset(((newCy - bounds.y) / bounds.h) * 100);
     }
 
     function removeActiveImage() {
         var slot = getActiveSlot();
-        if (!slot) {
+        if (!slot || !slot.layers.length) {
             return;
         }
-        clearSlotImage(slot);
+        var activeId = slot.activeLayerId;
+        var idx = -1;
+        var i;
+        for (i = 0; i < slot.layers.length; i++) {
+            if (slot.layers[i].id === activeId) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            idx = slot.layers.length - 1;
+        }
+        revokeLayerUrl(slot.layers[idx]);
+        slot.layers.splice(idx, 1);
+        if (slot.layers.length) {
+            slot.activeLayerId = slot.layers[slot.layers.length - 1].id;
+        } else {
+            slot.activeLayerId = '';
+        }
         if (fileInput) {
             fileInput.value = '';
         }
@@ -910,9 +1010,9 @@
                 window.alert('Votre navigateur ne permet pas d’ajouter cette image. Essayez un autre navigateur.');
                 return;
             }
-            var sourceFile = state.imageMode === 'shared'
-                ? state.shared.file
-                : (getActiveSlot() && getActiveSlot().file);
+            var sourceSlot = state.imageMode === 'shared' ? state.shared : getActiveSlot();
+            var sourceLayer = sourceSlot ? getActiveLayer(sourceSlot) : null;
+            var sourceFile = sourceLayer && sourceLayer.file;
             if (sourceFile && ctx.formSourceFileInput) {
                 assignFileToForm(sourceFile, ctx.formSourceFileInput);
             }
@@ -986,10 +1086,11 @@
     if (imageResetBtn) {
         imageResetBtn.addEventListener('click', function () {
             var slot = getActiveSlot();
-            if (!slot) {
+            var layer = slot ? getActiveLayer(slot) : null;
+            if (!layer) {
                 return;
             }
-            resetSlotTransform(slot);
+            resetLayerTransform(layer);
             renderPreview();
         });
     }
@@ -1020,7 +1121,8 @@
                 return;
             }
             var slot = getActiveSlot();
-            if (!slot || !slot.image) {
+            var layer = slot ? getActiveLayer(slot) : null;
+            if (!layer || !layer.image) {
                 return;
             }
             event.preventDefault();
@@ -1028,8 +1130,8 @@
                 type: 'move',
                 startX: pt.x,
                 startY: pt.y,
-                startOffsetX: slot.offsetX,
-                startOffsetY: slot.offsetY
+                startOffsetX: layer.offsetX,
+                startOffsetY: layer.offsetY
             };
             try {
                 canvas.setPointerCapture(event.pointerId);
@@ -1047,24 +1149,25 @@
             }
             var pt = canvasPointFromEvent(event);
             var slot = getActiveSlot();
-            if (!pt || !slot) {
+            var layer = slot ? getActiveLayer(slot) : null;
+            if (!pt || !layer) {
                 return;
             }
             event.preventDefault();
             if (manipDrag.type === 'move') {
-                applyImageMove(slot, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
+                applyImageMove(layer, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
             } else if (manipDrag.type === 'resize') {
                 var bounds = lastRenderLayout && lastRenderLayout.contours[state.activeIndex];
                 if (!bounds) {
                     return;
                 }
-                var params = getImageDrawParams(bounds, slot.image, slot);
+                var params = getImageDrawParams(bounds, layer.image, layer);
                 if (!params) {
                     return;
                 }
                 var dist = Math.hypot(pt.x - params.cx, pt.y - params.cy);
                 if (manipDrag.startDist > 0) {
-                    applyImageZoomAt(slot, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
+                    applyImageZoomAt(layer, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
                 }
             }
             renderPreview();
@@ -1084,7 +1187,8 @@
                 return;
             }
             var slot = getActiveSlot();
-            if (!slot || !slot.image) {
+            var layer = slot ? getActiveLayer(slot) : null;
+            if (!layer || !layer.image) {
                 return;
             }
             var pt = canvasPointFromEvent(event);
@@ -1092,8 +1196,7 @@
                 return;
             }
             event.preventDefault();
-            var delta = event.deltaY > 0 ? -8 : 8;
-            applyImageZoomAt(slot, slot.scalePct + delta, pt.x, pt.y);
+            applyImageZoomAt(layer, layer.scalePct * wheelZoomFactor(event.deltaY), pt.x, pt.y);
             renderPreview();
         }, { passive: false });
     }
@@ -1131,7 +1234,8 @@
             }
             var handle = event.target.closest('.perso-image-handle');
             var slot = getActiveSlot();
-            if (!slot || !slot.image || !lastRenderLayout) {
+            var layer = slot ? getActiveLayer(slot) : null;
+            if (!layer || !layer.image || !lastRenderLayout) {
                 return;
             }
             var pt = canvasPointFromEvent(event);
@@ -1142,27 +1246,28 @@
             event.stopPropagation();
             if (handle) {
                 var bounds = lastRenderLayout.contours[state.activeIndex];
-                var params = getImageDrawParams(bounds, slot.image, slot);
+                var params = getImageDrawParams(bounds, layer.image, layer);
                 if (!params) {
                     return;
                 }
                 manipDrag = {
                     type: 'resize',
                     startDist: Math.hypot(pt.x - params.cx, pt.y - params.cy),
-                    startScale: slot.scalePct
+                    startScale: layer.scalePct
                 };
             } else {
                 manipDrag = {
                     type: 'move',
                     startX: pt.x,
                     startY: pt.y,
-                    startOffsetX: slot.offsetX,
-                    startOffsetY: slot.offsetY
+                    startOffsetX: layer.offsetX,
+                    startOffsetY: layer.offsetY
                 };
             }
         });
     }
 
+    bindModalDeselect();
     updateModeUi();
     updatePaperUi();
     renderPreview();

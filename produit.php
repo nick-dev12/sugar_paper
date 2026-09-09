@@ -742,13 +742,43 @@ $seo_schema_graphs = array_merge(
             overflow: hidden;
         }
 
+        .produits-similaires-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
         .produits-similaires h2 {
             font-size: 28px;
             font-weight: 700;
             color: var(--titres);
-            margin-bottom: 30px;
-            text-align: center;
+            margin: 0;
+            text-align: left;
             font-family: var(--font-titres);
+        }
+
+        .btn-produit-voir-plus {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            border-radius: 999px;
+            border: 2px solid var(--couleur-dominante, #918a44);
+            background: #ffffff;
+            color: var(--couleur-dominante, #918a44);
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .btn-produit-voir-plus:hover {
+            background: var(--couleur-dominante, #918a44);
+            color: #ffffff;
+            transform: translateY(-1px);
         }
 
         .produit-connect-cta {
@@ -1726,9 +1756,21 @@ $seo_schema_graphs = array_merge(
         </div>
 
         <!-- Produits similaires -->
-        <?php if (!empty($produits_similaires)): ?>
+        <?php
+        $categorie_produit_id = (int) ($produit['categorie_id'] ?? 0);
+        if (!empty($produits_similaires) || $categorie_produit_id > 0):
+        ?>
             <div class="produits-similaires">
-                <h2>Produits similaires</h2>
+                <div class="produits-similaires-header">
+                    <h2>Produits similaires</h2>
+                    <?php if ($categorie_produit_id > 0): ?>
+                        <a href="categorie.php?id=<?php echo $categorie_produit_id; ?>" class="btn-produit-voir-plus">
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            Voir plus
+                        </a>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($produits_similaires)): ?>
                 <section class="produit_vedetes">
                     <article class="articles carousel11">
                         <?php foreach ($produits_similaires as $similaire): ?>
@@ -1759,6 +1801,7 @@ $seo_schema_graphs = array_merge(
                         <?php endforeach; ?>
                     </article>
                 </section>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>

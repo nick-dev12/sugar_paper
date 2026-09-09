@@ -27,7 +27,7 @@
                         <input type="file" id="contours-image-input" accept="image/jpeg,image/png,image/webp,image/gif">
                         <span class="perso-upload-compact-icon"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i></span>
                         <span class="perso-upload-compact-text" id="contours-upload-text">Importer une image</span>
-                        <span class="perso-upload-compact-hint">JPG, PNG, WebP — ou cliquez un contour</span>
+                        <span class="perso-upload-compact-hint">JPG, PNG, WebP — chaque import ajoute une image superposée</span>
                         <span class="perso-upload-filename" id="contours-upload-filename"></span>
                     </label>
                     <p class="perso-image-hint" id="contours-image-hint" hidden>Glissez l’image pour la repositionner. Molette ou poignées pour zoomer.</p>
@@ -54,7 +54,7 @@
                     <h3 class="perso-tool-title"><i class="fa-solid fa-ruler-combined" aria-hidden="true"></i> Dimensions</h3>
                     <div class="perso-dimension-field">
                         <label for="contours-dim-height">Hauteur des contours <span id="contours-dim-height-val">5</span> cm</label>
-                        <input type="range" id="contours-dim-height" min="2" max="8" step="0.1" value="5">
+                        <input type="range" id="contours-dim-height" min="2" max="6" step="0.1" value="5">
                     </div>
                     <p class="perso-field-hint">Les 3 bandes ont la même hauteur et s’adaptent à la feuille en paysage. La largeur utilise presque toute la feuille ; la hauteur est limitée pour tenir dans le format choisi.</p>
                 </section>
