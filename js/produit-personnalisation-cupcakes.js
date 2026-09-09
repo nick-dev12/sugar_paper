@@ -20,6 +20,7 @@
     var IMAGE_SCALE_MAX = 400;
     var EDGE_MARGIN_CM = 0.7;
     var GAP_CM = 1.2;
+    var HEART_DRAW_SCALE = 1.14;
 
     var btnClose = document.getElementById('cupcakes-modal-close');
     var btnCancel = document.getElementById('cupcakes-cancel');
@@ -70,13 +71,13 @@
                 return state.shape === 'circle' ? 'circle' : 'rect';
             },
             getBounds: function () {
-                if (!lastRenderLayout || !lastRenderLayout.circles || !lastRenderLayout.circles.length) {
-                    return null;
-                }
-                if (state.activeIndex >= 0) {
-                    return lastRenderLayout.circles[state.activeIndex];
-                }
-                return lastRenderLayout.circles[0];
+                return getRawLayoutBounds();
+            },
+            getDefaultTextPosition: function () {
+                return { x: 50, y: 50 };
+            },
+            adjustTextBounds: function (bounds) {
+                return getTextBounds(bounds);
             },
             isModalOpen: function () {
                 return modal.classList.contains('is-open');
@@ -168,6 +169,59 @@
 
     function getTextDrawShape() {
         return state.shape === 'circle' ? 'circle' : 'rect';
+    }
+
+    function getRawLayoutBounds() {
+        if (!lastRenderLayout || !lastRenderLayout.circles || !lastRenderLayout.circles.length) {
+            return null;
+        }
+        if (state.activeIndex >= 0) {
+            return lastRenderLayout.circles[state.activeIndex];
+        }
+        return lastRenderLayout.circles[0];
+    }
+
+    function getShapeDrawBounds(bounds) {
+        if (!bounds || state.shape !== 'heart') {
+            return bounds;
+        }
+        var scale = HEART_DRAW_SCALE;
+        var w = bounds.w * scale;
+        var h = bounds.h * scale;
+        return {
+            index: bounds.index,
+            x: bounds.cx - w / 2,
+            y: bounds.cy - h / 2,
+            w: w,
+            h: h,
+            cx: bounds.cx,
+            cy: bounds.cy,
+            r: w / 2
+        };
+    }
+
+    function getTextBounds(bounds) {
+        if (!bounds) {
+            return bounds;
+        }
+        if (state.shape === 'circle') {
+            return bounds;
+        }
+        var insetX = bounds.w * 0.14;
+        var insetTop = bounds.h * 0.22;
+        var insetBottom = bounds.h * 0.34;
+        var w = Math.max(1, bounds.w - insetX * 2);
+        var h = Math.max(1, bounds.h - insetTop - insetBottom);
+        return {
+            index: bounds.index,
+            x: bounds.x + insetX,
+            y: bounds.y + insetTop,
+            w: w,
+            h: h,
+            cx: bounds.x + insetX + w / 2,
+            cy: bounds.y + insetTop + h / 2,
+            r: Math.min(w, h) / 2
+        };
     }
 
     function makeSlot() {
@@ -284,7 +338,12 @@
         var maxDByW = (usableW - (COLS - 1) * gapPx) / COLS;
         var maxDByH = (usableH - (ROWS - 1) * gapPx) / ROWS;
         var maxDFit = Math.max(1, Math.min(maxDByW, maxDByH));
-        var dPx = Math.min(state.diameterCm * paperBounds.pxPerCm, maxDFit);
+        var dPx;
+        if (state.shape === 'heart') {
+            dPx = (maxDFit / HEART_DRAW_SCALE) * 0.98;
+        } else {
+            dPx = Math.min(state.diameterCm * paperBounds.pxPerCm, maxDFit);
+        }
 
         var totalW = COLS * dPx + (COLS - 1) * gapPx;
         var totalH = ROWS * dPx + (ROWS - 1) * gapPx;
@@ -297,7 +356,7 @@
             for (var c = 0; c < COLS; c++) {
                 var x = startX + c * (dPx + gapPx);
                 var y = startY + r * (dPx + gapPx);
-                layouts.push({
+                var cell = {
                     index: idx,
                     x: x,
                     y: y,
@@ -306,11 +365,27 @@
                     cx: x + dPx / 2,
                     cy: y + dPx / 2,
                     r: dPx / 2
-                });
+                };
+                layouts.push(getShapeDrawBounds(cell));
                 idx++;
             }
         }
         return layouts;
+    }
+
+    function isPointInHeart(x, y, bounds) {
+        if (!canvas) {
+            return x >= bounds.x && x <= bounds.x + bounds.w && y >= bounds.y && y <= bounds.y + bounds.h;
+        }
+        var ctx = canvas.getContext('2d');
+        if (!ctx) {
+            return false;
+        }
+        ctx.save();
+        appendHeartPath(ctx, bounds);
+        var inside = ctx.isPointInPath(x, y);
+        ctx.restore();
+        return inside;
     }
 
     function appendHeartPath(ctx, bounds) {
@@ -318,22 +393,30 @@
         var y = bounds.y;
         var w = bounds.w;
         var h = bounds.h;
-        var cx = x + w * 0.5;
-        // Cœur classique : lobes arrondis, pointe douce (pas allongé)
-        var top = y + h * 0.20;
-        var cleft = y + h * 0.34;
-        var bottom = y + h * 0.90;
+        var cx = bounds.cx;
+        var tipY = y + h * 0.90;
+        var cleftY = y + h * 0.30;
 
-        ctx.moveTo(cx, bottom);
+        ctx.moveTo(cx, tipY);
         ctx.bezierCurveTo(
-            x - w * 0.12, y + h * 0.62,
-            x - w * 0.05, y + h * 0.02,
-            cx, cleft
+            x + w * 0.02, y + h * 0.70,
+            x + w * 0.02, y + h * 0.40,
+            x + w * 0.24, y + h * 0.26
         );
         ctx.bezierCurveTo(
-            x + w * 1.05, y + h * 0.02,
-            x + w * 1.12, y + h * 0.62,
-            cx, bottom
+            x + w * 0.34, y + h * 0.10,
+            x + w * 0.44, y + h * 0.10,
+            cx, cleftY
+        );
+        ctx.bezierCurveTo(
+            x + w * 0.56, y + h * 0.10,
+            x + w * 0.66, y + h * 0.10,
+            x + w * 0.76, y + h * 0.26
+        );
+        ctx.bezierCurveTo(
+            x + w * 0.98, y + h * 0.40,
+            x + w * 0.98, y + h * 0.70,
+            cx, tipY
         );
         ctx.closePath();
     }
@@ -525,7 +608,7 @@
                 if ((dx * dx + dy * dy) <= (b.r * b.r)) {
                     return i;
                 }
-            } else if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+            } else if (isPointInHeart(x, y, b)) {
                 return i;
             }
         }

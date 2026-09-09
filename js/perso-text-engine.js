@@ -83,6 +83,14 @@
                 return options.getBounds ? options.getBounds() : null;
             }
 
+            function getBoundsForText() {
+                var bounds = getBounds();
+                if (!bounds) {
+                    return null;
+                }
+                return adjustTextBounds(bounds);
+            }
+
             function isModalOpen() {
                 return options.isModalOpen ? options.isModalOpen() : modal.classList.contains('is-open');
             }
@@ -125,14 +133,31 @@
                 }
             }
 
+            function getDefaultTextPosition() {
+                if (typeof options.getDefaultTextPosition === 'function') {
+                    return options.getDefaultTextPosition();
+                }
+                return { x: 50, y: 50 };
+            }
+
+            function adjustTextBounds(bounds) {
+                if (typeof options.adjustTextBounds === 'function') {
+                    return options.adjustTextBounds(bounds) || bounds;
+                }
+                return bounds;
+            }
+
             function createDefaultText(offsetY) {
-                offsetY = typeof offsetY === 'number' ? offsetY : 50;
+                var defaultPos = getDefaultTextPosition();
+                if (typeof offsetY !== 'number') {
+                    offsetY = defaultPos.y;
+                }
                 return {
                     id: createTextId(),
                     text: '',
                     font: 'Outfit',
                     textSizePct: 50,
-                    textPosX: 50,
+                    textPosX: defaultPos.x,
                     textPosY: Math.max(10, Math.min(90, offsetY)),
                     textRotation: 0,
                     wrapOnCircle: false,
@@ -491,8 +516,10 @@
             function addTextBlock() {
                 syncFromControls();
                 var store = getTextsStore();
-                var offset = 40 + (store.texts.length * 8);
-                var textObj = createDefaultText(Math.min(85, offset));
+                var basePos = getDefaultTextPosition();
+                var stagger = Math.min(14, store.texts.length * 6);
+                var textObj = createDefaultText(Math.min(88, basePos.y + stagger));
+                textObj.textPosX = basePos.x;
                 store.texts.push(textObj);
                 selectText(textObj.id);
             }
@@ -566,7 +593,7 @@
                     return;
                 }
 
-                var bounds = getBounds();
+                var bounds = getBoundsForText();
                 if (!bounds) {
                     hideManipulator();
                     return;
@@ -652,7 +679,7 @@
             }
 
             function startTextDrag(mode, handle, clientX, clientY) {
-                var bounds = getBounds();
+                var bounds = getBoundsForText();
                 if (!bounds) {
                     return;
                 }
@@ -693,7 +720,7 @@
                 if (!manipDrag) {
                     return;
                 }
-                var bounds = getBounds();
+                var bounds = getBoundsForText();
                 if (!bounds) {
                     return;
                 }
@@ -854,6 +881,7 @@
                 if (!ctx || !bounds || !texts) {
                     return;
                 }
+                bounds = adjustTextBounds(bounds);
                 texts.forEach(function (textObj) {
                     if ((textObj.text || '').trim() === '') {
                         return;
@@ -878,6 +906,7 @@
                 if (!canvas || !bounds) {
                     return null;
                 }
+                bounds = adjustTextBounds(bounds);
                 var ctx = canvas.getContext('2d');
                 if (!ctx) {
                     return null;
@@ -913,7 +942,7 @@
                     return false;
                 }
                 ensureSlotSelected();
-                var bounds = getBounds();
+                var bounds = getBoundsForText();
                 if (!bounds) {
                     return false;
                 }
@@ -1095,7 +1124,9 @@
                 if (!store) {
                     return;
                 }
-                var def = createDefaultText();
+                var basePos = getDefaultTextPosition();
+                var def = createDefaultText(basePos.y);
+                def.textPosX = basePos.x;
                 store.texts = [def];
                 store.activeTextId = def.id;
             }
