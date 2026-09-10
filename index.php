@@ -293,11 +293,8 @@ $seo_canonical = $base . '/';
     require_once __DIR__ . '/includes/home_sections.php';
     $home_return_url = $_SERVER['REQUEST_URI'] ?? '/index.php';
     render_home_all_products_section(40, $home_return_url, 10);
-    render_home_product_section('cake_topper', 20, $home_return_url);
-    ?>
 
-    <?php
-    // Récupérer la configuration de la section4
+    // Bannière d'accueil (section4) — juste au-dessus des cake toppers
     $section4_config = [
         'titre' => 'Bienvenue au Sugar Paper',
         'texte' => 'Tous les produits a petit prix',
@@ -394,6 +391,10 @@ $seo_canonical = $base . '/';
         </div>
     </section>
     <?php endif; ?>
+
+    <?php
+    render_home_product_section('cake_topper', 20, $home_return_url);
+    ?>
 
     <?php
     // Récupérer les vidéos pour le carrousel
