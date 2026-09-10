@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_videos.php';
 require_once __DIR__ . '/../includes/video_upload_limits.php';
+require_once __DIR__ . '/../includes/image_optimizer.php';
 
 video_upload_apply_php_limits();
 
