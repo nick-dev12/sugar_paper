@@ -361,7 +361,7 @@ if ($edit_video_id > 0) {
                         <span>
                             <strong><i class="fas fa-images"></i> Afficher dans le carrousel d'accueil</strong>
                             <small style="display:block;color:#666;font-size:12px;margin-top:4px;font-weight:400;">
-                                La vidéo sera ajoutée aux slides images en haut de la page d'accueil. Plusieurs vidéos peuvent être cochées.
+                                Si au moins une vidéo est cochée, le carrousel du haut affiche uniquement les vidéos (les slides images sont masqués). Sans vidéo cochée, seules les images du slider s'affichent.
                             </small>
                         </span>
                     </label>

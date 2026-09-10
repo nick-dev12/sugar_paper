@@ -77,24 +77,25 @@ $seo_canonical = $base . '/';
         require_once __DIR__ . '/models/model_videos.php';
         $slider_carousel_videos = get_slider_carousel_videos();
     }
-    ?>
 
-    <div class="slider-area owl-carousel">
-        <?php foreach ($slides as $slide): ?>
-        <div class="slider-item slider-item--image">
-            <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'original')); ?>"
-                alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
-        </div>
-        <?php endforeach; ?>
-        <?php foreach ($slider_carousel_videos as $slider_video): ?>
-        <?php
-        if (empty($slider_video['fichier_video'])) {
+    $slider_carousel_videos_valid = [];
+    foreach ($slider_carousel_videos as $slider_video_row) {
+        if (empty($slider_video_row['fichier_video'])) {
             continue;
         }
-        $slider_video_disk = __DIR__ . '/upload/videos/' . $slider_video['fichier_video'];
+        $slider_video_disk = __DIR__ . '/upload/videos/' . $slider_video_row['fichier_video'];
         if (!is_file($slider_video_disk)) {
             continue;
         }
+        $slider_carousel_videos_valid[] = $slider_video_row;
+    }
+    $use_video_slider = count($slider_carousel_videos_valid) > 0;
+    ?>
+
+    <div class="slider-area owl-carousel<?php echo $use_video_slider ? ' slider-area--video-mode' : ' slider-area--image-mode'; ?>">
+        <?php if ($use_video_slider): ?>
+        <?php foreach ($slider_carousel_videos_valid as $slider_video): ?>
+        <?php
         $slider_video_url = '/upload/videos/' . rawurlencode($slider_video['fichier_video']);
         $slider_video_type = video_file_mime_type($slider_video['fichier_video']);
         $slider_video_poster = resolve_video_poster_url($slider_video);
@@ -118,6 +119,14 @@ $seo_canonical = $base . '/';
             </video>
         </div>
         <?php endforeach; ?>
+        <?php else: ?>
+        <?php foreach ($slides as $slide): ?>
+        <div class="slider-item slider-item--image">
+            <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'original')); ?>"
+                alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
+        </div>
+        <?php endforeach; ?>
+        <?php endif; ?>
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
@@ -563,18 +572,20 @@ $seo_canonical = $base . '/';
 
         var $homeSlider = $('.slider-area');
         if ($homeSlider.find('.slider-item').length) {
+            var sliderIsVideoMode = $homeSlider.hasClass('slider-area--video-mode');
             $homeSlider.owlCarousel($.extend({}, owlDefaults, {
                 items: 1,
                 autoplay: true,
-                autoplayTimeout: 6000,
-                lazyLoad: true
+                autoplayTimeout: sliderIsVideoMode ? 12000 : 6000,
+                lazyLoad: !sliderIsVideoMode
             }));
 
-            $homeSlider.on('initialized.owl.carousel changed.owl.carousel translated.owl.carousel', function() {
+            if (sliderIsVideoMode) {
+                $homeSlider.on('initialized.owl.carousel changed.owl.carousel translated.owl.carousel', function() {
+                    syncSliderVideos();
+                });
                 syncSliderVideos();
-            });
-
-            syncSliderVideos();
+            }
         }
 
         $('.categorie').owlCarousel($.extend({}, owlDefaults, {
