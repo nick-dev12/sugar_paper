@@ -119,24 +119,43 @@ body::before {
 }
 
 /* Image : object-fit conserve les proportions, ne dépasse jamais le container */
-.slider-area .slider-item img,
-.slider-area .slider-item__video {
+.slider-area .slider-item img {
   width: 100%;
   height: auto !important;
   max-height: 450px !important;
   min-height: 200px !important;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   display: block;
-  background: #1a1210;
 }
 
-.slider-area .slider-item--video {
+/* Vidéos du carrousel : proportions respectées, largeur ciblée */
+.slider-area--video-mode .slider-item--video {
   background: #1a1210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
-.slider-area .slider-item img {
+.slider-area--video-mode .slider-item__video {
+  width: 70%;
+  max-width: 70%;
+  height: auto !important;
+  max-height: 450px !important;
+  min-height: 0 !important;
   object-fit: contain;
+  object-position: center;
+  display: block;
+  margin: 0 auto;
+  background: transparent;
+}
+
+@media (max-width: 767px) {
+  .slider-area--video-mode .slider-item__video {
+    width: 95%;
+    max-width: 95%;
+  }
 }
 
 .slider-area .slider-item p {
@@ -184,6 +203,9 @@ body::before {
   .slider-area .slider-item img {
     height: 400px !important;
   }
+  .slider-area--video-mode .slider-item__video {
+    max-height: 400px !important;
+  }
 }
 @media (max-width: 992px) {
   .slider-area {
@@ -194,6 +216,9 @@ body::before {
   }
   .slider-area .slider-item img {
     height: 350px !important;
+  }
+  .slider-area--video-mode .slider-item__video {
+    max-height: 350px !important;
   }
 }
 @media (max-width: 768px) {
@@ -207,6 +232,9 @@ body::before {
     height: 300px !important;
     transform: scale(1.2);
   }
+  .slider-area--video-mode .slider-item__video {
+    max-height: 300px !important;
+  }
 }
 
 @media (max-width: 600px) {
@@ -219,6 +247,9 @@ body::before {
   .slider-area .slider-item img {
     transform: scale(1.2) !important;
     height: 200px !important;
+  }
+  .slider-area--video-mode .slider-item__video {
+    max-height: 200px !important;
   }
 }
 
