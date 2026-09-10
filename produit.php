@@ -79,7 +79,9 @@ $supports_cake_topper_cp = produit_supports_cake_topper_commande_perso($produit)
 $supports_photo_perso = produit_personnalisation_enabled() && produit_supports_photo_personnalisation($produit);
 $supports_cupcakes_perso = produit_personnalisation_enabled() && produit_supports_cupcakes_personnalisation($produit);
 $supports_contours_perso = produit_personnalisation_enabled() && produit_supports_contours_personnalisation($produit);
-$supports_any_sheet_perso = $supports_photo_perso || $supports_cupcakes_perso || $supports_contours_perso;
+$supports_disques_cocktail_perso = produit_personnalisation_enabled() && produit_supports_disques_cocktail_personnalisation($produit);
+$supports_azyme_perso = produit_personnalisation_enabled() && produit_supports_habillage_papier_azyme_personnalisation($produit);
+$supports_any_sheet_perso = $supports_photo_perso || $supports_azyme_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_disques_cocktail_perso;
 $gateau_modele_url = produit_personnalisation_modele_url();
 
 // Récupérer les variantes du produit
@@ -136,7 +138,7 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/image-lightbox.css<?php echo asset_version_query(); ?>">
-    <?php if ($supports_photo_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_cake_topper_cp): ?>
+    <?php if ($supports_photo_perso || $supports_azyme_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_disques_cocktail_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
     <?php if ($supports_cake_topper_cp): ?>
@@ -1559,7 +1561,7 @@ $seo_schema_graphs = array_merge(
                 <?php if ($supports_cake_topper_cp): ?>
                     <?php render_produit_detail_cp_action($produit); ?>
                 <?php else: ?>
-                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form"<?php echo $supports_photo_perso ? ' enctype="multipart/form-data"' : ''; ?>>
+                <form method="POST" action="" id="add-to-panier-form" class="produit-add-form"<?php echo ($supports_photo_perso || $supports_azyme_perso) ? ' enctype="multipart/form-data"' : ''; ?>>
                     <input type="hidden" name="action" value="add_to_panier">
                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                     <?php if ($has_variantes): ?>
@@ -1695,6 +1697,10 @@ $seo_schema_graphs = array_merge(
                         <span><?php
                             if ($supports_cupcakes_perso) {
                                 echo 'Personnalisation cupcakes ajoutée — votre feuille sera imprimée';
+                            } elseif ($supports_disques_cocktail_perso) {
+                                echo 'Personnalisation disques à cocktail ajoutée — votre feuille sera imprimée';
+                            } elseif ($supports_azyme_perso) {
+                                echo 'Personnalisation habillage papier azyme ajoutée — votre feuille sera imprimée';
                             } elseif ($supports_contours_perso) {
                                 echo 'Personnalisation contours ajoutée — votre feuille sera imprimée';
                             } else {
@@ -1735,8 +1741,18 @@ $seo_schema_graphs = array_merge(
                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                             Personnalisation
                         </button>
+                        <?php elseif ($supports_azyme_perso): ?>
+                        <button type="button" class="btn-personnaliser js-open-azyme-perso-modal" id="btn-personnaliser-azyme" data-perso-form="add-to-panier-form">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Personnalisation
+                        </button>
                         <?php elseif ($supports_cupcakes_perso): ?>
                         <button type="button" class="btn-personnaliser js-open-cupcakes-perso-modal" id="btn-personnaliser-cupcakes" data-perso-form="add-to-panier-form">
+                            <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                            Personnalisation
+                        </button>
+                        <?php elseif ($supports_disques_cocktail_perso): ?>
+                        <button type="button" class="btn-personnaliser js-open-disques-cocktail-perso-modal" id="btn-personnaliser-disques-cocktail" data-perso-form="add-to-panier-form">
                             <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
                             Personnalisation
                         </button>
@@ -1824,8 +1840,16 @@ $seo_schema_graphs = array_merge(
     <?php render_produit_personnalisation_modal(); ?>
     <?php endif; ?>
 
+    <?php if ($supports_azyme_perso): ?>
+    <?php render_produit_personnalisation_azyme_modal(); ?>
+    <?php endif; ?>
+
     <?php if ($supports_cupcakes_perso): ?>
     <?php render_produit_personnalisation_cupcakes_modal(); ?>
+    <?php endif; ?>
+
+    <?php if ($supports_disques_cocktail_perso): ?>
+    <?php render_produit_personnalisation_disques_cocktail_modal(); ?>
     <?php endif; ?>
 
     <?php if ($supports_contours_perso): ?>
@@ -2141,11 +2165,17 @@ $seo_schema_graphs = array_merge(
     <?php if ($supports_photo_perso): ?>
     <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
-    <?php if ($supports_cupcakes_perso || $supports_contours_perso): ?>
+    <?php if ($supports_azyme_perso): ?>
+    <script src="/js/produit-personnalisation-azyme.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
+    <?php if ($supports_cupcakes_perso || $supports_disques_cocktail_perso || $supports_contours_perso): ?>
     <script src="/js/perso-text-engine.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
     <?php if ($supports_cupcakes_perso): ?>
     <script src="/js/produit-personnalisation-cupcakes.js<?php echo asset_version_query(); ?>"></script>
+    <?php endif; ?>
+    <?php if ($supports_disques_cocktail_perso): ?>
+    <script src="/js/produit-personnalisation-disques-cocktail.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
     <?php if ($supports_contours_perso): ?>
     <script src="/js/produit-personnalisation-contours.js<?php echo asset_version_query(); ?>"></script>

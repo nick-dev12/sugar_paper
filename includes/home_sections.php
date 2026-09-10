@@ -78,7 +78,7 @@ function get_home_section_page_url($section_key)
     if (!$section) {
         return 'produits.php';
     }
-    if ($section === 'cupcakes' || $section === 'contours_gateau') {
+    if ($section === 'cupcakes' || $section === 'contours_gateau' || $section === 'disques_cocktail' || $section === 'habillage_papier_azyme') {
         $section = 'photo_impression';
     }
     return 'section-produits.php?section=' . rawurlencode($section);

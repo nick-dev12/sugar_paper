@@ -304,7 +304,7 @@ function produits_has_section_accueil_column()
  */
 function get_produit_section_accueil_allowed()
 {
-    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes', 'contours_gateau'];
+    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes', 'contours_gateau', 'disques_cocktail', 'habillage_papier_azyme'];
 }
 
 /**
@@ -331,6 +331,8 @@ function get_produit_section_accueil_labels()
         'decoration_gateau' => 'Décoration de gâteau',
         'cupcakes' => 'Cupcakes',
         'contours_gateau' => 'Contours de gâteau',
+        'disques_cocktail' => 'Disques à cocktail',
+        'habillage_papier_azyme' => 'Habillage papier azyme',
     ];
 }
 
@@ -340,7 +342,7 @@ function get_produit_section_accueil_labels()
  */
 function get_produit_sections_price_from()
 {
-    return ['cake_topper', 'photo_impression', 'cupcakes', 'contours_gateau'];
+    return ['cake_topper', 'photo_impression', 'cupcakes', 'contours_gateau', 'disques_cocktail', 'habillage_papier_azyme'];
 }
 
 /**
@@ -356,13 +358,19 @@ function get_home_section_query_keys($section)
         return [];
     }
     if ($section === 'photo_impression') {
-        return ['photo_impression', 'cupcakes', 'contours_gateau'];
+        return ['photo_impression', 'cupcakes', 'contours_gateau', 'disques_cocktail', 'habillage_papier_azyme'];
     }
     if ($section === 'cupcakes') {
         return ['cupcakes'];
     }
     if ($section === 'contours_gateau') {
         return ['contours_gateau'];
+    }
+    if ($section === 'disques_cocktail') {
+        return ['disques_cocktail'];
+    }
+    if ($section === 'habillage_papier_azyme') {
+        return ['habillage_papier_azyme'];
     }
     return [$section];
 }

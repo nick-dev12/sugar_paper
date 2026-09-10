@@ -172,6 +172,14 @@ function process_add_to_panier()
                 'diameter_cm' => 5,
                 'image_mode' => 'shared',
             ]);
+        } elseif (produit_supports_disques_cocktail_personnalisation($produit)) {
+            $option_perso_meta = produit_personnalisation_meta_encode([
+                'type' => 'disques_cocktail',
+                'format' => 'a4',
+                'shape' => 'circle',
+                'diameter_cm' => 8,
+                'image_mode' => 'shared',
+            ]);
         } elseif (produit_supports_contours_personnalisation($produit)) {
             $option_perso_meta = produit_personnalisation_meta_encode([
                 'type' => 'contours_gateau',

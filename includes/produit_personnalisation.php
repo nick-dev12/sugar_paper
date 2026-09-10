@@ -53,15 +53,45 @@ function produit_supports_contours_personnalisation($produit)
 }
 
 /**
- * Personnalisation feuille (photo OU cupcakes OU contours)
+ * Personnalisation disques à cocktail (6 cercles sur feuille)
+ * @param array|null $produit
+ * @return bool
+ */
+function produit_supports_disques_cocktail_personnalisation($produit)
+{
+    if (!is_array($produit)) {
+        return false;
+    }
+
+    return normalize_produit_section_accueil($produit['section_accueil'] ?? '') === 'disques_cocktail';
+}
+
+/**
+ * Personnalisation habillage papier azyme (modal photo A4 uniquement)
+ * @param array|null $produit
+ * @return bool
+ */
+function produit_supports_habillage_papier_azyme_personnalisation($produit)
+{
+    if (!is_array($produit)) {
+        return false;
+    }
+
+    return normalize_produit_section_accueil($produit['section_accueil'] ?? '') === 'habillage_papier_azyme';
+}
+
+/**
+ * Personnalisation feuille (photo, azyme, cupcakes, contours, disques cocktail)
  * @param array|null $produit
  * @return bool
  */
 function produit_supports_sheet_personnalisation($produit)
 {
     return produit_supports_photo_personnalisation($produit)
+        || produit_supports_habillage_papier_azyme_personnalisation($produit)
         || produit_supports_cupcakes_personnalisation($produit)
-        || produit_supports_contours_personnalisation($produit);
+        || produit_supports_contours_personnalisation($produit)
+        || produit_supports_disques_cocktail_personnalisation($produit);
 }
 
 /**
@@ -240,6 +270,32 @@ function render_produit_personnalisation_contours_modal()
     }
 
     include __DIR__ . '/produit_personnalisation_contours_modal.php';
+}
+
+/**
+ * Modal personnalisation disques à cocktail
+ * @return void
+ */
+function render_produit_personnalisation_disques_cocktail_modal()
+{
+    if (!produit_personnalisation_enabled()) {
+        return;
+    }
+
+    include __DIR__ . '/produit_personnalisation_disques_cocktail_modal.php';
+}
+
+/**
+ * Modal personnalisation habillage papier azyme (A4 uniquement)
+ * @return void
+ */
+function render_produit_personnalisation_azyme_modal()
+{
+    if (!produit_personnalisation_enabled()) {
+        return;
+    }
+
+    include __DIR__ . '/produit_personnalisation_azyme_modal.php';
 }
 
 /**
@@ -525,6 +581,9 @@ function produit_personnalisation_meta_normalize(array $data)
     if ($type === 'contours_gateau') {
         return produit_personnalisation_contours_meta_normalize($data);
     }
+    if ($type === 'disques_cocktail') {
+        return produit_personnalisation_disques_cocktail_meta_normalize($data);
+    }
 
     $formats = get_produit_personnalisation_paper_formats();
     $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
@@ -658,6 +717,71 @@ function produit_personnalisation_cupcakes_meta_normalize(array $data)
 }
 
 /**
+ * Meta disques à cocktail : 6 cercles, diamètre global max 8 cm
+ * @param array $data
+ * @return array
+ */
+function produit_personnalisation_disques_cocktail_meta_normalize(array $data)
+{
+    $formats = get_produit_personnalisation_paper_formats();
+    $format = isset($data['format']) ? strtolower(trim((string) $data['format'])) : 'a4';
+    if (!isset($formats[$format])) {
+        $format = 'a4';
+    }
+    $shape = isset($data['shape']) ? strtolower(trim((string) $data['shape'])) : 'circle';
+    if (!in_array($shape, ['circle', 'heart'], true)) {
+        $shape = 'circle';
+    }
+    $image_mode = isset($data['image_mode']) ? strtolower(trim((string) $data['image_mode'])) : 'shared';
+    if (!in_array($image_mode, ['shared', 'per_circle'], true)) {
+        $image_mode = 'shared';
+    }
+
+    $diameter = isset($data['diameter_cm'])
+        ? (float) $data['diameter_cm']
+        : (isset($data['width_cm']) ? (float) $data['width_cm'] : 8.0);
+    $diameter = max(1, min(8, $diameter));
+
+    $circles = [];
+    $raw_circles = isset($data['circles']) && is_array($data['circles']) ? $data['circles'] : [];
+    for ($i = 0; $i < 6; $i++) {
+        $row = isset($raw_circles[$i]) && is_array($raw_circles[$i]) ? $raw_circles[$i] : [];
+        $circle_out = produit_personnalisation_image_normalize($row);
+        if ($image_mode === 'per_circle') {
+            $texts = produit_personnalisation_texts_normalize_list(isset($row['texts']) ? $row['texts'] : []);
+            if ($texts !== []) {
+                $circle_out['texts'] = $texts;
+            }
+        }
+        $circles[] = $circle_out;
+    }
+
+    $out = [
+        'type' => 'disques_cocktail',
+        'format' => $format,
+        'shape' => $shape,
+        'diameter_cm' => round($diameter, 1),
+        'width_cm' => round($diameter, 1),
+        'height_cm' => round($diameter, 1),
+        'image_mode' => $image_mode,
+        'circles' => $circles,
+    ];
+
+    if ($image_mode === 'shared' && isset($data['image']) && is_array($data['image'])) {
+        $out['image'] = produit_personnalisation_image_normalize($data['image']);
+    }
+
+    if ($image_mode === 'shared') {
+        $texts = produit_personnalisation_texts_normalize_list(isset($data['texts']) ? $data['texts'] : []);
+        if ($texts !== []) {
+            $out['texts'] = $texts;
+        }
+    }
+
+    return $out;
+}
+
+/**
  * Meta contours : 3 bandes sur feuille A3/A4
  * @param array $data
  * @return array
@@ -767,6 +891,14 @@ function produit_personnalisation_meta_label(array $meta)
         $mode = ($n['image_mode'] ?? 'shared') === 'per_contour' ? 'image par contour' : 'image unique';
         return $contours_paper['label'] . ' paysage · Contours · 3 × '
             . number_format((float) ($n['height_cm'] ?? 5), 1, ',', ' ') . ' cm de haut · ' . $mode;
+    }
+
+    if (($n['type'] ?? '') === 'disques_cocktail') {
+        $shape_labels = ['circle' => 'Cercle', 'heart' => 'Cœur'];
+        $shape_label = $shape_labels[$n['shape']] ?? 'Cercle';
+        $mode = ($n['image_mode'] ?? 'shared') === 'per_circle' ? 'image par disque' : 'image unique';
+        return $paper['label'] . ' · Disques cocktail · 6 × ' . $shape_label
+            . ' Ø ' . number_format((float) ($n['diameter_cm'] ?? $n['width_cm']), 1, ',', ' ') . ' cm · ' . $mode;
     }
 
     $shape_labels = [
