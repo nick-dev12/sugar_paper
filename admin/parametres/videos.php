@@ -48,10 +48,16 @@ if (isset($_SESSION['success_message'])) {
     unset($_SESSION['success_message']);
 }
 
-// Récupérer la vidéo à modifier si ID fourni
+// Récupérer la vidéo à modifier si ID fourni (GET ou POST en cas d'erreur formulaire)
 $video_to_edit = null;
+$edit_video_id = 0;
 if (isset($_GET['edit']) && !empty($_GET['edit'])) {
-    $video_to_edit = get_video_by_id((int) $_GET['edit']);
+    $edit_video_id = (int) $_GET['edit'];
+} elseif (isset($_POST['video_id']) && (int) $_POST['video_id'] > 0) {
+    $edit_video_id = (int) $_POST['video_id'];
+}
+if ($edit_video_id > 0) {
+    $video_to_edit = get_video_by_id($edit_video_id);
 }
 ?>
 <!DOCTYPE html>
@@ -118,9 +124,9 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                 <h2><i class="fas fa-video"></i> Gestion des Vidéos</h2>
                 <p>Gérez les vidéos du carrousel "Ils ont découvert ICON"</p>
             </div>
-            <button class="btn-add-video" onclick="openModal()">
+            <a href="videos.php?add=1" class="btn-add-video">
                 <i class="fas fa-plus"></i> Ajouter une vidéo
-            </button>
+            </a>
         </div>
 
         <?php if (!empty($success_message)): ?>
@@ -188,8 +194,7 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                 </div>
 
                 <div class="video-card-actions">
-                    <a href="?edit=<?php echo $video['id']; ?>" class="btn-edit"
-                        onclick="openModal(<?php echo $video['id']; ?>); return false;">
+                    <a href="?edit=<?php echo (int) $video['id']; ?>" class="btn-edit">
                         <i class="fas fa-edit"></i> Modifier
                     </a>
                     <form method="POST" style="display: inline; flex: 1;"
@@ -246,39 +251,47 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
                 </div>
 
                 <!-- Champ pour upload -->
+                <?php
+                $existing_video_src = '';
+                if ($video_to_edit && !empty($video_to_edit['fichier_video'])) {
+                    $existing_video_src = '/upload/videos/' . $video_to_edit['fichier_video'];
+                }
+                ?>
                 <div class="form-group">
                     <label for="fichier_video">
-                        <i class="fas fa-file-video"></i> Fichier vidéo *
+                        <i class="fas fa-file-video"></i> Fichier vidéo<?php echo $video_to_edit ? ' (facultatif)' : ' *'; ?>
                     </label>
                     <div class="file-input-wrapper">
                         <label for="fichier_video" class="file-input-label">
                             <i class="fas fa-upload"></i>
-                            <span>Choisir un fichier vidéo</span>
+                            <span><?php echo $video_to_edit ? 'Remplacer le fichier vidéo' : 'Choisir un fichier vidéo'; ?></span>
                         </label>
                         <input type="file" id="fichier_video" name="fichier_video"
                             <?php if (!$video_to_edit): ?>required<?php endif; ?> onchange="previewVideoFromFile(this)">
                     </div>
                     <small style="display: block; color: #666; font-size: 12px; margin-top: 5px;">
                         Formats vidéo acceptés — taille maximum <?php echo video_upload_max_mo_int(); ?> Mo
+                        <?php if ($video_to_edit): ?>
+                        · laissez vide pour conserver la vidéo actuelle
+                        <?php endif; ?>
                     </small>
                     <?php if ($video_to_edit && !empty($video_to_edit['fichier_video'])): ?>
                     <p style="margin-top: 10px; color: #666; font-size: 12px;">
-                        <i class="fas fa-info-circle"></i> Fichier actuel:
-                        <?php echo htmlspecialchars($video_to_edit['fichier_video']); ?>
-                        <br>
-                        <small style="color: #999;">Laissez vide pour conserver ce fichier, ou sélectionnez un nouveau
-                            fichier pour le remplacer.</small>
+                        <i class="fas fa-info-circle"></i> Fichier enregistré :
+                        <strong><?php echo htmlspecialchars($video_to_edit['fichier_video']); ?></strong>
                     </p>
                     <?php endif; ?>
-                    <!-- Prévisualisation pour upload -->
-                    <div id="previewUpload" class="video-preview-container" style="display: none; margin-top: 15px;">
+                    <!-- Prévisualisation vidéo actuelle ou nouvel upload -->
+                    <div id="previewUpload" class="video-preview-container"
+                        style="display: <?php echo $existing_video_src !== '' ? 'block' : 'none'; ?>; margin-top: 15px;">
                         <label style="display: block; margin-bottom: 10px; color: #6b2f20; font-weight: 600;">
-                            <i class="fas fa-eye"></i> Aperçu de la vidéo
+                            <i class="fas fa-eye"></i> <?php echo $video_to_edit ? 'Vidéo enregistrée' : 'Aperçu de la vidéo'; ?>
                         </label>
                         <div class="video-preview-wrapper">
                             <video id="previewVideo" controls style="width: 100%; max-height: 400px;"
-                                <?php if ($video_to_edit && !empty($video_to_edit['fichier_video'])): ?>
-                                data-existing-video="/upload/videos/<?php echo htmlspecialchars($video_to_edit['fichier_video']); ?>"
+                                <?php if ($existing_video_src !== ''): ?>
+                                src="<?php echo htmlspecialchars($existing_video_src); ?>"
+                                data-existing-video="<?php echo htmlspecialchars($existing_video_src); ?>"
                                 <?php endif; ?>>
                                 Votre navigateur ne supporte pas la lecture de vidéos.
                             </video>
@@ -354,27 +367,22 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     <?php include '../includes/footer.php'; ?>
 
     <script>
-    function openModal(videoId = null) {
+    function openModal() {
         const modal = document.getElementById('videoModal');
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+    }
 
-        // Si on modifie, charger les données
-        if (videoId) {
-            // Initialiser la prévisualisation après un court délai
-            setTimeout(function() {
-                // Vérifier si une vidéo existante est disponible
-                const previewVideo = document.getElementById('previewVideo');
-                const existingVideoSrc = previewVideo ? previewVideo.getAttribute('data-existing-video') : null;
-                if (existingVideoSrc) {
-                    const previewContainer = document.getElementById('previewUpload');
-                    previewVideo.src = existingVideoSrc;
-                    previewContainer.style.display = 'block';
-                }
-            }, 300);
-        } else {
-            // Réinitialiser le formulaire
-            document.getElementById('videoForm').reset();
+    function initEditPreview() {
+        const previewVideo = document.getElementById('previewVideo');
+        const previewContainer = document.getElementById('previewUpload');
+        if (!previewVideo || !previewContainer) {
+            return;
+        }
+        const existingVideoSrc = previewVideo.getAttribute('data-existing-video');
+        if (existingVideoSrc) {
+            previewVideo.src = existingVideoSrc;
+            previewContainer.style.display = 'block';
         }
     }
 
@@ -401,40 +409,15 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
 
-        // Réinitialiser le formulaire
-        document.getElementById('videoForm').reset();
-
-        // Réinitialiser les prévisualisations
-        const previewContainer = document.getElementById('previewUpload');
-        if (previewContainer) {
-            previewContainer.style.display = 'none';
-        }
-
         window.location.href = 'videos.php';
     }
 
-    // Initialiser la prévisualisation au chargement si une vidéo existe
     document.addEventListener('DOMContentLoaded', function() {
-        const previewVideo = document.getElementById('previewVideo');
-        const existingVideoSrc = previewVideo ? previewVideo.getAttribute('data-existing-video') : null;
-        if (existingVideoSrc) {
-            const previewContainer = document.getElementById('previewUpload');
-            previewVideo.src = existingVideoSrc;
-            previewContainer.style.display = 'block';
-        }
-    });
-
-    // Ouvrir le modal si on modifie une vidéo OU si il y a une erreur
-    <?php if ($video_to_edit || !empty($error_message)): ?>
-    window.addEventListener('DOMContentLoaded', function() {
-        <?php if ($video_to_edit): ?>
-        openModal(<?php echo $video_to_edit['id']; ?>);
-        <?php else: ?>
-        // Ouvrir le modal en cas d'erreur pour afficher le message
+        initEditPreview();
+        <?php if ($video_to_edit || !empty($error_message) || isset($_GET['add'])): ?>
         openModal();
         <?php endif; ?>
     });
-    <?php endif; ?>
 
     // Fermer le modal en cliquant en dehors
     document.getElementById('videoModal').addEventListener('click', function(e) {
@@ -447,6 +430,7 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
     function previewVideoFromFile(input) {
         const previewContainer = document.getElementById('previewUpload');
         const previewVideo = document.getElementById('previewVideo');
+        const existingVideoSrc = previewVideo ? previewVideo.getAttribute('data-existing-video') : null;
 
         if (input.files && input.files[0]) {
             const file = input.files[0];
@@ -458,8 +442,14 @@ if (isset($_GET['edit']) && !empty($_GET['edit'])) {
             };
 
             reader.readAsDataURL(file);
+        } else if (existingVideoSrc) {
+            previewVideo.src = existingVideoSrc;
+            previewContainer.style.display = 'block';
         } else {
             previewContainer.style.display = 'none';
+            if (previewVideo) {
+                previewVideo.removeAttribute('src');
+            }
         }
     }
 
