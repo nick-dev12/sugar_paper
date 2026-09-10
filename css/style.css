@@ -119,13 +119,24 @@ body::before {
 }
 
 /* Image : object-fit conserve les proportions, ne dépasse jamais le container */
-.slider-area .slider-item img {
+.slider-area .slider-item img,
+.slider-area .slider-item__video {
   width: 100%;
   height: auto !important;
   max-height: 450px !important;
   min-height: 200px !important;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
+  display: block;
+  background: #1a1210;
+}
+
+.slider-area .slider-item--video {
+  background: #1a1210;
+}
+
+.slider-area .slider-item img {
+  object-fit: contain;
 }
 
 .slider-area .slider-item p {

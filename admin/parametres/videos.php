@@ -78,17 +78,23 @@ if ($edit_video_id > 0) {
     .btn-primary.loading .btn-content { display: none; }
     .btn-primary.loading .btn-loader { display: inline-flex; }
     .btn-primary.loading { pointer-events: none; }
-    .badge-hero-banner {
+    .badge-hero-banner,
+    .badge-slider-carousel {
         display: inline-flex;
         align-items: center;
         gap: 4px;
         margin-left: 6px;
         padding: 3px 8px;
         border-radius: 999px;
-        background: #918a44;
         color: #fff;
         font-size: 11px;
         font-weight: 700;
+    }
+    .badge-hero-banner {
+        background: #918a44;
+    }
+    .badge-slider-carousel {
+        background: #c26638;
     }
     .video-hero-banner-label {
         display: flex;
@@ -189,6 +195,11 @@ if ($edit_video_id > 0) {
                     <?php if (!empty($video['hero_banner'])): ?>
                     <span class="badge-hero-banner" title="Affichée dans la bannière d'accueil">
                         <i class="fas fa-image"></i> Bannière
+                    </span>
+                    <?php endif; ?>
+                    <?php if (!empty($video['slider_carousel'])): ?>
+                    <span class="badge-slider-carousel" title="Affichée dans le carrousel en haut de l'accueil">
+                        <i class="fas fa-images"></i> Carrousel
                     </span>
                     <?php endif; ?>
                 </div>
@@ -330,6 +341,27 @@ if ($edit_video_id > 0) {
                             <strong><i class="fas fa-panorama"></i> Afficher dans la bannière d'accueil</strong>
                             <small style="display:block;color:#666;font-size:12px;margin-top:4px;font-weight:400;">
                                 Une seule vidéo à la fois. Si une autre est déjà cochée, elle sera automatiquement désactivée.
+                            </small>
+                        </span>
+                    </label>
+                </div>
+
+                <?php
+                $slider_checked = false;
+                if (isset($_POST['slider_carousel'])) {
+                    $slider_checked = !empty($_POST['slider_carousel']);
+                } elseif ($video_to_edit) {
+                    $slider_checked = !empty($video_to_edit['slider_carousel']);
+                }
+                ?>
+                <div class="form-group">
+                    <label class="video-hero-banner-label" for="slider_carousel">
+                        <input type="checkbox" id="slider_carousel" name="slider_carousel" value="1"
+                            <?php echo $slider_checked ? 'checked' : ''; ?>>
+                        <span>
+                            <strong><i class="fas fa-images"></i> Afficher dans le carrousel d'accueil</strong>
+                            <small style="display:block;color:#666;font-size:12px;margin-top:4px;font-weight:400;">
+                                La vidéo sera ajoutée aux slides images en haut de la page d'accueil. Plusieurs vidéos peuvent être cochées.
                             </small>
                         </span>
                     </label>

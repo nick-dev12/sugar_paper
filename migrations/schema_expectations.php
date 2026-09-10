@@ -78,5 +78,6 @@ return [
         ['panier', 'variante_id'],
         ['commande_produits', 'nom_produit'],
         ['videos', 'hero_banner'],
+        ['videos', 'slider_carousel'],
     ],
 ];

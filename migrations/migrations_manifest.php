@@ -251,4 +251,9 @@ return [
         'label' => 'Vidéo bannière accueil (hero_banner)',
         'script' => 'run_add_videos_hero_banner.php',
     ],
+    [
+        'id' => 'videos_slider_carousel',
+        'label' => 'Vidéo carrousel accueil (slider_carousel)',
+        'script' => 'run_add_videos_slider_carousel.php',
+    ],
 ];

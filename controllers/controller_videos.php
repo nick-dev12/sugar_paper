@@ -120,6 +120,7 @@ function process_video_form()
         'fichier_video' => $fichier_video,
         'statut' => $statut,
         'hero_banner' => !empty($_POST['hero_banner']) ? 1 : 0,
+        'slider_carousel' => !empty($_POST['slider_carousel']) ? 1 : 0,
     ];
 
     // Ajouter image_preview si disponible

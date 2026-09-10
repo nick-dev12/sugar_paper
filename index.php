@@ -71,20 +71,53 @@ $seo_canonical = $base . '/';
         $slides_result = get_all_slides('actif'); // Récupérer uniquement les slides actifs
         $slides = is_array($slides_result) ? $slides_result : [];
     }
+
+    $slider_carousel_videos = [];
+    if (file_exists(__DIR__ . '/models/model_videos.php')) {
+        require_once __DIR__ . '/models/model_videos.php';
+        $slider_carousel_videos = get_slider_carousel_videos();
+    }
     ?>
 
     <div class="slider-area owl-carousel">
-        <?php if (empty($slides)): ?>
-
-        <?php else: ?>
         <?php foreach ($slides as $slide): ?>
-        <div class="slider-item">
+        <div class="slider-item slider-item--image">
             <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'original')); ?>"
                 alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
-
         </div>
         <?php endforeach; ?>
-        <?php endif; ?>
+        <?php foreach ($slider_carousel_videos as $slider_video): ?>
+        <?php
+        if (empty($slider_video['fichier_video'])) {
+            continue;
+        }
+        $slider_video_disk = __DIR__ . '/upload/videos/' . $slider_video['fichier_video'];
+        if (!is_file($slider_video_disk)) {
+            continue;
+        }
+        $slider_video_url = '/upload/videos/' . rawurlencode($slider_video['fichier_video']);
+        $slider_video_type = video_file_mime_type($slider_video['fichier_video']);
+        $slider_video_poster = resolve_video_poster_url($slider_video);
+        $slider_video_label = trim((string) ($slider_video['titre'] ?? ''));
+        if ($slider_video_label === '') {
+            $slider_video_label = 'Vidéo Sugar Paper';
+        }
+        ?>
+        <div class="slider-item slider-item--video">
+            <video class="slider-item__video"
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                <?php if ($slider_video_poster !== ''): ?>
+                poster="<?php echo htmlspecialchars($slider_video_poster, ENT_QUOTES, 'UTF-8'); ?>"
+                <?php endif; ?>
+                aria-label="<?php echo htmlspecialchars($slider_video_label, ENT_QUOTES, 'UTF-8'); ?>">
+                <source src="<?php echo htmlspecialchars($slider_video_url, ENT_QUOTES, 'UTF-8'); ?>"
+                    type="<?php echo htmlspecialchars($slider_video_type, ENT_QUOTES, 'UTF-8'); ?>">
+            </video>
+        </div>
+        <?php endforeach; ?>
     </div>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
@@ -512,12 +545,37 @@ $seo_canonical = $base . '/';
             autoplayHoverPause: true
         };
 
-        $('.slider-area').owlCarousel($.extend({}, owlDefaults, {
-            items: 1,
-            autoplay: true,
-            autoplayTimeout: 6000,
-            lazyLoad: true
-        }));
+        function syncSliderVideos() {
+            var $slider = $('.slider-area');
+            $slider.find('.slider-item__video').each(function() {
+                this.pause();
+            });
+            var $activeVideo = $slider.find('.owl-item.active .slider-item__video').first();
+            if (!$activeVideo.length) {
+                return;
+            }
+            var video = $activeVideo.get(0);
+            var playPromise = video.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(function() { /* autoplay bloqué */ });
+            }
+        }
+
+        var $homeSlider = $('.slider-area');
+        if ($homeSlider.find('.slider-item').length) {
+            $homeSlider.owlCarousel($.extend({}, owlDefaults, {
+                items: 1,
+                autoplay: true,
+                autoplayTimeout: 6000,
+                lazyLoad: true
+            }));
+
+            $homeSlider.on('initialized.owl.carousel changed.owl.carousel translated.owl.carousel', function() {
+                syncSliderVideos();
+            });
+
+            syncSliderVideos();
+        }
 
         $('.categorie').owlCarousel($.extend({}, owlDefaults, {
             items: 5,

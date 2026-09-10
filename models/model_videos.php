@@ -84,6 +84,78 @@ function videos_has_hero_banner_column()
 }
 
 /**
+ * Vérifie si la colonne slider_carousel existe
+ * @return bool
+ */
+function videos_has_slider_carousel_column()
+{
+    static $has = null;
+    if ($has !== null) {
+        return $has;
+    }
+
+    global $db;
+    try {
+        $r = $db ? $db->query("SHOW COLUMNS FROM videos LIKE 'slider_carousel'") : null;
+        $has = $r && (bool) $r->fetchColumn();
+    } catch (PDOException $e) {
+        $has = false;
+    }
+
+    return $has;
+}
+
+/**
+ * Type MIME d'un fichier vidéo selon son extension
+ * @param string $filename
+ * @return string
+ */
+function video_file_mime_type($filename)
+{
+    $ext = strtolower(pathinfo((string) $filename, PATHINFO_EXTENSION));
+    $mimes = [
+        'mp4' => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg' => 'video/ogg',
+        'ogv' => 'video/ogg',
+        'avi' => 'video/x-msvideo',
+        'mov' => 'video/quicktime',
+        'wmv' => 'video/x-ms-wmv',
+        'flv' => 'video/x-flv',
+        'mkv' => 'video/x-matroska',
+    ];
+
+    return $mimes[$ext] ?? 'video/mp4';
+}
+
+/**
+ * Vidéos actives à afficher dans le carrousel slider de l'accueil
+ * @return array<int, array<string, mixed>>
+ */
+function get_slider_carousel_videos()
+{
+    global $db;
+
+    if (!videos_has_slider_carousel_column()) {
+        return [];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT * FROM videos
+            WHERE slider_carousel = 1 AND statut = 'actif'
+            ORDER BY date_modification DESC, date_creation DESC
+        ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return is_array($rows) ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Récupère la vidéo sélectionnée pour la bannière d'accueil
  * @return array|null
  */
@@ -147,20 +219,33 @@ function create_video($data)
 
     try {
         $hero_banner = !empty($data['hero_banner']) ? 1 : 0;
+        $slider_carousel = !empty($data['slider_carousel']) ? 1 : 0;
         $with_hero = videos_has_hero_banner_column();
+        $with_slider = videos_has_slider_carousel_column();
 
-        if ($with_hero) {
-            $stmt = $db->prepare("
-                INSERT INTO videos (titre, fichier_video, image_preview, statut, hero_banner, date_creation)
-                VALUES (:titre, :fichier_video, :image_preview, :statut, :hero_banner, NOW())
-            ");
-            $result = $stmt->execute([
+        if ($with_hero || $with_slider) {
+            $columns = ['titre', 'fichier_video', 'image_preview', 'statut'];
+            $placeholders = [':titre', ':fichier_video', ':image_preview', ':statut'];
+            $params = [
                 'titre' => $data['titre'],
                 'fichier_video' => $data['fichier_video'],
                 'image_preview' => $data['image_preview'] ?? null,
                 'statut' => $data['statut'] ?? 'actif',
-                'hero_banner' => $hero_banner,
-            ]);
+            ];
+            if ($with_hero) {
+                $columns[] = 'hero_banner';
+                $placeholders[] = ':hero_banner';
+                $params['hero_banner'] = $hero_banner;
+            }
+            if ($with_slider) {
+                $columns[] = 'slider_carousel';
+                $placeholders[] = ':slider_carousel';
+                $params['slider_carousel'] = $slider_carousel;
+            }
+            $sql = 'INSERT INTO videos (' . implode(', ', $columns) . ', date_creation) VALUES ('
+                . implode(', ', $placeholders) . ', NOW())';
+            $stmt = $db->prepare($sql);
+            $result = $stmt->execute($params);
         } else {
             $stmt = $db->prepare("
                 INSERT INTO videos (titre, fichier_video, image_preview, statut, date_creation)
@@ -217,6 +302,11 @@ function update_video($id, $data)
             $hero_banner = !empty($data['hero_banner']) ? 1 : 0;
             $fields[] = 'hero_banner = :hero_banner';
             $params['hero_banner'] = $hero_banner;
+        }
+
+        if (videos_has_slider_carousel_column() && array_key_exists('slider_carousel', $data)) {
+            $fields[] = 'slider_carousel = :slider_carousel';
+            $params['slider_carousel'] = !empty($data['slider_carousel']) ? 1 : 0;
         }
 
         $sql = 'UPDATE videos SET ' . implode(', ', $fields) . ' WHERE id = :id';
