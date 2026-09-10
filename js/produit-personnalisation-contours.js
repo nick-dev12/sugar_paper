@@ -20,7 +20,7 @@
     var EDGE_MARGIN_CM = 0.7;
     var GAP_CM = 0.9;
     var HEIGHT_MIN_CM = 2;
-    var HEIGHT_MAX_CM = 6;
+    var HEIGHT_MAX_CM_A4 = 6;
 
     var btnClose = document.getElementById('contours-modal-close');
     var btnCancel = document.getElementById('contours-cancel');
@@ -270,7 +270,11 @@
         var paper = getPaper();
         var usable = Math.max(1, paper.heightCm - EDGE_MARGIN_CM * 2);
         var maxFit = (usable - (CONTOUR_COUNT - 1) * GAP_CM) / CONTOUR_COUNT;
-        return Math.max(HEIGHT_MIN_CM, Math.min(HEIGHT_MAX_CM, Math.floor(maxFit * 10) / 10));
+        var maxFitRounded = Math.floor(maxFit * 10) / 10;
+        if (state.format === 'a3') {
+            return Math.max(HEIGHT_MIN_CM, maxFitRounded);
+        }
+        return Math.max(HEIGHT_MIN_CM, Math.min(HEIGHT_MAX_CM_A4, maxFitRounded));
     }
 
     function getActiveSlot() {

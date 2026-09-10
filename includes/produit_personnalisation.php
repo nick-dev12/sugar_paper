@@ -799,7 +799,11 @@ function produit_personnalisation_contours_meta_normalize(array $data)
     $edge = 0.7;
     $gap = 0.9;
     $usable_h = max(1.0, (float) $paper['height_cm'] - $edge * 2);
-    $max_h = max(2.0, min(6.0, ($usable_h - 2 * $gap) / 3));
+    $max_fit = max(2.0, ($usable_h - 2 * $gap) / 3);
+    if ($format !== 'a3') {
+        $max_fit = min(6.0, $max_fit);
+    }
+    $max_h = round($max_fit, 1);
     $height = isset($data['height_cm']) ? (float) $data['height_cm'] : 5.0;
     $height = max(2.0, min($height, round($max_h, 1)));
 
