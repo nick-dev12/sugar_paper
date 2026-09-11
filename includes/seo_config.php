@@ -99,6 +99,14 @@ function get_seo_sections_meta()
                 . 'Complétez vos gâteaux avec des finitions élégantes et des touches de couleur, disponibles à Dakar avec livraison au Sénégal. '
                 . 'Commandez en ligne et trouvez la décoration adaptée à chaque occasion.',
         ],
+        'kit_impression' => [
+            'title' => 'Kit impression comestible — Dakar | Sugar Paper',
+            'description' => 'Kits impression comestible à Dakar : imprimantes, cartouches encre alimentaire et papier sucre pour vos gâteaux et créations pâtissières.',
+            'keywords' => 'kit impression comestible, cartouche encre comestible, papier sucre, imprimante comestible, impression gâteau Dakar, Sugar Paper',
+            'intro' => 'Découvrez nos kits impression comestible pour réaliser vos décors de gâteaux en toute simplicité. '
+                . 'Sugar Paper propose imprimantes adaptées, cartouches encre comestible et papier sucre pour des impressions nettes et alimentaires. '
+                . 'Idéal pour les pâtissiers, cake designers et créateurs qui souhaitent personnaliser leurs gâteaux à Dakar et au Sénégal.',
+        ],
     ];
 }
 

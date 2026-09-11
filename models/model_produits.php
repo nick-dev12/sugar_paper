@@ -304,7 +304,7 @@ function produits_has_section_accueil_column()
  */
 function get_produit_section_accueil_allowed()
 {
-    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes', 'contours_gateau', 'disques_cocktail', 'habillage_papier_azyme'];
+    return ['cake_topper', 'photo_impression', 'outils_patisserie', 'decoration_gateau', 'cupcakes', 'contours_gateau', 'disques_cocktail', 'habillage_papier_azyme', 'kit_impression'];
 }
 
 /**
@@ -333,6 +333,7 @@ function get_produit_section_accueil_labels()
         'contours_gateau' => 'Contours de gâteau',
         'disques_cocktail' => 'Disques à cocktail',
         'habillage_papier_azyme' => 'Habillage papier azyme',
+        'kit_impression' => 'Kit impression',
     ];
 }
 

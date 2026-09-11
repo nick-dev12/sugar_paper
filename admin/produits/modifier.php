@@ -105,20 +105,20 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
     <div class="content-header content-header-form">
         <h1><i class="fas fa-edit"></i> Modifier un produit</h1>
         <div class="header-actions">
-            <a href="index.php" class="btn-back">
+        <a href="index.php" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Retour aux produits
-            </a>
+        </a>
         </div>
     </div>
 
     <section class="form-add-section">
         <div class="form-add-container">
-            <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
+        <?php if (isset($result['message']) && !empty($result['message']) && !$result['success']): ?>
                 <div class="message error">
                     <i class="fas fa-exclamation-circle"></i>
                     <span><?php echo $result['message']; ?></span>
-                </div>
-            <?php endif; ?>
+        </div>
+        <?php endif; ?>
 
             <form method="POST" action="" enctype="multipart/form-data" class="form-add form-add--v2" id="form-modifier-produit">
                 <div class="form-add-block">
@@ -126,38 +126,38 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                         <span class="form-step-num">1</span>
                         Informations générales
                     </h3>
-                    <div class="form-group">
+            <div class="form-group">
                         <label for="nom">Nom du produit <span class="required">*</span></label>
                         <input type="text" id="nom" name="nom" required placeholder="Ex: Miel naturel pur"
-                            value="<?php echo htmlspecialchars($produit['nom']); ?>">
-                    </div>
-                    <div class="form-group">
+                    value="<?php echo htmlspecialchars($produit['nom']); ?>">
+            </div>
+            <div class="form-group">
                         <label for="description">Description <span class="required">*</span></label>
                         <textarea id="description" name="description" required placeholder="Décrivez votre produit, ses usages, son origine…"
                             rows="4"><?php echo htmlspecialchars($produit['description']); ?></textarea>
-                    </div>
+            </div>
                     <div class="form-group-row form-group-row-2">
-                        <div class="form-group">
+                <div class="form-group">
                             <label for="categorie_id">Catégorie <span class="required">*</span></label>
-                            <select id="categorie_id" name="categorie_id" required>
-                                <option value="">Sélectionner une catégorie</option>
-                                <?php if ($categories && count($categories) > 0): ?>
+                    <select id="categorie_id" name="categorie_id" required>
+                        <option value="">Sélectionner une catégorie</option>
+                        <?php if ($categories && count($categories) > 0): ?>
                                     <?php foreach ($categories as $c): ?>
                                         <option value="<?php echo $c['id']; ?>" <?php echo ((int) $produit['categorie_id'] === (int) $c['id']) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($c['nom']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <option value="" disabled>Aucune catégorie disponible</option>
-                                <?php endif; ?>
-                            </select>
-                            <?php if (!$categories || count($categories) == 0): ?>
+                        </option>
+                        <?php endforeach; ?>
+                        <?php else: ?>
+                        <option value="" disabled>Aucune catégorie disponible</option>
+                        <?php endif; ?>
+                    </select>
+                    <?php if (!$categories || count($categories) == 0): ?>
                                 <small class="form-help form-warning">
-                                    <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-exclamation-triangle"></i>
                                     Aucune catégorie disponible. <a href="../categories/ajouter.php" class="link-accent">Créer une catégorie</a>
-                                </small>
-                            <?php endif; ?>
-                        </div>
+                    </small>
+                    <?php endif; ?>
+                </div>
                         <div class="form-group">
                             <label for="statut">Visibilité</label>
                             <select id="statut" name="statut">
@@ -166,9 +166,9 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                                 <option value="rupture_stock" <?php echo ($produit['statut'] == 'rupture_stock') ? 'selected' : ''; ?>>Rupture de stock</option>
                             </select>
                         </div>
-                    </div>
+            </div>
 
-                    <div class="form-group">
+            <div class="form-group">
                         <label for="section_accueil">Section page d'accueil</label>
                         <select id="section_accueil" name="section_accueil">
                             <option value="">Aucune — n'apparaît pas sur l'accueil</option>
@@ -350,72 +350,72 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                         <span class="form-step-optional">optionnel</span>
                     </h3>
                     <p class="form-help form-help-lead">Formats distincts (nom, prix, image). Les options couleur, poids et taille s’appliquent aussi aux variantes.</p>
-                    <div id="variantes-container" class="variantes-container">
-                        <?php if (!empty($variantes)): ?>
-                            <?php foreach ($variantes as $idx => $var): ?>
-                                <div class="variante-item" data-index="<?php echo $idx; ?>">
-                                    <div class="variante-row">
+                <div id="variantes-container" class="variantes-container">
+                    <?php if (!empty($variantes)): ?>
+                    <?php foreach ($variantes as $idx => $var): ?>
+                    <div class="variante-item" data-index="<?php echo $idx; ?>">
+                        <div class="variante-row">
                                         <input type="hidden" name="variantes_id[]" value="<?php echo (int) $var['id']; ?>">
                                         <input type="text" name="variantes_nom[]" placeholder="Nom (ex: Format familial)" class="variante-nom"
                                             value="<?php echo htmlspecialchars($var['nom']); ?>">
                                         <input type="number" name="variantes_prix[]" placeholder="Prix FCFA" min="0" step="0.01" class="variante-prix"
                                             value="<?php echo htmlspecialchars($var['prix']); ?>">
                                         <input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo"
-                                            value="<?php echo $var['prix_promotion'] ? htmlspecialchars($var['prix_promotion']) : ''; ?>">
-                                        <div class="variante-image-wrap">
-                                            <div class="variante-image-area">
+                                value="<?php echo $var['prix_promotion'] ? htmlspecialchars($var['prix_promotion']) : ''; ?>">
+                            <div class="variante-image-wrap">
+                                <div class="variante-image-area">
                                                 <input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="variante-image-input">
                                                 <span class="variante-image-label" <?php echo $var['image'] ? 'style="display: none;"' : ''; ?>>
                                                     <i class="fas fa-image"></i> <?php echo $var['image'] ? 'Changer' : 'Image'; ?>
                                                 </span>
-                                                <img class="variante-preview-img"
-                                                    src="<?php echo $var['image'] ? '../../upload/' . htmlspecialchars($var['image']) : ''; ?>"
-                                                    alt="" <?php echo $var['image'] ? '' : 'style="display: none;"'; ?>>
-                                            </div>
-                                        </div>
-                                        <button type="button" class="btn-remove-variante" title="Supprimer">&times;</button>
-                                    </div>
+                                    <img class="variante-preview-img"
+                                        src="<?php echo $var['image'] ? '../../upload/' . htmlspecialchars($var['image']) : ''; ?>"
+                                        alt="" <?php echo $var['image'] ? '' : 'style="display: none;"'; ?>>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="variante-item" data-index="0">
-                                <div class="variante-row">
-                                    <input type="hidden" name="variantes_id[]" value="">
+                            </div>
+                            <button type="button" class="btn-remove-variante" title="Supprimer">&times;</button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <div class="variante-item" data-index="0">
+                        <div class="variante-row">
+                            <input type="hidden" name="variantes_id[]" value="">
                                     <input type="text" name="variantes_nom[]" placeholder="Nom (ex: Format familial)" class="variante-nom">
                                     <input type="number" name="variantes_prix[]" placeholder="Prix FCFA" min="0" step="0.01" class="variante-prix">
                                     <input type="number" name="variantes_prix_promo[]" placeholder="Prix promo" min="0" step="0.01" class="variante-prix-promo">
-                                    <div class="variante-image-wrap">
-                                        <div class="variante-image-area">
+                            <div class="variante-image-wrap">
+                                <div class="variante-image-area">
                                             <input type="file" name="variantes_image[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="variante-image-input">
-                                            <span class="variante-image-label"><i class="fas fa-image"></i> Image</span>
-                                            <img class="variante-preview-img" src="" alt="" style="display: none;">
-                                        </div>
-                                    </div>
-                                    <button type="button" class="btn-remove-variante" title="Supprimer">&times;</button>
+                                    <span class="variante-image-label"><i class="fas fa-image"></i> Image</span>
+                                    <img class="variante-preview-img" src="" alt="" style="display: none;">
                                 </div>
                             </div>
-                        <?php endif; ?>
+                            <button type="button" class="btn-remove-variante" title="Supprimer">&times;</button>
+                        </div>
                     </div>
+                    <?php endif; ?>
+                </div>
                     <button type="button" id="btn-add-variante" class="btn-add-variante">
                         <i class="fas fa-plus"></i> Ajouter une variante
-                    </button>
+                            </button>
                 </div>
 
                 <div class="form-add-actions">
                     <button type="submit" class="btn-primary btn-submit-large">
                         <i class="fas fa-save"></i> Enregistrer les modifications
-                    </button>
+                            </button>
                     <a href="index.php" class="btn-cancel">Annuler</a>
                 </div>
-            </form>
-        </div>
+        </form>
+    </div>
     </section>
 
     <script src="/js/admin-produits-form.js<?php echo asset_version_query(); ?>"></script>
     <script>
         (function () {
-            var galleryExisting = document.getElementById('gallery-existing');
-            var inputSupp = document.getElementById('images_supplementaires');
+        var galleryExisting = document.getElementById('gallery-existing');
+        var inputSupp = document.getElementById('images_supplementaires');
             var labelSupp = document.querySelector('label[for="images_supplementaires"]');
 
             if (labelSupp && inputSupp) {
@@ -425,20 +425,20 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                 });
             }
 
-            if (galleryExisting) {
+        if (galleryExisting) {
                 galleryExisting.addEventListener('click', function (e) {
-                    var btn = e.target.closest('.img-remove-btn');
-                    if (btn) {
-                        e.preventDefault();
-                        btn.closest('.gallery-thumb-edit').remove();
-                    }
-                });
-            }
+                var btn = e.target.closest('.img-remove-btn');
+                if (btn) {
+                    e.preventDefault();
+                    btn.closest('.gallery-thumb-edit').remove();
+                }
+            });
+        }
 
             function previewMultipleImages(input) {
                 var c = document.getElementById('preview-supplementaires');
                 if (!c) return;
-                c.innerHTML = '';
+            c.innerHTML = '';
                 if (!input.files) return;
                 for (var i = 0; i < input.files.length; i++) {
                     (function (f) {
@@ -454,7 +454,7 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                         r.readAsDataURL(f);
                     })(input.files[i]);
                 }
-            }
+        }
 
             if (inputSupp) {
                 inputSupp.addEventListener('change', function () {
@@ -472,9 +472,9 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                         alert('Au moins une image est obligatoire. Veuillez conserver ou ajouter au moins une image.');
                         return false;
                     }
-                });
-            }
-        })();
+            });
+        }
+    })();
     </script>
     <?php include '../includes/footer.php'; ?>
 </body>

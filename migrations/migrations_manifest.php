@@ -256,4 +256,24 @@ return [
         'label' => 'Vidéo carrousel accueil (slider_carousel)',
         'script' => 'run_add_videos_slider_carousel.php',
     ],
+    [
+        'id' => 'trending_description',
+        'label' => 'Description section mise en avant (trending)',
+        'script' => 'run_add_trending_description.php',
+    ],
+    [
+        'id' => 'trending_spotlight_content',
+        'label' => 'Textes section mise en avant (kit impression comestible)',
+        'script' => 'run_update_trending_spotlight_content.php',
+    ],
+    [
+        'id' => 'trending_images',
+        'label' => 'Images carrousel section mise en avant',
+        'script' => 'run_add_trending_images_table.php',
+    ],
+    [
+        'id' => 'produits_section_kit_impression',
+        'label' => 'Section accueil kit_impression sur produits',
+        'script' => 'run_add_produits_section_kit_impression.php',
+    ],
 ];

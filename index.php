@@ -51,6 +51,7 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="/css/home-redesign.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/home-perf.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/home-spotlight.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-personnalisee.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/commande-loader-overlay.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
@@ -92,7 +93,7 @@ $seo_canonical = $base . '/';
     $use_video_slider = count($slider_carousel_videos_valid) > 0;
     ?>
 
-    <div class="slider-area owl-carousel<?php echo $use_video_slider ? ' slider-area--video-mode' : ' slider-area--image-mode'; ?>">
+    <div class="slider-area owl-carousel<?php echo $use_video_slider ? ' slider-area--video-mode slider-area--video-triple' : ' slider-area--image-mode'; ?>">
         <?php if ($use_video_slider): ?>
         <?php foreach ($slider_carousel_videos_valid as $slider_video): ?>
         <?php
@@ -104,12 +105,15 @@ $seo_canonical = $base . '/';
             $slider_video_label = 'Vidéo Sugar Paper';
         }
         ?>
-        <div class="slider-item slider-item--video">
+        <div class="slider-item slider-item--video slider-item--video-fullscreen">
             <video class="slider-item__video"
                 muted
                 loop
                 playsinline
+                webkit-playsinline
                 preload="metadata"
+                tabindex="0"
+                title="Cliquer pour agrandir la vidéo"
                 <?php if ($slider_video_poster !== ''): ?>
                 poster="<?php echo htmlspecialchars($slider_video_poster, ENT_QUOTES, 'UTF-8'); ?>"
                 <?php endif; ?>
@@ -152,6 +156,7 @@ $seo_canonical = $base . '/';
     <?php endif; ?>
 
     <section class="services-banner">
+        <div class="services-banner-inner-scale-wrap">
         <div class="services-banner-inner">
             <div class="service-item">
                 <div class="service-icon"><i class="fa-solid fa-headset"></i></div>
@@ -179,10 +184,21 @@ $seo_canonical = $base . '/';
             <div class="service-divider"></div>
             <div class="service-item">
                 <div class="service-icon"><i class="fa-solid fa-truck-fast"></i></div>
-                <h3>Livraison rapide</h3>
-                <p>Réception en temps record</p>
+                <h3>Livraison en temps réel</h3>
+                <p>Suivez votre commande en direct</p>
             </div>
         </div>
+        </div>
+
+        <div class="services-banner-scale-wrap">
+        <div class="services-banner-scaler">
+        <?php
+        require_once __DIR__ . '/includes/home_spotlight.php';
+        render_home_spotlight_section();
+        ?>
+        </div>
+        </div>
+
         <div class="commande-perso-showcase home-reveal">
             <div class="commande-perso-showcase-inner">
                 <div class="commande-perso-content">
@@ -557,35 +573,312 @@ $seo_canonical = $base . '/';
 
         function syncSliderVideos() {
             var $slider = $('.slider-area');
+            var modalOpen = $('#home-video-modal').hasClass('is-open');
             $slider.find('.slider-item__video').each(function() {
                 this.pause();
             });
-            var $activeVideo = $slider.find('.owl-item.active .slider-item__video').first();
-            if (!$activeVideo.length) {
+            if (modalOpen) {
                 return;
             }
-            var video = $activeVideo.get(0);
-            var playPromise = video.play();
-            if (playPromise && typeof playPromise.catch === 'function') {
-                playPromise.catch(function() { /* autoplay bloqué */ });
+            $slider.find('.owl-item.active .slider-item__video').each(function() {
+                var playPromise = this.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(function() { /* autoplay bloqué */ });
+                }
+            });
+        }
+
+        function updateVideoModalPlayButton(isPlaying) {
+            var $btn = $('.home-video-modal__play');
+            var $icon = $btn.find('i');
+            if (isPlaying) {
+                $icon.removeClass('fa-play').addClass('fa-pause');
+                $btn.attr('aria-label', 'Pause');
+            } else {
+                $icon.removeClass('fa-pause').addClass('fa-play');
+                $btn.attr('aria-label', 'Lecture');
             }
+        }
+
+        function closeHomeVideoModal() {
+            var $modal = $('#home-video-modal');
+            var modalVideo = $modal.find('.home-video-modal__video').get(0);
+            if (modalVideo) {
+                modalVideo.pause();
+                modalVideo.removeAttribute('src');
+                while (modalVideo.firstChild) {
+                    modalVideo.removeChild(modalVideo.firstChild);
+                }
+                modalVideo.load();
+            }
+            $modal.removeClass('is-open').attr('hidden', true);
+            $('body').removeClass('home-video-modal-open');
+            syncSliderVideos();
+        }
+
+        function openHomeVideoModal(sourceVideo) {
+            if (!sourceVideo) {
+                return;
+            }
+            var $modal = $('#home-video-modal');
+            var modalVideo = $modal.find('.home-video-modal__video').get(0);
+            var $source = $(sourceVideo).find('source').first();
+            var src = $source.attr('src') || sourceVideo.currentSrc || sourceVideo.src;
+            var type = $source.attr('type') || '';
+            var title = $(sourceVideo).attr('aria-label') || 'Vidéo Sugar Paper';
+
+            if (!src || !modalVideo) {
+                return;
+            }
+
+            $('#home-video-modal-title').text(title);
+            while (modalVideo.firstChild) {
+                modalVideo.removeChild(modalVideo.firstChild);
+            }
+            if (type) {
+                var sourceEl = document.createElement('source');
+                sourceEl.src = src;
+                sourceEl.type = type;
+                modalVideo.appendChild(sourceEl);
+            } else {
+                modalVideo.src = src;
+            }
+            modalVideo.muted = true;
+            modalVideo.loop = true;
+            modalVideo.controls = false;
+            modalVideo.currentTime = 0;
+            modalVideo.load();
+
+            $modal.addClass('is-open').removeAttr('hidden');
+            $('body').addClass('home-video-modal-open');
+            $('.slider-area .slider-item__video').each(function() {
+                this.pause();
+            });
+
+            var playPromise = modalVideo.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(function() {
+                    updateVideoModalPlayButton(false);
+                });
+            }
+            updateVideoModalPlayButton(true);
+        }
+
+        $('.slider-area').on('click', '.slider-item__video', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            openHomeVideoModal(this);
+        });
+
+        $('.slider-area').on('keydown', '.slider-item__video', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openHomeVideoModal(this);
+            }
+        });
+
+        $(document).on('click', '[data-video-modal-close]', function() {
+            closeHomeVideoModal();
+        });
+
+        $('.home-video-modal__play').on('click', function() {
+            var modalVideo = $('.home-video-modal__video').get(0);
+            if (!modalVideo) {
+                return;
+            }
+            if (modalVideo.paused) {
+                var playPromise = modalVideo.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(function() { /* lecture bloquée */ });
+                }
+                updateVideoModalPlayButton(true);
+            } else {
+                modalVideo.pause();
+                updateVideoModalPlayButton(false);
+            }
+        });
+
+        $(document).on('keydown', function(event) {
+            if (event.key === 'Escape' && $('#home-video-modal').hasClass('is-open')) {
+                closeHomeVideoModal();
+            }
+        });
+
+        function scaleServicesBannerInner() {
+            var wrap = document.querySelector('.services-banner-inner-scale-wrap');
+            var inner = document.querySelector('.services-banner-inner');
+            if (!wrap || !inner) {
+                return;
+            }
+            if (window.innerWidth >= 993) {
+                inner.style.transform = 'none';
+                inner.style.width = '100%';
+                wrap.style.height = 'auto';
+                return;
+            }
+            var designWidth = 820;
+            var available = wrap.clientWidth;
+            var scale = available / designWidth;
+            if (!isFinite(scale) || scale <= 0) {
+                scale = 1;
+            }
+            if (scale > 1) {
+                scale = 1;
+            }
+            inner.style.width = designWidth + 'px';
+            inner.style.transform = 'scale(' + scale + ')';
+            wrap.style.height = (inner.offsetHeight * scale) + 'px';
+        }
+
+        function scaleHomeSpotlight() {
+            var wrap = document.querySelector('.services-banner-scale-wrap');
+            var scaler = document.querySelector('.services-banner-scaler');
+            if (!wrap || !scaler) {
+                return;
+            }
+            var designWidth = 1200;
+            if (window.innerWidth <= 576) {
+                designWidth = 760;
+            } else if (window.innerWidth <= 992) {
+                designWidth = 900;
+            }
+            var available = wrap.clientWidth;
+            if (available >= designWidth) {
+                scaler.style.width = '100%';
+                scaler.style.transform = 'none';
+                wrap.style.height = 'auto';
+                return;
+            }
+            var scale = available / designWidth;
+            if (!isFinite(scale) || scale <= 0) {
+                scale = 1;
+            }
+            if (scale > 1) {
+                scale = 1;
+            }
+            scaler.style.width = designWidth + 'px';
+            scaler.style.transform = 'scale(' + scale + ')';
+            wrap.style.height = (scaler.offsetHeight * scale) + 'px';
+        }
+
+        function initHomeSpotlightSlider() {
+            var $spotlight = $('.home-spotlight__pedestal--slider');
+            if (!$spotlight.length) {
+                return;
+            }
+
+            $spotlight.each(function() {
+                var $root = $(this).closest('.home-spotlight__inner');
+                var $slides = $root.find('.home-spotlight__img');
+                var $dots = $root.find('.home-spotlight__dot');
+                var current = 0;
+                var timer = null;
+
+                function showSlide(index) {
+                    if (!$slides.length) {
+                        return;
+                    }
+                    current = (index + $slides.length) % $slides.length;
+                    $slides.removeClass('is-active');
+                    $slides.eq(current).addClass('is-active');
+                    $dots.removeClass('home-spotlight__dot--active').attr('aria-selected', 'false');
+                    $dots.eq(current).addClass('home-spotlight__dot--active').attr('aria-selected', 'true');
+                }
+
+                function startAutoPlay() {
+                    if (timer) {
+                        clearInterval(timer);
+                    }
+                    if ($slides.length < 2) {
+                        return;
+                    }
+                    timer = setInterval(function() {
+                        showSlide(current + 1);
+                    }, 5000);
+                }
+
+                $dots.on('click', function() {
+                    var index = parseInt($(this).attr('data-slide-index'), 10);
+                    if (isNaN(index)) {
+                        return;
+                    }
+                    showSlide(index);
+                    startAutoPlay();
+                });
+
+                showSlide(0);
+                startAutoPlay();
+            });
+        }
+
+        scaleServicesBannerInner();
+        scaleHomeSpotlight();
+        initHomeSpotlightSlider();
+        $(window).on('resize', function() {
+            scaleServicesBannerInner();
+            scaleHomeSpotlight();
+        });
+        $('.home-spotlight__img').on('load', scaleHomeSpotlight);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(function() {
+                scaleServicesBannerInner();
+                scaleHomeSpotlight();
+            });
         }
 
         var $homeSlider = $('.slider-area');
         if ($homeSlider.find('.slider-item').length) {
             var sliderIsVideoMode = $homeSlider.hasClass('slider-area--video-mode');
-            $homeSlider.owlCarousel($.extend({}, owlDefaults, {
-                items: 1,
-                autoplay: true,
-                autoplayTimeout: sliderIsVideoMode ? 12000 : 6000,
-                lazyLoad: !sliderIsVideoMode
-            }));
+            var videoSlideCount = $homeSlider.find('.slider-item--video').length;
 
             if (sliderIsVideoMode) {
+                var videoVisibleCount = Math.min(3, videoSlideCount);
+                var videoTripleOptions = {
+                    items: videoVisibleCount,
+                    margin: 0,
+                    stagePadding: 0,
+                    autoplay: videoSlideCount > videoVisibleCount,
+                    autoplayTimeout: 12000,
+                    loop: videoSlideCount > videoVisibleCount,
+                    lazyLoad: false,
+                    nav: videoSlideCount > videoVisibleCount,
+                    dots: videoSlideCount > videoVisibleCount,
+                    responsive: {
+                        0: {
+                            items: videoVisibleCount,
+                            margin: 0,
+                            stagePadding: 0
+                        },
+                        480: {
+                            items: videoVisibleCount,
+                            margin: 0,
+                            stagePadding: 0
+                        },
+                        768: {
+                            items: videoVisibleCount,
+                            margin: 0,
+                            stagePadding: 0
+                        },
+                        992: {
+                            items: videoVisibleCount,
+                            margin: 0,
+                            stagePadding: 0
+                        }
+                    }
+                };
+                $homeSlider.owlCarousel($.extend({}, owlDefaults, videoTripleOptions));
+
                 $homeSlider.on('initialized.owl.carousel changed.owl.carousel translated.owl.carousel', function() {
                     syncSliderVideos();
                 });
                 syncSliderVideos();
+            } else {
+                $homeSlider.owlCarousel($.extend({}, owlDefaults, {
+                    items: 1,
+                    autoplay: true,
+                    autoplayTimeout: 6000,
+                    lazyLoad: true
+                }));
             }
         }
 
@@ -606,6 +899,22 @@ $seo_canonical = $base . '/';
         }));
     });
     </script>
+
+    <div id="home-video-modal" class="home-video-modal" hidden>
+        <div class="home-video-modal__backdrop" data-video-modal-close></div>
+        <div class="home-video-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="home-video-modal-title">
+            <p id="home-video-modal-title" class="home-video-modal__title">Vidéo Sugar Paper</p>
+            <button type="button" class="home-video-modal__close" data-video-modal-close aria-label="Fermer">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <video class="home-video-modal__video" muted loop playsinline webkit-playsinline></video>
+            <div class="home-video-modal__controls">
+                <button type="button" class="home-video-modal__play" aria-label="Pause">
+                    <i class="fas fa-pause" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="/js/home-galerie-video.js<?php echo asset_version_query(); ?>" defer></script>
     <?php if (produit_personnalisation_enabled()): ?>

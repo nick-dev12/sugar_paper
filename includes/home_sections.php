@@ -55,6 +55,17 @@ function get_home_sections_config()
             'cta_label' => 'Voir la sélection',
             'page_icon' => 'fa-star',
         ],
+        'kit_impression' => [
+            'id' => 'home-kit-impression',
+            'kicker' => 'Kit impression',
+            'nav_label' => 'Kit impression',
+            'title' => 'Kit impression comestible',
+            'desc' => 'Imprimantes, cartouches encre comestible et papier sucre pour vos créations.',
+            'cta_href' => 'section-produits.php?section=kit_impression',
+            'cta_label' => 'Voir les kits',
+            'page_icon' => 'fa-print',
+            'hide_from_nav' => true,
+        ],
     ];
 }
 
@@ -114,6 +125,7 @@ function render_section1_sections_nav()
     ?>
     <nav class="section1-sections-nav" aria-label="Sections produits">
         <?php foreach (get_home_sections_config() as $section_key => $config): ?>
+        <?php if (!empty($config['hide_from_nav'])) { continue; } ?>
         <a href="/<?php echo htmlspecialchars(get_home_section_page_url($section_key)); ?>" class="section1-section-link">
             <i class="fa-solid <?php echo htmlspecialchars($config['page_icon']); ?>" aria-hidden="true"></i>
             <span><?php echo htmlspecialchars($config['nav_label'] ?? $config['kicker']); ?></span>
