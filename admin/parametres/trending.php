@@ -199,6 +199,101 @@ $form_bouton_lien = isset($_POST['bouton_lien']) ? (string) $_POST['bouton_lien'
             object-fit: cover;
             display: block;
         }
+        .trending-upload-zone {
+            position: relative;
+            margin-top: 10px;
+        }
+        .trending-file-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        .trending-upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 120px;
+            padding: 24px 20px;
+            border: 2px dashed rgba(229, 72, 138, 0.35);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--couleur-dominante);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            text-align: center;
+        }
+        .trending-upload-label:hover,
+        .trending-upload-label.is-dragover {
+            border-color: var(--couleur-dominante);
+            background: rgba(229, 72, 138, 0.06);
+        }
+        .trending-upload-label i {
+            font-size: 30px;
+            opacity: 0.85;
+        }
+        .trending-upload-label span {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .trending-upload-label small {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+        .trending-selected-summary {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #555;
+            font-weight: 600;
+        }
+        .trending-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .trending-preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #fff;
+            aspect-ratio: 1;
+        }
+        .trending-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .trending-preview-item span {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 4px 6px;
+            font-size: 10px;
+            color: #fff;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .form-help {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.45;
+        }
     </style>
 </head>
 <body>
@@ -405,31 +500,41 @@ $form_bouton_lien = isset($_POST['bouton_lien']) ? (string) $_POST['bouton_lien'
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="spotlight_image">
+                    <label>
                         <i class="fas fa-image"></i> Nouvelle image
                     </label>
-                    <div class="file-input-wrapper">
-                        <label for="spotlight_image" class="file-input-label">
+                    <div class="trending-upload-zone" id="trendingUploadZone">
+                        <input type="file" id="spotlight_image" name="spotlight_image"
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                            class="trending-file-input" required>
+                        <label for="spotlight_image" class="trending-upload-label" id="trendingUploadLabel">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Remplacer l’image</span>
+                            <span>Cliquez ou glissez une image ici</span>
+                            <small>JPG, PNG, GIF, WEBP — max 50 Mo</small>
                         </label>
-                        <input type="file" id="spotlight_image" name="spotlight_image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="file-input" required>
                     </div>
+                    <p class="trending-selected-summary" id="trendingSelectedSummary" hidden></p>
+                    <div class="trending-preview-grid" id="trendingImagesPreview"></div>
                 </div>
                 <?php else: ?>
                 <input type="hidden" name="action" value="add_images">
                 <div class="form-group">
-                    <label for="spotlight_images">
+                    <label>
                         <i class="fas fa-images"></i> Images du carrousel
                     </label>
                     <small class="form-help">Ajoutez une ou plusieurs images. Si plus d'une image est présente, un carrousel s'affiche sur l'accueil.</small>
-                    <div class="file-input-wrapper">
-                        <label for="spotlight_images" class="file-input-label">
+                    <div class="trending-upload-zone" id="trendingUploadZone">
+                        <input type="file" id="spotlight_images" name="spotlight_images[]"
+                            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                            class="trending-file-input" multiple required>
+                        <label for="spotlight_images" class="trending-upload-label" id="trendingUploadLabel">
                             <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Choisir des images</span>
+                            <span>Cliquez ou glissez vos images ici</span>
+                            <small>JPG, PNG, GIF, WEBP — plusieurs fichiers possibles</small>
                         </label>
-                        <input type="file" id="spotlight_images" name="spotlight_images[]" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" class="file-input" multiple required>
                     </div>
+                    <p class="trending-selected-summary" id="trendingSelectedSummary" hidden></p>
+                    <div class="trending-preview-grid" id="trendingImagesPreview"></div>
                 </div>
                 <?php endif; ?>
 
@@ -457,10 +562,97 @@ $form_bouton_lien = isset($_POST['bouton_lien']) ? (string) $_POST['bouton_lien'
         window.location.href = 'trending.php';
     }
 
+    function initTrendingImageUpload() {
+        var fileInput = document.getElementById('spotlight_images') || document.getElementById('spotlight_image');
+        var previewGrid = document.getElementById('trendingImagesPreview');
+        var summary = document.getElementById('trendingSelectedSummary');
+        var uploadLabel = document.getElementById('trendingUploadLabel');
+        var uploadZone = document.getElementById('trendingUploadZone');
+        if (!fileInput || !previewGrid || !uploadLabel) {
+            return;
+        }
+
+        function clearPreview() {
+            previewGrid.innerHTML = '';
+            if (summary) {
+                summary.hidden = true;
+                summary.textContent = '';
+            }
+        }
+
+        function renderPreview(files) {
+            clearPreview();
+            if (!files || !files.length) {
+                return;
+            }
+
+            var validCount = 0;
+            Array.prototype.forEach.call(files, function(file) {
+                if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+                    return;
+                }
+                validCount++;
+                var item = document.createElement('div');
+                item.className = 'trending-preview-item';
+                var img = document.createElement('img');
+                img.alt = file.name;
+                img.src = URL.createObjectURL(file);
+                var caption = document.createElement('span');
+                caption.textContent = file.name;
+                item.appendChild(img);
+                item.appendChild(caption);
+                previewGrid.appendChild(item);
+            });
+
+            if (summary && validCount > 0) {
+                summary.hidden = false;
+                summary.textContent = validCount === 1
+                    ? '1 image sélectionnée — prête à être envoyée'
+                    : validCount + ' images sélectionnées — prêtes à être envoyées';
+            }
+        }
+
+        fileInput.addEventListener('change', function() {
+            renderPreview(fileInput.files);
+        });
+
+        if (uploadZone) {
+            ['dragenter', 'dragover'].forEach(function(eventName) {
+                uploadZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    uploadLabel.classList.add('is-dragover');
+                });
+            });
+            ['dragleave', 'drop'].forEach(function(eventName) {
+                uploadZone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    uploadLabel.classList.remove('is-dragover');
+                });
+            });
+            uploadZone.addEventListener('drop', function(e) {
+                if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) {
+                    return;
+                }
+                if (typeof DataTransfer !== 'undefined') {
+                    var dt = new DataTransfer();
+                    Array.prototype.forEach.call(e.dataTransfer.files, function(file) {
+                        if (file.type && file.type.indexOf('image/') === 0) {
+                            dt.items.add(file);
+                        }
+                    });
+                    fileInput.files = dt.files;
+                }
+                renderPreview(fileInput.files);
+            });
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         <?php if ($open_modal === 'text' || $open_modal === 'images'): ?>
         document.body.style.overflow = 'hidden';
         <?php endif; ?>
+
+        initTrendingImageUpload();
 
         ['trendingTextModal', 'trendingImagesModal'].forEach(function(id) {
             var modal = document.getElementById(id);
