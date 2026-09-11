@@ -56,13 +56,20 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
 
     /* Logo */
     .nav-planete-gateau .logo {
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: flex-start;
         flex-shrink: 0;
         text-decoration: none;
         line-height: 0;
         justify-self: start;
+        gap: 10px;
+    }
+
+    .nav-planete-gateau .logo .logo-flag {
+        width: 24px;
+        height: 15px;
+        flex-shrink: 0;
     }
 
     .nav-planete-gateau .logo img {
@@ -504,11 +511,9 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     }
 </style>
 
-<div class="info">
-    <?php $country_badge_variant = 'light'; include __DIR__ . '/includes/site_country_badge.php'; ?>
-</div>
 <nav class="nav-planete-gateau">
     <a class="logo" href="/index.php">
+        <span class="site-flag site-flag--sn logo-flag" aria-label="Sénégal"></span>
         <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
     </a>
 

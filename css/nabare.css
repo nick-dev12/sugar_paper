@@ -83,6 +83,16 @@ body {
   white-space: nowrap;
 }
 
+.nav-planete-gateau .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-planete-gateau .logo .logo-flag {
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .info {
     height: auto;

@@ -25,7 +25,7 @@ body.page-home .home-spotlight__inner {
   box-shadow:
     0 16px 40px rgba(229, 72, 138, 0.1),
     0 0 0 1px rgba(229, 72, 138, 0.1) inset;
-  min-height: clamp(260px, 34vw, 360px);
+  min-height: clamp(220px, 28vw, 300px);
 }
 
 /* Arcs lumineux décoratifs */
@@ -94,7 +94,7 @@ body.page-home .home-spotlight__grid {
   grid-template-columns: minmax(0, 0.48fr) minmax(0, 0.52fr);
   align-items: stretch;
   gap: clamp(16px, 2.5vw, 32px);
-  padding: clamp(28px, 4.5vw, 52px) clamp(24px, 4vw, 56px);
+  padding: clamp(20px, 3.5vw, 36px) clamp(18px, 3vw, 40px);
   min-height: inherit;
 }
 
@@ -220,7 +220,7 @@ body.page-home .home-spotlight__visual {
   align-items: stretch;
   justify-content: stretch;
   width: 100%;
-  min-height: clamp(200px, 26vw, 300px);
+  min-height: clamp(160px, 22vw, 260px);
   align-self: stretch;
 }
 
@@ -258,7 +258,7 @@ body.page-home .home-spotlight__img {
   z-index: 1;
   width: 100%;
   height: 100%;
-  min-height: clamp(200px, 26vw, 300px);
+  min-height: clamp(160px, 22vw, 260px);
   max-height: none;
   object-fit: cover;
   object-position: center;
@@ -307,4 +307,118 @@ body.page-home .home-spotlight__dot--active {
   width: 28px;
   border-radius: 999px;
   background: linear-gradient(90deg, #e5488a, #918a44);
+}
+
+/* Desktop — bannière compacte, textes plus lisibles */
+@media (min-width: 993px) {
+  body.page-home .home-spotlight {
+    padding: 8px 0 0;
+  }
+
+  body.page-home .home-spotlight__inner {
+    min-height: 168px;
+    max-width: 1080px;
+    margin: 0 auto;
+    border-radius: 16px;
+  }
+
+  body.page-home .home-spotlight__inner::before {
+    width: 200px;
+    height: 200px;
+    right: -4%;
+  }
+
+  body.page-home .home-spotlight__inner::after {
+    width: 140px;
+    height: 140px;
+    right: 8%;
+  }
+
+  body.page-home .home-spotlight__grid {
+    gap: 14px;
+    padding: 14px 22px;
+  }
+
+  body.page-home .home-spotlight__content {
+    gap: 5px;
+  }
+
+  body.page-home .home-spotlight__badge {
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+  }
+
+  body.page-home .home-spotlight__badge::before {
+    width: 20px;
+  }
+
+  body.page-home .home-spotlight__title-line {
+    font-size: 2rem;
+    line-height: 1.02;
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: 1.62rem;
+    line-height: 1.08;
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 0.96rem;
+    line-height: 1.42;
+    max-width: 34ch;
+  }
+
+  body.page-home .home-spotlight__cta {
+    padding: 8px 16px;
+    font-size: 0.74rem;
+    gap: 10px;
+    margin-top: 2px;
+  }
+
+  body.page-home .home-spotlight__cta-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.62rem;
+  }
+
+  body.page-home .home-spotlight__visual,
+  body.page-home .home-spotlight__img,
+  body.page-home .home-spotlight__pedestal,
+  body.page-home .home-spotlight__slides {
+    min-height: 120px;
+  }
+}
+
+@media (min-width: 1400px) {
+  body.page-home .home-spotlight__inner {
+    min-height: 176px;
+    max-width: 1180px;
+  }
+
+  body.page-home .home-spotlight__grid {
+    padding: 16px 28px;
+  }
+
+  body.page-home .home-spotlight__badge {
+    font-size: 0.84rem;
+  }
+
+  body.page-home .home-spotlight__title-line {
+    font-size: 2.35rem;
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: 1.85rem;
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 1.02rem;
+  }
+
+  body.page-home .home-spotlight__visual,
+  body.page-home .home-spotlight__img,
+  body.page-home .home-spotlight__pedestal,
+  body.page-home .home-spotlight__slides {
+    min-height: 128px;
+  }
 }
