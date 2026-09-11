@@ -71,6 +71,48 @@ function get_produits_by_categorie($categorie_id)
 }
 
 /**
+ * Produits similaires (même catégorie, hors produit courant)
+ * @param int $produit_id
+ * @param int $categorie_id
+ * @param int $limit
+ * @return array
+ */
+function get_produits_similaires($produit_id, $categorie_id, $limit = 4)
+{
+    global $db;
+
+    $produit_id = (int) $produit_id;
+    $categorie_id = (int) $categorie_id;
+    $limit = max(1, min(12, (int) $limit));
+
+    if ($produit_id <= 0 || $categorie_id <= 0) {
+        return [];
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT p.*, c.nom as categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE p.categorie_id = :categorie_id
+              AND p.statut = 'actif'
+              AND p.id != :produit_id
+            ORDER BY p.date_creation DESC
+            LIMIT " . $limit . "
+        ");
+        $stmt->execute([
+            'categorie_id' => $categorie_id,
+            'produit_id' => $produit_id,
+        ]);
+        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $produits ? $produits : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
  * Récupère un produit par son ID
  * @param int $id L'ID du produit
  * @return array|false Les données du produit ou False si non trouvé

@@ -7,24 +7,19 @@ require_once __DIR__ . '/includes/image_optimizer.php';
 require_once __DIR__ . '/models/model_produits.php';
 require_once __DIR__ . '/includes/produit_prix_display.php';
 
-// Récupérer les produits (recherche + filtres ou tous)
-$produits_tous = [];
-$total_produits = 0;
+require_once __DIR__ . '/includes/produits_lazy.php';
+
 $recherche_actuelle = isset($_GET['recherche']) ? trim($_GET['recherche']) : '';
 $prix_min = isset($_GET['prix_min']) && $_GET['prix_min'] !== '' ? (float) $_GET['prix_min'] : null;
 $prix_max = isset($_GET['prix_max']) && $_GET['prix_max'] !== '' ? (float) $_GET['prix_max'] : null;
 $categorie_id = isset($_GET['categorie']) && $_GET['categorie'] !== '' ? (int) $_GET['categorie'] : null;
 $tri = isset($_GET['tri']) && in_array($_GET['tri'], ['date', 'prix_asc', 'prix_desc', 'nom']) ? $_GET['tri'] : 'date';
-$has_filters = !empty($recherche_actuelle) || $prix_min !== null || $prix_max !== null || $categorie_id !== null || $tri !== 'date';
+$has_filters = produits_catalogue_has_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri);
+$filter_params = produits_catalogue_filter_params($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri);
 
-if (file_exists(__DIR__ . '/models/model_produits.php')) {
-    if ($has_filters) {
-        $produits_tous = search_produits_with_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri, 0, 20);
-        $total_produits = count_search_produits_with_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id);
-    } else {
-        $produits_tous = get_all_produits_paginated(0, 20);
-        $total_produits = count_all_produits_actifs();
-    }
+$total_produits = 0;
+if ($has_filters) {
+    $total_produits = count_search_produits_with_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id);
 }
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
@@ -54,12 +49,12 @@ $seo_canonical = $base . '/produits.php';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/a_style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produits-perf.css<?php echo asset_version_query(); ?>">
     <?php include __DIR__ . '/includes/platform_share_head.php'; ?>
     <style>
         .produits-page-header {
@@ -173,7 +168,7 @@ $seo_canonical = $base . '/produits.php';
     </style>
 </head>
 
-<body>
+<body class="page-produits">
     <?php include('nav_bar.php'); ?>
 
     <div class="produits-page-header">
@@ -206,213 +201,13 @@ $seo_canonical = $base . '/produits.php';
         </div>
     <?php endif; ?>
     <div class="produits-container-wrapper">
-        <section class="section00">
-            <section class="produit_vedetes">
-                <article class="articles carousel11" id="produits-container">
-                    <?php if (empty($produits_tous)): ?>
-                        <!-- Message si aucun produit -->
-                        <div style="text-align: center; padding: 40px; color: #666; width: 100%;">
-                            <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
-                            <p style="font-size: 16px;">Aucun produit publié pour le moment.</p>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($produits_tous as $produit): ?>
-                            <div class="carousel" data-produit-id="<?php echo $produit['id']; ?>">
-                                <?php echo produit_share_button_html($produit); ?>
-                                <a href="produit.php?id=<?php echo $produit['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                        <?php if (!empty($produit['categorie_nom'])): ?>
-                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                        <?php endif; ?>
-                                        <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url"
-                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produits.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Commander
-                                    </button>
-                                </form>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </article>
-
-                <?php if (!empty($produits_tous) && $total_produits > 20): ?>
-                    <div style="text-align: center; margin-top: 40px; padding: 20px;">
-                        <button id="btn-voir-plus" class="btn-voir-plus" onclick="chargerPlusProduits()">
-                            <i class="fas fa-chevron-down"></i> Voir plus
-                        </button>
-                        <p id="produits-count" class="produits-count">
-                            Affichés: <span id="count-actuel">20</span> / <?php echo $total_produits; ?> produits
-                        </p>
-                    </div>
-                <?php endif; ?>
-            </section>
-        </section>
+        <?php render_produits_lazy_placeholder('product_grid', $filter_params); ?>
     </div>
 
     <?php include('footer.php'); ?>
-    <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>"></script>
-
-    <script>
-        let offsetActuel = 20; // On a déjà affiché les 20 premiers
-        const limit = 20;
-        const totalProduits = <?php echo $total_produits; ?>;
-        const apiBaseParams = '<?php
-        $p = ['offset' => 0, 'limit' => 20];
-        if ($has_filters) {
-            if (!empty($recherche_actuelle))
-                $p['recherche'] = $recherche_actuelle;
-            if ($prix_min !== null)
-                $p['prix_min'] = $prix_min;
-            if ($prix_max !== null)
-                $p['prix_max'] = $prix_max;
-            if ($categorie_id !== null)
-                $p['categorie'] = $categorie_id;
-            $p['tri'] = $tri;
-        }
-        echo http_build_query($p);
-        ?>';
-
-        function getApiUrl() {
-            const params = new URLSearchParams(apiBaseParams);
-            params.set('offset', offsetActuel);
-            return 'api/get_produits.php?' + params.toString();
-        }
-
-        function chargerPlusProduits() {
-            const btn = document.getElementById('btn-voir-plus');
-            const container = document.getElementById('produits-container');
-            const countActuel = document.getElementById('count-actuel');
-
-            // Désactiver le bouton pendant le chargement
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-
-            // Faire la requête AJAX
-            fetch(getApiUrl())
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.produits.length > 0) {
-                        // Ajouter les nouveaux produits
-                        data.produits.forEach(produit => {
-                            const div = document.createElement('div');
-                            div.className = 'carousel';
-                            div.setAttribute('data-produit-id', produit.id);
-
-                            let promoHTML = '';
-                            if (produit.has_promotion) {
-                                promoHTML = `<span class="span2">${formatNumber(produit.prix)}fca</span>
-                                             <span class="span3">-${produit.pourcentage_promo}%</span>`;
-                            }
-
-                            let categorieStock = '';
-                            if (produit.categorie_nom) {
-                                categorieStock += produit.categorie_nom;
-                            }
-                            if (produit.stock) {
-                                categorieStock += (categorieStock ? ' | ' : '') + 'Stock: ' + produit.stock;
-                            }
-
-                            let prixHTML = '';
-                            const prixClass = produit.show_price_from ? 'prix prix--from' : 'prix';
-                            const fromLabel = produit.show_price_from
-                                ? '<span class="prix-from-label">À partir de</span>'
-                                : '';
-                            if (produit.has_promotion) {
-                                prixHTML = `${fromLabel}<span class="span2">${formatNumber(produit.prix)} FCFA</span>
-                                            <span class="prix-promo">${formatNumber(produit.prix_affichage)} FCFA</span>
-                                            <span class="span3">-${produit.pourcentage_promo}%</span>`;
-                            } else {
-                                prixHTML =
-                                    `${fromLabel}${formatNumber(produit.prix_affichage)}<span class="span1"> FCFA</span>`;
-                            }
-
-                            let stockHTML = '';
-                            if (produit.stock) {
-                                stockHTML = `<p class="produit-card-stock-info">
-                                    <strong>Stock:</strong> ${produit.stock}
-                                    ${produit.poids ? `(${escapeHtml(produit.poids)})` : ''}
-                                </p>`;
-                            }
-
-                            const returnUrl = (window.location.pathname + window.location.search).replace(/&/g,
-                                '&amp;').replace(/"/g, '&quot;');
-                            const shareBtnHtml = (typeof buildProduitShareButtonHtml === 'function')
-                                ? buildProduitShareButtonHtml(produit)
-                                : '';
-                            div.innerHTML = `
-                                ${shareBtnHtml}
-                                <a href="produit.php?id=${produit.id}" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="${produit.image_url || '/upload/' + produit.image_principale}" 
-                                             alt="${escapeHtml(produit.nom)}"
-                                             onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom">${escapeHtml(produit.nom)}</p>
-                                        ${produit.categorie_nom ? `<p id="ville">${escapeHtml(produit.categorie_nom)}</p>` : ''}
-                                        <p class="${prixClass}">${prixHTML}</p>
-                                        ${stockHTML}
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="${produit.id}">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url" value="${returnUrl}">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Commander
-                                    </button>
-                                </form>
-                            `;
-
-                            container.appendChild(div);
-                        });
-
-                        // Mettre à jour le compteur
-                        offsetActuel += data.produits.length;
-                        countActuel.textContent = offsetActuel;
-
-                        // Vérifier s'il reste des produits
-                        if (offsetActuel >= totalProduits) {
-                            btn.style.display = 'none';
-                        } else {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
-                        }
-                    } else {
-                        // Plus de produits à charger
-                        btn.style.display = 'none';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur lors du chargement:', error);
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
-                    alert('Une erreur est survenue lors du chargement des produits.');
-                });
-        }
-
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-    </script>
+    <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/produits-catalogue.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/home-progressive.js<?php echo asset_version_query(); ?>" defer></script>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 </body>
 

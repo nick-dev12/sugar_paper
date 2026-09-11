@@ -511,10 +511,11 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     }
 </style>
 
+<div class="info" aria-hidden="true"></div>
 <nav class="nav-planete-gateau">
     <a class="logo" href="/index.php">
-        <span class="site-flag site-flag--sn logo-flag" aria-label="Sénégal"></span>
         <img src="/image/sugar_paper.jpg" alt="Sugar Paper">
+        <span class="site-flag site-flag--sn logo-flag" aria-label="Sénégal"></span>
     </a>
 
     <div class="nav-search-wrapper">

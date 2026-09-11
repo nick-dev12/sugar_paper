@@ -258,7 +258,14 @@
     video.addEventListener('ended', showPoster);
   }
 
+  function initInContainer(root) {
+    var scope = root || document;
+    scope.querySelectorAll('.galerie-video-wrapper').forEach(initWrapper);
+  }
+
+  window.homeInitGalerieVideos = initInContainer;
+
   document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.galerie-video-wrapper').forEach(initWrapper);
+    initInContainer(document);
   });
 })();

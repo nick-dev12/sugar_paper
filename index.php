@@ -40,7 +40,6 @@ $seo_canonical = $base . '/';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
@@ -95,7 +94,7 @@ $seo_canonical = $base . '/';
 
     <div class="slider-area owl-carousel<?php echo $use_video_slider ? ' slider-area--video-mode slider-area--video-triple' : ' slider-area--image-mode'; ?>">
         <?php if ($use_video_slider): ?>
-        <?php foreach ($slider_carousel_videos_valid as $slider_video): ?>
+        <?php foreach ($slider_carousel_videos_valid as $slider_video_index => $slider_video): ?>
         <?php
         $slider_video_url = '/upload/videos/' . rawurlencode($slider_video['fichier_video']);
         $slider_video_type = video_file_mime_type($slider_video['fichier_video']);
@@ -104,6 +103,7 @@ $seo_canonical = $base . '/';
         if ($slider_video_label === '') {
             $slider_video_label = 'Vidéo Sugar Paper';
         }
+        $slider_video_preload = ($slider_video_index === 0) ? 'metadata' : 'none';
         ?>
         <div class="slider-item slider-item--video slider-item--video-fullscreen">
             <video class="slider-item__video"
@@ -111,23 +111,26 @@ $seo_canonical = $base . '/';
                 loop
                 playsinline
                 webkit-playsinline
-                preload="metadata"
+                preload="<?php echo $slider_video_preload; ?>"
                 tabindex="0"
                 title="Cliquer pour agrandir la vidéo"
                 <?php if ($slider_video_poster !== ''): ?>
                 poster="<?php echo htmlspecialchars($slider_video_poster, ENT_QUOTES, 'UTF-8'); ?>"
                 <?php endif; ?>
                 aria-label="<?php echo htmlspecialchars($slider_video_label, ENT_QUOTES, 'UTF-8'); ?>">
-                <source src="<?php echo htmlspecialchars($slider_video_url, ENT_QUOTES, 'UTF-8'); ?>"
+                <source <?php echo $slider_video_index === 0 ? 'src' : 'data-src'; ?>="<?php echo htmlspecialchars($slider_video_url, ENT_QUOTES, 'UTF-8'); ?>"
                     type="<?php echo htmlspecialchars($slider_video_type, ENT_QUOTES, 'UTF-8'); ?>">
             </video>
         </div>
         <?php endforeach; ?>
         <?php else: ?>
-        <?php foreach ($slides as $slide): ?>
+        <?php foreach ($slides as $slide_index => $slide): ?>
         <div class="slider-item slider-item--image">
             <img src="<?php echo htmlspecialchars(upload_subdir_image_url('slider', $slide['image'] ?? '', 'original')); ?>"
-                alt="<?php echo htmlspecialchars($slide['titre']); ?>" onerror="this.src='/image/produit1.jpg'">
+                alt="<?php echo htmlspecialchars($slide['titre']); ?>"
+                <?php echo $slide_index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'; ?>
+                decoding="async"
+                onerror="this.src='/image/produit1.jpg'">
         </div>
         <?php endforeach; ?>
         <?php endif; ?>
@@ -288,7 +291,10 @@ $seo_canonical = $base . '/';
             <div class="item">
                 <?php if ($categorie['image']): ?>
                 <img class="img" src="<?php echo htmlspecialchars(upload_image_url($categorie['image'], 'sm')); ?>"
-                    alt="<?php echo htmlspecialchars($categorie['nom']); ?>" onerror="this.src='/image/produit1.jpg'">
+                    alt="<?php echo htmlspecialchars($categorie['nom']); ?>"
+                    loading="lazy"
+                    decoding="async"
+                    onerror="this.src='/image/produit1.jpg'">
                 <?php else: ?>
                 <img class="img" src="/image/produit1.jpg" alt="<?php echo htmlspecialchars($categorie['nom']); ?>">
                 <?php endif; ?>
@@ -306,240 +312,10 @@ $seo_canonical = $base . '/';
 
 
     <?php
-    require_once __DIR__ . '/includes/home_sections.php';
-    $home_return_url = $_SERVER['REQUEST_URI'] ?? '/index.php';
-    render_home_all_products_section(40, $home_return_url, 10);
-
-    // Bannière d'accueil (section4) — juste au-dessus des cake toppers
-    $section4_config = [
-        'titre' => 'Bienvenue au Sugar Paper',
-        'texte' => 'Tous les produits a petit prix',
-        'image_fond' => 'market.png',
-        'statut' => 'actif'
-    ];
-
-    if (file_exists(__DIR__ . '/models/model_section4.php')) {
-        require_once __DIR__ . '/models/model_section4.php';
-        $config_result = get_section4_config();
-        if ($config_result) {
-            $section4_config = $config_result;
-        }
+    require_once __DIR__ . '/includes/home_lazy_sections.php';
+    foreach (get_home_lazy_section_keys() as $lazy_section_key) {
+        render_home_lazy_placeholder($lazy_section_key);
     }
-
-    // Afficher la section4 uniquement si statut = actif
-    $section4_actif = ($section4_config['statut'] ?? 'actif') === 'actif';
-    $section4_titre = trim($section4_config['titre'] ?? '');
-    $section4_texte = trim($section4_config['texte'] ?? '');
-
-    // Chemin de l'image de fond (fallback si aucune vidéo bannière)
-    $image_fond_path = '/image/market.png';
-    if (!empty($section4_config['image_fond'])) {
-        $resolved_fond = upload_subdir_image_url('section4', $section4_config['image_fond'], 'original');
-        $fond_relative = ltrim(str_replace('/upload/', '', $resolved_fond), '/');
-        if (is_file(__DIR__ . '/upload/' . $fond_relative)) {
-            $image_fond_path = $resolved_fond;
-        }
-    }
-
-    $hero_banner_video = null;
-    $hero_banner_video_url = '';
-    $hero_banner_video_type = 'video/mp4';
-    $hero_banner_poster = '';
-    if (file_exists(__DIR__ . '/models/model_videos.php')) {
-        require_once __DIR__ . '/models/model_videos.php';
-        $hero_banner_video = get_hero_banner_video();
-        if ($hero_banner_video && !empty($hero_banner_video['fichier_video'])) {
-            $hero_disk = __DIR__ . '/upload/videos/' . $hero_banner_video['fichier_video'];
-            if (is_file($hero_disk)) {
-                $hero_banner_video_url = '/upload/videos/' . rawurlencode($hero_banner_video['fichier_video']);
-                $hero_ext = strtolower(pathinfo($hero_banner_video['fichier_video'], PATHINFO_EXTENSION));
-                $hero_mimes = [
-                    'mp4' => 'video/mp4',
-                    'webm' => 'video/webm',
-                    'ogg' => 'video/ogg',
-                    'ogv' => 'video/ogg',
-                    'mov' => 'video/quicktime',
-                ];
-                $hero_banner_video_type = $hero_mimes[$hero_ext] ?? 'video/mp4';
-                $hero_banner_poster = resolve_video_poster_url($hero_banner_video);
-            } else {
-                $hero_banner_video = null;
-            }
-        }
-    }
-    ?>
-    <?php if ($section4_actif): ?>
-    <section class="section4 home-hero-banner home-reveal" aria-label="Bannière d'accueil">
-        <div class="home-hero-banner__media">
-            <?php if ($hero_banner_video_url !== ''): ?>
-            <video class="home-hero-banner__video"
-                autoplay
-                muted
-                loop
-                playsinline
-                preload="metadata"
-                <?php if ($hero_banner_poster !== ''): ?>
-                poster="<?php echo htmlspecialchars($hero_banner_poster, ENT_QUOTES, 'UTF-8'); ?>"
-                <?php endif; ?>
-                aria-label="<?php echo htmlspecialchars($section4_titre !== '' ? $section4_titre : 'Sugar Paper', ENT_QUOTES, 'UTF-8'); ?>">
-                <source src="<?php echo htmlspecialchars($hero_banner_video_url, ENT_QUOTES, 'UTF-8'); ?>"
-                    type="<?php echo htmlspecialchars($hero_banner_video_type, ENT_QUOTES, 'UTF-8'); ?>">
-            </video>
-            <?php else: ?>
-            <img class="home-hero-banner__img"
-                src="<?php echo htmlspecialchars($image_fond_path, ENT_QUOTES, 'UTF-8'); ?>"
-                alt="<?php echo htmlspecialchars($section4_titre !== '' ? $section4_titre : 'Sugar Paper', ENT_QUOTES, 'UTF-8'); ?>"
-                width="1400"
-                height="420"
-                fetchpriority="high"
-                decoding="async">
-            <?php endif; ?>
-            <div class="home-hero-banner__overlay" aria-hidden="true"></div>
-            <div class="home-hero-banner__content">
-                <span class="home-hero-banner__kicker"><i class="fa-solid fa-cake-candles" aria-hidden="true"></i> Sugar Paper</span>
-                <?php if ($section4_titre !== ''): ?>
-                <h2 class="home-hero-banner__title"><?php echo htmlspecialchars($section4_titre); ?></h2>
-                <?php endif; ?>
-                <?php if ($section4_texte !== ''): ?>
-                <p class="home-hero-banner__tagline"><?php echo htmlspecialchars($section4_texte); ?></p>
-                <?php endif; ?>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <?php
-    render_home_product_section('cake_topper', 20, $home_return_url);
-    ?>
-
-    <?php
-    // Récupérer les vidéos pour le carrousel
-    $videos = [];
-    if (file_exists(__DIR__ . '/models/model_videos.php')) {
-        require_once __DIR__ . '/models/model_videos.php';
-        $videos = get_all_videos('actif');
-    }
-    
-    // Afficher la section seulement s'il y a des vidéos
-    if (!empty($videos)):
-    ?>
-    <section class="galerie-creations home-reveal" id="home-creations">
-        <div class="galerie-creations-container">
-            <header class="galerie-header">
-                <span class="galerie-surtitre">Découvrez</span>
-                <h2 class="galerie-titre">Nos créations</h2>
-                <p class="galerie-sous-titre">Une sélection de nos réalisations en vidéo</p>
-            </header>
-
-            <div class="galerie-grid" id="videosSlider">
-                <?php foreach ($videos as $index => $video): ?>
-                <?php
-                    $poster_url = resolve_video_poster_url($video);
-                    $video_src = '/upload/videos/' . rawurlencode($video['fichier_video']);
-                    $needs_poster = $poster_url === '' ? '1' : '0';
-                ?>
-                <article class="galerie-item">
-                    <div class="galerie-card">
-                        <div class="galerie-video-wrapper"
-                            data-video-loaded="0"
-                            data-needs-poster="<?php echo $needs_poster; ?>"
-                            data-video-title="<?php echo htmlspecialchars($video['titre'] ?? 'Vidéo création', ENT_QUOTES, 'UTF-8'); ?>">
-                            <?php if ($poster_url !== ''): ?>
-                            <img class="galerie-poster"
-                                src="<?php echo htmlspecialchars($poster_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                alt="<?php echo htmlspecialchars($video['titre'] ?? 'Vidéo création', ENT_QUOTES, 'UTF-8'); ?>"
-                                loading="lazy"
-                                decoding="async">
-                            <?php else: ?>
-                            <div class="galerie-poster galerie-poster--placeholder" aria-hidden="true">
-                                <i class="fa-solid fa-film"></i>
-                            </div>
-                            <?php endif; ?>
-                            <video class="galerie-video" controls preload="none" playsinline
-                                <?php if ($poster_url !== ''): ?>
-                                poster="<?php echo htmlspecialchars($poster_url, ENT_QUOTES, 'UTF-8'); ?>"
-                                <?php endif; ?>
-                                data-src="<?php echo htmlspecialchars($video_src, ENT_QUOTES, 'UTF-8'); ?>">
-                                <source data-src="<?php echo htmlspecialchars($video_src, ENT_QUOTES, 'UTF-8'); ?>" type="video/mp4">
-                                Votre navigateur ne supporte pas la lecture de vidéos.
-                            </video>
-                            <button type="button" class="galerie-play-overlay" aria-label="Lire la vidéo">
-                                <span class="galerie-play-ring" aria-hidden="true"></span>
-                                <i class="fa-solid fa-play" aria-hidden="true"></i>
-                            </button>
-                        </div>
-                        <?php if (!empty($video['titre'])): ?>
-                        <div class="galerie-caption">
-                            <h3><?php echo htmlspecialchars($video['titre']); ?></h3>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </article>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <?php
-    render_home_product_section('photo_impression', 20, $home_return_url);
-    ?>
-
-    <?php
-    // Récupérer les catégories les plus populaires (visites + commandes) - Maximum 2
-    $top_categories = [];
-    if (file_exists(__DIR__ . '/models/model_categories.php')) {
-        require_once __DIR__ . '/models/model_categories.php';
-        $top_categories = get_top_categories(2);
-    }
-    ?>
-
-    <section class="section5 home-reveal" id="home-top-categories">
-        <div class="home-section-head">
-            <div>
-                <span class="home-section-kicker">Sélection</span>
-                <h2 class="home-section-title">Top catégories</h2>
-                <p class="home-section-desc">Les univers les plus consultés du moment.</p>
-            </div>
-        </div>
-        <h1>Top Categorie</h1>
-        <div class="container">
-            <?php if (empty($top_categories)): ?>
-            <!-- Message si aucune catégorie -->
-            <div class="message-vide" style="text-align: center; padding: 40px; color: var(--texte-fonce);">
-                <p>Aucune catégorie disponible pour le moment.</p>
-            </div>
-            <?php else: ?>
-            <?php foreach ($top_categories as $categorie): ?>
-            <?php
-                    // Déterminer le chemin de l'image
-                    $categorie_image_path = '/image/produit1.jpg'; // Par défaut
-                    if (!empty($categorie['image'])) {
-                        $resolved_cat = upload_image_url($categorie['image'], 'md');
-                        $cat_relative = ltrim(str_replace('/upload/', '', $resolved_cat), '/');
-                        if (is_file(__DIR__ . '/upload/' . $cat_relative)) {
-                            $categorie_image_path = $resolved_cat;
-                        }
-                    }
-                    ?>
-            <div class="slider">
-                <img src="<?php echo $categorie_image_path; ?>" alt="<?php echo htmlspecialchars($categorie['nom']); ?>"
-                    onerror="this.src='/image/produit1.jpg'">
-                <div class="box">
-                    <h4><?php echo htmlspecialchars($categorie['nom']); ?></h4>
-                    <a href="categorie.php?id=<?php echo $categorie['id']; ?>">Découvrir <i class="fas fa-arrow-right"></i></a>
-                </div>
-            </div>
-            <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </section>
-
-
-
-    <?php
-    render_home_product_section('outils_patisserie', 20, $home_return_url);
-    render_home_product_section('decoration_gateau', 20, $home_return_url);
     ?>
 
     </main>
@@ -553,11 +329,14 @@ $seo_canonical = $base . '/';
     <?php include('footer.php') ?>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
 
-    <script src="/js/owl.carousel.min.js"></script>
-    <script src="/js/owl.carousel.js"></script>
-    <script src="/js/owl.autoplay.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+    <script src="/js/owl.carousel.min.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/owl.carousel.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/owl.autoplay.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/home-progressive.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/home-galerie-video.js<?php echo asset_version_query(); ?>" defer></script>
 
-    <script>
+    <script defer>
     $(document).ready(function() {
         var owlDefaults = {
             loop: true,
@@ -571,6 +350,23 @@ $seo_canonical = $base . '/';
             autoplayHoverPause: true
         };
 
+        function ensureSliderVideoLoaded(videoEl) {
+            if (!videoEl) {
+                return;
+            }
+            var source = videoEl.querySelector('source[data-src]');
+            if (!source) {
+                return;
+            }
+            var dataSrc = source.getAttribute('data-src');
+            if (!dataSrc) {
+                return;
+            }
+            source.setAttribute('src', dataSrc);
+            source.removeAttribute('data-src');
+            videoEl.load();
+        }
+
         function syncSliderVideos() {
             var $slider = $('.slider-area');
             var modalOpen = $('#home-video-modal').hasClass('is-open');
@@ -581,6 +377,7 @@ $seo_canonical = $base . '/';
                 return;
             }
             $slider.find('.owl-item.active .slider-item__video').each(function() {
+                ensureSliderVideoLoaded(this);
                 var playPromise = this.play();
                 if (playPromise && typeof playPromise.catch === 'function') {
                     playPromise.catch(function() { /* autoplay bloqué */ });
@@ -916,9 +713,8 @@ $seo_canonical = $base . '/';
         </div>
     </div>
 
-    <script src="/js/home-galerie-video.js<?php echo asset_version_query(); ?>" defer></script>
     <?php if (produit_personnalisation_enabled()): ?>
-    <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>" defer></script>
     <?php endif; ?>
 
 </body>

@@ -22,10 +22,7 @@ if (!$section_key || !$section_config) {
     exit;
 }
 
-$limit = 20;
-$produits = get_produits_by_home_section($section_key, 0, $limit);
-$total_produits = count_produits_by_home_section($section_key);
-$return_url = 'section-produits.php?section=' . rawurlencode($section_key);
+require_once __DIR__ . '/includes/section_produits_lazy.php';
 
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
     require_once __DIR__ . '/controllers/controller_commerce_users.php';
@@ -74,6 +71,7 @@ $section_uses_cp = ($section_key === 'cake_topper');
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/seo-content.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/section-produits-perf.css<?php echo asset_version_query(); ?>">
     <?php if ($section_uses_perso): ?>
         <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
@@ -206,54 +204,7 @@ $section_uses_cp = ($section_key === 'cake_topper');
     <?php endif; ?>
 
     <div class="produits-container-wrapper">
-        <section class="section00">
-            <section class="produit_vedetes">
-                <article class="articles carousel11" id="produits-container">
-                    <?php if (empty($produits)): ?>
-                        <div class="empty-state" style="width:100%;">
-                            <i class="fas fa-box-open" style="font-size:48px;opacity:0.4;margin-bottom:16px;"></i>
-                            <p>Aucun produit dans cette section pour le moment.</p>
-                            <a href="index.php"
-                                style="display:inline-block;margin-top:16px;color:var(--couleur-dominante);">Retour à
-                                l'accueil</a>
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($produits as $produit): ?>
-                            <div class="carousel" data-produit-id="<?php echo (int) $produit['id']; ?>">
-                                <?php echo produit_share_button_html($produit); ?>
-                                <a href="produit.php?id=<?php echo (int) $produit['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="<?php echo htmlspecialchars(upload_image_url($produit['image_principale'] ?? '', 'md')); ?>"
-                                            alt="<?php echo htmlspecialchars($produit['nom'] ?? 'Produit'); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($produit['nom'] ?? 'Produit sans nom'); ?></p>
-                                        <?php if (!empty($produit['categorie_nom'])): ?>
-                                            <p id="ville"><?php echo htmlspecialchars($produit['categorie_nom']); ?></p>
-                                        <?php endif; ?>
-                                        <?php echo produit_render_listing_prix_html($produit, ['show_promo_badge' => true]); ?>
-                                    </div>
-                                </a>
-                                <?php render_produit_listing_actions($produit, $return_url); ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </article>
-
-                <?php if (!empty($produits) && $total_produits > $limit): ?>
-                    <div style="text-align:center;margin-top:40px;padding:20px;">
-                        <button id="btn-voir-plus" class="btn-voir-plus" type="button">
-                            <i class="fas fa-chevron-down"></i> Voir plus
-                        </button>
-                        <p id="produits-count" class="produits-count">
-                            Affichés : <span id="count-actuel"><?php echo min($limit, $total_produits); ?></span> /
-                            <?php echo (int) $total_produits; ?> produits
-                        </p>
-                    </div>
-                <?php endif; ?>
-            </section>
-        </section>
+        <?php render_section_produits_lazy_placeholder('product_grid', $section_key); ?>
     </div>
 
     <?php if ($section_uses_cp): ?>
@@ -266,147 +217,12 @@ $section_uses_cp = ($section_key === 'cake_topper');
 
     <?php include 'footer.php'; ?>
     <?php include __DIR__ . '/includes/platform_share_footer.php'; ?>
-    <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/produit-card-share.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/section-produits.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/home-progressive.js<?php echo asset_version_query(); ?>" defer></script>
     <?php if ($section_uses_perso): ?>
-        <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>"></script>
+        <script src="/js/produit-personnalisation.js<?php echo asset_version_query(); ?>" defer></script>
     <?php endif; ?>
-    <script>
-        const sectionKey = <?php echo json_encode($section_key); ?>;
-        const sectionUsesPerso = <?php echo $section_uses_perso ? 'true' : 'false'; ?>;
-        const sectionUsesCp = <?php echo $section_uses_cp ? 'true' : 'false'; ?>;
-        let offsetActuel = <?php echo (int) min($limit, max(count($produits), 0)); ?>;
-        const limit = <?php echo (int) $limit; ?>;
-        const totalProduits = <?php echo (int) $total_produits; ?>;
-        const returnUrl = <?php echo json_encode($return_url); ?>;
-
-        function formatNumber(n) {
-            return Number(n).toLocaleString('fr-FR');
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        }
-
-        function chargerPlusProduits() {
-            const btn = document.getElementById('btn-voir-plus');
-            const container = document.getElementById('produits-container');
-            const countActuel = document.getElementById('count-actuel');
-            if (!btn || !container) return;
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
-
-            fetch('api/get_produits_section.php?section=' + encodeURIComponent(sectionKey) + '&offset=' + offsetActuel + '&limit=' + limit)
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    if (data.success && data.produits.length > 0) {
-                        data.produits.forEach(function (produit) {
-                            const div = document.createElement('div');
-                            div.className = 'carousel';
-                            div.setAttribute('data-produit-id', produit.id);
-
-                            const prixClass = produit.show_price_from ? 'prix prix--from' : 'prix';
-                            const fromLabel = produit.show_price_from
-                                ? '<span class="prix-from-label">À partir de</span>'
-                                : '';
-                            let prixHTML = '';
-                            if (produit.has_promotion) {
-                                prixHTML = fromLabel + '<span class="span2">' + formatNumber(produit.prix) + ' FCFA</span>'
-                                    + '<span class="prix-promo">' + formatNumber(produit.prix_affichage) + ' FCFA</span>'
-                                    + '<span class="span3">-' + produit.pourcentage_promo + '%</span>';
-                            } else {
-                                prixHTML = fromLabel + formatNumber(produit.prix_affichage) + '<span class="span1"> FCFA</span>';
-                            }
-
-                            const shareBtnHtml = (typeof buildProduitShareButtonHtml === 'function')
-                                ? buildProduitShareButtonHtml(produit)
-                                : '';
-
-                            let formHtml = '';
-                            if (sectionUsesCp && produit.cp) {
-                                formHtml = '<div class="add-to-cart-form">'
-                                    + '<a href="produit.php?id=' + produit.id + '" class="btn-add-cart btn-personnaliser-card">'
-                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnaliser</a>'
-                                    + '</div>';
-                            } else if (sectionUsesPerso) {
-                                formHtml = '<div class="add-to-cart-form">'
-                                    + '<a href="produit.php?id=' + produit.id + '" class="btn-add-cart btn-personnaliser-card">'
-                                    + '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Personnalisation</a>'
-                                    + '</div>';
-                            } else {
-                                formHtml = '<form method="POST" action="/add-to-panier.php" class="add-to-cart-form">'
-                                    + '<input type="hidden" name="produit_id" value="' + produit.id + '">'
-                                    + '<input type="hidden" name="quantite" value="1">'
-                                    + '<input type="hidden" name="return_url" value="' + escapeHtml(returnUrl) + '">'
-                                    + '<button type="submit" class="btn-add-cart">'
-                                    + '<i class="fa-solid fa-cart-shopping"></i> Commander</button>'
-                                    + '</form>';
-                            }
-
-                            div.innerHTML = shareBtnHtml
-                                + '<a href="produit.php?id=' + produit.id + '" class="product-card-link">'
-                                + '<div class="image-wrapper"><img src="' + (produit.image_url || '/image/produit1.jpg') + '" alt="' + escapeHtml(produit.nom) + '" onerror="this.src=\'/image/produit1.jpg\'"></div>'
-                                + '<div class="produit-content"><p id="nom">' + escapeHtml(produit.nom) + '</p>'
-                                + (produit.categorie_nom ? '<p id="ville">' + escapeHtml(produit.categorie_nom) + '</p>' : '')
-                                + '<p class="' + prixClass + '">' + prixHTML + '</p></div></a>'
-                                + formHtml;
-
-                            container.appendChild(div);
-                        });
-
-                        offsetActuel += data.produits.length;
-                        if (countActuel) countActuel.textContent = offsetActuel;
-
-                        if (offsetActuel >= totalProduits) {
-                            btn.style.display = 'none';
-                        } else {
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
-                        }
-                    } else {
-                        btn.style.display = 'none';
-                    }
-                })
-                .catch(function () {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-chevron-down"></i> Voir plus';
-                });
-        }
-
-        const btnVoirPlus = document.getElementById('btn-voir-plus');
-        if (btnVoirPlus) {
-            btnVoirPlus.addEventListener('click', chargerPlusProduits);
-        }
-
-        document.querySelectorAll('.page-header-seo-toggle').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var wrap = btn.closest('.page-header-seo-intro');
-                if (!wrap) {
-                    return;
-                }
-                var textEl = wrap.querySelector('.page-header-seo-text');
-                var previewText = wrap.getAttribute('data-preview-text') || '';
-                var fullText = wrap.getAttribute('data-full-text') || '';
-                var expanded = btn.getAttribute('aria-expanded') === 'true';
-
-                if (expanded) {
-                    if (textEl) {
-                        textEl.textContent = previewText;
-                    }
-                    btn.textContent = 'Voir plus';
-                    btn.setAttribute('aria-expanded', 'false');
-                } else {
-                    if (textEl) {
-                        textEl.textContent = fullText;
-                    }
-                    btn.textContent = 'Voir moins';
-                    btn.setAttribute('aria-expanded', 'true');
-                }
-            });
-        });
-    </script>
 </body>
 
 </html>

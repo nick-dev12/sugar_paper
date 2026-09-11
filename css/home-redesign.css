@@ -1395,9 +1395,20 @@ body.page-home .section5 .slider .box a:hover {
   }
 }
 
-/* ——— Reveal léger ——— */
+/* ——— Reveal léger (au scroll) ——— */
 body.page-home .home-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+body.page-home .home-reveal.is-visible,
+body.page-home .home-lazy-section.is-visible {
   animation: homeFadeUp 0.7s ease both;
+}
+
+body.page-home .home-lazy-section.is-visible {
+  opacity: 1;
+  transform: none;
 }
 
 @keyframes homeFadeUp {

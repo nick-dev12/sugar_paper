@@ -1,0 +1,120 @@
+/**
+ * Page produit — fluidité scroll et chargement progressif
+ */
+
+body.page-produit {
+  scroll-behavior: auto;
+}
+
+body.page-produit .produits-similaires,
+body.page-produit .produit-lazy-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 360px;
+}
+
+body.page-produit .produit-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+body.page-produit .produit-reveal.is-visible,
+body.page-produit .produit-lazy-section.is-visible {
+  animation: produitFadeUp 0.7s ease both;
+}
+
+body.page-produit .produit-lazy-section.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes produitFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+body.page-produit .produit-lazy-section {
+  min-height: 220px;
+  margin-top: 24px;
+}
+
+body.page-produit .produit-lazy-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 245, 250, 0.9));
+  border: 1px solid rgba(229, 72, 138, 0.1);
+}
+
+body.page-produit .produit-lazy-skeleton__bar {
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(229, 72, 138, 0.08), rgba(229, 72, 138, 0.18), rgba(229, 72, 138, 0.08));
+  background-size: 200% 100%;
+  animation: produitLazyShimmer 1.2s ease-in-out infinite;
+}
+
+body.page-produit .produit-lazy-skeleton__bar--sm {
+  width: 34%;
+  max-width: 180px;
+}
+
+body.page-produit .produit-lazy-skeleton__bar--lg {
+  width: 58%;
+  max-width: 320px;
+  height: 22px;
+}
+
+body.page-produit .produit-lazy-skeleton__grid {
+  display: block;
+  min-height: 140px;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.03), rgba(229, 72, 138, 0.06), rgba(0, 0, 0, 0.03));
+  background-size: 200% 100%;
+  animation: produitLazyShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes produitLazyShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+body.page-produit .produit-lazy-error {
+  padding: 20px;
+  text-align: center;
+  color: #6b5560;
+  font-size: 0.92rem;
+}
+
+body.page-produit .produit-lazy-retry {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(229, 72, 138, 0.25);
+  background: #fff;
+  color: #e5488a;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.page-produit .produit-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+  }
+
+  body.page-produit .produit-lazy-skeleton__bar,
+  body.page-produit .produit-lazy-skeleton__grid {
+    animation: none;
+  }
+}

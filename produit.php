@@ -87,13 +87,8 @@ $gateau_modele_url = produit_personnalisation_modele_url();
 // Récupérer les variantes du produit
 $variantes = get_variantes_by_produit($produit_id);
 
-// Récupérer les produits similaires (même catégorie)
-$produits_similaires = get_produits_by_categorie($produit['categorie_id']);
-// Exclure le produit actuel
-$produits_similaires = array_filter($produits_similaires, function ($p) use ($produit_id) {
-    return $p['id'] != $produit_id;
-});
-$produits_similaires = array_slice($produits_similaires, 0, 4); // Limiter à 4 produits
+require_once __DIR__ . '/includes/produit_lazy_sections.php';
+$categorie_produit_id = (int) ($produit['categorie_id'] ?? 0);
 
 // Inclusion du fichier de connexion à la BDD (pour les autres fonctionnalités si nécessaire)
 if (file_exists(__DIR__ . '/controllers/controller_commerce_users.php')) {
@@ -129,7 +124,6 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="/css/variables.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/style.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/owl.carousel.min.css<?php echo asset_version_query(); ?>">
@@ -138,6 +132,7 @@ $seo_schema_graphs = array_merge(
     <link rel="stylesheet" href="/css/product-cards.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/catalogue-responsive.css<?php echo asset_version_query(); ?>">
     <link rel="stylesheet" href="/css/image-lightbox.css<?php echo asset_version_query(); ?>">
+    <link rel="stylesheet" href="/css/produit-perf.css<?php echo asset_version_query(); ?>">
     <?php if ($supports_photo_perso || $supports_azyme_perso || $supports_cupcakes_perso || $supports_contours_perso || $supports_disques_cocktail_perso || $supports_cake_topper_cp): ?>
     <link rel="stylesheet" href="/css/produit-personnalisation.css<?php echo asset_version_query(); ?>">
     <?php endif; ?>
@@ -1360,7 +1355,7 @@ $seo_schema_graphs = array_merge(
     </style>
 </head>
 
-<body>
+<body class="page-produit">
 
     <?php include('nav_bar.php') ?>
 
@@ -1408,7 +1403,10 @@ $seo_schema_graphs = array_merge(
                                     data-index="<?php echo $idx; ?>"
                                     data-src="<?php echo htmlspecialchars(upload_image_url($img_path, 'original')); ?>">
                                     <img src="<?php echo htmlspecialchars(upload_image_url($img_path, 'sm')); ?>"
-                                        alt="Vue <?php echo $idx + 1; ?>" onerror="this.src='/image/produit1.jpg'">
+                                        alt="Vue <?php echo $idx + 1; ?>"
+                                        loading="<?php echo $idx === 0 ? 'eager' : 'lazy'; ?>"
+                                        decoding="async"
+                                        onerror="this.src='/image/produit1.jpg'">
                                 </button>
                             <?php endforeach; ?>
                         </div>
@@ -1776,54 +1774,9 @@ $seo_schema_graphs = array_merge(
             </div>
         </div>
 
-        <!-- Produits similaires -->
-        <?php
-        $categorie_produit_id = (int) ($produit['categorie_id'] ?? 0);
-        if (!empty($produits_similaires) || $categorie_produit_id > 0):
-        ?>
-            <div class="produits-similaires">
-                <div class="produits-similaires-header">
-                    <h2>Produits similaires</h2>
-                    <?php if ($categorie_produit_id > 0): ?>
-                        <a href="categorie.php?id=<?php echo $categorie_produit_id; ?>" class="btn-produit-voir-plus">
-                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                            Voir plus
-                        </a>
-                    <?php endif; ?>
-                </div>
-                <?php if (!empty($produits_similaires)): ?>
-                <section class="produit_vedetes">
-                    <article class="articles carousel11">
-                        <?php foreach ($produits_similaires as $similaire): ?>
-                            <div class="carousel">
-                                <?php echo produit_share_button_html($similaire); ?>
-                                <a href="produit.php?id=<?php echo $similaire['id']; ?>" class="product-card-link">
-                                    <div class="image-wrapper">
-                                        <img src="<?php echo htmlspecialchars(upload_image_url($similaire['image_principale'] ?? '', 'md')); ?>"
-                                            alt="<?php echo htmlspecialchars($similaire['nom']); ?>"
-                                            onerror="this.src='/image/produit1.jpg'">
-                                    </div>
-                                    <div class="produit-content">
-                                        <p id="nom"><?php echo htmlspecialchars($similaire['nom']); ?></p>
-                                        <?php echo produit_render_listing_prix_html($similaire); ?>
-                                        <p id="ville"><?php echo htmlspecialchars($similaire['categorie_nom']); ?></p>
-                                    </div>
-                                </a>
-                                <form method="POST" action="/add-to-panier.php" class="add-to-cart-form">
-                                    <input type="hidden" name="produit_id" value="<?php echo $similaire['id']; ?>">
-                                    <input type="hidden" name="quantite" value="1">
-                                    <input type="hidden" name="return_url"
-                                        value="<?php echo htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/produit.php'); ?>">
-                                    <button type="submit" class="btn-add-cart">
-                                        <i class="fa-solid fa-cart-shopping"></i> Commander
-                                    </button>
-                                </form>
-                            </div>
-                        <?php endforeach; ?>
-                    </article>
-                </section>
-                <?php endif; ?>
-            </div>
+        <!-- Produits similaires (chargement progressif) -->
+        <?php if ($categorie_produit_id > 0): ?>
+            <?php render_produit_lazy_placeholder('similar_products', $produit_id); ?>
         <?php endif; ?>
     </div>
 
@@ -2180,7 +2133,8 @@ $seo_schema_graphs = array_merge(
     <?php if ($supports_contours_perso): ?>
     <script src="/js/produit-personnalisation-contours.js<?php echo asset_version_query(); ?>"></script>
     <?php endif; ?>
-    <script src="/js/image-lightbox.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/image-lightbox.js<?php echo asset_version_query(); ?>" defer></script>
+    <script src="/js/home-progressive.js<?php echo asset_version_query(); ?>" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (!window.SugarImageLightbox) {
