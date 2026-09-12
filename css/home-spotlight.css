@@ -4,7 +4,7 @@
  */
 
 body.page-home .home-spotlight {
-  padding: 18px 0 0;
+  padding: 12px 0 0;
   position: relative;
   z-index: 4;
   width: 100%;
@@ -15,6 +15,9 @@ body.page-home .home-spotlight__inner {
   overflow: hidden;
   max-width: none;
   width: 100%;
+  height: 250px;
+  max-height: 250px;
+  min-height: 0;
   margin: 0;
   border-radius: clamp(18px, 2.8vw, 28px);
   background:
@@ -37,7 +40,6 @@ body.page-home .home-spotlight__inner {
   box-shadow:
     0 16px 40px rgba(229, 72, 138, 0.1),
     0 0 0 1px rgba(229, 72, 138, 0.1) inset;
-  min-height: clamp(220px, 28vw, 300px);
 }
 
 /* Arcs lumineux décoratifs */
@@ -112,12 +114,21 @@ body.page-home .home-spotlight__streak--2 {
 body.page-home .home-spotlight__slider {
   position: relative;
   z-index: 2;
-  min-height: clamp(220px, 28vw, 300px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
 }
 
 body.page-home .home-spotlight__slide {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -133,22 +144,17 @@ body.page-home .home-spotlight__slide.is-active {
   z-index: 2;
 }
 
-body.page-home .home-spotlight:not(.home-spotlight--slider) .home-spotlight__slide {
-  position: relative;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
 body.page-home .home-spotlight__grid {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.48fr) minmax(0, 0.52fr);
   align-items: stretch;
-  gap: clamp(16px, 2.5vw, 32px);
-  padding: clamp(20px, 3.5vw, 36px) clamp(18px, 3vw, 40px);
-  min-height: inherit;
+  gap: 10px;
+  padding: 12px 14px;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ——— Contenu texte ——— */
@@ -157,8 +163,11 @@ body.page-home .home-spotlight__content {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: clamp(10px, 1.6vw, 18px);
-  padding-right: clamp(0px, 2vw, 12px);
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-right: 4px;
 }
 
 body.page-home .home-spotlight__badge {
@@ -193,7 +202,7 @@ body.page-home .home-spotlight__title {
 
 body.page-home .home-spotlight__title-line {
   display: block;
-  font-size: clamp(2.15rem, 4.6vw, 3.15rem);
+  font-size: clamp(1.15rem, 4.2vw, 1.55rem);
   color: #2a1a22;
   text-transform: uppercase;
 }
@@ -204,8 +213,8 @@ body.page-home .home-spotlight__title-line--accent {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  margin-top: 0.12em;
-  font-size: clamp(1.75rem, 3.8vw, 2.45rem);
+  margin-top: 0.08em;
+  font-size: clamp(0.98rem, 3.4vw, 1.25rem);
   text-transform: none;
   letter-spacing: 0.01em;
 }
@@ -214,23 +223,28 @@ body.page-home .home-spotlight__desc {
   margin: 0;
   max-width: 38ch;
   font-family: var(--home-font-ui, "Outfit", sans-serif);
-  font-size: clamp(1.05rem, 1.8vw, 1.18rem);
-  line-height: 1.6;
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+  line-height: 1.4;
   color: #6b5560;
   font-weight: 400;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 body.page-home .home-spotlight__cta {
   display: inline-flex;
   align-items: center;
-  gap: 14px;
-  margin-top: clamp(4px, 1vw, 10px);
-  padding: clamp(14px, 2vw, 18px) clamp(26px, 3vw, 36px);
+  gap: 8px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  padding: 7px 12px;
   border-radius: 999px;
   background: linear-gradient(135deg, #e5488a 0%, #c23a72 100%);
   color: #ffffff;
   font-family: var(--home-font-ui, "Outfit", sans-serif);
-  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -255,8 +269,8 @@ body.page-home .home-spotlight__cta-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
   font-size: 0.75rem;
@@ -270,14 +284,16 @@ body.page-home .home-spotlight__cta:hover .home-spotlight__cta-icon {
   transform: translateX(3px);
 }
 
-/* ——— Visuel produit (60 % de la grille) ——— */
+/* ——— Visuel produit ——— */
 body.page-home .home-spotlight__visual {
   position: relative;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
   width: 100%;
-  min-height: clamp(160px, 22vw, 260px);
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   align-self: stretch;
 }
 
@@ -285,12 +301,9 @@ body.page-home .home-spotlight__pedestal {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: inherit;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
-  border-radius: clamp(14px, 2.2vw, 22px);
+  min-height: 0;
   overflow: hidden;
+  border-radius: clamp(12px, 2vw, 18px);
   background: #ffffff;
   box-shadow:
     0 10px 28px rgba(229, 72, 138, 0.12),
@@ -303,16 +316,17 @@ body.page-home .home-spotlight__pedestal::after {
 }
 
 body.page-home .home-spotlight__img {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   width: 100%;
   height: 100%;
-  min-height: clamp(160px, 22vw, 260px);
+  min-height: 0;
   max-height: none;
   object-fit: cover;
   object-position: center;
   display: block;
-  border-radius: clamp(14px, 2.2vw, 22px);
+  border-radius: inherit;
 }
 
 /* Points décoratifs (style carrousel) */
@@ -343,21 +357,48 @@ body.page-home .home-spotlight__dot--active {
   background: linear-gradient(90deg, #e5488a, #918a44);
 }
 
-/* Desktop — bannière compacte, textes plus lisibles */
+/* Tablette — 300px max */
+@media (min-width: 577px) {
+  body.page-home .home-spotlight__inner {
+    height: 300px;
+    max-height: 300px;
+  }
+
+  body.page-home .home-spotlight__grid {
+    gap: 14px;
+    padding: 14px 18px;
+  }
+
+  body.page-home .home-spotlight__title-line {
+    font-size: clamp(1.45rem, 3.2vw, 1.85rem);
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: clamp(1.15rem, 2.6vw, 1.45rem);
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 0.88rem;
+  }
+
+  body.page-home .home-spotlight__cta {
+    padding: 8px 14px;
+    font-size: 0.7rem;
+  }
+}
+
+/* PC & grands écrans — 400px max */
 @media (min-width: 993px) {
   body.page-home .home-spotlight {
     padding: 8px 0 0;
   }
 
   body.page-home .home-spotlight__inner {
-    min-height: 168px;
+    height: 400px;
+    max-height: 400px;
     max-width: 1080px;
     margin: 0 auto;
     border-radius: 16px;
-  }
-
-  body.page-home .home-spotlight__slider {
-    min-height: 168px;
   }
 
   body.page-home .home-spotlight__inner::before {
@@ -373,12 +414,12 @@ body.page-home .home-spotlight__dot--active {
   }
 
   body.page-home .home-spotlight__grid {
-    gap: 14px;
-    padding: 14px 22px;
+    gap: 16px;
+    padding: 16px 24px;
   }
 
   body.page-home .home-spotlight__content {
-    gap: 5px;
+    gap: 8px;
   }
 
   body.page-home .home-spotlight__badge {
@@ -391,26 +432,25 @@ body.page-home .home-spotlight__dot--active {
   }
 
   body.page-home .home-spotlight__title-line {
-    font-size: 2rem;
+    font-size: clamp(1.75rem, 2.2vw, 2.15rem);
     line-height: 1.02;
   }
 
   body.page-home .home-spotlight__title-line--accent {
-    font-size: 1.62rem;
+    font-size: clamp(1.4rem, 1.8vw, 1.7rem);
     line-height: 1.08;
   }
 
   body.page-home .home-spotlight__desc {
     font-size: 0.96rem;
-    line-height: 1.42;
+    line-height: 1.45;
     max-width: 34ch;
   }
 
   body.page-home .home-spotlight__cta {
-    padding: 8px 16px;
+    padding: 10px 18px;
     font-size: 0.74rem;
     gap: 10px;
-    margin-top: 2px;
   }
 
   body.page-home .home-spotlight__cta-icon {
@@ -418,97 +458,15 @@ body.page-home .home-spotlight__dot--active {
     height: 24px;
     font-size: 0.62rem;
   }
-
-  body.page-home .home-spotlight__visual,
-  body.page-home .home-spotlight__img,
-  body.page-home .home-spotlight__pedestal {
-    min-height: 120px;
-  }
 }
 
-/* PC & grands écrans — hauteur plafonnée à 400px */
 @media (min-width: 1300px) {
-  body.page-home .services-banner-scale-wrap {
-    max-height: 400px;
-    overflow: hidden;
-  }
-
   body.page-home .home-spotlight {
     padding-top: 0;
   }
 
   body.page-home .home-spotlight__inner {
-    min-height: 0;
-    max-height: 400px;
     max-width: 1180px;
-    margin: 0 auto;
-    border-radius: 16px;
-  }
-
-  body.page-home .home-spotlight__slider {
-    min-height: 0;
-    max-height: 400px;
-    height: 400px;
-  }
-
-  body.page-home .home-spotlight__grid {
-    max-height: 400px;
-    min-height: 0;
-    height: 100%;
-    padding: 14px 24px;
-    gap: 16px;
-    overflow: hidden;
-    align-items: center;
-  }
-
-  body.page-home .home-spotlight__content {
-    gap: 6px;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  body.page-home .home-spotlight__badge {
-    font-size: 0.78rem;
-  }
-
-  body.page-home .home-spotlight__title-line {
-    font-size: clamp(1.65rem, 2vw, 2rem);
-    line-height: 1.02;
-  }
-
-  body.page-home .home-spotlight__title-line--accent {
-    font-size: clamp(1.35rem, 1.65vw, 1.62rem);
-    line-height: 1.08;
-  }
-
-  body.page-home .home-spotlight__desc {
-    font-size: 0.92rem;
-    line-height: 1.4;
-    max-width: 32ch;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  body.page-home .home-spotlight__cta {
-    padding: 8px 16px;
-    font-size: 0.72rem;
-    margin-top: 2px;
-  }
-
-  body.page-home .home-spotlight__visual,
-  body.page-home .home-spotlight__pedestal {
-    min-height: 0;
-    max-height: 360px;
-    height: 100%;
-  }
-
-  body.page-home .home-spotlight__img {
-    min-height: 0;
-    max-height: 360px;
-    height: 100%;
-    object-fit: cover;
   }
 
   body.page-home .home-spotlight__inner::before {

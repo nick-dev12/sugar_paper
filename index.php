@@ -580,6 +580,7 @@ $seo_canonical = $base . '/';
                     $slides.eq(current).addClass('is-active');
                     $dots.removeClass('home-spotlight__dot--active').attr('aria-selected', 'false');
                     $dots.eq(current).addClass('home-spotlight__dot--active').attr('aria-selected', 'true');
+                    scaleHomeSpotlight();
                 }
 
                 function startAutoPlay() {
