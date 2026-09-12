@@ -112,6 +112,14 @@
                 applyPosition(p.lat, p.lng, null, 'map_pin', true);
                 setStatus('ok', 'Position ajustée sur la carte.');
             });
+            map.on('click', function (ev) {
+                if (!ev || !ev.latlng) {
+                    return;
+                }
+                applyPosition(ev.latlng.lat, ev.latlng.lng, null, 'map_pin', true);
+                setStatus('ok', 'Position placée sur la carte.');
+            });
+            applyPosition(viewLat, viewLng, null, 'map_pin', true);
 
             setTimeout(function () {
                 if (map) {
@@ -262,7 +270,7 @@
                 updateMap(savedLat, savedLng, parseCoord(qs('geo_precision') && qs('geo_precision').value), true);
             } else {
                 ensureMap(DEFAULT_LAT, DEFAULT_LNG, DEFAULT_ZOOM);
-                setStatus('pending', 'Autorisez la géolocalisation pour afficher votre position exacte…');
+                setStatus('pending', 'Autorisez la géolocalisation ou déplacez le marqueur sur votre adresse.');
             }
             startWatch();
             if (window.CommandeTotaux && typeof window.CommandeTotaux.refresh === 'function') {
@@ -294,14 +302,26 @@
         }
     }
 
+    function syncMarkerToFields() {
+        if (!marker || typeof marker.getLatLng !== 'function') {
+            return false;
+        }
+        var p = marker.getLatLng();
+        if (!p || !coordsValid(p.lat, p.lng)) {
+            return false;
+        }
+        applyPosition(p.lat, p.lng, null, 'map_pin', true);
+        return true;
+    }
+
     function validateBeforeSubmit() {
         if (getMode() !== 'livraison') {
             return true;
         }
         var lat = parseCoord(qs('geo_lat') && qs('geo_lat').value);
         var lng = parseCoord(qs('geo_lng') && qs('geo_lng').value);
-        if (!coordsValid(lat, lng)) {
-            setStatus('error', 'Votre position GPS est requise pour une livraison à domicile.');
+        if (!coordsValid(lat, lng) && !syncMarkerToFields()) {
+            setStatus('error', 'Placez le marqueur sur votre adresse exacte.');
             return false;
         }
         var selectZone = qs('zone_livraison_id');
@@ -346,16 +366,6 @@
             });
         }
 
-        var form = qs('form-commande');
-        if (form) {
-            var originalSubmitHandler = null;
-            form.addEventListener('submit', function (e) {
-                if (!validateBeforeSubmit()) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                }
-            }, true);
-        }
     }
 
     window.CommandeGeo = {

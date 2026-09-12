@@ -378,6 +378,21 @@
   box-shadow: 0 8px 20px rgba(229, 72, 138, 0.28);
 }
 
+.ckm-checkout-error {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.22);
+  color: #9b1c1c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.ckm-checkout-error[hidden] {
+  display: none !important;
+}
+
 .ckm-btn--ghost {
   background: rgba(61, 40, 0, 0.06);
   color: var(--ckm-texte);

@@ -24,7 +24,7 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
 
     <div class="ckm-checkout__grid">
         <div class="ckm-checkout__form-wrap">
-            <form method="POST" action="/api/modals/checkout-submit.php" id="form-commande" class="ckm-checkout__form">
+            <form method="POST" action="/api/modals/checkout-submit.php" id="form-commande" class="ckm-checkout__form" novalidate>
                 <input type="hidden" name="action" value="create_commande">
                 <input type="hidden" name="ajax" value="1">
                 <input type="hidden" name="mode_livraison" id="mode_livraison"
@@ -117,6 +117,7 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
                         value="<?php echo htmlspecialchars((string) ($user['telephone'] ?? '')); ?>">
                 </div>
 
+                <p class="ckm-checkout-error" id="ckm-checkout-error" hidden role="alert"></p>
                 <button type="submit" class="ckm-btn ckm-btn--primary btn-submit-commande"
                     <?php echo empty($zones_livraison) ? 'disabled' : ''; ?>>
                     <i class="fas fa-check-circle"></i> Confirmer la commande

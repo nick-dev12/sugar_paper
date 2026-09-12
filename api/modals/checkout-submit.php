@@ -10,11 +10,23 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $_POST['action'] = 'create_commande';
-$result = process_create_commande();
+try {
+    $result = process_create_commande();
+} catch (Throwable $e) {
+    error_log('checkout-submit: ' . $e->getMessage());
+    $result = [
+        'success' => false,
+        'message' => 'Une erreur est survenue lors de la création de la commande. Veuillez réessayer.',
+    ];
+}
 
 if (!empty($result['success'])) {
-    require_once __DIR__ . '/../../services/notifications_order_dispatch.php';
-    notifications_dispatch_after_commande($result);
+    try {
+        require_once __DIR__ . '/../../services/notifications_order_dispatch.php';
+        notifications_dispatch_after_commande($result);
+    } catch (Throwable $e) {
+        error_log('checkout-submit notify: ' . $e->getMessage());
+    }
     $success = checkout_modals_render_success($result['numero_commande'] ?? '');
     modal_json_response([
         'ok' => true,

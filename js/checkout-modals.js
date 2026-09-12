@@ -401,18 +401,71 @@
 
         var form = document.getElementById('form-commande');
         if (form) {
+            form.setAttribute('novalidate', 'novalidate');
             form.addEventListener('submit', function (e) {
                 e.preventDefault();
-                if (window.CommandeGeo && typeof CommandeGeo.validate === 'function' && !CommandeGeo.validate()) {
-                    return;
-                }
-                if (!form.checkValidity()) {
-                    form.reportValidity();
+                e.stopPropagation();
+                if (!validateCheckoutForm(form)) {
                     return;
                 }
                 submitCheckout(form);
             });
         }
+    }
+
+    function showCheckoutError(message) {
+        var el = document.getElementById('ckm-checkout-error');
+        if (!el) {
+            if (message) {
+                window.alert(message);
+            }
+            return;
+        }
+        if (!message) {
+            el.hidden = true;
+            el.textContent = '';
+            return;
+        }
+        el.hidden = false;
+        el.textContent = message;
+        try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {}
+    }
+
+    function validateCheckoutForm(form) {
+        showCheckoutError('');
+        var modeInput = document.getElementById('mode_livraison');
+        var mode = modeInput && modeInput.value === 'retrait' ? 'retrait' : 'livraison';
+        if (window.CommandeGeo && typeof CommandeGeo.validate === 'function' && !CommandeGeo.validate()) {
+            var geoStatus = document.getElementById('commande-geo-status');
+            var geoMsg = geoStatus ? (geoStatus.textContent || '').trim() : '';
+            showCheckoutError(geoMsg || 'Veuillez sélectionner votre zone et confirmer votre position.');
+            return false;
+        }
+        var selectZone = document.getElementById('zone_livraison_id');
+        if (mode === 'livraison' && selectZone && !selectZone.disabled && !selectZone.value) {
+            showCheckoutError('Veuillez sélectionner votre zone de livraison.');
+            try { selectZone.focus(); } catch (err) {}
+            return false;
+        }
+        var tel = form.querySelector('#telephone_livraison');
+        var telVal = tel ? tel.value.trim() : '';
+        if (!telVal) {
+            showCheckoutError('Le téléphone est obligatoire.');
+            if (tel) {
+                try { tel.focus(); } catch (err) {}
+            }
+            return false;
+        }
+        if (!/^[0-9+\s\-()]+$/.test(telVal)) {
+            showCheckoutError('Le format du téléphone n\'est pas valide.');
+            if (tel) {
+                try { tel.focus(); } catch (err) {}
+            }
+            return false;
+        }
+        return true;
     }
 
     function submitCartForm(form) {
@@ -474,6 +527,11 @@
         if (loading) return;
         loading = true;
         showLoader(true);
+        showCheckoutError('');
+        var submitBtn = form.querySelector('.btn-submit-commande');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
         if (window.CommandeGeo && typeof CommandeGeo.stopWatch === 'function') {
             CommandeGeo.stopWatch();
         }
@@ -492,15 +550,25 @@
                             openWhatsAppConversation(data.whatsapp_url);
                         }, 350);
                     }
-                } else if (data.html) {
+                    return;
+                }
+                if (data.html) {
                     bodyCheckout.innerHTML = data.html;
                     bindCheckoutBody(data.panier_total || 0);
+                    showCheckoutError(data.message || 'Impossible de créer la commande.');
+                    return;
                 }
+                showCheckoutError(data.message || 'Impossible de créer la commande. Réessayez.');
             })
-            .catch(function () {})
+            .catch(function () {
+                showCheckoutError('La commande n\'a pas pu être envoyée. Vérifiez votre connexion et réessayez.');
+            })
             .then(function () {
                 loading = false;
                 showLoader(false);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
             });
     }
 
