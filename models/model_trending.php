@@ -289,3 +289,356 @@ function update_trending_spotlight_image($image_id, $image_name)
         return false;
     }
 }
+
+/**
+ * Vérifie si la table trending_slides existe
+ * @return bool
+ */
+function trending_has_slides_table()
+{
+    static $has = null;
+    if ($has !== null) {
+        return $has;
+    }
+
+    global $db;
+    try {
+        $r = $db ? $db->query("SHOW TABLES LIKE 'trending_slides'") : null;
+        $has = $r && (bool) $r->fetchColumn();
+    } catch (PDOException $e) {
+        $has = false;
+    }
+
+    return $has;
+}
+
+/**
+ * Récupère tous les slides trending
+ * @return array<int, array<string, mixed>>
+ */
+function get_trending_slides()
+{
+    global $db;
+
+    if (!trending_has_slides_table()) {
+        return [];
+    }
+
+    try {
+        $stmt = $db->query('SELECT * FROM trending_slides ORDER BY ordre ASC, id ASC');
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        return is_array($rows) ? $rows : [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Récupère un slide par ID
+ * @param int $slide_id
+ * @return array|false
+ */
+function get_trending_slide_by_id($slide_id)
+{
+    global $db;
+
+    $slide_id = (int) $slide_id;
+    if ($slide_id <= 0 || !trending_has_slides_table()) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT * FROM trending_slides WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $slide_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: false;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Slides sans image (disponibles pour lier une image)
+ * @return array<int, array<string, mixed>>
+ */
+function get_trending_slides_without_image()
+{
+    $slides = get_trending_slides();
+    $available = [];
+    foreach ($slides as $slide) {
+        if (trim((string) ($slide['image'] ?? '')) === '') {
+            $available[] = $slide;
+        }
+    }
+    return $available;
+}
+
+/**
+ * Prochain ordre pour un nouveau slide
+ * @return int
+ */
+function trending_next_slide_ordre()
+{
+    global $db;
+
+    if (!trending_has_slides_table()) {
+        return 1;
+    }
+
+    try {
+        $stmt = $db->query('SELECT COALESCE(MAX(ordre), 0) + 1 FROM trending_slides');
+        return $stmt ? (int) $stmt->fetchColumn() : 1;
+    } catch (PDOException $e) {
+        return 1;
+    }
+}
+
+/**
+ * Crée un slide texte
+ * @param array $data
+ * @return int|false ID du slide créé
+ */
+function add_trending_slide($data)
+{
+    global $db;
+
+    if (!trending_has_slides_table()) {
+        return false;
+    }
+
+    $label = trim((string) ($data['label'] ?? ''));
+    $titre = trim((string) ($data['titre'] ?? ''));
+    if ($label === '' || $titre === '') {
+        return false;
+    }
+
+    $description = trim((string) ($data['description'] ?? ''));
+    $bouton_texte = trim((string) ($data['bouton_texte'] ?? 'Découvrir'));
+    $section_key = trim((string) ($data['section_key'] ?? 'kit_impression'));
+    if ($bouton_texte === '') {
+        $bouton_texte = 'Découvrir';
+    }
+    if ($section_key === '') {
+        $section_key = 'kit_impression';
+    }
+
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO trending_slides (label, titre, description, bouton_texte, section_key, image, ordre)
+            VALUES (:label, :titre, :description, :bouton_texte, :section_key, NULL, :ordre)
+        ");
+        $ok = $stmt->execute([
+            'label' => $label,
+            'titre' => $titre,
+            'description' => $description !== '' ? $description : null,
+            'bouton_texte' => $bouton_texte,
+            'section_key' => $section_key,
+            'ordre' => trending_next_slide_ordre(),
+        ]);
+        if (!$ok) {
+            return false;
+        }
+        return (int) $db->lastInsertId();
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Met à jour le texte d'un slide
+ * @param int $slide_id
+ * @param array $data
+ * @return bool
+ */
+function update_trending_slide_text($slide_id, $data)
+{
+    global $db;
+
+    $slide_id = (int) $slide_id;
+    if ($slide_id <= 0 || !trending_has_slides_table()) {
+        return false;
+    }
+
+    $label = trim((string) ($data['label'] ?? ''));
+    $titre = trim((string) ($data['titre'] ?? ''));
+    if ($label === '' || $titre === '') {
+        return false;
+    }
+
+    $description = trim((string) ($data['description'] ?? ''));
+    $bouton_texte = trim((string) ($data['bouton_texte'] ?? 'Découvrir'));
+    $section_key = trim((string) ($data['section_key'] ?? 'kit_impression'));
+    if ($bouton_texte === '') {
+        $bouton_texte = 'Découvrir';
+    }
+    if ($section_key === '') {
+        $section_key = 'kit_impression';
+    }
+
+    try {
+        $stmt = $db->prepare("
+            UPDATE trending_slides
+            SET label = :label,
+                titre = :titre,
+                description = :description,
+                bouton_texte = :bouton_texte,
+                section_key = :section_key,
+                date_modification = NOW()
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            'id' => $slide_id,
+            'label' => $label,
+            'titre' => $titre,
+            'description' => $description !== '' ? $description : null,
+            'bouton_texte' => $bouton_texte,
+            'section_key' => $section_key,
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Associe une image à un slide (une seule image par slide)
+ * @param int $slide_id
+ * @param string $image_name
+ * @return bool
+ */
+function set_trending_slide_image($slide_id, $image_name)
+{
+    global $db;
+
+    $slide_id = (int) $slide_id;
+    $image_name = trim((string) $image_name);
+    if ($slide_id <= 0 || $image_name === '' || !trending_has_slides_table()) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT id, image FROM trending_slides WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $slide_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return false;
+        }
+
+        $update = $db->prepare('UPDATE trending_slides SET image = :image, date_modification = NOW() WHERE id = :id');
+        if (!$update->execute(['image' => $image_name, 'id' => $slide_id])) {
+            return false;
+        }
+
+        $old_name = trim((string) ($row['image'] ?? ''));
+        if ($old_name !== '' && $old_name !== $image_name) {
+            delete_trending_image($old_name);
+        }
+
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Supprime l'image d'un slide sans supprimer le texte
+ * @param int $slide_id
+ * @return bool
+ */
+function remove_trending_slide_image($slide_id)
+{
+    global $db;
+
+    $slide_id = (int) $slide_id;
+    if ($slide_id <= 0 || !trending_has_slides_table()) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT image FROM trending_slides WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $slide_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return false;
+        }
+
+        $update = $db->prepare('UPDATE trending_slides SET image = NULL, date_modification = NOW() WHERE id = :id');
+        if (!$update->execute(['id' => $slide_id])) {
+            return false;
+        }
+
+        $old_name = trim((string) ($row['image'] ?? ''));
+        if ($old_name !== '') {
+            delete_trending_image($old_name);
+        }
+
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Supprime un slide complet
+ * @param int $slide_id
+ * @return bool
+ */
+function delete_trending_slide($slide_id)
+{
+    global $db;
+
+    $slide_id = (int) $slide_id;
+    if ($slide_id <= 0 || !trending_has_slides_table()) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare('SELECT image FROM trending_slides WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $slide_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return false;
+        }
+
+        $delete = $db->prepare('DELETE FROM trending_slides WHERE id = :id');
+        if (!$delete->execute(['id' => $slide_id])) {
+            return false;
+        }
+
+        $image_name = trim((string) ($row['image'] ?? ''));
+        if ($image_name !== '') {
+            delete_trending_image($image_name);
+        }
+
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Normalise la clé section pour un slide
+ * @param string $section_key
+ * @return string
+ */
+function trending_normalize_section_key($section_key)
+{
+    require_once __DIR__ . '/../includes/home_sections.php';
+    $section_key = trim((string) $section_key);
+    $options = get_home_section_accueil_options();
+    if ($section_key !== '' && isset($options[$section_key])) {
+        return $section_key;
+    }
+    return 'kit_impression';
+}
+
+/**
+ * URL CTA d'un slide trending
+ * @param string $section_key
+ * @return string
+ */
+function trending_slide_section_url($section_key)
+{
+    require_once __DIR__ . '/../includes/home_sections.php';
+    $section_key = trending_normalize_section_key($section_key);
+    return get_home_section_page_url($section_key);
+}

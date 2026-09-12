@@ -272,6 +272,11 @@ return [
         'script' => 'run_add_trending_images_table.php',
     ],
     [
+        'id' => 'trending_slides',
+        'label' => 'Slides trending (texte + image liés)',
+        'script' => 'run_add_trending_slides_table.php',
+    ],
+    [
         'id' => 'produits_section_kit_impression',
         'label' => 'Section accueil kit_impression sur produits',
         'script' => 'run_add_produits_section_kit_impression.php',

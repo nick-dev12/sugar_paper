@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../models/model_trending.php';
 require_once __DIR__ . '/image_optimizer.php';
+require_once __DIR__ . '/home_sections.php';
 
 /**
  * URL de l'image trending pour la section spotlight
@@ -25,48 +26,6 @@ function home_spotlight_image_url($image_name)
     }
 
     return upload_subdir_image_url('trending', $image_name, 'lg');
-}
-
-/**
- * Images du carrousel spotlight (table + fallback legacy)
- * @return array<int, array{url: string, alt: string}>
- */
-function home_spotlight_get_images($image_alt)
-{
-    $images = [];
-    $rows = get_trending_spotlight_images();
-    foreach ($rows as $row) {
-        $filename = trim((string) ($row['image'] ?? ''));
-        if ($filename === '') {
-            continue;
-        }
-        $images[] = [
-            'url' => home_spotlight_image_url($filename),
-            'alt' => $image_alt,
-        ];
-    }
-
-    if (!empty($images)) {
-        return $images;
-    }
-
-    $config = get_trending_config();
-    $legacy = trim((string) ($config['image'] ?? ''));
-    if ($legacy !== '') {
-        $images[] = [
-            'url' => home_spotlight_image_url($legacy),
-            'alt' => $image_alt,
-        ];
-    }
-
-    if (empty($images)) {
-        $images[] = [
-            'url' => '/image/produit1.jpg',
-            'alt' => $image_alt,
-        ];
-    }
-
-    return $images;
 }
 
 /**
@@ -94,7 +53,7 @@ function home_spotlight_parse_title($titre)
 }
 
 /**
- * Normalise le lien du bouton CTA
+ * Normalise le lien du bouton CTA (legacy)
  * @param string $lien
  * @return string
  */
@@ -108,88 +67,162 @@ function home_spotlight_normalize_link($lien)
 }
 
 /**
- * Affiche la section produit vedette si configurée
- * @return void
+ * Prépare les slides spotlight pour l'accueil
+ * @return array<int, array<string, mixed>>
  */
-function render_home_spotlight_section()
+function home_spotlight_get_prepared_slides()
 {
+    $slides = get_trending_slides();
+    if (!empty($slides)) {
+        $prepared = [];
+        foreach ($slides as $slide) {
+            $label = trim((string) ($slide['label'] ?? ''));
+            $titre = trim((string) ($slide['titre'] ?? ''));
+            if ($label === '' && $titre === '') {
+                continue;
+            }
+            if ($label === '') {
+                $label = 'Nouveauté';
+            }
+            if (strtolower($label) === 'categories') {
+                $label = 'Nouveauté';
+            }
+
+            $title_parts = home_spotlight_parse_title($titre);
+            $bouton_texte = trim((string) ($slide['bouton_texte'] ?? 'Découvrir'));
+            if ($bouton_texte === '' || strtolower($bouton_texte) === 'buy now!' || strtolower($bouton_texte) === 'buy now') {
+                $bouton_texte = 'Découvrir';
+            }
+
+            $description = trim((string) ($slide['description'] ?? ''));
+            if ($description === '') {
+                $description = 'Découvrez l\'impression, les cartouches encre comestible et le papier sucre.';
+            }
+
+            $section_key = trending_normalize_section_key($slide['section_key'] ?? 'kit_impression');
+            $image_name = trim((string) ($slide['image'] ?? ''));
+            $image_alt = $title_parts['line2'] !== '' ? $title_parts['line2'] : $title_parts['line1'];
+
+            $prepared[] = [
+                'id' => (int) ($slide['id'] ?? 0),
+                'label' => $label,
+                'title_parts' => $title_parts,
+                'description' => $description,
+                'bouton_texte' => $bouton_texte,
+                'bouton_lien' => trending_slide_section_url($section_key),
+                'section_key' => $section_key,
+                'image_url' => home_spotlight_image_url($image_name),
+                'image_alt' => $image_alt,
+            ];
+        }
+        return $prepared;
+    }
+
     $config = get_trending_config();
     if (!is_array($config)) {
-        return;
+        return [];
     }
 
     $label = trim((string) ($config['label'] ?? ''));
     $titre = trim((string) ($config['titre'] ?? ''));
-    $description = trim((string) ($config['description'] ?? ''));
-    $bouton_texte = trim((string) ($config['bouton_texte'] ?? ''));
-    $bouton_lien = home_spotlight_normalize_link($config['bouton_lien'] ?? '');
-
     if ($label === '' && $titre === '') {
-        return;
+        return [];
     }
 
     if ($label === '') {
         $label = 'Nouveauté';
     }
-    if ($bouton_texte === '') {
-        $bouton_texte = 'Découvrir';
-    }
+
+    $title_parts = home_spotlight_parse_title($titre);
+    $description = trim((string) ($config['description'] ?? ''));
     if ($description === '') {
         $description = 'Découvrez l\'impression, les cartouches encre comestible et le papier sucre.';
     }
 
-    if (strtolower($label) === 'categories') {
-        $label = 'Nouveauté';
-    }
-    if (strtolower($bouton_texte) === 'buy now!' || strtolower($bouton_texte) === 'buy now') {
+    $bouton_texte = trim((string) ($config['bouton_texte'] ?? 'Découvrir'));
+    if ($bouton_texte === '') {
         $bouton_texte = 'Découvrir';
     }
 
-    $title_parts = home_spotlight_parse_title($titre);
+    $rows = get_trending_spotlight_images();
+    $image_name = '';
+    if (!empty($rows)) {
+        $image_name = trim((string) ($rows[0]['image'] ?? ''));
+    }
+    if ($image_name === '') {
+        $image_name = trim((string) ($config['image'] ?? ''));
+    }
+
     $image_alt = $title_parts['line2'] !== '' ? $title_parts['line2'] : $title_parts['line1'];
-    $spotlight_images = home_spotlight_get_images($image_alt);
-    $has_slider = count($spotlight_images) > 1;
+
+    return [[
+        'id' => 0,
+        'label' => $label,
+        'title_parts' => $title_parts,
+        'description' => $description,
+        'bouton_texte' => $bouton_texte,
+        'bouton_lien' => home_spotlight_normalize_link($config['bouton_lien'] ?? ''),
+        'section_key' => 'kit_impression',
+        'image_url' => home_spotlight_image_url($image_name),
+        'image_alt' => $image_alt,
+    ]];
+}
+
+/**
+ * Affiche la section produit vedette si configurée
+ * @return void
+ */
+function render_home_spotlight_section()
+{
+    $slides = home_spotlight_get_prepared_slides();
+    if (empty($slides)) {
+        return;
+    }
+
+    $has_slider = count($slides) > 1;
     ?>
-    <section class="home-spotlight home-reveal" aria-label="Produit en vedette">
+    <section class="home-spotlight home-reveal<?php echo $has_slider ? ' home-spotlight--slider' : ''; ?>" aria-label="Produit en vedette">
         <div class="home-spotlight__inner">
             <span class="home-spotlight__streak home-spotlight__streak--1" aria-hidden="true"></span>
             <span class="home-spotlight__streak home-spotlight__streak--2" aria-hidden="true"></span>
-            <div class="home-spotlight__grid">
-                <div class="home-spotlight__content">
-                    <p class="home-spotlight__badge"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></p>
-                    <h2 class="home-spotlight__title">
-                        <span class="home-spotlight__title-line"><?php echo htmlspecialchars($title_parts['line1'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span class="home-spotlight__title-line home-spotlight__title-line--accent"><?php echo htmlspecialchars($title_parts['line2'], ENT_QUOTES, 'UTF-8'); ?></span>
-                    </h2>
-                    <p class="home-spotlight__desc"><?php echo htmlspecialchars($description, ENT_QUOTES, 'UTF-8'); ?></p>
-                    <a href="<?php echo htmlspecialchars($bouton_lien, ENT_QUOTES, 'UTF-8'); ?>" class="home-spotlight__cta">
-                        <span><?php echo htmlspecialchars($bouton_texte, ENT_QUOTES, 'UTF-8'); ?></span>
-                        <span class="home-spotlight__cta-icon" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
-                    </a>
-                </div>
-                <div class="home-spotlight__visual">
-                    <div class="home-spotlight__pedestal<?php echo $has_slider ? ' home-spotlight__pedestal--slider' : ''; ?>">
-                        <div class="home-spotlight__slides">
-                            <?php foreach ($spotlight_images as $index => $spotlight_image): ?>
-                            <img class="home-spotlight__img<?php echo $index === 0 ? ' is-active' : ''; ?>"
-                                src="<?php echo htmlspecialchars($spotlight_image['url'], ENT_QUOTES, 'UTF-8'); ?>"
-                                alt="<?php echo htmlspecialchars($spotlight_image['alt'], ENT_QUOTES, 'UTF-8'); ?>"
-                                loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
-                                decoding="async"
-                                data-slide-index="<?php echo (int) $index; ?>"
-                                onerror="this.src='/image/produit1.jpg'">
-                            <?php endforeach; ?>
+            <div class="home-spotlight__slider">
+                <?php foreach ($slides as $index => $slide): ?>
+                <?php $title_parts = $slide['title_parts']; ?>
+                <div class="home-spotlight__slide<?php echo $index === 0 ? ' is-active' : ''; ?>" data-slide-index="<?php echo (int) $index; ?>">
+                    <div class="home-spotlight__grid">
+                        <div class="home-spotlight__content">
+                            <p class="home-spotlight__badge"><?php echo htmlspecialchars($slide['label'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <h2 class="home-spotlight__title">
+                                <span class="home-spotlight__title-line"><?php echo htmlspecialchars($title_parts['line1'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="home-spotlight__title-line home-spotlight__title-line--accent"><?php echo htmlspecialchars($title_parts['line2'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            </h2>
+                            <p class="home-spotlight__desc"><?php echo htmlspecialchars($slide['description'], ENT_QUOTES, 'UTF-8'); ?></p>
+                            <a href="<?php echo htmlspecialchars($slide['bouton_lien'], ENT_QUOTES, 'UTF-8'); ?>" class="home-spotlight__cta">
+                                <span><?php echo htmlspecialchars($slide['bouton_texte'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="home-spotlight__cta-icon" aria-hidden="true"><i class="fas fa-arrow-right"></i></span>
+                            </a>
+                        </div>
+                        <div class="home-spotlight__visual">
+                            <div class="home-spotlight__pedestal">
+                                <img class="home-spotlight__img"
+                                    src="<?php echo htmlspecialchars($slide['image_url'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    alt="<?php echo htmlspecialchars($slide['image_alt'], ENT_QUOTES, 'UTF-8'); ?>"
+                                    loading="<?php echo $index === 0 ? 'eager' : 'lazy'; ?>"
+                                    decoding="async"
+                                    onerror="this.src='/image/produit1.jpg'">
+                            </div>
                         </div>
                     </div>
                 </div>
+                <?php endforeach; ?>
             </div>
             <?php if ($has_slider): ?>
-            <div class="home-spotlight__dots" role="tablist" aria-label="Images du produit vedette">
-                <?php foreach ($spotlight_images as $index => $spotlight_image): ?>
+            <div class="home-spotlight__dots" role="tablist" aria-label="Slides produit vedette">
+                <?php foreach ($slides as $index => $slide): ?>
                 <button type="button"
                     class="home-spotlight__dot<?php echo $index === 0 ? ' home-spotlight__dot--active' : ''; ?>"
                     data-slide-index="<?php echo (int) $index; ?>"
-                    aria-label="Image <?php echo (int) ($index + 1); ?>"
+                    aria-label="Slide <?php echo (int) ($index + 1); ?>"
                     aria-selected="<?php echo $index === 0 ? 'true' : 'false'; ?>"></button>
                 <?php endforeach; ?>
             </div>

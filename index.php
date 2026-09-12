@@ -559,14 +559,14 @@ $seo_canonical = $base . '/';
         }
 
         function initHomeSpotlightSlider() {
-            var $spotlight = $('.home-spotlight__pedestal--slider');
+            var $spotlight = $('.home-spotlight--slider');
             if (!$spotlight.length) {
                 return;
             }
 
             $spotlight.each(function() {
-                var $root = $(this).closest('.home-spotlight__inner');
-                var $slides = $root.find('.home-spotlight__img');
+                var $root = $(this).find('.home-spotlight__inner');
+                var $slides = $root.find('.home-spotlight__slide');
                 var $dots = $root.find('.home-spotlight__dot');
                 var current = 0;
                 var timer = null;
@@ -671,11 +671,11 @@ $seo_canonical = $base . '/';
                 syncSliderVideos();
             } else {
                 $homeSlider.owlCarousel($.extend({}, owlDefaults, {
-                    items: 1,
-                    autoplay: true,
-                    autoplayTimeout: 6000,
-                    lazyLoad: true
-                }));
+            items: 1,
+            autoplay: true,
+            autoplayTimeout: 6000,
+            lazyLoad: true
+        }));
             }
         }
 

@@ -18,20 +18,28 @@ function process_update_trending() {
 
     $action = isset($_POST['action']) ? trim((string) $_POST['action']) : '';
 
+    if ($action === 'delete_slide') {
+        $slide_id = (int) ($_POST['slide_id'] ?? 0);
+        if (delete_trending_slide($slide_id)) {
+            return ['success' => true, 'message' => 'Slide supprimé'];
+        }
+        return ['success' => false, 'message' => 'Impossible de supprimer ce slide'];
+    }
+
     if ($action === 'delete_image' || !empty($_POST['delete_spotlight_image_id'])) {
-        $image_id = (int) ($_POST['delete_spotlight_image_id'] ?? $_POST['image_id'] ?? 0);
-        if (delete_trending_spotlight_image_by_id($image_id)) {
-            return ['success' => true, 'message' => 'Image supprimée du carrousel'];
+        $slide_id = (int) ($_POST['delete_spotlight_image_id'] ?? $_POST['slide_id'] ?? 0);
+        if (remove_trending_slide_image($slide_id)) {
+            return ['success' => true, 'message' => 'Image supprimée du slide'];
         }
         return ['success' => false, 'message' => 'Impossible de supprimer cette image'];
     }
 
-    if ($action === 'add_images') {
-        return process_trending_add_images();
+    if ($action === 'add_image') {
+        return process_trending_add_slide_image();
     }
 
     if ($action === 'replace_image') {
-        return process_trending_replace_image();
+        return process_trending_replace_slide_image();
     }
 
     if ($action === 'save_text') {
@@ -42,84 +50,93 @@ function process_update_trending() {
 }
 
 /**
- * Enregistre le texte de la bannière (label, titre, description, bouton)
+ * Enregistre ou crée le texte d'un slide
  * @return array
  */
 function process_trending_save_text() {
+    $slide_id = (int) ($_POST['slide_id'] ?? 0);
     $label = isset($_POST['label']) ? trim($_POST['label']) : '';
     $titre = isset($_POST['titre']) ? trim($_POST['titre']) : '';
     $description = isset($_POST['description']) ? trim($_POST['description']) : '';
     $bouton_texte = isset($_POST['bouton_texte']) ? trim($_POST['bouton_texte']) : '';
-    $bouton_lien = isset($_POST['bouton_lien']) ? trim($_POST['bouton_lien']) : '#';
+    $section_key = trending_normalize_section_key($_POST['section_key'] ?? 'kit_impression');
 
     if ($label === '') {
-        return ['success' => false, 'message' => 'Le label est obligatoire', 'modal' => 'text'];
+        return ['success' => false, 'message' => 'Le label est obligatoire', 'modal' => 'text', 'slide_id' => $slide_id];
     }
 
     if ($titre === '') {
-        return ['success' => false, 'message' => 'Le titre est obligatoire', 'modal' => 'text'];
+        return ['success' => false, 'message' => 'Le titre est obligatoire', 'modal' => 'text', 'slide_id' => $slide_id];
     }
 
     if ($bouton_texte === '') {
         $bouton_texte = 'Découvrir';
     }
 
-    $current_config = get_trending_config();
-    $image = !empty($current_config['image']) ? $current_config['image'] : 'speaker.png';
-
     $data = [
         'label' => $label,
         'titre' => $titre,
         'description' => $description,
         'bouton_texte' => $bouton_texte,
-        'bouton_lien' => $bouton_lien,
-        'image' => $image,
+        'section_key' => $section_key,
     ];
 
-    if (update_trending_config($data)) {
-        return ['success' => true, 'message' => 'Texte de la bannière enregistré'];
+    if ($slide_id > 0) {
+        if (update_trending_slide_text($slide_id, $data)) {
+            return ['success' => true, 'message' => 'Texte du slide enregistré'];
+        }
+        return ['success' => false, 'message' => 'Erreur lors de l’enregistrement du texte', 'modal' => 'text', 'slide_id' => $slide_id];
     }
 
-    return ['success' => false, 'message' => 'Erreur lors de l’enregistrement du texte', 'modal' => 'text'];
+    if (add_trending_slide($data)) {
+        return ['success' => true, 'message' => 'Nouveau slide texte ajouté'];
+    }
+
+    return ['success' => false, 'message' => 'Erreur lors de la création du slide', 'modal' => 'text'];
 }
 
 /**
- * Ajoute une ou plusieurs images au carrousel
+ * Ajoute une image liée à un slide texte
  * @return array
  */
-function process_trending_add_images() {
-    $uploaded = trending_upload_posted_images('spotlight_images');
+function process_trending_add_slide_image() {
+    $slide_id = (int) ($_POST['slide_id'] ?? 0);
+    $slide = get_trending_slide_by_id($slide_id);
+    if (!$slide) {
+        return ['success' => false, 'message' => 'Slide texte introuvable', 'modal' => 'images'];
+    }
+
+    if (trim((string) ($slide['image'] ?? '')) !== '') {
+        return ['success' => false, 'message' => 'Ce slide possède déjà une image. Modifiez-la ou choisissez un autre slide.', 'modal' => 'images', 'slide_id' => $slide_id];
+    }
+
+    $uploaded = trending_upload_posted_images('spotlight_image');
     if (empty($uploaded['filenames'])) {
         return [
             'success' => false,
-            'message' => $uploaded['error'] !== '' ? $uploaded['error'] : 'Veuillez sélectionner au moins une image',
+            'message' => $uploaded['error'] !== '' ? $uploaded['error'] : 'Veuillez sélectionner une image',
             'modal' => 'images',
+            'slide_id' => $slide_id,
         ];
     }
 
-    $added = 0;
-    foreach ($uploaded['filenames'] as $filename) {
-        if (add_trending_spotlight_image($filename)) {
-            $added++;
-        }
+    $filename = $uploaded['filenames'][0];
+    if (set_trending_slide_image($slide_id, $filename)) {
+        return ['success' => true, 'message' => 'Image liée au slide'];
     }
 
-    if ($added > 0) {
-        return ['success' => true, 'message' => $added . ' image(s) ajoutée(s) au carrousel'];
-    }
-
-    return ['success' => false, 'message' => 'Impossible d’enregistrer les images', 'modal' => 'images'];
+    return ['success' => false, 'message' => 'Impossible d’enregistrer l’image', 'modal' => 'images', 'slide_id' => $slide_id];
 }
 
 /**
- * Remplace une image du carrousel
+ * Remplace l'image d'un slide
  * @return array
  */
-function process_trending_replace_image() {
-    $image_id = (int) ($_POST['image_id'] ?? 0);
-    $existing = get_trending_spotlight_image_by_id($image_id);
-    if (!$existing) {
-        return ['success' => false, 'message' => 'Image introuvable', 'modal' => 'images', 'image_id' => $image_id];
+function process_trending_replace_slide_image() {
+    $slide_id = (int) ($_POST['slide_id'] ?? 0);
+    $slide = get_trending_slide_by_id($slide_id);
+    if (!$slide) {
+        return ['success' => false, 'message' => 'Slide introuvable', 'modal' => 'images', 'slide_id' => $slide_id];
     }
 
     $uploaded = trending_upload_posted_images('spotlight_image');
@@ -128,16 +145,16 @@ function process_trending_replace_image() {
             'success' => false,
             'message' => $uploaded['error'] !== '' ? $uploaded['error'] : 'Veuillez choisir une nouvelle image',
             'modal' => 'images',
-            'image_id' => $image_id,
+            'slide_id' => $slide_id,
         ];
     }
 
     $filename = $uploaded['filenames'][0];
-    if (update_trending_spotlight_image($image_id, $filename)) {
+    if (set_trending_slide_image($slide_id, $filename)) {
         return ['success' => true, 'message' => 'Image mise à jour'];
     }
 
-    return ['success' => false, 'message' => 'Impossible de remplacer cette image', 'modal' => 'images', 'image_id' => $image_id];
+    return ['success' => false, 'message' => 'Impossible de remplacer cette image', 'modal' => 'images', 'slide_id' => $slide_id];
 }
 
 /**
