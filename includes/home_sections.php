@@ -183,7 +183,6 @@ function render_home_all_products_section($limit = 30, $return_url = '/index.php
             <div>
                 <span class="home-section-kicker">Catalogue</span>
                 <h2 class="home-section-title">Tous nos produits</h2>
-                <p class="home-section-desc">Découvrez l'ensemble de notre sélection, toutes catégories confondues.</p>
             </div>
             <a href="produits.php" class="home-section-cta">
                 Voir le catalogue <i class="fas fa-arrow-right"></i>

@@ -658,22 +658,46 @@ body.page-home .services-banner-scaler {
   }
 
   body.page-home .services-banner-inner .service-icon {
-    width: 26px;
-    height: 26px;
-    font-size: 12px;
-    margin-bottom: 3px;
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+    margin-bottom: 5px;
   }
 
   body.page-home .services-banner-inner .service-item h3 {
-    font-size: 8px;
-    letter-spacing: 0.2px;
-    line-height: 1.15;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    line-height: 1.25;
   }
 
   body.page-home .services-banner-inner .service-item p {
-    font-size: 7.5px;
-    margin-top: 1px;
-    line-height: 1.25;
+    font-size: 9px;
+    margin-top: 2px;
+    line-height: 1.35;
+  }
+}
+
+@media (max-width: 576px) {
+  body.page-home .services-banner-inner {
+    padding: 10px 8px;
+  }
+
+  body.page-home .services-banner-inner .service-item {
+    padding: 8px 6px;
+  }
+
+  body.page-home .services-banner-inner .service-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
+  body.page-home .services-banner-inner .service-item h3 {
+    font-size: 9px;
+  }
+
+  body.page-home .services-banner-inner .service-item p {
+    font-size: 8px;
   }
 }
 .services-banner-inner {

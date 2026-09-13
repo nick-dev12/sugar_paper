@@ -193,7 +193,6 @@ function render_home_spotlight_section()
                         <div class="home-spotlight__content">
                             <p class="home-spotlight__badge"><?php echo htmlspecialchars($slide['label'], ENT_QUOTES, 'UTF-8'); ?></p>
                             <h2 class="home-spotlight__title">
-                                <span class="home-spotlight__title-line"><?php echo htmlspecialchars($title_parts['line1'], ENT_QUOTES, 'UTF-8'); ?></span>
                                 <span class="home-spotlight__title-line home-spotlight__title-line--accent"><?php echo htmlspecialchars($title_parts['line2'], ENT_QUOTES, 'UTF-8'); ?></span>
                             </h2>
                             <p class="home-spotlight__desc"><?php echo htmlspecialchars($slide['description'], ENT_QUOTES, 'UTF-8'); ?></p>

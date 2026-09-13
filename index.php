@@ -274,7 +274,6 @@ $seo_canonical = $base . '/';
             <div>
                 <span class="home-section-kicker">Explorer</span>
                 <h2 class="home-section-title">Nos catégories</h2>
-                <p class="home-section-desc">Trouvez rapidement le matériel idéal pour sublimer vos gâteaux.</p>
             </div>
             <a href="produits.php" class="home-section-cta">Voir le catalogue <i class="fas fa-arrow-right"></i></a>
         </div>
@@ -507,24 +506,15 @@ $seo_canonical = $base . '/';
             if (!wrap || !inner) {
                 return;
             }
-            if (window.innerWidth >= 993) {
+            if (window.innerWidth < 993) {
                 inner.style.transform = 'none';
                 inner.style.width = '100%';
                 wrap.style.height = 'auto';
                 return;
             }
-            var designWidth = 820;
-            var available = wrap.clientWidth;
-            var scale = available / designWidth;
-            if (!isFinite(scale) || scale <= 0) {
-                scale = 1;
-            }
-            if (scale > 1) {
-                scale = 1;
-            }
-            inner.style.width = designWidth + 'px';
-            inner.style.transform = 'scale(' + scale + ')';
-            wrap.style.height = (inner.offsetHeight * scale) + 'px';
+            inner.style.transform = 'none';
+            inner.style.width = '100%';
+            wrap.style.height = 'auto';
         }
 
         function scaleHomeSpotlight() {
@@ -533,12 +523,13 @@ $seo_canonical = $base . '/';
             if (!wrap || !scaler) {
                 return;
             }
-            var designWidth = 1200;
-            if (window.innerWidth <= 576) {
-                designWidth = 760;
-            } else if (window.innerWidth <= 992) {
-                designWidth = 900;
+            if (window.innerWidth < 993) {
+                scaler.style.width = '100%';
+                scaler.style.transform = 'none';
+                wrap.style.height = 'auto';
+                return;
             }
+            var designWidth = 1200;
             var available = wrap.clientWidth;
             if (available >= designWidth) {
                 scaler.style.width = '100%';

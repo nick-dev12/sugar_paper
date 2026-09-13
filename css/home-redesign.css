@@ -615,10 +615,6 @@ body.page-home #home-categories .home-section-title {
   font-size: clamp(1.35rem, 3.2vw, 1.9rem);
 }
 
-body.page-home #home-categories .home-section-desc {
-  font-size: 0.9rem;
-}
-
 body.page-home #home-categories .categorie {
   width: 100%;
   max-width: 1180px;
@@ -688,6 +684,31 @@ body.page-home #home-categories .categorie .owl-dots .owl-dot span {
 
 body.page-home #home-categories .categorie .owl-dots .owl-dot.active span {
   background: var(--home-rose) !important;
+}
+
+@media (max-width: 768px) {
+  body.page-home #home-categories .home-section-head {
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  body.page-home #home-categories .home-section-kicker {
+    margin-bottom: 4px;
+  }
+
+  body.page-home #home-categories .home-section-title {
+    font-size: clamp(1.25rem, 3.2vw, 1.9rem);
+  }
+
+  body.page-home #home-categories .home-section-cta {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 576px) {

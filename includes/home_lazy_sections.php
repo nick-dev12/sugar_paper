@@ -287,7 +287,6 @@ function render_home_lazy_top_categories_section()
             <div>
                 <span class="home-section-kicker">Sélection</span>
                 <h2 class="home-section-title">Top catégories</h2>
-                <p class="home-section-desc">Les univers les plus consultés du moment.</p>
             </div>
         </div>
         <h1>Top Categorie</h1>

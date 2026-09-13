@@ -147,7 +147,7 @@ body.page-home .home-spotlight__slide.is-active {
 body.page-home .home-spotlight__grid {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.48fr) minmax(0, 0.52fr);
+  grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
   align-items: stretch;
   gap: 10px;
   padding: 12px 14px;
@@ -355,6 +355,90 @@ body.page-home .home-spotlight__dot--active {
   width: 28px;
   border-radius: 999px;
   background: linear-gradient(90deg, #e5488a, #918a44);
+}
+
+/* Mobile — texte lisible sans scale JS */
+@media (max-width: 992px) {
+  body.page-home .home-spotlight__inner {
+    height: 280px;
+    max-height: 280px;
+  }
+
+  body.page-home .home-spotlight__grid {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  body.page-home .home-spotlight__content {
+    gap: 8px;
+  }
+
+  body.page-home .home-spotlight__badge {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+  }
+
+  body.page-home .home-spotlight__badge::before {
+    width: 18px;
+  }
+
+  body.page-home .home-spotlight__title-line {
+    font-size: clamp(18px, 5.5vw, 22px);
+    line-height: 1.08;
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: clamp(15px, 4.5vw, 18px);
+    line-height: 1.12;
+    margin-top: 0;
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 12px;
+    line-height: 1.4;
+    -webkit-line-clamp: 4;
+  }
+
+  body.page-home .home-spotlight__cta {
+    padding: 9px 16px;
+    font-size: 10px;
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 576px) {
+  body.page-home .home-spotlight__inner {
+    height: 260px;
+    max-height: 260px;
+  }
+
+  body.page-home .home-spotlight__grid {
+    grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+    padding: 12px 12px;
+  }
+
+  body.page-home .home-spotlight__badge {
+    font-size: 10px;
+  }
+
+  body.page-home .home-spotlight__title-line {
+    font-size: clamp(17px, 6vw, 20px);
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: clamp(14px, 5vw, 17px);
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 11px;
+    -webkit-line-clamp: 3;
+  }
+
+  body.page-home .home-spotlight__cta {
+    padding: 8px 14px;
+    font-size: 9px;
+    min-height: 38px;
+  }
 }
 
 /* Tablette — 300px max */
