@@ -562,4 +562,46 @@ body.page-home .home-spotlight__dot--active {
     width: 120px;
     height: 120px;
   }
+
+  body.page-home .home-spotlight__grid {
+    gap: 20px;
+    padding: 20px 32px;
+  }
+
+  body.page-home .home-spotlight__content {
+    gap: 12px;
+  }
+
+  body.page-home .home-spotlight__badge {
+    font-size: 14px;
+    letter-spacing: 0.18em;
+  }
+
+  body.page-home .home-spotlight__badge::before {
+    width: 28px;
+  }
+
+  body.page-home .home-spotlight__title-line--accent {
+    font-size: clamp(26px, 2.2vw, 34px);
+    line-height: 1.1;
+  }
+
+  body.page-home .home-spotlight__desc {
+    font-size: 16px;
+    line-height: 1.5;
+    max-width: 38ch;
+  }
+
+  body.page-home .home-spotlight__cta {
+    padding: 12px 22px;
+    font-size: 14px;
+    min-height: 48px;
+    gap: 12px;
+  }
+
+  body.page-home .home-spotlight__cta-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
 }
