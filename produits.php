@@ -13,7 +13,7 @@ $recherche_actuelle = isset($_GET['recherche']) ? trim($_GET['recherche']) : '';
 $prix_min = isset($_GET['prix_min']) && $_GET['prix_min'] !== '' ? (float) $_GET['prix_min'] : null;
 $prix_max = isset($_GET['prix_max']) && $_GET['prix_max'] !== '' ? (float) $_GET['prix_max'] : null;
 $categorie_id = isset($_GET['categorie']) && $_GET['categorie'] !== '' ? (int) $_GET['categorie'] : null;
-$tri = isset($_GET['tri']) && in_array($_GET['tri'], ['date', 'prix_asc', 'prix_desc', 'nom']) ? $_GET['tri'] : 'date';
+$tri = isset($_GET['tri']) && in_array($_GET['tri'], ['rand', 'date', 'prix_asc', 'prix_desc', 'nom']) ? $_GET['tri'] : 'rand';
 $has_filters = produits_catalogue_has_filters($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri);
 $filter_params = produits_catalogue_filter_params($recherche_actuelle, $prix_min, $prix_max, $categorie_id, $tri);
 
@@ -169,7 +169,12 @@ $seo_canonical = $base . '/produits.php';
 </head>
 
 <body class="page-produits">
-    <?php include('nav_bar.php'); ?>
+    <?php
+    if (!defined('NAV_SKIP_HEAD_ASSETS')) {
+        define('NAV_SKIP_HEAD_ASSETS', true);
+    }
+    include('nav_bar.php');
+    ?>
 
     <div class="produits-page-header">
         <h1><i class="fas fa-box"></i>

@@ -17,6 +17,7 @@ require_once __DIR__ . '/../models/model_produits.php';
 $section = isset($_GET['section']) ? normalize_produit_section_accueil($_GET['section']) : null;
 $offset = isset($_GET['offset']) ? (int) $_GET['offset'] : 0;
 $limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 20;
+$rand_seed = produits_listing_rand_seed(isset($_GET['rand_seed']) ? (int) $_GET['rand_seed'] : 0);
 
 if (!$section) {
     echo json_encode(['success' => false, 'message' => 'Section invalide.', 'produits' => []]);
@@ -30,7 +31,7 @@ if ($limit < 1 || $limit > 50) {
     $limit = 20;
 }
 
-$produits = get_produits_by_home_section($section, $offset, $limit);
+$produits = get_produits_by_home_section($section, $offset, $limit, $rand_seed);
 $produits_formatted = [];
 
 foreach ($produits as $produit) {

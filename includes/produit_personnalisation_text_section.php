@@ -4,6 +4,12 @@
  * @var string $perso_text_prefix ex. perso, cupcakes, contours
  */
 $perso_text_prefix = isset($perso_text_prefix) ? preg_replace('/[^a-z0-9_-]/i', '', (string) $perso_text_prefix) : 'perso';
+if (!defined('PERSONNALISATION_EDITOR_FONTS_LOADED')) {
+    define('PERSONNALISATION_EDITOR_FONTS_LOADED', true);
+    ?>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@600&family=Fraunces:opsz,wght@9..144,600&family=Lobster&family=Outfit:wght@500;600&family=Pacifico&family=Playfair+Display:wght@600&display=swap">
+    <?php
+}
 ?>
 <section class="perso-tool-section">
     <h3 class="perso-tool-title"><i class="fa-solid fa-font" aria-hidden="true"></i> Texte</h3>

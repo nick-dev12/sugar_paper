@@ -30,13 +30,15 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     $panier_count = panier_invite_count_items();
 }
 ?>
-<link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="/css/nabare.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
+<?php if (!defined('NAV_SKIP_HEAD_ASSETS')): ?>
+<link rel="stylesheet" href="/css/variables.css<?php echo $asset_version ? '?v=' . $asset_version : ''; ?>">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <?php include __DIR__ . '/includes/google_fonts.php'; ?>
+<?php endif; ?>
 <style>
     /* ── Navigation Sugar Paper ───────────────────────────────────── */
     nav.nav-planete-gateau {

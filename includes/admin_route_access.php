@@ -257,6 +257,10 @@ if (!function_exists('admin_route_relative_path')) {
      */
     function admin_route_enforce() {
         if (!isset($_SESSION['admin_id']) || !isset($_SESSION['admin_email'])) {
+            if (function_exists('request_is_native_app') && request_is_native_app()) {
+                header('Location: /index.php');
+                exit;
+            }
             return;
         }
 

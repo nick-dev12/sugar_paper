@@ -1,6 +1,10 @@
 /// URL du site Sugar Paper chargée dans la WebView.
 const String kMarketplaceBaseUrl = 'https://sugar-paper.com/';
 
+/// Accueil boutique — toujours utilisé à l'ouverture de l'app (pas de restauration
+/// de la dernière page, pour éviter écran noir/blanc si session/cookie perdu).
+const String kMarketplaceHomeUrl = 'https://sugar-paper.com/index.php';
+
 /// API version app (même domaine que la WebView).
 String get kAppVersionApiUrl {
   return 'https://sugar-paper.com/api/app_version.php';

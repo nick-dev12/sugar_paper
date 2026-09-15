@@ -58,10 +58,11 @@ function render_categorie_product_grid($categorie_id, $return_url, $limit = 20)
     }
 
     $limit = max(1, min(50, (int) $limit));
-    $produits = search_produits_with_filters('', null, null, $categorie_id, 'date', 0, $limit);
+    $rand_seed = produits_listing_rand_seed();
+    $produits = search_produits_with_filters('', null, null, $categorie_id, 'rand', 0, $limit, $rand_seed);
     $total_produits = count_search_produits_with_filters('', null, null, $categorie_id);
     $offset_actuel = min($limit, max(count($produits), 0));
-    $api_query = http_build_query(['categorie' => $categorie_id, 'limit' => $limit]);
+    $api_query = http_build_query(['categorie' => $categorie_id, 'limit' => $limit, 'rand_seed' => $rand_seed]);
 
     $return_url = trim((string) $return_url);
     if ($return_url === '') {

@@ -177,7 +177,12 @@ $section_uses_cp = ($section_key === 'cake_topper');
 </head>
 
 <body class="page-section-produits">
-    <?php include 'nav_bar.php'; ?>
+    <?php
+    if (!defined('NAV_SKIP_HEAD_ASSETS')) {
+        define('NAV_SKIP_HEAD_ASSETS', true);
+    }
+    include 'nav_bar.php';
+    ?>
 
     <div class="page-header">
         <h1><i class="fas <?php echo htmlspecialchars($page_icon); ?>"></i>

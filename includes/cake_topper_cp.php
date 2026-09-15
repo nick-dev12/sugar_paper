@@ -294,7 +294,7 @@ function render_cp_form_modal_assets()
             userLoggedIn: <?php echo $state['user_logged_in'] ? 'true' : 'false'; ?>
         };
     </script>
-    <script src="/js/cp-form-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/cp-form-modal.js<?php echo asset_version_query(); ?>" defer></script>
     <?php
 }
 

@@ -78,8 +78,12 @@ $seo_schema_graphs = array_merge(
 </head>
 
 <body class="page-categorie">
-
-    <?php include('nav_bar.php') ?>
+    <?php
+    if (!defined('NAV_SKIP_HEAD_ASSETS')) {
+        define('NAV_SKIP_HEAD_ASSETS', true);
+    }
+    include('nav_bar.php');
+    ?>
 
     <?php if (isset($_GET['added']) && $_GET['added'] == '1'): ?>
     <div style="max-width: 600px; margin: 20px auto; padding: 15px 25px; background: rgba(32, 197, 199, 0.15); border-left: 4px solid var(--turquoise); border-radius: 8px; color: var(--titres);">

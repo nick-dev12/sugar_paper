@@ -97,7 +97,7 @@ function get_produits_similaires($produit_id, $categorie_id, $limit = 4)
             WHERE p.categorie_id = :categorie_id
               AND p.statut = 'actif'
               AND p.id != :produit_id
-            ORDER BY p.date_creation DESC
+            ORDER BY RAND()
             LIMIT " . $limit . "
         ");
         $stmt->execute([
@@ -136,22 +136,55 @@ function get_produit_by_id($id)
 }
 
 /**
+ * Graine RAND() pour un mélange boutique reproductible (pagination « Voir plus »)
+ * @param int $requested
+ * @return int
+ */
+function produits_listing_rand_seed($requested = 0)
+{
+    $requested = (int) $requested;
+    if ($requested > 0 && $requested <= 2147483646) {
+        return $requested;
+    }
+    try {
+        return random_int(1, 2147483646);
+    } catch (Exception $e) {
+        return mt_rand(1, 2147483646);
+    }
+}
+
+/**
+ * @param int $seed
+ * @return string
+ */
+function produits_sql_order_by_rand($seed = 0)
+{
+    $seed = (int) $seed;
+    if ($seed <= 0) {
+        return 'RAND()';
+    }
+    return 'RAND(' . $seed . ')';
+}
+
+/**
  * Récupère tous les produits actifs avec pagination
  * @param int $offset Nombre de produits à ignorer (pour pagination)
  * @param int $limit Nombre maximum de produits à retourner
+ * @param int $rand_seed Graine RAND() pour un mélange stable
  * @return array Tableau des produits
  */
-function get_all_produits_paginated($offset = 0, $limit = 20)
+function get_all_produits_paginated($offset = 0, $limit = 20, $rand_seed = 0)
 {
     global $db;
 
     try {
+        $order = produits_sql_order_by_rand($rand_seed);
         $stmt = $db->prepare("
             SELECT p.*, c.nom as categorie_nom 
             FROM produits p 
             LEFT JOIN categories c ON p.categorie_id = c.id 
             WHERE p.statut = 'actif'
-            ORDER BY p.date_creation DESC
+            ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
 
@@ -438,9 +471,10 @@ function produit_uses_price_from_label($produit)
  * @param string $section
  * @param int $offset
  * @param int $limit
+ * @param int $rand_seed
  * @return array
  */
-function get_produits_by_home_section($section, $offset = 0, $limit = 20)
+function get_produits_by_home_section($section, $offset = 0, $limit = 20, $rand_seed = 0)
 {
     global $db;
 
@@ -458,12 +492,13 @@ function get_produits_by_home_section($section, $offset = 0, $limit = 20)
             $params[$ph] = $key;
         }
         $in = implode(', ', $placeholders);
+        $order = produits_sql_order_by_rand($rand_seed);
         $stmt = $db->prepare("
             SELECT p.*, c.nom AS categorie_nom
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
             WHERE p.statut = 'actif' AND p.section_accueil IN ($in)
-            ORDER BY p.date_creation DESC
+            ORDER BY $order
             LIMIT :limit OFFSET :offset
         ");
         foreach ($params as $ph => $val) {
@@ -536,7 +571,7 @@ function search_produits($recherche, $offset = 0, $limit = 20)
             LEFT JOIN categories c ON p.categorie_id = c.id 
             WHERE p.statut = 'actif' 
             AND (p.nom LIKE :term OR p.description LIKE :term)
-            ORDER BY p.date_creation DESC
+            ORDER BY RAND()
             LIMIT :limit OFFSET :offset
         ");
         $stmt->bindValue(':term', $term, PDO::PARAM_STR);
@@ -584,12 +619,13 @@ function count_search_produits($recherche)
  * @param float|null $prix_min Prix minimum en FCFA (optionnel)
  * @param float|null $prix_max Prix maximum en FCFA (optionnel)
  * @param int|null $categorie_id ID catégorie (optionnel)
- * @param string $tri Tri: 'date', 'prix_asc', 'prix_desc', 'nom' (défaut: date)
+ * @param string $tri Tri: 'rand', 'date', 'prix_asc', 'prix_desc', 'nom' (défaut: rand)
  * @param int $offset Décalage pour pagination
  * @param int $limit Nombre max de résultats
+ * @param int $rand_seed Graine RAND() si tri aléatoire
  * @return array Tableau des produits trouvés
  */
-function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'date', $offset = 0, $limit = 50)
+function search_produits_with_filters($recherche = '', $prix_min = null, $prix_max = null, $categorie_id = null, $tri = 'rand', $offset = 0, $limit = 50, $rand_seed = 0)
 {
     global $db;
 
@@ -620,7 +656,7 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
             $params['categorie_id'] = $categorie_id;
         }
 
-        $order = "p.date_creation DESC";
+        $order = produits_sql_order_by_rand($rand_seed);
         if ($tri === 'prix_asc') {
             $order = "(CASE WHEN p.prix_promotion IS NOT NULL AND p.prix_promotion > 0 AND p.prix_promotion < p.prix THEN p.prix_promotion ELSE p.prix END) ASC";
         } elseif ($tri === 'prix_desc') {

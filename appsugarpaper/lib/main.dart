@@ -142,7 +142,8 @@ class _WebViewScreenState extends State<WebViewScreen>
   String? _currentUrl;
   String? _deepLinkInitUrl;
   bool _marketplaceEntryUrlReady = false;
-  String _marketplaceEntryUrl = kMarketplaceBaseUrl;
+  String _marketplaceEntryUrl = kMarketplaceHomeUrl;
+  bool _didHomeFallback = false;
   Timer? _loaderMaxTimer;
   Timer? _progressSimTimer;
   StreamSubscription<Uri>? _deepLinkSub;
@@ -169,14 +170,16 @@ class _WebViewScreenState extends State<WebViewScreen>
         return;
       }
       setState(() {
-        _marketplaceEntryUrl = kMarketplaceBaseUrl;
-        _currentUrl = kMarketplaceBaseUrl;
+        _marketplaceEntryUrl = kMarketplaceHomeUrl;
+        _currentUrl = kMarketplaceHomeUrl;
         _marketplaceEntryUrlReady = true;
       });
     });
   }
 
   /// Attend le deep link (App Links / Universal Links) avant de créer la WebView.
+  /// Sans deep link : toujours l'accueil, jamais la dernière page (évite écran
+  /// noir iOS / blanc Android si session ou cookie perdu).
   Future<void> _resolveMarketplaceEntryUrl() async {
     try {
       await _initDeepLinks().timeout(
@@ -184,11 +187,13 @@ class _WebViewScreenState extends State<WebViewScreen>
         onTimeout: () {},
       );
     } catch (_) {}
-    await _loadSavedUrl();
+    await _clearSavedWebViewUrl();
     if (!mounted) return;
-    final resolved = (_currentUrl != null && _currentUrl!.isNotEmpty)
-        ? normalizeMarketplaceUrl(_currentUrl!)
-        : kMarketplaceBaseUrl;
+    final hasDeepLink =
+        _deepLinkInitUrl != null && _deepLinkInitUrl!.isNotEmpty;
+    final resolved = hasDeepLink
+        ? normalizeMarketplaceUrl(_deepLinkInitUrl!)
+        : kMarketplaceHomeUrl;
     setState(() {
       _marketplaceEntryUrl = resolved;
       _currentUrl = resolved;
@@ -223,6 +228,9 @@ class _WebViewScreenState extends State<WebViewScreen>
 
   void _forceFinishInitialLoad() {
     if (!mounted || !_isInitialLoadNotifier.value) return;
+    if (_isBlankOrErrorUrl(_currentUrl)) {
+      _openMarketplaceHomeFallback();
+    }
     _finishInitialLoad();
   }
 
@@ -385,31 +393,53 @@ class _WebViewScreenState extends State<WebViewScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.paused) {
-      // Application en arrière-plan - sauvegarder l'URL
-      _saveCurrentUrl();
-    } else if (state == AppLifecycleState.resumed) {
-      // Application revenue au premier plan - restaurer l'URL si nécessaire
-      _restoreUrlIfNeeded();
-      // Reprendre le GPS livraison si une course était active
+    if (state == AppLifecycleState.resumed) {
       unawaited(_tryRestoreLivreurTracking());
     }
   }
 
-  // Sauvegarder l'URL actuelle
-  Future<void> _saveCurrentUrl() async {
-    if (webViewController != null) {
-      try {
-        final currentUrl = await webViewController!.getUrl();
-        if (currentUrl != null) {
-          _currentUrl = currentUrl.toString();
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('last_webview_url', _currentUrl!);
-        }
-      } catch (e) {
-        print('Erreur lors de la sauvegarde de l\'URL: $e');
-      }
+  Future<void> _clearSavedWebViewUrl() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_webview_url');
+    } catch (e) {
+      print('Erreur lors de la suppression de l\'URL sauvegardée: $e');
     }
+  }
+
+  bool _isBlankOrErrorUrl(String? url) {
+    if (url == null || url.isEmpty) {
+      return true;
+    }
+    final lower = url.toLowerCase();
+    return lower == 'about:blank' ||
+        lower.startsWith('about:') ||
+        lower.contains('chrome-error') ||
+        lower.contains('webview-error');
+  }
+
+  bool _isMarketplaceHomeUrl(String? url) {
+    if (url == null || url.isEmpty) {
+      return false;
+    }
+    try {
+      final uri = Uri.parse(url);
+      if (!_isMarketplaceHost(uri.host)) {
+        return false;
+      }
+      final path = uri.path;
+      return path.isEmpty || path == '/' || path == '/index.php';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _openMarketplaceHomeFallback() {
+    if (_didHomeFallback) {
+      return;
+    }
+    _didHomeFallback = true;
+    _openMarketplaceUrl(kMarketplaceHomeUrl);
   }
 
   // Initialiser la gestion des deep links (Android App Links + iOS Universal Links)
@@ -434,58 +464,6 @@ class _WebViewScreenState extends State<WebViewScreen>
         _openMarketplaceUrl(uri.toString());
       }
     }, onError: (_) {});
-  }
-
-  // Charger l'URL sauvegardée (invalide l'ancien domaine Aria)
-  // Ne s'applique que si aucun deep link n'a été reçu au lancement
-  Future<void> _loadSavedUrl() async {
-    // Un deep link est prioritaire sur l'URL sauvegardée
-    if (_deepLinkInitUrl != null) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedUrl = prefs.getString('last_webview_url');
-      if (savedUrl != null && savedUrl.isNotEmpty) {
-        if (!savedUrl.contains('sugar-paper.com')) {
-          await prefs.remove('last_webview_url');
-          _currentUrl = null;
-        } else {
-          try {
-            final u = Uri.parse(savedUrl);
-            if (u.hasAuthority && _isMarketplaceHost(u.host)) {
-              _currentUrl = savedUrl;
-            } else {
-              await prefs.remove('last_webview_url');
-              _currentUrl = null;
-            }
-          } catch (_) {
-            await prefs.remove('last_webview_url');
-            _currentUrl = null;
-          }
-        }
-      }
-    } catch (e) {
-      print('Erreur lors du chargement de l\'URL sauvegardée: $e');
-    }
-  }
-
-  // Restaurer l'URL si nécessaire (seulement si différente de l'URL actuelle)
-  Future<void> _restoreUrlIfNeeded() async {
-    if (webViewController != null && _currentUrl != null) {
-      try {
-        final currentUrl = await webViewController!.getUrl();
-        // Si la WebView est toujours sur la bonne page, ne rien faire
-        if (currentUrl != null && currentUrl.toString() == _currentUrl) {
-          // La page est déjà chargée, pas besoin de recharger
-          return;
-        }
-        // Sinon, recharger l'URL sauvegardée (utilise le cache si disponible)
-        await webViewController!.loadUrl(
-          urlRequest: URLRequest(url: WebUri(_currentUrl!)),
-        );
-      } catch (e) {
-        print('Erreur lors de la restauration de l\'URL: $e');
-      }
-    }
   }
 
   // Initialiser Firebase Cloud Messaging
@@ -1500,7 +1478,9 @@ class _WebViewScreenState extends State<WebViewScreen>
                   child: MediaQuery.removeViewInsets(
                     context: context,
                     removeBottom: true,
-                    child: InAppWebView(
+                    child: ColoredBox(
+                      color: Colors.white,
+                      child: InAppWebView(
                   initialUrlRequest: URLRequest(
                     url: WebUri(_marketplaceEntryUrl),
                   ),
@@ -1726,7 +1706,13 @@ class _WebViewScreenState extends State<WebViewScreen>
                   onLoadStop: (controller, url) async {
                     if (url != null) {
                       _currentUrl = url.toString();
-                      unawaited(_saveCurrentUrl());
+                    }
+                    if (_isBlankOrErrorUrl(_currentUrl)) {
+                      _openMarketplaceHomeFallback();
+                      return;
+                    }
+                    if (_isMarketplaceHomeUrl(_currentUrl)) {
+                      _didHomeFallback = false;
                     }
                     _finishInitialLoad();
                     _isPageLoadingNotifier.value = false;
@@ -1806,8 +1792,16 @@ class _WebViewScreenState extends State<WebViewScreen>
                   onReceivedError: (controller, request, error) {
                     print('WebView Error: ${error.description}');
                     if (request.isForMainFrame ?? true) {
+                      _openMarketplaceHomeFallback();
                       _finishInitialLoad();
                       _isPageLoadingNotifier.value = false;
+                    }
+                  },
+                  onReceivedHttpError: (controller, request, response) {
+                    final code = response.statusCode ?? 0;
+                    if ((request.isForMainFrame ?? true) &&
+                        (code == 401 || code == 403 || code >= 500)) {
+                      _openMarketplaceHomeFallback();
                     }
                   },
                   shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -1842,6 +1836,7 @@ class _WebViewScreenState extends State<WebViewScreen>
                     return NavigationActionPolicy.ALLOW;
                   },
                 ),
+                    ),
                 ),
                 ),
               ),

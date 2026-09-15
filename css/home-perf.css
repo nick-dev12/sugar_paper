@@ -15,17 +15,56 @@ body.page-home *::after {
   -webkit-backdrop-filter: none !important;
 }
 
-/* Sections hors viewport : moins de travail au scroll */
-body.page-home .home-main > section,
-body.page-home .galerie-creations,
-body.page-home .services-banner,
-body.page-home .slider-area {
+/* Hero + bandeau visibles tout de suite (pas de content-visibility) */
+body.page-home .home-main > section:not(#home-categories),
+body.page-home .galerie-creations {
   content-visibility: auto;
   contain-intrinsic-size: auto 720px;
 }
 
-body.page-home .slider-area {
-  contain-intrinsic-size: auto 320px;
+/* Owl masque le carrousel (display:none) tant que le JS n’a pas fini.
+   On affiche déjà la 1re slide / les catégories pour un premier rendu immédiat. */
+body.page-home .slider-area.owl-carousel {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+body.page-home .slider-area--image-mode.owl-carousel:not(.owl-loaded) > .slider-item:not(:first-child) {
+  display: none;
+}
+
+body.page-home .slider-area--video-triple.owl-carousel:not(.owl-loaded) {
+  display: flex !important;
+}
+
+body.page-home .slider-area--video-triple.owl-carousel:not(.owl-loaded) > .slider-item:nth-child(n + 4) {
+  display: none;
+}
+
+body.page-home .slider-area--video-triple.owl-carousel:not(.owl-loaded) > .slider-item {
+  flex: 1 1 33.333%;
+  min-width: 0;
+}
+
+body.page-home .categorie.owl-carousel:not(.owl-loaded) {
+  display: flex !important;
+  overflow: hidden;
+}
+
+body.page-home .categorie.owl-carousel:not(.owl-loaded) > a {
+  flex: 0 0 auto;
+  width: 22%;
+  min-width: 140px;
+}
+
+/* Contenu visible sans attendre IntersectionObserver */
+body.page-home .home-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+body.page-home .home-reveal.is-visible {
+  animation: none;
 }
 
 /* Owl : pas de 3D / flip (animate.css) */
@@ -78,7 +117,11 @@ body.page-home .home-lazy-skeleton {
   gap: 14px;
   padding: 24px 18px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 245, 250, 0.9));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 245, 250, 0.9)
+  );
   border: 1px solid rgba(229, 72, 138, 0.1);
 }
 
@@ -86,7 +129,12 @@ body.page-home .home-lazy-skeleton__bar {
   display: block;
   height: 14px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(229, 72, 138, 0.08), rgba(229, 72, 138, 0.18), rgba(229, 72, 138, 0.08));
+  background: linear-gradient(
+    90deg,
+    rgba(229, 72, 138, 0.08),
+    rgba(229, 72, 138, 0.18),
+    rgba(229, 72, 138, 0.08)
+  );
   background-size: 200% 100%;
   animation: homeLazyShimmer 1.2s ease-in-out infinite;
 }
@@ -107,14 +155,23 @@ body.page-home .home-lazy-skeleton__grid {
   min-height: 140px;
   margin-top: 6px;
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.03), rgba(229, 72, 138, 0.06), rgba(0, 0, 0, 0.03));
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.03),
+    rgba(229, 72, 138, 0.06),
+    rgba(0, 0, 0, 0.03)
+  );
   background-size: 200% 100%;
   animation: homeLazyShimmer 1.2s ease-in-out infinite;
 }
 
 @keyframes homeLazyShimmer {
-  0% { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 body.page-home .home-lazy-error {

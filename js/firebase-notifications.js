@@ -4,6 +4,29 @@
 (function () {
     'use strict';
 
+    try {
+        if (window.FIREBASE_CONFIG && typeof firebase !== 'undefined') {
+            var appConfig = {
+                apiKey: window.FIREBASE_CONFIG.apiKey,
+                authDomain: window.FIREBASE_CONFIG.authDomain,
+                projectId: window.FIREBASE_CONFIG.projectId,
+                storageBucket: window.FIREBASE_CONFIG.storageBucket,
+                messagingSenderId: window.FIREBASE_CONFIG.messagingSenderId,
+                appId: window.FIREBASE_CONFIG.appId
+            };
+            if (window.FIREBASE_CONFIG.measurementId) {
+                appConfig.measurementId = window.FIREBASE_CONFIG.measurementId;
+            }
+            if (!firebase.apps || !firebase.apps.length) {
+                firebase.initializeApp(appConfig);
+            }
+        }
+    } catch (e) {
+        if (!String(e.message || e).includes('already exists') && typeof console !== 'undefined' && console.error) {
+            console.error('[FCM] Firebase init:', e);
+        }
+    }
+
     var LOG = '[FCM]';
     var FCM_SW_PATH = window.FCM_SW_PATH || '/firebase-messaging-sw.js';
     var FCM_ICON_PATH = window.FCM_ICON_PATH || '/icons/icon-192.png';

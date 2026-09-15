@@ -21,19 +21,20 @@ $recherche = isset($_GET['recherche']) ? trim($_GET['recherche']) : '';
 $prix_min = isset($_GET['prix_min']) && $_GET['prix_min'] !== '' ? (float) $_GET['prix_min'] : null;
 $prix_max = isset($_GET['prix_max']) && $_GET['prix_max'] !== '' ? (float) $_GET['prix_max'] : null;
 $categorie_id = isset($_GET['categorie']) && $_GET['categorie'] !== '' ? (int) $_GET['categorie'] : null;
-$tri = isset($_GET['tri']) && in_array($_GET['tri'], ['date', 'prix_asc', 'prix_desc', 'nom']) ? $_GET['tri'] : 'date';
+$tri = isset($_GET['tri']) && in_array($_GET['tri'], ['date', 'prix_asc', 'prix_desc', 'nom', 'rand']) ? $_GET['tri'] : 'rand';
+$rand_seed = produits_listing_rand_seed(isset($_GET['rand_seed']) ? (int) $_GET['rand_seed'] : 0);
 
 // Valider les paramètres
 if ($offset < 0) $offset = 0;
 if ($limit < 1 || $limit > 50) $limit = 20;
 
-$has_filters = !empty($recherche) || $prix_min !== null || $prix_max !== null || $categorie_id !== null || $tri !== 'date';
+$has_filters = !empty($recherche) || $prix_min !== null || $prix_max !== null || $categorie_id !== null || in_array($tri, ['prix_asc', 'prix_desc', 'nom'], true);
 
 // Récupérer les produits (avec ou sans filtres)
 if ($has_filters) {
-    $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, $offset, $limit);
+    $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, $offset, $limit, $rand_seed);
 } else {
-    $produits = get_all_produits_paginated($offset, $limit);
+    $produits = get_all_produits_paginated($offset, $limit, $rand_seed);
 }
 
 // Formater les produits pour le JSON

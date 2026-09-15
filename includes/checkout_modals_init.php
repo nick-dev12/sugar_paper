@@ -57,7 +57,7 @@ $user_logged_in_ckm = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] 
     include __DIR__ . '/partials/guest_checkout_modal.php';
     include __DIR__ . '/auth_intl_tel_scripts.php';
     ?>
-    <script src="/js/guest-checkout-modal.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/guest-checkout-modal.js<?php echo asset_version_query(); ?>" defer></script>
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof window.initGuestCheckoutModal === 'function') {
@@ -76,6 +76,6 @@ $user_logged_in_ckm = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] 
 window.CKM_USER_LOGGED = <?php echo $user_logged_in_ckm ? 'true' : 'false'; ?>;
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="/js/commande-geo.js<?php echo asset_version_query(); ?>"></script>
-<script src="/js/checkout-modals.js<?php echo asset_version_query(); ?>"></script>
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+<script src="/js/commande-geo.js<?php echo asset_version_query(); ?>" defer></script>
+<script src="/js/checkout-modals.js<?php echo asset_version_query(); ?>" defer></script>

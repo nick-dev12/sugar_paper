@@ -55,7 +55,8 @@ function render_section_produits_product_grid($section_key, $return_url, $limit 
     }
 
     $limit = max(1, min(50, (int) $limit));
-    $produits = get_produits_by_home_section($section_key, 0, $limit);
+    $rand_seed = produits_listing_rand_seed();
+    $produits = get_produits_by_home_section($section_key, 0, $limit, $rand_seed);
     $total_produits = count_produits_by_home_section($section_key);
     $offset_actuel = min($limit, max(count($produits), 0));
     $section_uses_perso = ($section_key === 'photo_impression');
@@ -71,6 +72,7 @@ function render_section_produits_product_grid($section_key, $return_url, $limit 
              data-limit="<?php echo $limit; ?>"
              data-offset="<?php echo (int) $offset_actuel; ?>"
              data-total="<?php echo (int) $total_produits; ?>"
+             data-rand-seed="<?php echo (int) $rand_seed; ?>"
              data-return-url="<?php echo htmlspecialchars($return_url, ENT_QUOTES, 'UTF-8'); ?>"
              data-uses-perso="<?php echo $section_uses_perso ? '1' : '0'; ?>"
              data-uses-cp="<?php echo $section_uses_cp ? '1' : '0'; ?>">

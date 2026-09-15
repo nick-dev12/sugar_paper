@@ -52,7 +52,7 @@ function produits_catalogue_has_filters($recherche, $prix_min, $prix_max, $categ
         || $prix_min !== null
         || $prix_max !== null
         || $categorie_id !== null
-        || $tri !== 'date';
+        || in_array($tri, ['prix_asc', 'prix_desc', 'nom'], true);
 }
 
 /**
@@ -78,7 +78,7 @@ function produits_catalogue_filter_params($recherche, $prix_min, $prix_max, $cat
     if ($categorie_id !== null) {
         $params['categorie'] = $categorie_id;
     }
-    if ($tri !== 'date') {
+    if ($tri !== 'rand' && $tri !== 'date' && $tri !== '') {
         $params['tri'] = $tri;
     }
     return $params;
@@ -100,9 +100,9 @@ function produits_catalogue_parse_filter_params($filter_params)
     $categorie_id = isset($filter_params['categorie']) && $filter_params['categorie'] !== ''
         ? (int) $filter_params['categorie']
         : null;
-    $tri = isset($filter_params['tri']) && in_array($filter_params['tri'], ['date', 'prix_asc', 'prix_desc', 'nom'], true)
+    $tri = isset($filter_params['tri']) && in_array($filter_params['tri'], ['rand', 'date', 'prix_asc', 'prix_desc', 'nom'], true)
         ? (string) $filter_params['tri']
-        : 'date';
+        : 'rand';
 
     return [
         'recherche' => $recherche,
@@ -127,18 +127,20 @@ function produits_catalogue_parse_filter_params($filter_params)
 function render_produits_product_grid($recherche, $prix_min, $prix_max, $categorie_id, $tri, $return_url, $limit = 20)
 {
     $limit = max(1, min(50, (int) $limit));
+    $rand_seed = produits_listing_rand_seed();
     $has_filters = produits_catalogue_has_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri);
 
     if ($has_filters) {
-        $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, 0, $limit);
+        $produits = search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id, $tri, 0, $limit, $rand_seed);
         $total_produits = count_search_produits_with_filters($recherche, $prix_min, $prix_max, $categorie_id);
     } else {
-        $produits = get_all_produits_paginated(0, $limit);
+        $produits = get_all_produits_paginated(0, $limit, $rand_seed);
         $total_produits = count_all_produits_actifs();
     }
 
     $offset_actuel = min($limit, max(count($produits), 0));
     $filter_params = produits_catalogue_filter_params($recherche, $prix_min, $prix_max, $categorie_id, $tri);
+    $filter_params['rand_seed'] = $rand_seed;
     $api_query = http_build_query(array_merge($filter_params, ['limit' => $limit]));
 
     $return_url = trim((string) $return_url);

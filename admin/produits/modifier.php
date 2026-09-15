@@ -165,7 +165,7 @@ if (empty($images_produit) && !empty($produit['image_principale'])) {
                                 <option value="inactif" <?php echo ($produit['statut'] == 'inactif') ? 'selected' : ''; ?>>Inactif — masqué</option>
                                 <option value="rupture_stock" <?php echo ($produit['statut'] == 'rupture_stock') ? 'selected' : ''; ?>>Rupture de stock</option>
                             </select>
-                        </div>
+                </div>
             </div>
 
             <div class="form-group">

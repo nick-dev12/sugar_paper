@@ -227,7 +227,7 @@ function render_home_product_section($section_key, $limit = 20, $return_url = '/
     }
 
     $config = $sections[$section_key];
-    $produits = get_produits_by_home_section($section_key, 0, $limit);
+    $produits = get_produits_by_home_section_random($section_key, $limit);
     $total = count_produits_by_home_section($section_key);
     $has_more = $total > count($produits);
     ?>

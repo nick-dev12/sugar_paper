@@ -32,7 +32,27 @@ if (!function_exists('get_asset_version')) {
 }
 ?>
 <link rel="stylesheet" href="/css/jotform-ai-assistant.css<?php echo asset_version_query(); ?>">
-<script src="https://cdn.jotfor.ms/agent/embedjs/019f778143a0700083020339cfca9d410011/embed.js"></script>
+<script>
+    (function () {
+        function loadJotformEmbed() {
+            if (document.getElementById('sugar-jotform-embed')) {
+                return;
+            }
+            var s = document.createElement('script');
+            s.id = 'sugar-jotform-embed';
+            s.src = 'https://cdn.jotfor.ms/agent/embedjs/019f778143a0700083020339cfca9d410011/embed.js';
+            s.async = true;
+            document.body.appendChild(s);
+        }
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(loadJotformEmbed, { timeout: 2500 });
+        } else {
+            window.addEventListener('load', function () {
+                setTimeout(loadJotformEmbed, 400);
+            });
+        }
+    })();
+</script>
 <script>
     (function () {
         var GAP_ABOVE_NAV = -10;

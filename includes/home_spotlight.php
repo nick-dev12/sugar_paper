@@ -181,7 +181,7 @@ function render_home_spotlight_section()
 
     $has_slider = count($slides) > 1;
     ?>
-    <section class="home-spotlight home-reveal<?php echo $has_slider ? ' home-spotlight--slider' : ''; ?>" aria-label="Produit en vedette">
+    <section class="home-spotlight home-reveal is-visible<?php echo $has_slider ? ' home-spotlight--slider' : ''; ?>" aria-label="Produit en vedette">
         <div class="home-spotlight__inner">
             <span class="home-spotlight__streak home-spotlight__streak--1" aria-hidden="true"></span>
             <span class="home-spotlight__streak home-spotlight__streak--2" aria-hidden="true"></span>
