@@ -123,15 +123,10 @@
                         <p class="perso-field-hint" id="azyme-perso-wrap-circle-hint">Le texte suit le contour intérieur du cercle.</p>
                     </div>
 
-                    <div class="perso-font-picker" role="group" aria-label="Choisir une police">
-                        <button type="button" class="perso-font-btn is-active" data-font="Outfit" style="font-family:'Outfit',sans-serif">Outfit</button>
-                        <button type="button" class="perso-font-btn" data-font="Fraunces" style="font-family:'Fraunces',serif">Fraunces</button>
-                        <button type="button" class="perso-font-btn" data-font="Pacifico" style="font-family:'Pacifico',cursive">Pacifico</button>
-                        <button type="button" class="perso-font-btn" data-font="Bebas Neue" style="font-family:'Bebas Neue',sans-serif">Bebas</button>
-                        <button type="button" class="perso-font-btn" data-font="Dancing Script" style="font-family:'Dancing Script',cursive">Dancing</button>
-                        <button type="button" class="perso-font-btn" data-font="Playfair Display" style="font-family:'Playfair Display',serif">Playfair</button>
-                        <button type="button" class="perso-font-btn" data-font="Lobster" style="font-family:'Lobster',cursive">Lobster</button>
-                    </div>
+                    <?php
+                    require_once __DIR__ . '/produit_personnalisation_fonts.php';
+                    produit_personnalisation_render_font_picker('Outfit');
+                    ?>
                 </section>
             </aside>
 

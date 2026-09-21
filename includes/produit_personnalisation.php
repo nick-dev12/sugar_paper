@@ -5,6 +5,7 @@
 
 require_once __DIR__ . '/../models/model_produits.php';
 require_once __DIR__ . '/cake_topper_cp.php';
+require_once __DIR__ . '/produit_personnalisation_fonts.php';
 
 /**
  * Personnalisation produit activée (désactivée temporairement)
@@ -457,7 +458,7 @@ function produit_personnalisation_texts_normalize_list($list)
  */
 function produit_personnalisation_text_normalize(array $text)
 {
-    $allowed_fonts = ['Outfit', 'Fraunces', 'Pacifico', 'Bebas Neue', 'Dancing Script', 'Playfair Display', 'Lobster'];
+    $allowed_fonts = produit_personnalisation_allowed_fonts();
     $font = isset($text['font']) ? trim((string) $text['font']) : 'Outfit';
     if (!in_array($font, $allowed_fonts, true)) {
         $font = 'Outfit';

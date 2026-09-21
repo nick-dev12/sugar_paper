@@ -4,12 +4,8 @@
  * @var string $perso_text_prefix ex. perso, cupcakes, contours
  */
 $perso_text_prefix = isset($perso_text_prefix) ? preg_replace('/[^a-z0-9_-]/i', '', (string) $perso_text_prefix) : 'perso';
-if (!defined('PERSONNALISATION_EDITOR_FONTS_LOADED')) {
-    define('PERSONNALISATION_EDITOR_FONTS_LOADED', true);
-    ?>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Dancing+Script:wght@600&family=Fraunces:opsz,wght@9..144,600&family=Lobster&family=Outfit:wght@500;600&family=Pacifico&family=Playfair+Display:wght@600&display=swap">
-    <?php
-}
+require_once __DIR__ . '/produit_personnalisation_fonts.php';
+produit_personnalisation_fonts_enqueue_link();
 ?>
 <section class="perso-tool-section">
     <h3 class="perso-tool-title"><i class="fa-solid fa-font" aria-hidden="true"></i> Texte</h3>
@@ -70,13 +66,5 @@ if (!defined('PERSONNALISATION_EDITOR_FONTS_LOADED')) {
         <p class="perso-field-hint" id="<?php echo $perso_text_prefix; ?>-wrap-circle-hint">Le texte suit le contour intérieur du cercle.</p>
     </div>
 
-    <div class="perso-font-picker" role="group" aria-label="Choisir une police">
-        <button type="button" class="perso-font-btn is-active" data-font="Outfit" style="font-family:'Outfit',sans-serif">Outfit</button>
-        <button type="button" class="perso-font-btn" data-font="Fraunces" style="font-family:'Fraunces',serif">Fraunces</button>
-        <button type="button" class="perso-font-btn" data-font="Pacifico" style="font-family:'Pacifico',cursive">Pacifico</button>
-        <button type="button" class="perso-font-btn" data-font="Bebas Neue" style="font-family:'Bebas Neue',sans-serif">Bebas</button>
-        <button type="button" class="perso-font-btn" data-font="Dancing Script" style="font-family:'Dancing Script',cursive">Dancing</button>
-        <button type="button" class="perso-font-btn" data-font="Playfair Display" style="font-family:'Playfair Display',serif">Playfair</button>
-        <button type="button" class="perso-font-btn" data-font="Lobster" style="font-family:'Lobster',cursive">Lobster</button>
-    </div>
+    <?php produit_personnalisation_render_font_picker('Outfit'); ?>
 </section>

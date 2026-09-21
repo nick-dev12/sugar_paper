@@ -46,6 +46,8 @@
     var activeForm = null;
     var lastRenderLayout = null;
     var manipDrag = null;
+    var imageMoveRafPending = null;
+    var lastImageMoveClient = { x: 0, y: 0 };
     var touchPointers = {};
 
     var state = {
@@ -614,23 +616,76 @@
         }
     }
 
-    function canvasPointFromEvent(event) {
+    function clientToCanvas(clientX, clientY) {
         if (!canvas) {
             return null;
         }
         var rect = canvas.getBoundingClientRect();
-        var clientX = event.clientX;
-        var clientY = event.clientY;
-        if (event.touches && event.touches[0]) {
-            clientX = event.touches[0].clientX;
-            clientY = event.touches[0].clientY;
-        }
         var scaleX = canvas.width / rect.width;
         var scaleY = canvas.height / rect.height;
         return {
             x: (clientX - rect.left) * scaleX,
             y: (clientY - rect.top) * scaleY
         };
+    }
+
+    function canvasPointFromEvent(event) {
+        if (!event) {
+            return null;
+        }
+        var clientX = event.clientX;
+        var clientY = event.clientY;
+        if (event.touches && event.touches[0]) {
+            clientX = event.touches[0].clientX;
+            clientY = event.touches[0].clientY;
+        }
+        return clientToCanvas(clientX, clientY);
+    }
+
+    function onImageManipPointerMove(clientX, clientY) {
+        if (!manipDrag || !lastRenderLayout || !hasSelection()) {
+            return;
+        }
+        var pt = clientToCanvas(clientX, clientY);
+        var slot = getActiveSlot();
+        var bounds = lastRenderLayout.circles[state.activeIndex];
+        if (!pt || !slot || !bounds) {
+            return;
+        }
+        if (manipDrag.type === 'move') {
+            applyImageMove(slot, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
+        } else if (manipDrag.type === 'resize') {
+            var params = getImageDrawParams(bounds, slot.image, slot);
+            if (!params) {
+                return;
+            }
+            var dist = Math.hypot(pt.x - params.cx, pt.y - params.cy);
+            if (manipDrag.startDist > 0) {
+                applyImageZoomAt(slot, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
+            }
+        }
+    }
+
+    function scheduleImageManipMove(clientX, clientY) {
+        lastImageMoveClient.x = clientX;
+        lastImageMoveClient.y = clientY;
+        if (imageMoveRafPending !== null) {
+            return;
+        }
+        imageMoveRafPending = requestAnimationFrame(function () {
+            imageMoveRafPending = null;
+            onImageManipPointerMove(lastImageMoveClient.x, lastImageMoveClient.y);
+        });
+    }
+
+    function finishImageManipDrag() {
+        if (textEngine) {
+            textEngine.finishDrag();
+        }
+        manipDrag = null;
+        if (imageManipBox) {
+            imageManipBox.classList.remove('is-dragging');
+        }
     }
 
     function hitTestCircle(x, y) {
@@ -1155,7 +1210,13 @@
                 clearSelection();
                 return;
             }
-            selectCircle(hit, true);
+            if (hit !== state.activeIndex) {
+                selectCircle(hit, true);
+            } else if (textEngine) {
+                textEngine.setEditTarget('');
+                textEngine.syncToControls();
+                updateImageUi();
+            }
             if (textEngine && textEngine.handleCanvasPointerDown(event)) {
                 event.preventDefault();
                 hideImageManipulator();
@@ -1165,6 +1226,9 @@
             if (!slot || !slot.image) {
                 return;
             }
+            if (textEngine) {
+                textEngine.setEditTarget('');
+            }
             event.preventDefault();
             manipDrag = {
                 type: 'move',
@@ -1173,6 +1237,9 @@
                 startOffsetX: slot.offsetX,
                 startOffsetY: slot.offsetY
             };
+            if (imageManipBox) {
+                imageManipBox.classList.add('is-dragging');
+            }
             try {
                 canvas.setPointerCapture(event.pointerId);
             } catch (e) { /* ignore */ }
@@ -1187,39 +1254,17 @@
             if (!manipDrag) {
                 return;
             }
-            var pt = canvasPointFromEvent(event);
-            var slot = getActiveSlot();
-            if (!pt || !slot) {
-                return;
-            }
             event.preventDefault();
-            if (manipDrag.type === 'move') {
-                applyImageMove(slot, pt.x, pt.y, manipDrag.startX, manipDrag.startY, manipDrag.startOffsetX, manipDrag.startOffsetY);
-            } else if (manipDrag.type === 'resize') {
-                var bounds = lastRenderLayout && lastRenderLayout.circles[state.activeIndex];
-                if (!bounds) {
-                    return;
-                }
-                var params = getImageDrawParams(bounds, slot.image, slot);
-                if (!params) {
-                    return;
-                }
-                var dist = Math.hypot(pt.x - params.cx, pt.y - params.cy);
-                if (manipDrag.startDist > 0) {
-                    applyImageZoomAt(slot, manipDrag.startScale * (dist / manipDrag.startDist), params.cx, params.cy);
-                }
-            }
+            scheduleImageManipMove(event.clientX, event.clientY);
             renderPreview();
         });
 
-        function endDrag() {
-            if (textEngine) {
-                textEngine.finishDrag();
-            }
-            manipDrag = null;
-        }
-        canvas.addEventListener('pointerup', endDrag);
-        canvas.addEventListener('pointercancel', endDrag);
+        canvas.addEventListener('pointerup', function () {
+            finishImageManipDrag();
+        });
+        canvas.addEventListener('pointercancel', function () {
+            finishImageManipDrag();
+        });
 
         canvas.addEventListener('wheel', function (event) {
             if (!hasSelection()) {
@@ -1246,10 +1291,15 @@
     }
 
     window.addEventListener('pointermove', function (event) {
-        if (!textEngine || !textEngine.getManipDrag()) {
+        if (textEngine && textEngine.getManipDrag()) {
+            textEngine.onPointerMove(event.clientX, event.clientY);
+            renderPreview();
             return;
         }
-        textEngine.onPointerMove(event.clientX, event.clientY);
+        if (!manipDrag) {
+            return;
+        }
+        scheduleImageManipMove(event.clientX, event.clientY);
         renderPreview();
     });
 
@@ -1257,16 +1307,25 @@
         if (textEngine && textEngine.getManipDrag()) {
             textEngine.finishDrag();
         }
+        if (manipDrag) {
+            finishImageManipDrag();
+        }
     });
 
     window.addEventListener('pointercancel', function () {
         if (textEngine && textEngine.getManipDrag()) {
             textEngine.finishDrag();
         }
+        if (manipDrag) {
+            finishImageManipDrag();
+        }
     });
 
     if (imageManipBox) {
         imageManipBox.addEventListener('pointerdown', function (event) {
+            if (event.target.closest('.perso-manip-delete')) {
+                return;
+            }
             if (textEngine) {
                 textEngine.setEditTarget('');
             }
@@ -1281,6 +1340,7 @@
             }
             event.preventDefault();
             event.stopPropagation();
+            imageManipBox.classList.add('is-dragging');
             if (handle) {
                 var bounds = lastRenderLayout.circles[state.activeIndex];
                 var params = getImageDrawParams(bounds, slot.image, slot);
@@ -1301,6 +1361,24 @@
                     startOffsetY: slot.offsetY
                 };
             }
+            if (imageManipBox.setPointerCapture) {
+                try {
+                    imageManipBox.setPointerCapture(event.pointerId);
+                } catch (e) { /* ignore */ }
+            }
+        });
+
+        imageManipBox.addEventListener('pointerup', function (event) {
+            finishImageManipDrag();
+            if (imageManipBox.releasePointerCapture) {
+                try {
+                    imageManipBox.releasePointerCapture(event.pointerId);
+                } catch (e) { /* ignore */ }
+            }
+        });
+
+        imageManipBox.addEventListener('pointercancel', function () {
+            finishImageManipDrag();
         });
     }
 

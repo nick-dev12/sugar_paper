@@ -27,10 +27,31 @@
         return 'txt_' + Math.random().toString(36).slice(2, 10);
     }
 
-    function preloadPersoFont(fontName, sizePx) {
+    function persoFontWeightFromButtons(fontName, fontBtnList, fallback) {
+        var family = fontName || 'Outfit';
+        var weight = fallback || 600;
+        var list = fontBtnList || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].getAttribute('data-font') === family) {
+                weight = parseInt(list[i].getAttribute('data-font-weight'), 10) || weight;
+                break;
+            }
+        }
+        return weight;
+    }
+
+    function buildPersoCanvasFont(fontName, fontSize, fontBtnList) {
+        var family = (fontName || 'Outfit').replace(/"/g, '');
+        var weight = persoFontWeightFromButtons(family, fontBtnList, 600);
+        var size = Math.max(10, fontSize || 16);
+        return weight + ' ' + size + 'px "' + family + '", sans-serif';
+    }
+
+    function preloadPersoFont(fontName, sizePx, fontBtnList, weightOverride) {
         var family = (fontName || 'Outfit').replace(/"/g, '');
         var size = Math.max(12, sizePx || 48);
-        var spec = '600 ' + size + 'px "' + family + '"';
+        var weight = weightOverride || persoFontWeightFromButtons(family, fontBtnList, 600);
+        var spec = weight + ' ' + size + 'px "' + family + '"';
         if (typeof document !== 'undefined' && document.fonts && document.fonts.load) {
             return document.fonts.load(spec).catch(function () {});
         }
@@ -39,6 +60,8 @@
 
     window.PersoTextEngine = {
         preloadFont: preloadPersoFont,
+        buildCanvasFont: buildPersoCanvasFont,
+        fontWeightFromButtons: persoFontWeightFromButtons,
         create: function (options) {
             if (!options || !options.modal || !options.prefix) {
                 throw new Error('PersoTextEngine.create: modal and prefix are required');
@@ -263,7 +286,7 @@
                 var lines = text.split('\n');
                 var lineHeight = fontSize * 1.25;
                 ctx.save();
-                ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+                ctx.font = buildPersoCanvasFont(textObj.font, fontSize, fontBtns);
                 var maxLineW = 0;
                 lines.forEach(function (line) {
                     maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
@@ -306,14 +329,18 @@
                 };
             }
 
+            function textHasContent(textObj) {
+                return !!(textObj && (textObj.text || '').trim() !== '');
+            }
+
             function getTextHitLayout(textObj, ctx, bounds, shape) {
-                if ((textObj.text || '').trim() !== '') {
-                    if (textObj.wrapOnCircle && shape === 'circle') {
-                        return measureWrapTextLayout(bounds, textObj);
-                    }
-                    return measureStraightTextLayout(ctx, bounds, textObj);
+                if (!textHasContent(textObj)) {
+                    return null;
                 }
-                return getEmptyTextLayout(bounds, textObj);
+                if (textObj.wrapOnCircle && shape === 'circle') {
+                    return measureWrapTextLayout(bounds, textObj);
+                }
+                return measureStraightTextLayout(ctx, bounds, textObj);
             }
 
             function getTextLayout(textObj, bounds, shape) {
@@ -613,10 +640,11 @@
                 }
 
                 var shape = getShape();
-                var layout = getTextLayout(active, bounds, shape);
-                if (!layout) {
-                    layout = getEmptyTextLayout(bounds, active);
+                if (!textHasContent(active)) {
+                    hideManipulator();
+                    return;
                 }
+                var layout = getTextLayout(active, bounds, shape);
                 if (!layout) {
                     hideManipulator();
                     return;
@@ -813,7 +841,7 @@
                 ctx.save();
                 ctx.translate(tx, ty);
                 ctx.rotate(((textObj.textRotation || 0) * Math.PI) / 180);
-                ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+                ctx.font = buildPersoCanvasFont(textObj.font, fontSize, fontBtns);
                 ctx.fillStyle = getTextFillStyle(textObj);
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -840,7 +868,7 @@
                 var chars = text.split('');
 
                 ctx.save();
-                ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+                ctx.font = buildPersoCanvasFont(textObj.font, fontSize, fontBtns);
                 ctx.fillStyle = fillStyle;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -1017,6 +1045,11 @@
                 if (event.target.closest('.perso-manip-delete')) {
                     return;
                 }
+                var activeForManip = getActiveText();
+                if (!textHasContent(activeForManip)) {
+                    hideManipulator();
+                    return;
+                }
                 editTarget = 'text';
                 var handleEl = event.target.closest('.perso-text-handle');
                 var handle = handleEl ? (handleEl.getAttribute('data-handle') || '') : '';
@@ -1048,7 +1081,7 @@
                 });
                 var bounds = getBoundsForText();
                 var fontSize = bounds ? getTextFontSize(bounds, active) : 48;
-                preloadPersoFont(active.font, fontSize).then(function () {
+                preloadPersoFont(active.font, fontSize, fontBtns).then(function () {
                     notifyChange();
                     updateManipulator();
                 });
@@ -1096,8 +1129,12 @@
                         var active = getActiveText();
                         if (active) {
                             active.text = textInput.value;
+                            if (textHasContent(active)) {
+                                editTarget = 'text';
+                            }
                         }
                         renderTextList();
+                        updateManipulator();
                         notifyChange();
                     });
                 }

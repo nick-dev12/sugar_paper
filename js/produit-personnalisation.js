@@ -65,6 +65,13 @@
     var rotLabel = textRotation ? textRotation.closest('.perso-dimension-field') : null;
     var fontBtns = modal.querySelectorAll('.perso-font-btn');
 
+    function buildCanvasFont(textObj, fontSize) {
+        if (window.PersoTextEngine && window.PersoTextEngine.buildCanvasFont) {
+            return window.PersoTextEngine.buildCanvasFont(textObj.font, fontSize, fontBtns);
+        }
+        return '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+    }
+
     var activeForm = null;
     var hasCustomization = false;
 
@@ -562,7 +569,7 @@
         var lines = text.split('\n');
         var lineHeight = fontSize * 1.25;
         ctx.save();
-        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+        ctx.font = buildCanvasFont(textObj, fontSize);
         var maxLineW = 0;
         lines.forEach(function (line) {
             maxLineW = Math.max(maxLineW, ctx.measureText(line).width);
@@ -633,13 +640,13 @@
     }
 
     function getTextHitLayout(textObj, ctx, bounds) {
-        if ((textObj.text || '').trim() !== '') {
-            if (textObj.wrapOnCircle && state.shape === 'circle') {
-                return measureWrapTextLayout(bounds, textObj);
-            }
-            return measureStraightTextLayout(ctx, bounds, textObj);
+        if ((textObj.text || '').trim() === '') {
+            return null;
         }
-        return getEmptyTextLayout(bounds, textObj);
+        if (textObj.wrapOnCircle && state.shape === 'circle') {
+            return measureWrapTextLayout(bounds, textObj);
+        }
+        return measureStraightTextLayout(ctx, bounds, textObj);
     }
 
     function hitTestTextAt(canvasX, canvasY) {
@@ -739,10 +746,11 @@
             return;
         }
 
-        var layout = getTextLayout(active);
-        if (!layout) {
-            layout = getEmptyTextLayout(lastRenderLayout.designBounds, active);
+        if ((active.text || '').trim() === '') {
+            hideTextManipulator();
+            return;
         }
+        var layout = getTextLayout(active);
         if (!layout) {
             hideTextManipulator();
             return;
@@ -1881,7 +1889,7 @@
         ctx.save();
         ctx.translate(tx, ty);
         ctx.rotate(((textObj.textRotation || 0) * Math.PI) / 180);
-        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+        ctx.font = buildCanvasFont(textObj, fontSize);
         ctx.fillStyle = getTextFillStyle(textObj);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1908,7 +1916,7 @@
         var chars = text.split('');
 
         ctx.save();
-        ctx.font = '600 ' + fontSize + 'px "' + (textObj.font || 'Outfit') + '", sans-serif';
+        ctx.font = buildCanvasFont(textObj, fontSize);
         ctx.fillStyle = fillStyle;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -2292,7 +2300,7 @@
         var bounds = lastRenderLayout ? lastRenderLayout.designBounds : null;
         var fontSize = bounds ? getTextFontSize(bounds, active) : 48;
         var preload = window.PersoTextEngine && window.PersoTextEngine.preloadFont
-            ? window.PersoTextEngine.preloadFont(active.font, fontSize)
+            ? window.PersoTextEngine.preloadFont(active.font, fontSize, fontBtns)
             : Promise.resolve();
         preload.then(function () {
             renderPreview();
