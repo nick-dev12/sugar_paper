@@ -7,8 +7,14 @@
  *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql"
  *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql" --vider-avant
  *   php scripts/import_donnees_sauvegarde.php "ariaqqrw_sugar (4).sql" --export-only
+ *
+ * En production (ex. jomas_paper), --vider-avant exige aussi :
+ *   --confirm-destructive=jomas_paper
  */
+require_once __DIR__ . '/../includes/db_destructive_guard.php';
 require_once __DIR__ . '/../conn/conn.php';
+
+db_destructive_guard_require_cli();
 
 $source = $argv[1] ?? (__DIR__ . '/../ariaqqrw_sugar (4).sql');
 $exportOnly = in_array('--export-only', $argv, true);
@@ -183,6 +189,7 @@ echo "=== Import en base : $dbName ===\n\n";
 $db->exec('SET NAMES utf8mb4');
 
 if ($viderAvant) {
+    db_destructive_guard_require_truncate_confirmation($db, $argv);
     echo "→ Vidage des tables concernées (--vider-avant)…\n";
     import_truncate_tables($db, $ordered_tables);
     echo "\n";
@@ -240,7 +247,7 @@ if ($errors > 0) {
 
 if ($ok === 0 && $skipped > 0) {
     echo "\nAucune ligne importée : les données sont déjà présentes.\n";
-    echo "Relancez avec --vider-avant pour remplacer par la sauvegarde :\n";
+    echo "Relancez avec --vider-avant pour remplacer par la sauvegarde (prod : + --confirm-destructive=NOM_BASE) :\n";
     echo "  php scripts/import_donnees_sauvegarde.php " . escapeshellarg(basename($source)) . " --vider-avant\n";
     exit(1);
 }

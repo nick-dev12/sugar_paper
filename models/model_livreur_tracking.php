@@ -997,9 +997,288 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
 }
 
 /**
+ * Clause SQL IN pour matcher un téléphone (formats locaux / internationaux).
+ *
+ * @param string $column_expr Expression SQL du champ téléphone
+ * @param string $telephone
+ * @param array  $params      Paramètres PDO (remplis par référence)
+ * @param string $prefix      Préfixe des placeholders
+ * @return string
+ */
+function livreur_build_phone_in_sql($column_expr, $telephone, array &$params, $prefix = 'ph')
+{
+    require_once __DIR__ . '/model_users.php';
+    $variants = users_phone_lookup_variants($telephone);
+    if (empty($variants)) {
+        return '0=1';
+    }
+    $norm = users_phone_normalized_sql($column_expr);
+    $placeholders = [];
+    foreach ($variants as $idx => $variant) {
+        $key = $prefix . $idx;
+        $params[$key] = $variant;
+        $placeholders[] = ':' . $key;
+    }
+    return $norm . ' IN (' . implode(', ', $placeholders) . ')';
+}
+
+/**
+ * @param array<string, mixed> $row
+ * @return array<string, mixed>|null
+ */
+function livreur_format_lookup_adresse_row(array $row)
+{
+    $adresse = trim((string) ($row['adresse_livraison'] ?? $row['adresse'] ?? ''));
+    if ($adresse === '') {
+        return null;
+    }
+    $lat = livreur_parse_coord($row['delivery_latitude'] ?? null);
+    $lng = livreur_parse_coord($row['delivery_longitude'] ?? null);
+    return [
+        'adresse' => $adresse,
+        'delivery_latitude' => $lat,
+        'delivery_longitude' => $lng,
+        'sort_date' => (string) ($row['sort_date'] ?? '1970-01-01 00:00:00'),
+        'has_gps' => ($lat !== null && $lng !== null),
+    ];
+}
+
+/**
+ * @param list<array<string, mixed>> $candidates
+ * @return array<string, mixed>|null
+ */
+function livreur_pick_best_lookup_adresse(array $candidates)
+{
+    if ($candidates === []) {
+        return null;
+    }
+    usort($candidates, function ($a, $b) {
+        if ($a['has_gps'] !== $b['has_gps']) {
+            return $a['has_gps'] ? -1 : 1;
+        }
+        return strcmp($b['sort_date'], $a['sort_date']);
+    });
+    $best = $candidates[0];
+    return [
+        'adresse' => $best['adresse'],
+        'delivery_latitude' => $best['delivery_latitude'],
+        'delivery_longitude' => $best['delivery_longitude'],
+    ];
+}
+
+/**
+ * Dernière adresse de livraison connue pour un numéro de téléphone (toutes sources).
+ *
+ * @return array{adresse:string,delivery_latitude:float|null,delivery_longitude:float|null}|null
+ */
+function livreur_lookup_adresse_par_telephone($telephone)
+{
+    global $db;
+
+    $telephone = trim((string) $telephone);
+    if ($telephone === '') {
+        return null;
+    }
+
+    require_once __DIR__ . '/model_users.php';
+    static $cache = [];
+    $cache_key = users_normalize_phone_digits($telephone);
+    if ($cache_key === '') {
+        return null;
+    }
+    if (array_key_exists($cache_key, $cache)) {
+        return $cache[$cache_key];
+    }
+
+    $candidates = [];
+
+    try {
+        $params = [];
+        $phone_sql = livreur_build_phone_in_sql(
+            'COALESCE(u.telephone, c.client_telephone, c.telephone_livraison)',
+            $telephone,
+            $params,
+            'cmd'
+        );
+        $stmt = $db->prepare("
+            SELECT c.adresse_livraison, c.delivery_latitude, c.delivery_longitude,
+                   c.date_commande AS sort_date
+            FROM commandes c
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE TRIM(COALESCE(c.adresse_livraison, '')) != ''
+              AND ($phone_sql)
+            ORDER BY c.date_commande DESC
+            LIMIT 5
+        ");
+        $stmt->execute($params);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $formatted = livreur_format_lookup_adresse_row($row);
+            if ($formatted !== null) {
+                $candidates[] = $formatted;
+            }
+        }
+    } catch (PDOException $e) {
+        // ignore
+    }
+
+    require_once __DIR__ . '/model_bl.php';
+    if (bl_tables_available()) {
+        try {
+            $params = [];
+            $phone_sql = livreur_build_phone_in_sql('c.telephone', $telephone, $params, 'bl');
+            $adresse_expr = livreur_bl_livraison_columns_ok()
+                ? 'COALESCE(b.adresse_livraison, b.adresse_client, c.adresse)'
+                : 'COALESCE(b.adresse_client, c.adresse)';
+            $gps_cols = livreur_bl_livraison_columns_ok()
+                ? ', b.delivery_latitude, b.delivery_longitude'
+                : ', NULL AS delivery_latitude, NULL AS delivery_longitude';
+            $stmt = $db->prepare("
+                SELECT $adresse_expr AS adresse_livraison
+                       $gps_cols,
+                       COALESCE(b.date_bl, b.date_creation) AS sort_date
+                FROM bons_livraison b
+                INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
+                WHERE TRIM($adresse_expr) != ''
+                  AND ($phone_sql)
+                ORDER BY COALESCE(b.date_bl, b.date_creation) DESC
+                LIMIT 5
+            ");
+            $stmt->execute($params);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $formatted = livreur_format_lookup_adresse_row($row);
+                if ($formatted !== null) {
+                    $candidates[] = $formatted;
+                }
+            }
+        } catch (PDOException $e) {
+            // ignore
+        }
+    }
+
+    if (function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok()) {
+        try {
+            $params = [];
+            $phone_sql = livreur_build_phone_in_sql(
+                'COALESCE(u.telephone, cp.telephone)',
+                $telephone,
+                $params,
+                'cp'
+            );
+            $stmt = $db->prepare("
+                SELECT cp.adresse_livraison, cp.delivery_latitude, cp.delivery_longitude,
+                       cp.date_creation AS sort_date
+                FROM commandes_personnalisees cp
+                LEFT JOIN users u ON u.id = cp.user_id
+                WHERE TRIM(COALESCE(cp.adresse_livraison, '')) != ''
+                  AND ($phone_sql)
+                ORDER BY cp.date_creation DESC
+                LIMIT 5
+            ");
+            $stmt->execute($params);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+                $formatted = livreur_format_lookup_adresse_row($row);
+                if ($formatted !== null) {
+                    $candidates[] = $formatted;
+                }
+            }
+        } catch (PDOException $e) {
+            // ignore
+        }
+    }
+
+    if (function_exists('find_client_b2b_by_telephone')) {
+        require_once __DIR__ . '/model_clients_b2b.php';
+        $client = find_client_b2b_by_telephone($telephone);
+        if ($client && trim((string) ($client['adresse'] ?? '')) !== '') {
+            $candidates[] = [
+                'adresse' => trim((string) $client['adresse']),
+                'delivery_latitude' => null,
+                'delivery_longitude' => null,
+                'sort_date' => (string) ($client['date_modification'] ?? $client['date_creation'] ?? '1970-01-01'),
+                'has_gps' => false,
+            ];
+        }
+    }
+
+    if (function_exists('get_contact_by_telephone')) {
+        require_once __DIR__ . '/model_contacts.php';
+        $contact = get_contact_by_telephone($telephone);
+        if ($contact && trim((string) ($contact['adresse'] ?? '')) !== '') {
+            $candidates[] = [
+                'adresse' => trim((string) $contact['adresse']),
+                'delivery_latitude' => null,
+                'delivery_longitude' => null,
+                'sort_date' => (string) ($contact['date_modification'] ?? $contact['date_creation'] ?? '1970-01-01'),
+                'has_gps' => false,
+            ];
+        }
+    }
+
+    $cache[$cache_key] = livreur_pick_best_lookup_adresse($candidates);
+    return $cache[$cache_key];
+}
+
+/**
+ * Complète adresse / GPS du panneau démarrage depuis l'historique client (même téléphone).
+ *
+ * @param string     $adresse
+ * @param mixed      $delivery_lat
+ * @param mixed      $delivery_lng
+ * @param string     $telephone
+ * @return array{adresse:string,delivery_latitude:float|null,delivery_longitude:float|null,from_history:bool}
+ */
+function livreur_resolve_demarrage_address($adresse, $delivery_lat, $delivery_lng, $telephone)
+{
+    $adresse = trim((string) $adresse);
+    $lat = livreur_parse_coord($delivery_lat);
+    $lng = livreur_parse_coord($delivery_lng);
+
+    if ($adresse !== '' && $lat !== null && $lng !== null) {
+        return [
+            'adresse' => $adresse,
+            'delivery_latitude' => $lat,
+            'delivery_longitude' => $lng,
+            'from_history' => false,
+        ];
+    }
+
+    $lookup = livreur_lookup_adresse_par_telephone($telephone);
+    $from_history = false;
+    if ($lookup !== null) {
+        if ($adresse === '' && trim((string) ($lookup['adresse'] ?? '')) !== '') {
+            $adresse = trim((string) $lookup['adresse']);
+            $from_history = true;
+        }
+        if ($lat === null && isset($lookup['delivery_latitude'])) {
+            $lat = livreur_parse_coord($lookup['delivery_latitude']);
+            if ($lat !== null) {
+                $from_history = true;
+            }
+        }
+        if ($lng === null && isset($lookup['delivery_longitude'])) {
+            $lng = livreur_parse_coord($lookup['delivery_longitude']);
+            if ($lng !== null) {
+                $from_history = true;
+            }
+        }
+    }
+
+    return [
+        'adresse' => $adresse,
+        'delivery_latitude' => $lat,
+        'delivery_longitude' => $lng,
+        'from_history' => $from_history,
+    ];
+}
+
+/**
  * Adresse affichée pour une facture B2B (BL).
  */
 function livreur_facture_adresse_affichage($facture) {
+    $adresse_liv = trim((string) ($facture['adresse_livraison'] ?? ''));
+    if ($adresse_liv !== '') {
+        return $adresse_liv;
+    }
     $adresse_bl = trim((string) ($facture['adresse_client'] ?? ''));
     if ($adresse_bl !== '') {
         return $adresse_bl;

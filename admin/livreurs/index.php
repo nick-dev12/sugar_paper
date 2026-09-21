@@ -85,15 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
     }
 }
 
+$can_filter_period = ($is_livreur || $is_admin);
+
 $commandes_liste = $tables_ready
-    ? livreur_get_commandes_livraison_list($is_livreur)
+    ? livreur_get_commandes_livraison_list(false)
     : [];
 $bl_tables_ok = bl_tables_available();
 $factures_liste = ($tables_ready && $bl_tables_ok)
-    ? livreur_get_factures_livraison_list($is_livreur)
+    ? livreur_get_factures_livraison_list(false)
     : [];
 $cp_liste = ($tables_ready && function_exists('livreur_cp_livraison_columns_ok') && livreur_cp_livraison_columns_ok())
-    ? livreur_get_cp_livraison_list($is_livreur)
+    ? livreur_get_cp_livraison_list(false)
     : [];
 
 $tab_param = isset($_GET['tab']) ? (string) $_GET['tab'] : '';
@@ -108,7 +110,6 @@ $tab_commandes_active = $active_tab === 'commandes';
 $tab_facture_active = $active_tab === 'facture';
 $tab_personnalisees_active = $active_tab === 'personnalisees';
 
-$today_ymd = date('Y-m-d');
 $commandes_count = 0;
 foreach ($commandes_liste as $cmd_row) {
     if (livreur_livraison_est_terminee($cmd_row, 'commande')) {
@@ -117,34 +118,21 @@ foreach ($commandes_liste as $cmd_row) {
     if (empty($cmd_row['date_commande'])) {
         continue;
     }
-    if ($is_livreur || date('Y-m-d', strtotime($cmd_row['date_commande'])) === $today_ymd) {
-        $commandes_count++;
-    }
+    $commandes_count++;
 }
 $factures_count = 0;
 foreach ($factures_liste as $facture_row) {
     if (livreur_livraison_est_terminee($facture_row, 'facture')) {
         continue;
     }
-    $date_source = !empty($facture_row['date_bl']) ? $facture_row['date_bl'] : ($facture_row['date_creation'] ?? '');
-    if ($date_source === '') {
-        continue;
-    }
-    if ($is_livreur || date('Y-m-d', strtotime($date_source)) === $today_ymd) {
-        $factures_count++;
-    }
+    $factures_count++;
 }
 $cp_count = 0;
 foreach ($cp_liste as $cp_row) {
     if (livreur_livraison_est_terminee($cp_row, 'personnalisee')) {
         continue;
     }
-    if (empty($cp_row['date_creation'])) {
-        continue;
-    }
-    if ($is_livreur || date('Y-m-d', strtotime($cp_row['date_creation'])) === $today_ymd) {
-        $cp_count++;
-    }
+    $cp_count++;
 }
 ?>
 <!DOCTYPE html>
@@ -244,7 +232,7 @@ foreach ($cp_liste as $cp_row) {
                         data-live-search-input>
                 </div>
             </div>
-            <?php if ($is_admin): ?>
+            <?php if ($can_filter_period): ?>
             <div class="invoice-panel-period-trigger">
                 <button type="button" class="btn-secondary invoice-period-toggle" id="livreur-period-toggle" aria-expanded="false" aria-controls="livreur-period-panel" aria-label="Filtrer par période">
                     <i class="fas fa-calendar-alt" aria-hidden="true"></i>
@@ -253,7 +241,7 @@ foreach ($cp_liste as $cp_row) {
             </div>
             <?php endif; ?>
         </div>
-        <?php if ($is_admin): ?>
+        <?php if ($can_filter_period): ?>
         <div class="invoice-period-panel" id="livreur-period-panel" hidden>
             <div class="invoice-period-presets" role="group" aria-label="Périodes rapides livraisons">
                 <button type="button" class="invoice-period-preset is-active" data-preset="today">Aujourd'hui</button>
@@ -278,7 +266,7 @@ foreach ($cp_liste as $cp_row) {
         <?php endif; ?>
     </div>
 
-    <?php if ($is_admin): ?>
+    <?php if ($can_filter_period): ?>
     <p class="invoice-period-summary" id="livreur-period-summary" aria-live="polite"></p>
     <?php endif; ?>
 
@@ -290,7 +278,7 @@ foreach ($cp_liste as $cp_row) {
         aria-labelledby="livreur-tab-btn-commandes"
         <?php echo $tab_commandes_active ? '' : 'hidden'; ?>>
         <?php if (empty($commandes_liste)): ?>
-            <p class="livreur-empty">Aucune commande à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
+            <p class="livreur-empty">Aucune commande à livrer.</p>
         <?php else: ?>
         <div class="livreur-table-wrap">
             <table class="livreur-table livreur-table--jour">
@@ -314,6 +302,15 @@ foreach ($cp_liste as $cp_row) {
                     $search_blob = htmlspecialchars(livreur_commande_search_blob($cmd), ENT_QUOTES, 'UTF-8');
                     $delivery_lat = livreur_parse_coord($cmd['delivery_latitude'] ?? null);
                     $delivery_lng = livreur_parse_coord($cmd['delivery_longitude'] ?? null);
+                    $demarrage = livreur_resolve_demarrage_address(
+                        $cmd['adresse_livraison'] ?? '',
+                        $delivery_lat,
+                        $delivery_lng,
+                        $client_tel
+                    );
+                    $adresse_demarrage = $demarrage['adresse'];
+                    $delivery_lat = $demarrage['delivery_latitude'];
+                    $delivery_lng = $demarrage['delivery_longitude'];
                     ?>
                     <tr class="livreur-cmd-row<?php echo $est_terminee ? ' livreur-cmd-row--terminee' : ''; ?>" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $est_terminee ? ' data-terminee="1"' : ''; ?>>
                         <td data-label="Client">
@@ -336,9 +333,10 @@ foreach ($cp_liste as $cp_row) {
                                 data-livraison-type="commande"
                                 data-commande-id="<?php echo (int) $cmd['id']; ?>"
                                     data-numero="<?php echo htmlspecialchars($cmd['numero_commande'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-adresse="<?php echo htmlspecialchars($cmd['adresse_livraison'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-adresse="<?php echo htmlspecialchars($adresse_demarrage, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-delivery-lat="<?php echo $delivery_lat !== null ? htmlspecialchars((string) $delivery_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
-                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-adresse-historique="<?php echo !empty($demarrage['from_history']) ? '1' : '0'; ?>">
                                     <i class="fas fa-hand-pointer" aria-hidden="true"></i>
                                     <span class="livreur-btn-text livreur-btn-text--full">Prendre la commande</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
@@ -389,7 +387,7 @@ foreach ($cp_liste as $cp_row) {
         <?php if (!$bl_tables_ok): ?>
             <p class="livreur-empty">Module factures B2B indisponible.</p>
         <?php elseif (empty($factures_liste)): ?>
-            <p class="livreur-empty">Aucune facture à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
+            <p class="livreur-empty">Aucune facture à livrer.</p>
         <?php else: ?>
         <div class="livreur-table-wrap">
             <table class="livreur-table livreur-table--jour livreur-table--factures">
@@ -416,6 +414,15 @@ foreach ($cp_liste as $cp_row) {
                     $disponible = !$est_terminee && $bl_livreur_id === null;
                     $delivery_lat = livreur_parse_coord($f['delivery_latitude'] ?? null);
                     $delivery_lng = livreur_parse_coord($f['delivery_longitude'] ?? null);
+                    $demarrage = livreur_resolve_demarrage_address(
+                        $adresse_facture,
+                        $delivery_lat,
+                        $delivery_lng,
+                        $client_tel
+                    );
+                    $adresse_demarrage = $demarrage['adresse'];
+                    $delivery_lat = $demarrage['delivery_latitude'];
+                    $delivery_lng = $demarrage['delivery_longitude'];
                     $statut_livraison = livreur_facture_statut_livraison($f);
                     ?>
                     <tr class="livreur-cmd-row livreur-facture-row<?php echo $est_terminee ? ' livreur-cmd-row--terminee' : ''; ?>" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso, ENT_QUOTES, 'UTF-8'); ?>"<?php echo $est_terminee ? ' data-terminee="1"' : ''; ?>>
@@ -439,9 +446,10 @@ foreach ($cp_liste as $cp_row) {
                                     data-livraison-type="facture"
                                     data-bl-id="<?php echo $fid; ?>"
                                     data-client="<?php echo htmlspecialchars($client_label, ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-adresse="<?php echo htmlspecialchars($adresse_facture, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-adresse="<?php echo htmlspecialchars($adresse_demarrage, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-delivery-lat="<?php echo $delivery_lat !== null ? htmlspecialchars((string) $delivery_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
-                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-adresse-historique="<?php echo !empty($demarrage['from_history']) ? '1' : '0'; ?>">
                                     <i class="fas fa-hand-pointer" aria-hidden="true"></i>
                                     <span class="livreur-btn-text livreur-btn-text--full">Prendre la facture</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
@@ -488,7 +496,7 @@ foreach ($cp_liste as $cp_row) {
         aria-labelledby="livreur-tab-btn-personnalisees"
         <?php echo $tab_personnalisees_active ? '' : 'hidden'; ?>>
         <?php if (empty($cp_liste)): ?>
-            <p class="livreur-empty">Aucune commande personnalisée à livrer<?php echo $is_livreur ? ' aujourd\'hui' : ''; ?>.</p>
+            <p class="livreur-empty">Aucune commande personnalisée à livrer.</p>
         <?php else: ?>
         <div class="livreur-table-wrap">
             <table class="livreur-table livreur-table--jour">
@@ -514,6 +522,15 @@ foreach ($cp_liste as $cp_row) {
                     $delivery_lat = livreur_parse_coord($cp['delivery_latitude'] ?? null);
                     $delivery_lng = livreur_parse_coord($cp['delivery_longitude'] ?? null);
                     $adresse_cp = livreur_cp_adresse_affichage($cp);
+                    $demarrage = livreur_resolve_demarrage_address(
+                        $adresse_cp,
+                        $delivery_lat,
+                        $delivery_lng,
+                        $client_tel
+                    );
+                    $adresse_demarrage = $demarrage['adresse'];
+                    $delivery_lat = $demarrage['delivery_latitude'];
+                    $delivery_lng = $demarrage['delivery_longitude'];
                     $numero_cp = livreur_cp_numero($cp_id_row);
                     $statut_livraison = livreur_cp_statut_livraison($cp);
                     ?>
@@ -539,9 +556,10 @@ foreach ($cp_liste as $cp_row) {
                                 data-livraison-type="personnalisee"
                                 data-cp-id="<?php echo $cp_id_row; ?>"
                                     data-numero="<?php echo htmlspecialchars($numero_cp, ENT_QUOTES, 'UTF-8'); ?>"
-                                    data-adresse="<?php echo htmlspecialchars($adresse_cp, ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-adresse="<?php echo htmlspecialchars($adresse_demarrage, ENT_QUOTES, 'UTF-8'); ?>"
                                     data-delivery-lat="<?php echo $delivery_lat !== null ? htmlspecialchars((string) $delivery_lat, ENT_QUOTES, 'UTF-8') : ''; ?>"
-                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>">
+                                    data-delivery-lng="<?php echo $delivery_lng !== null ? htmlspecialchars((string) $delivery_lng, ENT_QUOTES, 'UTF-8') : ''; ?>"
+                                    data-adresse-historique="<?php echo !empty($demarrage['from_history']) ? '1' : '0'; ?>">
                                     <i class="fas fa-hand-pointer" aria-hidden="true"></i>
                                     <span class="livreur-btn-text livreur-btn-text--full">Prendre la commande</span>
                                     <span class="livreur-btn-text livreur-btn-text--short">Prendre</span>
@@ -657,7 +675,7 @@ foreach ($cp_liste as $cp_row) {
 
 <script>
 window.LIVREUR_INDEX_UI = {
-    enablePeriod: <?php echo $is_admin ? 'true' : 'false'; ?>,
+    enablePeriod: <?php echo $can_filter_period ? 'true' : 'false'; ?>,
     activeTab: <?php echo json_encode($active_tab, JSON_UNESCAPED_UNICODE); ?>
 };
 </script>

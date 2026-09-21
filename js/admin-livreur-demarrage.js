@@ -650,6 +650,7 @@
         var numero = btn.getAttribute('data-numero') || '';
         var client = btn.getAttribute('data-client') || '';
         var adresse = btn.getAttribute('data-adresse') || '';
+        var adresseHistorique = btn.getAttribute('data-adresse-historique') === '1';
         var dLat = parseCoord(btn.getAttribute('data-delivery-lat'));
         var dLng = parseCoord(btn.getAttribute('data-delivery-lng'));
         originalClientAdresse = adresse;
@@ -718,12 +719,19 @@
         if (hasOrderGps) {
             showOrderGpsPanel(true);
             updateClientOnMap(dLat, dLng);
-            setStatus('ok', 'Position GPS du client chargée — vous pouvez la modifier ou rechercher une adresse.');
+            if (adresseHistorique) {
+                setStatus('ok', 'Adresse reprise d\'une livraison précédente (même téléphone) — vous pouvez la modifier.');
+            } else {
+                setStatus('ok', 'Position GPS du client chargée — vous pouvez la modifier ou rechercher une adresse.');
+            }
         } else {
             showOrderGpsPanel(false);
             var restoreBtn = qs('livreur-gps-restore');
             if (restoreBtn) restoreBtn.hidden = true;
             if (adresse) {
+                if (adresseHistorique) {
+                    setStatus('ok', 'Adresse reprise d\'une livraison précédente (même téléphone).');
+                }
                 geocodeAddress(adresse);
             } else {
                 setStatus('pending', 'Saisissez l\'adresse du client.');
