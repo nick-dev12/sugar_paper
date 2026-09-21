@@ -40,6 +40,272 @@ if (!function_exists('geo_geocode_suggest')) {
     }
 
     /**
+     * Degrés minutes secondes → décimal (N/E positif, S/W négatif).
+     */
+    function geo_geocode_dms_to_decimal($deg, $min, $sec, $hemisphere) {
+        $deg = (float) str_replace(',', '.', (string) $deg);
+        $min = (float) str_replace(',', '.', (string) $min);
+        $sec = (float) str_replace(',', '.', (string) $sec);
+        $dec = abs($deg) + (abs($min) / 60.0) + (abs($sec) / 3600.0);
+        $h = strtoupper(trim((string) $hemisphere));
+        if ($h === 'S' || $h === 'W') {
+            $dec = -$dec;
+        }
+        return $dec;
+    }
+
+    /**
+     * Interprète une paire décimale (ordre lat,lng ou lng,lat).
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    function geo_geocode_assign_decimal_pair($a, $b) {
+        $a = geo_geocode_suggest_parse_coord($a);
+        $b = geo_geocode_suggest_parse_coord($b);
+        if ($a === null || $b === null) {
+            return null;
+        }
+
+        $abs_a = abs($a);
+        $abs_b = abs($b);
+
+        if ($abs_a <= 90 && $abs_b <= 180) {
+            if ($abs_a <= 17 && $abs_b >= 10 && $abs_b > $abs_a) {
+                return ['lat' => $a, 'lng' => $b];
+            }
+            if ($abs_b <= 17 && $abs_a >= 10 && $abs_a > $abs_b) {
+                return ['lat' => $b, 'lng' => $a];
+            }
+            return ['lat' => $a, 'lng' => $b];
+        }
+
+        return null;
+    }
+
+    function geo_geocode_is_likely_maps_url($query) {
+        $query = trim((string) $query);
+        if ($query === '') {
+            return false;
+        }
+        return (bool) preg_match(
+            '#^(?:https?://)?(?:maps\.(?:google|app\.goo\.gl)|www\.google\.(?:com|[a-z]{2}(?:\.[a-z]{2})?)/maps|goo\.gl/maps|geo:)#i',
+            $query
+        ) || (bool) preg_match('#^https?://maps\.app\.goo\.gl/#i', $query);
+    }
+
+    function geo_geocode_is_short_maps_url($url) {
+        return (bool) preg_match('#^https?://(maps\.app\.goo\.gl|goo\.gl/maps|goo\.gl/|bit\.ly/)#i', trim((string) $url));
+    }
+
+    /**
+     * Suit les redirections des liens courts Google Maps (WhatsApp, SMS…).
+     */
+    function geo_geocode_resolve_maps_short_url($url) {
+        $url = trim((string) $url);
+        if ($url === '' || !geo_geocode_is_short_maps_url($url)) {
+            return $url;
+        }
+
+        if (!function_exists('curl_init')) {
+            return $url;
+        }
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return $url;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
+            CURLOPT_TIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
+            CURLOPT_HTTPHEADER => [
+                'User-Agent: ' . GEO_SUGGEST_USER_AGENT,
+                'Accept: text/html,application/xhtml+xml',
+            ],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+        ]);
+
+        curl_exec($ch);
+        $final = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($final !== '' && ($code === 0 || ($code >= 200 && $code < 400))) {
+            return $final;
+        }
+
+        return $url;
+    }
+
+    /**
+     * Extrait lat/lng depuis une URL Google Maps / geo: (sans requête HTTP).
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    function geo_geocode_extract_coords_from_maps_url($url) {
+        $url = trim(html_entity_decode((string) $url, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($url === '') {
+            return null;
+        }
+
+        $decoded = rawurldecode($url);
+
+        if (preg_match('/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/[?&](?:q|query)=loc:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/[?&](?:q|query)=(-?\d+(?:\.\d+)?)[,%20\s+]+(-?\d+(?:\.\d+)?)(?:[&]|$)/i', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/[?&](?:ll|center|destination|daddr)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/^geo:(?:-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\?q=)?(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i', $decoded, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Résout un lien Google Maps (court ou long) en coordonnées.
+     *
+     * @return array{lat: float, lng: float, label: string}|null
+     */
+    function geo_geocode_try_parse_maps_url($query) {
+        $query = trim((string) $query);
+        if ($query === '' || !geo_geocode_is_likely_maps_url($query)) {
+            return null;
+        }
+
+        if (!preg_match('#^https?://#i', $query) && !preg_match('#^geo:#i', $query)) {
+            $query = 'https://' . ltrim($query, '/');
+        }
+
+        $candidates = [$query];
+        if (geo_geocode_is_short_maps_url($query)) {
+            $resolved = geo_geocode_resolve_maps_short_url($query);
+            if ($resolved !== '' && $resolved !== $query) {
+                $candidates[] = $resolved;
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            $pair = geo_geocode_extract_coords_from_maps_url($candidate);
+            if ($pair !== null && geo_geocode_suggest_coords_valid($pair['lat'], $pair['lng'])) {
+                return [
+                    'lat' => $pair['lat'],
+                    'lng' => $pair['lng'],
+                    'label' => sprintf('%.6f, %.6f', $pair['lat'], $pair['lng']),
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extrait lat/lng depuis coordonnées DMS, décimales ou lien Google Maps.
+     *
+     * @return array{lat: float, lng: float, label: string}|null
+     */
+    function geo_geocode_try_parse_coordinates($query) {
+        $query = trim((string) $query);
+        if ($query === '') {
+            return null;
+        }
+
+        $from_maps = geo_geocode_try_parse_maps_url($query);
+        if ($from_maps !== null) {
+            return $from_maps;
+        }
+
+        $normalized = preg_replace('/\s+/u', ' ', $query);
+
+        if (preg_match(
+            '/(?P<lat_deg>\d{1,2})\s*[°º˚]\s*(?P<lat_min>\d{1,2})\s*[\'′]?\s*(?P<lat_sec>\d+(?:[.,]\d+)?)\s*["″]?\s*(?P<lat_h>[NnSs])'
+            . '.*?'
+            . '(?P<lng_deg>\d{1,3})\s*[°º˚]\s*(?P<lng_min>\d{1,2})\s*[\'′]?\s*(?P<lng_sec>\d+(?:[.,]\d+)?)\s*["″]?\s*(?P<lng_h>[EeWw])/u',
+            $normalized,
+            $m
+        )) {
+            $lat = geo_geocode_dms_to_decimal($m['lat_deg'], $m['lat_min'], $m['lat_sec'], $m['lat_h']);
+            $lng = geo_geocode_dms_to_decimal($m['lng_deg'], $m['lng_min'], $m['lng_sec'], $m['lng_h']);
+            if (geo_geocode_suggest_coords_valid($lat, $lng)) {
+                return [
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'label' => sprintf('%.6f, %.6f', $lat, $lng),
+                ];
+            }
+        }
+
+        $decimal_token = '(?:-?\d+(?:[.,]\d+)?)';
+        if (preg_match(
+            '/^\s*(' . $decimal_token . ')\s*[,;]\s*(' . $decimal_token . ')\s*$/u',
+            $normalized,
+            $m
+        ) || preg_match(
+            '/^\s*(' . $decimal_token . ')\s+(' . $decimal_token . ')\s*$/u',
+            $normalized,
+            $m
+        )) {
+            $a = str_replace(',', '.', $m[1]);
+            $b = str_replace(',', '.', $m[2]);
+            $pair = geo_geocode_assign_decimal_pair($a, $b);
+            if ($pair !== null && geo_geocode_suggest_coords_valid($pair['lat'], $pair['lng'])) {
+                return [
+                    'lat' => $pair['lat'],
+                    'lng' => $pair['lng'],
+                    'label' => sprintf('%.6f, %.6f', $pair['lat'], $pair['lng']),
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{lat: float, lng: float, label: string, full: string, score: int}
+     */
+    function geo_geocode_coordinate_suggestion_row($query, array $coords) {
+        $lat = (float) $coords['lat'];
+        $lng = (float) $coords['lng'];
+        $label = trim((string) ($coords['label'] ?? ''));
+        if ($label === '') {
+            $label = sprintf('%.6f, %.6f', $lat, $lng);
+        }
+
+        $reverse = geo_geocode_reverse($lat, $lng);
+        if ($reverse !== '') {
+            $label = $reverse;
+        }
+
+        return [
+            'lat' => $lat,
+            'lng' => $lng,
+            'label' => $label,
+            'full' => trim((string) $query),
+            'score' => 1000,
+        ];
+    }
+
+    /**
      * Limite Nominatim : 1 requête / seconde (verrou fichier inter-processus).
      */
     function geo_geocode_suggest_nominatim_throttle() {
@@ -400,6 +666,11 @@ if (!function_exists('geo_geocode_suggest')) {
             return [];
         }
 
+        $parsed_coords = geo_geocode_try_parse_coordinates($query);
+        if ($parsed_coords !== null) {
+            return [geo_geocode_coordinate_suggestion_row($query, $parsed_coords)];
+        }
+
         $rows = [];
         $primary = geo_geocode_suggest_primary_query($query);
 
@@ -480,6 +751,13 @@ if (!function_exists('geo_geocode_suggest')) {
      * @return array{lat: float, lng: float, label: string, full: string}|null
      */
     function geo_geocode_best_match($query, $country = null) {
+        $parsed_coords = geo_geocode_try_parse_coordinates($query);
+        if ($parsed_coords !== null) {
+            $row = geo_geocode_coordinate_suggestion_row($query, $parsed_coords);
+            unset($row['score']);
+            return $row;
+        }
+
         $raw = geo_geocode_suggest_raw($query, $country, 8);
         if ($raw !== [] && ($raw[0]['score'] ?? 0) >= 120) {
             $best = $raw[0];

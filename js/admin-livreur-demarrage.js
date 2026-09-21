@@ -37,8 +37,143 @@
 
     function parseCoord(v) {
         if (v === null || v === undefined || v === '') return null;
-        var n = parseFloat(v);
+        var n = parseFloat(String(v).replace(',', '.'));
         return isFinite(n) ? n : null;
+    }
+
+    function dmsToDecimal(deg, min, sec, hemisphere) {
+        var dec = Math.abs(parseFloat(String(deg).replace(',', '.')))
+            + (Math.abs(parseFloat(String(min).replace(',', '.'))) / 60)
+            + (Math.abs(parseFloat(String(sec).replace(',', '.'))) / 3600);
+        var h = String(hemisphere || '').toUpperCase();
+        if (h === 'S' || h === 'W') {
+            dec = -dec;
+        }
+        return dec;
+    }
+
+    function assignDecimalPair(a, b) {
+        a = parseCoord(a);
+        b = parseCoord(b);
+        if (a === null || b === null) return null;
+
+        var absA = Math.abs(a);
+        var absB = Math.abs(b);
+
+        if (absA <= 90 && absB <= 180) {
+            if (absA <= 17 && absB >= 10 && absB > absA) {
+                return { lat: a, lng: b };
+            }
+            if (absB <= 17 && absA >= 10 && absA > absB) {
+                return { lat: b, lng: a };
+            }
+            return { lat: a, lng: b };
+        }
+        return null;
+    }
+
+    function isLikelyMapsUrl(text) {
+        var q = String(text || '').trim();
+        if (!q) return false;
+        return /^(?:https?:\/\/)?(?:maps\.(?:google|app\.goo\.gl)|www\.google\.(?:com|[a-z]{2}(?:\.[a-z]{2})?)\/maps|goo\.gl\/maps|geo:)/i.test(q)
+            || /^https?:\/\/maps\.app\.goo\.gl\//i.test(q);
+    }
+
+    function isShortMapsUrl(text) {
+        return /^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/)/i.test(String(text || '').trim());
+    }
+
+    function coordsFromPair(pair, fullText) {
+        if (!pair) return null;
+        return {
+            lat: pair.lat,
+            lng: pair.lng,
+            label: pair.lat.toFixed(6) + ', ' + pair.lng.toFixed(6),
+            full: fullText || ''
+        };
+    }
+
+    function parseMapsUrlFromText(text) {
+        var q = String(text || '').trim();
+        if (!q || !isLikelyMapsUrl(q)) return null;
+
+        var decoded = decodeURIComponent(q.replace(/\+/g, ' '));
+
+        var pin = decoded.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+        if (pin) return coordsFromPair(assignDecimalPair(pin[1], pin[2]), q);
+
+        var at = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+        if (at) return coordsFromPair(assignDecimalPair(at[1], at[2]), q);
+
+        var loc = decoded.match(/[?&](?:q|query)=loc:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+        if (loc) return coordsFromPair(assignDecimalPair(loc[1], loc[2]), q);
+
+        var qparam = decoded.match(/[?&](?:q|query)=(-?\d+(?:\.\d+)?)[,%20\s+]+(-?\d+(?:\.\d+)?)(?:&|$)/i);
+        if (qparam) return coordsFromPair(assignDecimalPair(qparam[1], qparam[2]), q);
+
+        var ll = decoded.match(/[?&](?:ll|center|destination|daddr)=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+        if (ll) return coordsFromPair(assignDecimalPair(ll[1], ll[2]), q);
+
+        var geo = q.match(/^geo:(?:-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\?q=)?(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+        if (geo) return coordsFromPair(assignDecimalPair(geo[1], geo[2]), q);
+
+        return null;
+    }
+
+    function parseLatLngFromText(text) {
+        var q = String(text || '').trim().replace(/\s+/g, ' ');
+        if (!q) return null;
+
+        var fromMaps = parseMapsUrlFromText(q);
+        if (fromMaps) return fromMaps;
+
+        var dms = q.match(
+            /(\d{1,2})\s*[°º˚]\s*(\d{1,2})\s*['′]?\s*(\d+(?:[.,]\d+)?)\s*["″]?\s*([NnSs]).*?(\d{1,3})\s*[°º˚]\s*(\d{1,2})\s*['′]?\s*(\d+(?:[.,]\d+)?)\s*["″]?\s*([EeWw])/
+        );
+        if (dms) {
+            var lat = dmsToDecimal(dms[1], dms[2], dms[3], dms[4]);
+            var lng = dmsToDecimal(dms[5], dms[6], dms[7], dms[8]);
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                return {
+                    lat: lat,
+                    lng: lng,
+                    label: lat.toFixed(6) + ', ' + lng.toFixed(6),
+                    full: q
+                };
+            }
+        }
+
+        var decToken = '(?:-?\\d+(?:[.,]\\d+)?)';
+        var dec = q.match(new RegExp('^\\s*(' + decToken + ')\\s*[,;]\\s*(' + decToken + ')\\s*$'))
+            || q.match(new RegExp('^\\s*(' + decToken + ')\\s+(' + decToken + ')\\s*$'));
+        if (dec) {
+            var pair = assignDecimalPair(dec[1], dec[2]);
+            if (pair) {
+                return {
+                    lat: pair.lat,
+                    lng: pair.lng,
+                    label: pair.lat.toFixed(6) + ', ' + pair.lng.toFixed(6),
+                    full: q
+                };
+            }
+        }
+
+        return null;
+    }
+
+    function applyParsedCoordinates(parsed, keepInput) {
+        if (!parsed) return false;
+
+        suppressSuggest = true;
+        var adresseInput = qs('livreur-demarrage-adresse');
+        if (adresseInput && !keepInput) {
+            adresseInput.value = parsed.label || parsed.full || '';
+        }
+        hideAddressSuggestions();
+        updateClientOnMap(parsed.lat, parsed.lng);
+        setStatus('ok', 'Position placée sur la carte.');
+        setTimeout(function () { suppressSuggest = false; }, 120);
+        return true;
     }
 
     function setStatus(state, message) {
@@ -333,6 +468,11 @@
             return Promise.resolve(false);
         }
 
+        var parsedCoords = parseLatLngFromText(q);
+        if (parsedCoords) {
+            return Promise.resolve(applyParsedCoordinates(parsedCoords, false));
+        }
+
         clearTimeout(geocodeTimer);
         setStatus('pending', 'Recherche du lieu le plus proche…');
 
@@ -431,7 +571,7 @@
             if (meta && meta.hint === 'geo_unavailable') {
                 empty.textContent = 'Service de recherche indisponible. Vérifiez la connexion ou réessayez.';
             } else {
-                empty.textContent = 'Aucun lieu trouvé. Appuyez sur Entrée pour relancer la recherche.';
+                empty.textContent = 'Aucun lieu trouvé. Essayez une adresse, un lien Google Maps ou des coordonnées GPS.';
             }
             list.appendChild(empty);
             list.hidden = false;
@@ -497,6 +637,12 @@
             return;
         }
 
+        var parsedCoords = parseLatLngFromText(q);
+        if (parsedCoords) {
+            showAddressSuggestions([parsedCoords]);
+            return;
+        }
+
         var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
         suggestAbort = controller;
 
@@ -552,6 +698,17 @@
         if (!adresseInput) return;
 
         adresseInput.addEventListener('input', onAddressInput);
+        adresseInput.addEventListener('paste', function () {
+            setTimeout(function () {
+                if (suppressSuggest || isComposing) return;
+                var value = adresseInput.value.trim();
+                if (!value) return;
+                clearTimeout(suggestTimer);
+                if (isLikelyMapsUrl(value) || parseLatLngFromText(value)) {
+                    fetchAddressSuggestions(value);
+                }
+            }, 0);
+        });
         adresseInput.addEventListener('compositionstart', function () {
             isComposing = true;
         });

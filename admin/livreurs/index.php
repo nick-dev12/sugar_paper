@@ -648,7 +648,7 @@ foreach ($cp_liste as $cp_row) {
                 </div>
 
                 <div class="livreur-address-autocomplete" id="livreur-address-autocomplete">
-                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Rechercher une adresse (quartier, rue, ville…)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
+                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Adresse, lien Google Maps ou coordonnées GPS…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
                     <ul id="livreur-address-suggest" class="livreur-address-suggest" role="listbox" hidden aria-label="Suggestions d'adresse"></ul>
                 </div>
             </div>
