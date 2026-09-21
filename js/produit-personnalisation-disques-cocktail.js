@@ -619,7 +619,7 @@
 
     function canvasPointToViewport(cx, cy) {
         if (!canvas) {
-            return { x: 0, y: 0 };
+            return { x: 0, y: 0, scale: 1 };
         }
         var canvasRect = canvas.getBoundingClientRect();
         var vpRect = previewViewport ? previewViewport.getBoundingClientRect() : canvasRect;
@@ -627,7 +627,8 @@
         var scaleY = canvasRect.height / canvas.height;
         return {
             x: canvasRect.left - vpRect.left + cx * scaleX,
-            y: canvasRect.top - vpRect.top + cy * scaleY
+            y: canvasRect.top - vpRect.top + cy * scaleY,
+            scale: scaleX
         };
     }
 

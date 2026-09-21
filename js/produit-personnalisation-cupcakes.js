@@ -62,6 +62,22 @@
     }
 
     var textManipBox = document.getElementById('cupcakes-text-manip-box');
+
+    function canvasPointToViewport(cx, cy) {
+        if (!canvas) {
+            return { x: 0, y: 0, scale: 1 };
+        }
+        var canvasRect = canvas.getBoundingClientRect();
+        var vpRect = previewViewport ? previewViewport.getBoundingClientRect() : canvasRect;
+        var scaleX = canvasRect.width / canvas.width;
+        var scaleY = canvasRect.height / canvas.height;
+        return {
+            x: canvasRect.left - vpRect.left + cx * scaleX,
+            y: canvasRect.top - vpRect.top + cy * scaleY,
+            scale: scaleX
+        };
+    }
+
     var textEngine = null;
     if (window.PersoTextEngine) {
         textEngine = window.PersoTextEngine.create({
@@ -95,14 +111,7 @@
                 };
             },
             canvasPointToViewport: function (cx, cy) {
-                if (!canvas) {
-                    return { x: 0, y: 0 };
-                }
-                var rect = canvas.getBoundingClientRect();
-                return {
-                    x: cx * (rect.width / canvas.width),
-                    y: cy * (rect.height / canvas.height)
-                };
+                return canvasPointToViewport(cx, cy);
             },
             isSharedMode: function () {
                 return state.imageMode === 'shared';
@@ -674,19 +683,14 @@
             hideImageManipulator();
             return;
         }
-        var rect = canvas.getBoundingClientRect();
-        var scaleX = rect.width / canvas.width;
-        var scaleY = rect.height / canvas.height;
-        var left = params.x * scaleX;
-        var top = params.y * scaleY;
-        var width = params.w * scaleX;
-        var height = params.h * scaleY;
+        var tl = canvasPointToViewport(params.x, params.y);
+        var br = canvasPointToViewport(params.x + params.w, params.y + params.h);
         imageManipulator.hidden = false;
         imageManipulator.setAttribute('aria-hidden', 'false');
-        imageManipBox.style.left = left + 'px';
-        imageManipBox.style.top = top + 'px';
-        imageManipBox.style.width = width + 'px';
-        imageManipBox.style.height = height + 'px';
+        imageManipBox.style.left = tl.x + 'px';
+        imageManipBox.style.top = tl.y + 'px';
+        imageManipBox.style.width = Math.max(32, br.x - tl.x) + 'px';
+        imageManipBox.style.height = Math.max(32, br.y - tl.y) + 'px';
     }
 
     function renderPreview() {

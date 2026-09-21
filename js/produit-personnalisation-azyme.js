@@ -82,6 +82,8 @@
     var CANVAS_SIZE = 640;
     var lastRenderLayout = null;
     var manipDrag = null;
+    var manipMoveRaf = null;
+    var lastManipClient = { x: 0, y: 0 };
     var touchPointers = {};
     var IMAGE_SCALE_MIN = 10;
     var IMAGE_SCALE_MAX = 800;
@@ -764,7 +766,7 @@
         }
     }
 
-    function applyTextMove(active, canvasX, canvasY) {
+    function applyTextMove(active, canvasX, canvasY, drag) {
         if (!lastRenderLayout || !active) {
             return;
         }
@@ -779,6 +781,14 @@
             var base = active.wrapArcPosition === 'bottom' ? Math.PI / 2 : -Math.PI / 2;
             var arcOffset = angle - base - (((active.textRotation || 0) * Math.PI) / 180);
             active.textPosX = clampPct(50 + (arcOffset / (Math.PI * 0.75)) * 50);
+            return;
+        }
+        if (drag && typeof drag.startX === 'number' && typeof drag.startY === 'number'
+            && typeof drag.startPosX === 'number' && typeof drag.startPosY === 'number') {
+            var moveDx = canvasX - drag.startX;
+            var moveDy = canvasY - drag.startY;
+            active.textPosX = clampPct(drag.startPosX + (moveDx / bounds.w) * 100);
+            active.textPosY = clampPct(drag.startPosY + (moveDy / bounds.h) * 100);
             return;
         }
         active.textPosX = clampPct(((canvasX - bounds.x) / bounds.w) * 100);
@@ -863,7 +873,9 @@
         if (!active) {
             return;
         }
-        syncActiveTextFromControls();
+        if (textInput) {
+            active.text = textInput.value;
+        }
         var layout = getTextLayout(active);
         if (!layout) {
             return;
@@ -888,7 +900,7 @@
         }
     }
 
-    function onManipPointerMove(clientX, clientY) {
+    function runManipPointerMove(clientX, clientY) {
         if (!manipDrag) {
             return;
         }
@@ -943,7 +955,7 @@
         var layout = getTextLayout(active);
 
         if (manipDrag.mode === 'move') {
-            applyTextMove(active, canvasPt.x, canvasPt.y);
+            applyTextMove(active, canvasPt.x, canvasPt.y, manipDrag);
         } else if (manipDrag.mode === 'rotate') {
             if (layout) {
                 applyTextRotate(active, canvasPt.x, canvasPt.y, layout);
@@ -956,6 +968,21 @@
 
         syncControlsFromActiveText();
         renderPreview();
+    }
+
+    function onManipPointerMove(clientX, clientY) {
+        if (!manipDrag) {
+            return;
+        }
+        lastManipClient.x = clientX;
+        lastManipClient.y = clientY;
+        if (manipMoveRaf !== null) {
+            return;
+        }
+        manipMoveRaf = requestAnimationFrame(function () {
+            manipMoveRaf = null;
+            runManipPointerMove(lastManipClient.x, lastManipClient.y);
+        });
     }
 
     function bindTextManipulatorEvents() {
@@ -2239,16 +2266,30 @@
         });
     });
 
-    fontBtns.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var active = getActiveText();
-            if (active) {
-                active.font = btn.getAttribute('data-font') || 'Outfit';
-            }
-            fontBtns.forEach(function (b) {
-                b.classList.toggle('is-active', b === btn);
-            });
+    function applyFontChoice(fontName) {
+        var active = getActiveText();
+        if (!active) {
+            return;
+        }
+        active.font = fontName || 'Outfit';
+        fontBtns.forEach(function (b) {
+            b.classList.toggle('is-active', b.getAttribute('data-font') === active.font);
+        });
+        var bounds = lastRenderLayout ? lastRenderLayout.designBounds : null;
+        var fontSize = bounds ? getTextFontSize(bounds, active) : 48;
+        var preload = window.PersoTextEngine && window.PersoTextEngine.preloadFont
+            ? window.PersoTextEngine.preloadFont(active.font, fontSize)
+            : Promise.resolve();
+        preload.then(function () {
             renderPreview();
+        });
+    }
+
+    fontBtns.forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            applyFontChoice(btn.getAttribute('data-font') || 'Outfit');
         });
     });
 

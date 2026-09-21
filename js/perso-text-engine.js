@@ -27,7 +27,18 @@
         return 'txt_' + Math.random().toString(36).slice(2, 10);
     }
 
+    function preloadPersoFont(fontName, sizePx) {
+        var family = (fontName || 'Outfit').replace(/"/g, '');
+        var size = Math.max(12, sizePx || 48);
+        var spec = '600 ' + size + 'px "' + family + '"';
+        if (typeof document !== 'undefined' && document.fonts && document.fonts.load) {
+            return document.fonts.load(spec).catch(function () {});
+        }
+        return Promise.resolve();
+    }
+
     window.PersoTextEngine = {
+        preloadFont: preloadPersoFont,
         create: function (options) {
             if (!options || !options.modal || !options.prefix) {
                 throw new Error('PersoTextEngine.create: modal and prefix are required');
@@ -70,6 +81,8 @@
 
             var editTarget = '';
             var manipDrag = null;
+            var moveRafPending = null;
+            var lastMoveClient = { x: 0, y: 0 };
             var uiEventsBound = false;
             var hasBackgroundImage = typeof options.hasBackgroundImage === 'function'
                 ? options.hasBackgroundImage
@@ -610,8 +623,9 @@
                 }
 
                 var vp = canvasPointToViewport(layout.cx, layout.cy);
-                var boxW = Math.max(40, layout.width * vp.scale + 12);
-                var boxH = Math.max(28, layout.height * vp.scale + 12);
+                var vpScale = vp.scale || 1;
+                var boxW = Math.max(40, layout.width * vpScale + 12);
+                var boxH = Math.max(28, layout.height * vpScale + 12);
 
                 textManipulator.hidden = false;
                 textManipulator.setAttribute('aria-hidden', 'false');
@@ -628,7 +642,7 @@
                 }
             }
 
-            function applyTextMove(active, canvasX, canvasY, bounds, shape) {
+            function applyTextMove(active, canvasX, canvasY, bounds, shape, drag) {
                 if (!bounds || !active) {
                     return;
                 }
@@ -642,6 +656,14 @@
                     var base = active.wrapArcPosition === 'bottom' ? Math.PI / 2 : -Math.PI / 2;
                     var arcOffset = angle - base - (((active.textRotation || 0) * Math.PI) / 180);
                     active.textPosX = clampPct(50 + (arcOffset / (Math.PI * 0.75)) * 50);
+                    return;
+                }
+                if (drag && typeof drag.startX === 'number' && typeof drag.startY === 'number'
+                    && typeof drag.startPosX === 'number' && typeof drag.startPosY === 'number') {
+                    var moveDx = canvasX - drag.startX;
+                    var moveDy = canvasY - drag.startY;
+                    active.textPosX = clampPct(drag.startPosX + (moveDx / bounds.w) * 100);
+                    active.textPosY = clampPct(drag.startPosY + (moveDy / bounds.h) * 100);
                     return;
                 }
                 active.textPosX = clampPct(((canvasX - bounds.x) / bounds.w) * 100);
@@ -687,7 +709,9 @@
                 if (!active) {
                     return;
                 }
-                syncFromControls();
+                if (textInput) {
+                    active.text = textInput.value;
+                }
                 var shape = getShape();
                 var layout = getTextLayout(active, bounds, shape);
                 if (!layout) {
@@ -716,7 +740,7 @@
                 }
             }
 
-            function onPointerMove(clientX, clientY) {
+            function runPointerMove(clientX, clientY) {
                 if (!manipDrag) {
                     return;
                 }
@@ -743,7 +767,7 @@
                 }
 
                 if (manipDrag.mode === 'move') {
-                    applyTextMove(active, canvasPt.x, canvasPt.y, bounds, shape);
+                    applyTextMove(active, canvasPt.x, canvasPt.y, bounds, shape, manipDrag);
                 } else if (manipDrag.mode === 'rotate') {
                     if (layout) {
                         applyTextRotate(active, canvasPt.x, canvasPt.y, layout);
@@ -756,6 +780,21 @@
 
                 syncToControls();
                 notifyChange();
+            }
+
+            function onPointerMove(clientX, clientY) {
+                if (!manipDrag) {
+                    return;
+                }
+                lastMoveClient.x = clientX;
+                lastMoveClient.y = clientY;
+                if (moveRafPending !== null) {
+                    return;
+                }
+                moveRafPending = requestAnimationFrame(function () {
+                    moveRafPending = null;
+                    runPointerMove(lastMoveClient.x, lastMoveClient.y);
+                });
             }
 
             function drawTextStraight(ctx, bounds, textObj) {
@@ -951,8 +990,19 @@
                 var hitId = hitTestText(canvasPt.x, canvasPt.y, bounds, shape);
 
                 if (hitId) {
-                    selectText(hitId);
+                    var currentText = getActiveText();
+                    if (!currentText || currentText.id !== hitId) {
+                        selectText(hitId);
+                    } else {
+                        editTarget = 'text';
+                        syncToControls();
+                    }
                     startTextDrag('move', 'box', event.clientX, event.clientY);
+                    try {
+                        if (textManipBox && textManipBox.setPointerCapture) {
+                            textManipBox.setPointerCapture(event.pointerId);
+                        }
+                    } catch (e) { /* ignore */ }
                     return true;
                 }
 
@@ -977,8 +1027,31 @@
                     mode = 'resize';
                 }
                 startTextDrag(mode, handle, event.clientX, event.clientY);
+                try {
+                    if (textManipBox && textManipBox.setPointerCapture) {
+                        textManipBox.setPointerCapture(event.pointerId);
+                    }
+                } catch (e) { /* ignore */ }
                 event.preventDefault();
                 event.stopPropagation();
+            }
+
+            function applyFontChoice(fontName) {
+                ensureSlotSelected();
+                var active = getActiveText();
+                if (!active) {
+                    return;
+                }
+                active.font = fontName || 'Outfit';
+                fontBtns.forEach(function (b) {
+                    b.classList.toggle('is-active', b.getAttribute('data-font') === active.font);
+                });
+                var bounds = getBoundsForText();
+                var fontSize = bounds ? getTextFontSize(bounds, active) : 48;
+                preloadPersoFont(active.font, fontSize).then(function () {
+                    notifyChange();
+                    updateManipulator();
+                });
             }
 
             function bindTextRange(input, valEl, key, parser) {
@@ -1006,15 +1079,10 @@
                 uiEventsBound = true;
 
                 fontBtns.forEach(function (btn) {
-                    btn.addEventListener('click', function () {
-                        var active = getActiveText();
-                        if (active) {
-                            active.font = btn.getAttribute('data-font') || 'Outfit';
-                        }
-                        fontBtns.forEach(function (b) {
-                            b.classList.toggle('is-active', b === btn);
-                        });
-                        notifyChange();
+                    btn.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        applyFontChoice(btn.getAttribute('data-font') || 'Outfit');
                     });
                 });
 

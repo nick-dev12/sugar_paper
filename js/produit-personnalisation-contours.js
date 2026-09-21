@@ -93,14 +93,7 @@
                 };
             },
             canvasPointToViewport: function (cx, cy) {
-                if (!canvas) {
-                    return { x: 0, y: 0 };
-                }
-                var rect = canvas.getBoundingClientRect();
-                return {
-                    x: cx * (rect.width / canvas.width),
-                    y: cy * (rect.height / canvas.height)
-                };
+                return canvasPointToViewport(cx, cy);
             },
             isSharedMode: function () {
                 return state.imageMode === 'shared';
@@ -597,7 +590,7 @@
 
     function canvasPointToViewport(cx, cy) {
         if (!canvas) {
-            return { x: 0, y: 0 };
+            return { x: 0, y: 0, scale: 1 };
         }
         var canvasRect = canvas.getBoundingClientRect();
         var vpRect = previewViewport ? previewViewport.getBoundingClientRect() : canvasRect;
@@ -605,7 +598,8 @@
         var scaleY = canvasRect.height / canvas.height;
         return {
             x: canvasRect.left - vpRect.left + cx * scaleX,
-            y: canvasRect.top - vpRect.top + cy * scaleY
+            y: canvasRect.top - vpRect.top + cy * scaleY,
+            scale: scaleX
         };
     }
 
