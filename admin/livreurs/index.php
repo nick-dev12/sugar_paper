@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             'delivery_lat' => $_POST['delivery_lat'] ?? '',
             'delivery_lng' => $_POST['delivery_lng'] ?? '',
             'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
-        ], $is_livreur);
+        ], false);
         if (!empty($result['ok'])) {
             header('Location: suivi.php?commande_id=' . (int) ($result['commande_id'] ?? $commande_id) . '&autostart=1');
             exit;
@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             'delivery_lat' => $_POST['delivery_lat'] ?? '',
             'delivery_lng' => $_POST['delivery_lng'] ?? '',
             'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
-        ], $is_livreur);
+        ], false);
         if (!empty($result['ok'])) {
             header('Location: suivi.php?bl_id=' . (int) ($result['bl_id'] ?? $bl_id) . '&autostart=1');
             exit;
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $tables_ready && ($is_livreur || $i
             'delivery_lat' => $_POST['delivery_lat'] ?? '',
             'delivery_lng' => $_POST['delivery_lng'] ?? '',
             'adresse_livraison' => $_POST['adresse_livraison'] ?? '',
-        ], $is_livreur);
+        ], false);
         if (!empty($result['ok'])) {
             header('Location: suivi.php?cp_id=' . (int) ($result['cp_id'] ?? $cp_id) . '&autostart=1');
             exit;

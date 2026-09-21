@@ -35,7 +35,8 @@ if (stripos($content_type, 'application/json') !== false) {
 $action = trim((string) ($input['action'] ?? ''));
 $admin_id = (int) $_SESSION['admin_id'];
 $admin_role = admin_current_role();
-$require_today = ($admin_role === 'livreur');
+/* Même règle que l’admin : filtre « période » côté UI, pas de blocage DATE=CURDATE() à la prise. */
+$require_today = false;
 
 if ($action === 'prendre_commande') {
     $commande_id = (int) ($input['commande_id'] ?? 0);

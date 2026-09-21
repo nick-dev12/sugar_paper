@@ -152,8 +152,7 @@ if ($regarder_mode && $livraison && !empty($livraison['livreur_id'])) {
 $mes_livraisons = [];
 if ($tables_ready) {
     $admin_role = normalize_admin_role($_SESSION['admin_role'] ?? 'admin');
-    $mes_livraisons_only_today = ($admin_role === 'livreur');
-    $mes_livraisons = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], $mes_livraisons_only_today, true);
+    $mes_livraisons = livreur_get_mes_livraisons_for_admin((int) $_SESSION['admin_id'], false, true);
 }
 $mes_livraisons_count = count($mes_livraisons);
 $client_tel_href = $client_tel !== '' ? preg_replace('/\s+/', '', $client_tel) : '';
