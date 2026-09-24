@@ -1467,13 +1467,37 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                 .then(function(data) {
                     var items = data.items || [];
                     searchResultsDevis.innerHTML = '';
-                    items.forEach(function(p) {
-                        var el = document.createElement('div');
-                        el.className = 'search-result-item';
-                        el.innerHTML = '<span class="sr-nom">' + (p.nom || '') + '</span>';
-                        el.addEventListener('mousedown', function(ev) { ev.preventDefault(); addLigneDevis(p); searchInputDevis.value = ''; searchResultsDevis.innerHTML = ''; });
-                        searchResultsDevis.appendChild(el);
-                    });
+                    if (items.length === 0) {
+                        searchResultsDevis.innerHTML = '<div class="search-no-results"><i class="fas fa-box-open"></i> Aucun produit trouvé.</div>';
+                    } else {
+                        items.forEach(function(p) {
+                            var el = document.createElement('div');
+                            el.className = 'search-result-item';
+                            el.setAttribute('role', 'option');
+                            el.setAttribute('tabindex', '0');
+                            var U = window.FoutaAdminProduitSearchUi;
+                            el.innerHTML = U && U.buildSearchResultHtml ? U.buildSearchResultHtml(p) : (
+                                '<span class="sr-nom">' + (p.nom || '') + '</span>'
+                            );
+                            el.addEventListener('mousedown', function(ev) {
+                                ev.preventDefault();
+                                addLigneDevis(p);
+                                searchInputDevis.value = '';
+                                searchResultsDevis.innerHTML = '';
+                                searchResultsDevis.setAttribute('aria-hidden', 'true');
+                            });
+                            el.addEventListener('keydown', function(ev) {
+                                if (ev.key === 'Enter' || ev.key === ' ') {
+                                    ev.preventDefault();
+                                    addLigneDevis(p);
+                                    searchInputDevis.value = '';
+                                    searchResultsDevis.innerHTML = '';
+                                    searchResultsDevis.setAttribute('aria-hidden', 'true');
+                                }
+                            });
+                            searchResultsDevis.appendChild(el);
+                        });
+                    }
                     searchResultsDevis.setAttribute('aria-hidden', 'false');
                 })
                 .finally(function() { if (searchLoadingDevis) searchLoadingDevis.style.visibility = 'hidden'; });

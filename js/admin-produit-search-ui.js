@@ -84,7 +84,24 @@
         container.addEventListener('change', onLineFieldChange);
     }
 
-    /** HTML suggestion recherche : nom · marque · description + fournisseur + catégorie. */
+    function buildSearchThumbHtml(p) {
+        var url = (p.image_thumb || p.image_url || '').trim();
+        if (!url) {
+            return (
+                '<span class="sr-thumb sr-thumb--empty" aria-hidden="true">' +
+                '<i class="fas fa-box"></i></span>'
+            );
+        }
+        return (
+            '<span class="sr-thumb">' +
+            '<img src="' +
+            esc(url) +
+            '" alt="" width="48" height="48" loading="lazy" decoding="async">' +
+            '</span>'
+        );
+    }
+
+    /** HTML suggestion recherche : vignette + nom · marque · description + fournisseur + catégorie. */
     function buildSearchResultHtml(p) {
         var nom = esc(p.nom);
         var marque = esc(p.marque_nom || '');
@@ -124,7 +141,14 @@
             ' · <strong class="sr-prix">' +
             formatFcfa(prix) +
             ' FCFA</strong> HT</span>';
-        return line1 + fournLine + catLine + refsBlock + meta;
+        var textBlock = line1 + fournLine + catLine + refsBlock + meta;
+        return (
+            '<div class="sr-row">' +
+            buildSearchThumbHtml(p) +
+            '<div class="sr-text">' +
+            textBlock +
+            '</div></div>'
+        );
     }
 
     function buildLigneBlDesignationCellHtml(produit, idx, lignesKey) {

@@ -25,6 +25,7 @@ require_once __DIR__ . '/../../models/model_produits.php';
 require_once __DIR__ . '/../../models/model_categories.php';
 require_once __DIR__ . '/../../includes/image_optimizer.php';
 require_once __DIR__ . '/../../includes/produit_share.php';
+require_once __DIR__ . '/../../includes/produit_recherche_fuzzy.php';
 $produits = get_all_produits();
 $categories = get_all_categories();
 $recherche = trim($_GET['recherche'] ?? '');
@@ -40,22 +41,7 @@ if (!empty($produits)) {
             return true;
         }
 
-        $needle = function_exists('mb_strtolower') ? mb_strtolower($recherche) : strtolower($recherche);
-        $haystacks = [
-            $produit['nom'] ?? '',
-            $produit['description'] ?? '',
-            $produit['categorie_nom'] ?? '',
-            $produit['statut'] ?? ''
-        ];
-
-        foreach ($haystacks as $value) {
-            $value = function_exists('mb_strtolower') ? mb_strtolower((string) $value) : strtolower((string) $value);
-            if (strpos($value, $needle) !== false) {
-                return true;
-            }
-        }
-
-        return false;
+        return produit_recherche_nom_matches($recherche, $produit['nom'] ?? '');
     }));
 }
 ?>
@@ -102,7 +88,7 @@ if (!empty($produits)) {
             <div class="admin-filters-fields-row">
                 <div class="admin-filter-field admin-filter-field--search">
                     <label for="recherche">Recherche</label>
-                    <input type="text" id="recherche" name="recherche" placeholder="Nom, description, statut..."
+                    <input type="text" id="recherche" name="recherche" placeholder="Nom du produit…"
                         value="<?php echo htmlspecialchars($recherche); ?>">
                 </div>
                 <div class="admin-filter-field admin-filter-field--categorie">

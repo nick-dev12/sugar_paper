@@ -700,6 +700,7 @@ function commandes_statut_label($statut)
     </div>
 
     <script src="/js/admin-client-livraison-profil.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/admin-produit-search-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
     <?php include '../includes/footer.php'; ?>
 
@@ -795,11 +796,11 @@ function commandes_statut_label($statut)
                             el.className = 'search-result-item';
                             el.setAttribute('role', 'option');
                             el.setAttribute('tabindex', '0');
-                            var stock = p.stock_dispo || p.stock || 0;
-                            var prix = parseFloat(p.prix) || 0;
-                            el.innerHTML = '<span class="sr-nom">' + (p.nom || '') + '</span>' +
-                                '<span class="sr-meta">' + (p.categorie_nom || '') + ' &bull; Stock: ' +
-                                stock + ' &bull; ' + prix + ' FCFA</span>';
+                            var U = window.FoutaAdminProduitSearchUi;
+                            el.innerHTML = U && U.buildSearchResultHtml ? U.buildSearchResultHtml(p) : (
+                                '<span class="sr-nom">' + (p.nom || '') + '</span>' +
+                                '<span class="sr-meta">' + (p.categorie_nom || '') + '</span>'
+                            );
                             el.addEventListener('mousedown', function(ev) {
                                 ev.preventDefault();
                                 addLigne(p);

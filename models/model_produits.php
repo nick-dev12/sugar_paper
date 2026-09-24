@@ -549,7 +549,7 @@ function count_produits_by_home_section($section)
 }
 
 /**
- * Recherche des produits par nom ou description
+ * Recherche des produits par nom (fuzzy, sans description)
  * @param string $recherche Terme de recherche
  * @param int $offset Décalage pour pagination
  * @param int $limit Nombre max de résultats
@@ -557,30 +557,23 @@ function count_produits_by_home_section($section)
  */
 function search_produits($recherche, $offset = 0, $limit = 20)
 {
-    global $db;
-
     if (empty(trim($recherche))) {
         return get_all_produits_paginated($offset, $limit);
     }
 
-    try {
-        $term = '%' . trim($recherche) . '%';
-        $stmt = $db->prepare("
-            SELECT p.*, c.nom as categorie_nom 
-            FROM produits p 
-            LEFT JOIN categories c ON p.categorie_id = c.id 
-            WHERE p.statut = 'actif' 
-            AND (p.nom LIKE :term OR p.description LIKE :term)
-            ORDER BY RAND()
-            LIMIT :limit OFFSET :offset
-        ");
-        $stmt->bindValue(':term', $term, PDO::PARAM_STR);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        $produits = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
 
-        return $produits ? $produits : [];
+    try {
+        global $db;
+        $stmt = $db->query("
+            SELECT p.*, c.nom as categorie_nom
+            FROM produits p
+            LEFT JOIN categories c ON p.categorie_id = c.id
+            WHERE p.statut = 'actif'
+        ");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $rows = produit_recherche_filter_sort_rows($rows, $recherche, 'nom', null);
+        return array_slice($rows, (int) $offset, (int) $limit);
     } catch (PDOException $e) {
         return [];
     }
@@ -599,15 +592,13 @@ function count_search_produits($recherche)
         return count_all_produits_actifs();
     }
 
+    require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+
     try {
-        $term = '%' . trim($recherche) . '%';
-        $stmt = $db->prepare("
-            SELECT COUNT(*) FROM produits 
-            WHERE statut = 'actif' 
-            AND (nom LIKE :term OR description LIKE :term)
-        ");
-        $stmt->execute(['term' => $term]);
-        return (int) $stmt->fetchColumn();
+        global $db;
+        $stmt = $db->query("SELECT nom FROM produits WHERE statut = 'actif'");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return produit_recherche_count_matching_rows($rows, $recherche, 'nom');
     } catch (PDOException $e) {
         return 0;
     }
@@ -629,14 +620,12 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
 {
     global $db;
 
+    $recherche_trim = trim((string) $recherche);
+    $use_fuzzy_nom = $recherche_trim !== '';
+
     try {
         $conditions = ["p.statut = 'actif'"];
         $params = [];
-
-        if (!empty(trim($recherche))) {
-            $conditions[] = "(p.nom LIKE :term OR p.description LIKE :term)";
-            $params['term'] = '%' . trim($recherche) . '%';
-        }
 
         if ($prix_min !== null && $prix_min !== '') {
             $prix_min = (float) $prix_min;
@@ -656,6 +645,28 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
             $params['categorie_id'] = $categorie_id;
         }
 
+        $where = implode(' AND ', $conditions);
+
+        if ($use_fuzzy_nom) {
+            require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+            $stmt = $db->prepare("
+                SELECT p.*, c.nom as categorie_nom
+                FROM produits p
+                LEFT JOIN categories c ON p.categorie_id = c.id
+                WHERE $where
+            ");
+            foreach ($params as $k => $v) {
+                $stmt->bindValue(':' . $k, $v);
+            }
+            $stmt->execute();
+            $produits = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $produits = produit_recherche_filter_sort_rows($produits, $recherche_trim, 'nom', null);
+            if ($tri !== 'rand') {
+                $produits = produit_recherche_apply_tri($produits, $tri, $rand_seed);
+            }
+            return array_slice($produits, (int) $offset, (int) $limit);
+        }
+
         $order = produits_sql_order_by_rand($rand_seed);
         if ($tri === 'prix_asc') {
             $order = "(CASE WHEN p.prix_promotion IS NOT NULL AND p.prix_promotion > 0 AND p.prix_promotion < p.prix THEN p.prix_promotion ELSE p.prix END) ASC";
@@ -665,7 +676,6 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
             $order = "p.nom ASC";
         }
 
-        $where = implode(' AND ', $conditions);
         $params['limit'] = $limit;
         $params['offset'] = $offset;
 
@@ -700,14 +710,12 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
 {
     global $db;
 
-    try {
-        $conditions = ["statut = 'actif'"];
-        $params = [];
+    $recherche_trim = trim((string) $recherche);
+    $use_fuzzy_nom = $recherche_trim !== '';
 
-        if (!empty(trim($recherche))) {
-            $conditions[] = "(nom LIKE :term OR description LIKE :term)";
-            $params['term'] = '%' . trim($recherche) . '%';
-        }
+    try {
+        $conditions = ["p.statut = 'actif'"];
+        $params = [];
 
         if ($prix_min !== null && $prix_min !== '') {
             $prix_min = (float) $prix_min;
@@ -723,12 +731,25 @@ function count_search_produits_with_filters($recherche = '', $prix_min = null, $
 
         if ($categorie_id !== null && $categorie_id !== '') {
             $categorie_id = (int) $categorie_id;
-            $conditions[] = "categorie_id = :categorie_id";
+            $conditions[] = "p.categorie_id = :categorie_id";
             $params['categorie_id'] = $categorie_id;
         }
 
         $where = implode(' AND ', $conditions);
-        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $where");
+
+        if ($use_fuzzy_nom) {
+            require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+            $stmt = $db->prepare("SELECT p.nom FROM produits p WHERE $where");
+            foreach ($params as $k => $v) {
+                $stmt->bindValue(':' . $k, $v);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            return produit_recherche_count_matching_rows($rows, $recherche_trim, 'nom');
+        }
+
+        $whereCount = str_replace('p.', '', $where);
+        $stmt = $db->prepare("SELECT COUNT(*) FROM produits WHERE $whereCount");
         foreach ($params as $k => $v) {
             $stmt->bindValue(':' . $k, $v);
         }
@@ -1297,8 +1318,51 @@ function decrement_produit_stock($produit_id, $quantite)
 }
 
 /**
+ * Première image d'un produit (principale ou galerie JSON / CSV).
+ */
+function produit_resolve_first_image_path(array $row)
+{
+    $path = trim((string) ($row['image_principale'] ?? ''));
+    if ($path !== '') {
+        return $path;
+    }
+    $images = $row['images'] ?? '';
+    if ($images === null || $images === '') {
+        return '';
+    }
+    if (is_array($images)) {
+        return trim((string) ($images[0] ?? ''));
+    }
+    $raw = trim((string) $images);
+    if ($raw === '') {
+        return '';
+    }
+    $decoded = json_decode($raw, true);
+    if (is_array($decoded) && !empty($decoded)) {
+        return trim((string) $decoded[0]);
+    }
+    if (strpos($raw, ',') !== false) {
+        $parts = explode(',', $raw);
+        return trim((string) ($parts[0] ?? ''));
+    }
+    return $raw;
+}
+
+/**
+ * URL vignette (sm) pour suggestions recherche admin.
+ */
+function produit_search_thumb_url(array $row)
+{
+    if (!function_exists('upload_image_url')) {
+        require_once __DIR__ . '/../includes/image_optimizer.php';
+    }
+    $path = produit_resolve_first_image_path($row);
+    return upload_image_url($path, 'sm');
+}
+
+/**
  * Recherche des produits en stock pour commande manuelle
- * @param string $recherche Terme de recherche (nom produit ou catégorie)
+ * @param string $recherche Terme de recherche (nom produit uniquement, fuzzy)
  * @param int $limit Nombre max de résultats
  * @return array Produits avec stock > 0
  */
@@ -1308,28 +1372,38 @@ function search_produits_en_stock_commande_manuelle($recherche = '', $limit = 30
 
     try {
         $sql = "
-            SELECT p.id, p.nom, p.prix, p.prix_promotion, p.stock, p.image_principale,
+            SELECT p.id, p.nom, p.prix, p.prix_promotion, p.stock, p.image_principale, p.images,
                    c.nom as categorie_nom,
                    p.stock as stock_dispo
             FROM produits p
             LEFT JOIN categories c ON p.categorie_id = c.id
             WHERE p.statut = 'actif' AND p.stock > 0
         ";
-        $params = ['limit' => (int) $limit];
+        $recherche_trim = trim((string) $recherche);
+        $limit = (int) $limit;
 
-        if (!empty(trim($recherche))) {
-            $sql .= " AND (p.nom LIKE :term OR c.nom LIKE :term2)";
-            $params['term'] = '%' . trim($recherche) . '%';
-            $params['term2'] = '%' . trim($recherche) . '%';
+        $stmt = $db->query($sql);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        if ($recherche_trim !== '') {
+            require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+            $rows = produit_recherche_filter_sort_rows($rows, $recherche_trim, 'nom', $limit);
+        } else {
+            usort($rows, static function ($a, $b) {
+                return strcmp(
+                    mb_strtolower((string) ($a['nom'] ?? ''), 'UTF-8'),
+                    mb_strtolower((string) ($b['nom'] ?? ''), 'UTF-8')
+                );
+            });
+            if ($limit > 0) {
+                $rows = array_slice($rows, 0, $limit);
+            }
         }
 
-        $sql .= " ORDER BY p.nom ASC LIMIT :limit";
-        $stmt = $db->prepare($sql);
-        foreach ($params as $k => $v) {
-            $stmt->bindValue(':' . $k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        foreach ($rows as $i => $row) {
+            $rows[$i]['image_thumb'] = produit_search_thumb_url($row);
         }
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return $rows;
     } catch (PDOException $e) {
         return [];
     }
