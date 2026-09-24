@@ -223,9 +223,11 @@ function livreur_commencer_livraison_cp($cp_id, $admin_livreur_id, array $coords
 
     try {
         $sql = "
-            SELECT id, livreur_id, statut, user_id, email, nom, prenom
-            FROM commandes_personnalisees
-            WHERE id = :id
+            SELECT cp.id, cp.livreur_id, cp.statut, cp.user_id, cp.email, cp.nom, cp.prenom,
+                   COALESCE(u.telephone, cp.telephone) AS client_telephone
+            FROM commandes_personnalisees cp
+            LEFT JOIN users u ON u.id = cp.user_id
+            WHERE cp.id = :id
         ";
         if ($require_today) {
             $sql .= " AND DATE(date_creation) = CURDATE()";
@@ -284,6 +286,13 @@ function livreur_commencer_livraison_cp($cp_id, $admin_livreur_id, array $coords
             return ['ok' => false, 'error' => 'Impossible de démarrer cette livraison.'];
         }
         $db->commit();
+
+        livreur_save_client_livraison_profil(
+            (string) ($cp['client_telephone'] ?? ''),
+            $adresse,
+            $delivery_lat,
+            $delivery_lng
+        );
 
         $numero = livreur_cp_numero($cp_id);
         if ($current_livreur === null) {

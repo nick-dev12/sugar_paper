@@ -626,10 +626,20 @@ foreach ($cp_liste as $cp_row) {
             <input type="hidden" name="delivery_lat" id="livreur-delivery-lat" value="">
             <input type="hidden" name="delivery_lng" id="livreur-delivery-lng" value="">
 
-            <div class="livreur-demarrage-field">
+            <div class="livreur-demarrage-field livreur-demarrage-field--driver">
                 <label for="livreur-driver-position">Votre position (départ)</label>
                 <input type="text" id="livreur-driver-position" readonly placeholder="Capture GPS en cours…">
             </div>
+
+            <div id="livreur-demarrage-map" class="livreur-demarrage-map" aria-label="Carte départ et arrivée"></div>
+
+            <div class="livreur-demarrage-legend">
+                <span><i class="fas fa-motorcycle" aria-hidden="true"></i> Départ</span>
+                <span><i class="fas fa-house" aria-hidden="true"></i> Arrivée</span>
+                <span><i class="fas fa-route" aria-hidden="true"></i> Itinéraire</span>
+            </div>
+
+            <div id="livreur-demarrage-status" class="livreur-demarrage-status" data-state="pending" aria-live="polite" hidden></div>
 
             <div class="livreur-demarrage-field livreur-demarrage-field--address" id="livreur-demarrage-address-wrap">
                 <label for="livreur-demarrage-adresse" id="livreur-demarrage-adresse-label">Adresse du client (arrivée)</label>
@@ -648,19 +658,9 @@ foreach ($cp_liste as $cp_row) {
                 </div>
 
                 <div class="livreur-address-autocomplete" id="livreur-address-autocomplete">
-                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Adresse, lien Google Maps ou coordonnées GPS…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
+                    <textarea name="adresse_livraison" id="livreur-demarrage-adresse" rows="2" required placeholder="Adresse, lien Google Maps (Partager) ou coordonnées GPS…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" inputmode="search" role="combobox" aria-autocomplete="list" aria-controls="livreur-address-suggest" aria-expanded="false"></textarea>
                     <ul id="livreur-address-suggest" class="livreur-address-suggest" role="listbox" hidden aria-label="Suggestions d'adresse"></ul>
                 </div>
-            </div>
-
-            <div id="livreur-demarrage-status" class="livreur-demarrage-status" data-state="pending" aria-live="polite"></div>
-
-            <div id="livreur-demarrage-map" class="livreur-demarrage-map" aria-label="Carte départ et arrivée"></div>
-
-            <div class="livreur-demarrage-legend">
-                <span><i class="fas fa-motorcycle" aria-hidden="true"></i> Départ</span>
-                <span><i class="fas fa-house" aria-hidden="true"></i> Arrivée</span>
-                <span><i class="fas fa-route" aria-hidden="true"></i> Itinéraire</span>
             </div>
         </form>
         <div class="livreur-demarrage-actions">

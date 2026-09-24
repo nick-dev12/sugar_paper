@@ -909,8 +909,10 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
 
     try {
         $sql = "
-            SELECT b.id, b.livreur_id, b.numero_bl, b.date_bl, b.date_creation
+            SELECT b.id, b.livreur_id, b.numero_bl, b.date_bl, b.date_creation,
+                   c.telephone AS client_telephone
             FROM bons_livraison b
+            INNER JOIN clients_b2b c ON c.id = b.client_b2b_id
             WHERE b.id = :id
         ";
         if ($require_today) {
@@ -969,6 +971,13 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
 
         $db->commit();
 
+        livreur_save_client_livraison_profil(
+            (string) ($facture['client_telephone'] ?? ''),
+            $adresse,
+            $delivery_lat,
+            $delivery_lng
+        );
+
         if ($current_livreur === null) {
             require_once __DIR__ . '/../services/livreur_push_notifications.php';
             livreur_enqueue_prise_notifications(
@@ -993,6 +1002,176 @@ function livreur_commencer_livraison_facture($bl_id, $admin_livreur_id, array $c
             $db->rollBack();
         }
         return ['ok' => false, 'error' => 'Erreur lors du démarrage de la livraison facture.'];
+    }
+}
+
+function livreur_client_livraison_profil_table_ok()
+{
+    global $db;
+    static $ok = null;
+    if ($ok !== null) {
+        return $ok;
+    }
+    try {
+        $stmt = $db->query("SHOW TABLES LIKE 'client_livraison_profil'");
+        $ok = $stmt && $stmt->fetchColumn() !== false;
+    } catch (PDOException $e) {
+        $ok = false;
+    }
+    return $ok;
+}
+
+/**
+ * Adresse « générique » (retrait sur place, etc.) — ne doit pas bloquer le profil client.
+ */
+function livreur_adresse_livraison_est_generique($adresse)
+{
+    $a = trim((string) $adresse);
+    if ($a === '') {
+        return true;
+    }
+    $lower = function_exists('mb_strtolower') ? mb_strtolower($a, 'UTF-8') : strtolower($a);
+    if (preg_match('/r[eé]cup[eé]rer sur place|retrait sur place|en magasin|click.?and.?collect/i', $lower)) {
+        return true;
+    }
+    if (stripos($lower, 'sugar paper') !== false && stripos($lower, 'sur place') !== false) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @return array{adresse:string,delivery_latitude:float|null,delivery_longitude:float|null}|null
+ */
+function livreur_get_client_livraison_profil($telephone)
+{
+    global $db;
+
+    if (!livreur_client_livraison_profil_table_ok()) {
+        return null;
+    }
+
+    require_once __DIR__ . '/model_users.php';
+    $key = users_normalize_phone_digits($telephone);
+    if ($key === '') {
+        return null;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            SELECT adresse_livraison, delivery_latitude, delivery_longitude, date_maj
+            FROM client_livraison_profil
+            WHERE telephone_normalized = :tel
+            LIMIT 1
+        ");
+        $stmt->execute(['tel' => $key]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            return null;
+        }
+        $adresse = trim((string) ($row['adresse_livraison'] ?? ''));
+        if ($adresse === '') {
+            return null;
+        }
+        return [
+            'adresse' => $adresse,
+            'delivery_latitude' => livreur_parse_coord($row['delivery_latitude'] ?? null),
+            'delivery_longitude' => livreur_parse_coord($row['delivery_longitude'] ?? null),
+            'sort_date' => (string) ($row['date_maj'] ?? ''),
+        ];
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * Enregistre / remplace le profil livraison pour un téléphone (UPSERT).
+ */
+function livreur_save_client_livraison_profil($telephone, $adresse, $delivery_lat, $delivery_lng)
+{
+    global $db;
+
+    if (!livreur_client_livraison_profil_table_ok()) {
+        return false;
+    }
+
+    require_once __DIR__ . '/model_users.php';
+    $key = users_normalize_phone_digits($telephone);
+    $adresse = trim((string) $adresse);
+    $delivery_lat = livreur_parse_coord($delivery_lat);
+    $delivery_lng = livreur_parse_coord($delivery_lng);
+
+    if ($key === '' || $adresse === '' || $delivery_lat === null || $delivery_lng === null) {
+        return false;
+    }
+
+    if (livreur_adresse_livraison_est_generique($adresse)) {
+        return false;
+    }
+
+    try {
+        $stmt = $db->prepare("
+            INSERT INTO client_livraison_profil
+                (telephone_normalized, adresse_livraison, delivery_latitude, delivery_longitude, date_maj)
+            VALUES
+                (:tel, :adresse, :lat, :lng, NOW())
+            ON DUPLICATE KEY UPDATE
+                adresse_livraison = VALUES(adresse_livraison),
+                delivery_latitude = VALUES(delivery_latitude),
+                delivery_longitude = VALUES(delivery_longitude),
+                date_maj = NOW()
+        ");
+        $stmt->execute([
+            'tel' => $key,
+            'adresse' => $adresse,
+            'lat' => $delivery_lat,
+            'lng' => $delivery_lng,
+        ]);
+
+        livreur_sync_adresse_annuaire_par_telephone($telephone, $adresse);
+
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Met à jour l'adresse dans contacts / clients B2B pour préremplir les nouvelles commandes.
+ */
+function livreur_sync_adresse_annuaire_par_telephone($telephone, $adresse)
+{
+    global $db;
+
+    $adresse = trim((string) $adresse);
+    if ($adresse === '') {
+        return;
+    }
+
+    if (function_exists('get_contact_by_telephone')) {
+        require_once __DIR__ . '/model_contacts.php';
+        $contact = get_contact_by_telephone($telephone);
+        if ($contact && !empty($contact['id'])) {
+            try {
+                $stmt = $db->prepare('UPDATE contacts SET adresse = :adresse WHERE id = :id');
+                $stmt->execute(['adresse' => $adresse, 'id' => (int) $contact['id']]);
+            } catch (PDOException $e) {
+                // ignore
+            }
+        }
+    }
+
+    if (function_exists('find_client_b2b_by_telephone')) {
+        require_once __DIR__ . '/model_clients_b2b.php';
+        $client = find_client_b2b_by_telephone($telephone);
+        if ($client && !empty($client['id'])) {
+            try {
+                $stmt = $db->prepare('UPDATE clients_b2b SET adresse = :adresse WHERE id = :id');
+                $stmt->execute(['adresse' => $adresse, 'id' => (int) $client['id']]);
+            } catch (PDOException $e) {
+                // ignore
+            }
+        }
     }
 }
 
@@ -1091,6 +1270,19 @@ function livreur_lookup_adresse_par_telephone($telephone)
     }
 
     $candidates = [];
+
+    $profil = livreur_get_client_livraison_profil($telephone);
+    if ($profil !== null) {
+        $lat = livreur_parse_coord($profil['delivery_latitude'] ?? null);
+        $lng = livreur_parse_coord($profil['delivery_longitude'] ?? null);
+        $candidates[] = [
+            'adresse' => trim((string) ($profil['adresse'] ?? '')),
+            'delivery_latitude' => $lat,
+            'delivery_longitude' => $lng,
+            'sort_date' => (string) ($profil['sort_date'] ?? date('Y-m-d H:i:s')),
+            'has_gps' => ($lat !== null && $lng !== null),
+        ];
+    }
 
     try {
         $params = [];
@@ -1232,8 +1424,9 @@ function livreur_resolve_demarrage_address($adresse, $delivery_lat, $delivery_ln
     $adresse = trim((string) $adresse);
     $lat = livreur_parse_coord($delivery_lat);
     $lng = livreur_parse_coord($delivery_lng);
+    $generique = livreur_adresse_livraison_est_generique($adresse);
 
-    if ($adresse !== '' && $lat !== null && $lng !== null) {
+    if (!$generique && $adresse !== '' && $lat !== null && $lng !== null) {
         return [
             'adresse' => $adresse,
             'delivery_latitude' => $lat,
@@ -1245,8 +1438,9 @@ function livreur_resolve_demarrage_address($adresse, $delivery_lat, $delivery_ln
     $lookup = livreur_lookup_adresse_par_telephone($telephone);
     $from_history = false;
     if ($lookup !== null) {
-        if ($adresse === '' && trim((string) ($lookup['adresse'] ?? '')) !== '') {
-            $adresse = trim((string) $lookup['adresse']);
+        $lookup_adresse = trim((string) ($lookup['adresse'] ?? ''));
+        if ($lookup_adresse !== '' && ($adresse === '' || $generique)) {
+            $adresse = $lookup_adresse;
             $from_history = true;
         }
         if ($lat === null && isset($lookup['delivery_latitude'])) {
@@ -1679,12 +1873,14 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
 
     try {
         $sql = "
-            SELECT id, livreur_id, statut, numero_commande
-            FROM commandes
-            WHERE id = :id
+            SELECT c.id, c.livreur_id, c.statut, c.numero_commande,
+                   COALESCE(u.telephone, c.client_telephone, c.telephone_livraison) AS client_telephone
+            FROM commandes c
+            LEFT JOIN users u ON u.id = c.user_id
+            WHERE c.id = :id
         ";
         if ($require_today) {
-            $sql .= " AND DATE(date_commande) = CURDATE()";
+            $sql .= " AND DATE(c.date_commande) = CURDATE()";
         }
         $sql .= " LIMIT 1";
 
@@ -1741,6 +1937,13 @@ function livreur_commencer_livraison($commande_id, $admin_livreur_id, array $coo
         }
 
         $db->commit();
+
+        livreur_save_client_livraison_profil(
+            (string) ($commande['client_telephone'] ?? ''),
+            $adresse,
+            $delivery_lat,
+            $delivery_lng
+        );
 
         require_once __DIR__ . '/model_commandes_admin.php';
         $statuts_avant_livraison = ['en_attente', 'confirmee', 'prise_en_charge', 'en_preparation', 'expediee'];

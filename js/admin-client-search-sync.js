@@ -172,6 +172,9 @@
         var selectedNomEl = opts.selectedNomEl || null;
         var selectedTelEl = opts.selectedTelEl || null;
         var clearBtn = opts.clearBtn || null;
+        var adresseTextarea = opts.adresseTextarea || null;
+        var adresseHidden = opts.adresseHidden || null;
+        var profilAjaxUrl = opts.profilAjaxUrl || 'ajax_client_livraison_profil.php';
         var ajaxUrl = opts.ajaxUrl || '../devis/ajax_search_clients.php';
         var timeoutId;
 
@@ -213,6 +216,14 @@
             resultsEl.innerHTML = '';
             resultsEl.setAttribute('aria-hidden', 'true');
             updateSelectedUi();
+            if (window.AdminClientLivraisonProfil && adresseTextarea) {
+                window.AdminClientLivraisonProfil.fillAfterClientSelect(
+                    c.telephone || '',
+                    adresseTextarea,
+                    adresseHidden,
+                    profilAjaxUrl
+                );
+            }
         }
 
         function clearClient() {

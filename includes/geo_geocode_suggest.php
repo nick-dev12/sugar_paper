@@ -98,6 +98,102 @@ if (!function_exists('geo_geocode_suggest')) {
     }
 
     /**
+     * Certificats CA locaux (WAMP) pour cURL.
+     */
+    function geo_geocode_cacert_path() {
+        static $path = null;
+        if ($path !== null) {
+            return $path;
+        }
+        $candidate = __DIR__ . '/../config/cacert.pem';
+        if (is_file($candidate)) {
+            $real = realpath($candidate);
+            if ($real !== false) {
+                $path = $real;
+                return $path;
+            }
+        }
+        $path = '';
+        return $path;
+    }
+
+    function geo_geocode_curl_apply_ssl($ch) {
+        $cacert = geo_geocode_cacert_path();
+        if ($cacert !== '') {
+            curl_setopt($ch, CURLOPT_CAINFO, $cacert);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+            return;
+        }
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+    }
+
+    /**
+     * GET HTTP avec URL finale (liens Google Maps partagés depuis mobile).
+     *
+     * @return array{effective_url: string, body: string, ok: bool}|null
+     */
+    function geo_geocode_fetch_maps_page($url) {
+        $url = trim((string) $url);
+        if ($url === '' || !function_exists('curl_init')) {
+            return null;
+        }
+
+        $ch = curl_init($url);
+        if ($ch === false) {
+            return null;
+        }
+
+        $headers = [
+            'User-Agent: Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language: fr-FR,fr;q=0.9',
+        ];
+
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_CONNECTTIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
+            CURLOPT_TIMEOUT => max(GEO_SUGGEST_HTTP_TIMEOUT, 10),
+            CURLOPT_HTTPHEADER => $headers,
+        ]);
+        geo_geocode_curl_apply_ssl($ch);
+
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        $effective = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+
+        if (($body === false || $body === '') && stripos($err, 'ssl') !== false) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            $body = curl_exec($ch);
+            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            $effective = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+        }
+
+        curl_close($ch);
+
+        if ($body === false) {
+            if ($err !== '') {
+                geo_geocode_suggest_set_error('curl: ' . $err);
+            }
+            return null;
+        }
+
+        geo_geocode_suggest_set_error(null);
+
+        return [
+            'effective_url' => $effective !== '' ? $effective : $url,
+            'body' => (string) $body,
+            'ok' => ($code === 0 || ($code >= 200 && $code < 400)),
+        ];
+    }
+
+    /**
      * Suit les redirections des liens courts Google Maps (WhatsApp, SMS…).
      */
     function geo_geocode_resolve_maps_short_url($url) {
@@ -106,40 +202,42 @@ if (!function_exists('geo_geocode_suggest')) {
             return $url;
         }
 
-        if (!function_exists('curl_init')) {
+        $fetch = geo_geocode_fetch_maps_page($url);
+        if ($fetch === null || !$fetch['ok']) {
             return $url;
         }
 
-        $ch = curl_init($url);
-        if ($ch === false) {
-            return $url;
+        return $fetch['effective_url'] !== '' ? $fetch['effective_url'] : $url;
+    }
+
+    /**
+     * Extrait lat/lng depuis le HTML d'une page Google Maps (lien partagé mobile).
+     *
+     * @return array{lat: float, lng: float}|null
+     */
+    function geo_geocode_extract_coords_from_maps_html($html) {
+        $html = (string) $html;
+        if ($html === '') {
+            return null;
         }
 
-        curl_setopt_array($ch, [
-            CURLOPT_NOBODY => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
-            CURLOPT_TIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: ' . GEO_SUGGEST_USER_AGENT,
-                'Accept: text/html,application/xhtml+xml',
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
-
-        curl_exec($ch);
-        $final = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($final !== '' && ($code === 0 || ($code >= 200 && $code < 400))) {
-            return $final;
+        if (preg_match('/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/', $html, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
         }
 
-        return $url;
+        if (preg_match('/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/', $html, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/"latitude"\s*:\s*(-?\d+(?:\.\d+)?)\s*,\s*"longitude"\s*:\s*(-?\d+(?:\.\d+)?)/', $html, $m)) {
+            return geo_geocode_assign_decimal_pair($m[1], $m[2]);
+        }
+
+        if (preg_match('/"lng"\s*:\s*(-?\d+(?:\.\d+)?)\s*,\s*"lat"\s*:\s*(-?\d+(?:\.\d+)?)/', $html, $m)) {
+            return geo_geocode_assign_decimal_pair($m[2], $m[1]);
+        }
+
+        return null;
     }
 
     /**
@@ -198,15 +296,40 @@ if (!function_exists('geo_geocode_suggest')) {
         }
 
         $candidates = [$query];
-        if (geo_geocode_is_short_maps_url($query)) {
-            $resolved = geo_geocode_resolve_maps_short_url($query);
-            if ($resolved !== '' && $resolved !== $query) {
-                $candidates[] = $resolved;
+        $htmlBodies = [];
+
+        if (geo_geocode_is_likely_maps_url($query)) {
+            $fetch = geo_geocode_fetch_maps_page($query);
+            if ($fetch !== null) {
+                if ($fetch['effective_url'] !== '' && $fetch['effective_url'] !== $query) {
+                    $candidates[] = $fetch['effective_url'];
+                }
+                if ($fetch['body'] !== '') {
+                    $htmlBodies[] = $fetch['body'];
+                }
+            } elseif (geo_geocode_is_short_maps_url($query)) {
+                $resolved = geo_geocode_resolve_maps_short_url($query);
+                if ($resolved !== '' && $resolved !== $query) {
+                    $candidates[] = $resolved;
+                }
             }
         }
 
+        $candidates = array_values(array_unique($candidates));
+
         foreach ($candidates as $candidate) {
             $pair = geo_geocode_extract_coords_from_maps_url($candidate);
+            if ($pair !== null && geo_geocode_suggest_coords_valid($pair['lat'], $pair['lng'])) {
+                return [
+                    'lat' => $pair['lat'],
+                    'lng' => $pair['lng'],
+                    'label' => sprintf('%.6f, %.6f', $pair['lat'], $pair['lng']),
+                ];
+            }
+        }
+
+        foreach ($htmlBodies as $html) {
+            $pair = geo_geocode_extract_coords_from_maps_html($html);
             if ($pair !== null && geo_geocode_suggest_coords_valid($pair['lat'], $pair['lng'])) {
                 return [
                     'lat' => $pair['lat'],
@@ -352,10 +475,9 @@ if (!function_exists('geo_geocode_suggest')) {
                     CURLOPT_CONNECTTIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
                     CURLOPT_TIMEOUT => GEO_SUGGEST_HTTP_TIMEOUT,
                     CURLOPT_HTTPHEADER => $header_lines,
-                    CURLOPT_SSL_VERIFYPEER => true,
-                    CURLOPT_SSL_VERIFYHOST => 2,
                 ];
                 curl_setopt_array($ch, $curl_opts);
+                geo_geocode_curl_apply_ssl($ch);
                 $raw = curl_exec($ch);
                 $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $err = curl_error($ch);

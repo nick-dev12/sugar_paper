@@ -699,6 +699,7 @@ function commandes_statut_label($statut)
         </div>
     </div>
 
+    <script src="/js/admin-client-livraison-profil.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
     <?php include '../includes/footer.php'; ?>
 
@@ -999,6 +1000,16 @@ function commandes_statut_label($statut)
                                     clientTelInput.value = c.telephone || '';
                                     if (clientEmailInput) clientEmailInput.value = c.email ||
                                     '';
+                                    if (window.AdminClientLivraisonProfil) {
+                                        var adresseTa = document.getElementById('adresse_livraison_ta');
+                                        var adresseHidden = document.getElementById('adresse_livraison');
+                                        AdminClientLivraisonProfil.fillAfterClientSelect(
+                                            c.telephone || '',
+                                            adresseTa,
+                                            adresseHidden,
+                                            'ajax_client_livraison_profil.php'
+                                        );
+                                    }
                                     searchClientInput.value = '';
                                     searchClientResults.innerHTML = '';
                                     searchClientResults.setAttribute('aria-hidden', 'true');
@@ -1038,6 +1049,15 @@ function commandes_statut_label($statut)
             searchClientResults.addEventListener('mousedown', function(ev) {
                 ev.preventDefault();
             });
+        }
+
+        if (window.AdminClientLivraisonProfil && clientTelInput) {
+            AdminClientLivraisonProfil.bindTelephoneInput(
+                clientTelInput,
+                document.getElementById('adresse_livraison_ta'),
+                document.getElementById('adresse_livraison'),
+                'ajax_client_livraison_profil.php'
+            );
         }
 
         updateLignesUI();

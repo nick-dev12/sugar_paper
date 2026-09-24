@@ -281,4 +281,9 @@ return [
         'label' => 'Section accueil kit_impression sur produits',
         'script' => 'run_add_produits_section_kit_impression.php',
     ],
+    [
+        'id' => 'client_livraison_profil',
+        'label' => 'Profil livraison client par téléphone (adresse + GPS livreur)',
+        'script' => 'run_add_client_livraison_profil.php',
+    ],
 ];

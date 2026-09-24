@@ -924,6 +924,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
     <script src="/js/admin-produit-search-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-invoice-list-ui.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-contacts-import.js<?php echo asset_version_query(); ?>"></script>
+    <script src="/js/admin-client-livraison-profil.js<?php echo asset_version_query(); ?>"></script>
     <script src="/js/admin-client-search-sync.js<?php echo asset_version_query(); ?>"></script>
     <script>
     window.INVOICE_BL_EDIT_LIGNES = <?php echo $bl_edit_lignes_json; ?>;
@@ -1353,8 +1354,20 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                 selectedNomEl: document.getElementById('client-selected-nom-bl'),
                 selectedTelEl: document.getElementById('client-selected-tel-bl'),
                 clearBtn: document.getElementById('client-selected-clear-bl'),
+                adresseTextarea: document.getElementById('adresse_livraison_ta_bl'),
+                adresseHidden: document.getElementById('adresse_livraison_bl'),
+                profilAjaxUrl: '../ajax_client_livraison_profil.php',
                 ajaxUrl: '../devis/ajax_search_clients.php'
             });
+        }
+
+        if (window.AdminClientLivraisonProfil) {
+            AdminClientLivraisonProfil.bindTelephoneInput(
+                document.getElementById('client_telephone_bl'),
+                document.getElementById('adresse_livraison_ta_bl'),
+                document.getElementById('adresse_livraison_bl'),
+                '../ajax_client_livraison_profil.php'
+            );
         }
 
         /* ——— Modal devis ——— */
@@ -1571,8 +1584,20 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                 selectedNomEl: document.getElementById('client-selected-nom'),
                 selectedTelEl: document.getElementById('client-selected-tel'),
                 clearBtn: document.getElementById('client-selected-clear'),
+                adresseTextarea: document.getElementById('adresse_livraison_ta'),
+                adresseHidden: document.getElementById('adresse_livraison'),
+                profilAjaxUrl: '../ajax_client_livraison_profil.php',
                 ajaxUrl: '../devis/ajax_search_clients.php'
             });
+        }
+
+        if (window.AdminClientLivraisonProfil) {
+            AdminClientLivraisonProfil.bindTelephoneInput(
+                document.getElementById('client_telephone'),
+                document.getElementById('adresse_livraison_ta'),
+                document.getElementById('adresse_livraison'),
+                '../ajax_client_livraison_profil.php'
+            );
         }
 
         var formDevis = document.getElementById('form-devis');

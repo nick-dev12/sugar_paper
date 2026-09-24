@@ -171,7 +171,7 @@
         }
         hideAddressSuggestions();
         updateClientOnMap(parsed.lat, parsed.lng);
-        setStatus('ok', 'Position placée sur la carte.');
+        setStatus('ok', '');
         setTimeout(function () { suppressSuggest = false; }, 120);
         return true;
     }
@@ -179,14 +179,18 @@
     function setStatus(state, message) {
         var el = qs('livreur-demarrage-status');
         if (!el) return;
-        el.setAttribute('data-state', state);
+        el.setAttribute('data-state', state || 'pending');
+        if (state !== 'error' && state !== 'warn') {
+            el.hidden = true;
+            el.innerHTML = '';
+            return;
+        }
+        el.hidden = false;
         var icons = {
-            pending: '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>',
-            ok: '<i class="fas fa-location-crosshairs" aria-hidden="true"></i>',
             error: '<i class="fas fa-triangle-exclamation" aria-hidden="true"></i>',
             warn: '<i class="fas fa-info-circle" aria-hidden="true"></i>'
         };
-        el.innerHTML = (icons[state] || '') + ' <span>' + message + '</span>';
+        el.innerHTML = (icons[state] || '') + ' <span>' + (message || '') + '</span>';
     }
 
     function fillCoord(id, value) {
@@ -221,12 +225,26 @@
         });
     }
 
+    function invalidateDemarrageMap() {
+        if (!map) return;
+        try {
+            map.invalidateSize({ animate: false });
+        } catch (e) { /* ignore */ }
+    }
+
+    function scheduleDemarrageMapResize() {
+        invalidateDemarrageMap();
+        setTimeout(invalidateDemarrageMap, 80);
+        setTimeout(invalidateDemarrageMap, 280);
+        setTimeout(invalidateDemarrageMap, 600);
+    }
+
     function ensureMap() {
         var container = qs('livreur-demarrage-map');
         if (!container || typeof window.L === 'undefined') return null;
 
         if (map) {
-            setTimeout(function () { map.invalidateSize(); }, 120);
+            scheduleDemarrageMapResize();
             return map;
         }
 
@@ -237,7 +255,7 @@
         }).addTo(map);
 
         routeLayer = L.layerGroup().addTo(map);
-        setTimeout(function () { map.invalidateSize(); }, 150);
+        scheduleDemarrageMapResize();
         return map;
     }
 
@@ -329,7 +347,7 @@
                 adresseInput.value = originalClientAdresse || '';
             }
         }
-        setStatus('ok', 'Position GPS exacte du client restaurée.');
+        setStatus('ok', '');
     }
 
     function resetAddressUi() {
@@ -383,7 +401,7 @@
             return;
         }
 
-        setStatus('pending', 'Calcul de l\'itinéraire (sans péage)…');
+        setStatus('pending', '');
 
         var routePromise;
         if (window.LivreurRouteApi && typeof window.LivreurRouteApi.fetchRoute === 'function') {
@@ -405,11 +423,11 @@
                 }).addTo(routeLayer);
                 var km = ((data.distance_m || 0) / 1000).toFixed(1);
                 var min = Math.round((data.duration_s || 0) / 60);
-                setStatus('ok', 'Itinéraire sans péage — ' + km + ' km, ~' + min + ' min');
+                setStatus('ok', '');
             })
             .catch(function () {
                 drawStraightRoute([c.driverLat, c.driverLng], [c.clientLat, c.clientLng]);
-                setStatus('warn', 'Itinéraire approximatif (ligne directe).');
+                setStatus('ok', '');
             })
             .finally(function () {
                 fitMapToPoints();
@@ -430,14 +448,12 @@
         }
 
         stopWatch();
-        setStatus('pending', 'Capture de votre position en cours… Autorisez l\'accès GPS.');
+        setStatus('pending', '');
 
         watchId = navigator.geolocation.watchPosition(
             function (pos) {
                 updateDriverOnMap(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-                if (!clientMarker) {
-                    setStatus('ok', 'Position livreur capturée. Renseignez l\'adresse client.');
-                }
+                setStatus('ok', '');
             },
             function (err) {
                 var msg = 'Impossible d\'obtenir votre position.';
@@ -464,7 +480,7 @@
     function geocodeBestMatch(address, silentList) {
         var q = (address || '').trim();
         if (q.length < 2) {
-            setStatus('warn', 'Saisissez au moins 2 caractères pour rechercher un lieu.');
+            setStatus('warn', 'Saisissez au moins 2 caractères.');
             return Promise.resolve(false);
         }
 
@@ -474,7 +490,7 @@
         }
 
         clearTimeout(geocodeTimer);
-        setStatus('pending', 'Recherche du lieu le plus proche…');
+        setStatus('pending', '');
 
         return fetch('/api/geo-geocode.php?q=' + encodeURIComponent(q), {
             headers: { 'Accept': 'application/json' }
@@ -489,7 +505,7 @@
                     }
                     hideAddressSuggestions();
                     updateClientOnMap(data.lat, data.lng);
-                    setStatus('ok', 'Lieu trouvé et placé sur la carte.');
+                    setStatus('ok', '');
                     setTimeout(function () { suppressSuggest = false; }, 120);
                     return true;
                 }
@@ -552,7 +568,7 @@
         }
         hideAddressSuggestions();
         updateClientOnMap(item.lat, item.lng);
-        setStatus('ok', 'Adresse sélectionnée sur la carte.');
+        setStatus('ok', '');
         setTimeout(function () {
             suppressSuggest = false;
         }, 120);
@@ -704,7 +720,15 @@
                 var value = adresseInput.value.trim();
                 if (!value) return;
                 clearTimeout(suggestTimer);
-                if (isLikelyMapsUrl(value) || parseLatLngFromText(value)) {
+                if (parseLatLngFromText(value)) {
+                    applyParsedCoordinates(parseLatLngFromText(value), false);
+                    return;
+                }
+                if (isShortMapsUrl(value)) {
+                    geocodeBestMatch(value, true);
+                    return;
+                }
+                if (isLikelyMapsUrl(value)) {
                     fetchAddressSuggestions(value);
                 }
             }, 0);
@@ -865,8 +889,6 @@
         document.body.classList.add('livreur-demarrage-open');
         document.documentElement.classList.add('livreur-demarrage-open');
 
-        ensureMap();
-
         var adresseInput = qs('livreur-demarrage-adresse');
         if (adresseInput) {
             adresseInput.readOnly = false;
@@ -876,24 +898,24 @@
         if (hasOrderGps) {
             showOrderGpsPanel(true);
             updateClientOnMap(dLat, dLng);
-            if (adresseHistorique) {
-                setStatus('ok', 'Adresse reprise d\'une livraison précédente (même téléphone) — vous pouvez la modifier.');
-            } else {
-                setStatus('ok', 'Position GPS du client chargée — vous pouvez la modifier ou rechercher une adresse.');
-            }
+            setStatus('ok', '');
         } else {
             showOrderGpsPanel(false);
             var restoreBtn = qs('livreur-gps-restore');
             if (restoreBtn) restoreBtn.hidden = true;
             if (adresse) {
-                if (adresseHistorique) {
-                    setStatus('ok', 'Adresse reprise d\'une livraison précédente (même téléphone).');
-                }
                 geocodeAddress(adresse);
             } else {
-                setStatus('pending', 'Saisissez l\'adresse du client.');
+                setStatus('ok', '');
             }
         }
+
+        requestAnimationFrame(function () {
+            if (!map) {
+                ensureMap();
+            }
+            scheduleDemarrageMapResize();
+        });
 
         startWatch();
     }
@@ -950,11 +972,11 @@
             typeof window.SugarPaperNative.prepareDeliveryTrackingPermissions === 'function' &&
             form.dataset.nativeDeliveryPermOk !== '1') {
             e.preventDefault();
-            setStatus('pending', 'Autorisation suivi livraison…');
+            setStatus('pending', '');
             window.SugarPaperNative.prepareDeliveryTrackingPermissions()
                 .then(function () {
                     form.dataset.nativeDeliveryPermOk = '1';
-                    setStatus('ok', 'Autorisation accordée — démarrage…');
+                    setStatus('ok', '');
                     formSubmitted = true;
                     form.submit();
                 })
@@ -987,11 +1009,6 @@
             if (btn) {
                 e.preventDefault();
                 openPanel(btn);
-                if (hasOrderGps) {
-                    setStatus('ok', 'Position GPS du client chargée — capture de votre position…');
-                } else {
-                    setStatus('pending', 'Capture de votre position en cours… Autorisez l\'accès GPS.');
-                }
                 return;
             }
             if (e.target.closest('[data-livreur-demarrage-close]')) {
