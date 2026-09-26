@@ -310,11 +310,11 @@ $total_produits = count($produits);
 
                 cards.forEach(function(card) {
                     var catOk = !cat || parseInt(card.getAttribute('data-categorie-id') || '0', 10) === cat;
-                    var score = 1;
+                    var show = catOk;
                     if (q) {
-                        score = scoreMatch(q, card.getAttribute('data-nom') || '');
+                        var score = scoreMatch(q, card.getAttribute('data-nom') || '');
+                        show = catOk && score >= minScore;
                     }
-                    var show = catOk && score >= minScore;
                     card.hidden = !show;
                     card.style.display = show ? '' : 'none';
                     if (show) {
