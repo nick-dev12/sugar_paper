@@ -5,6 +5,49 @@
 require_once __DIR__ . '/../conn/conn.php';
 
 /**
+ * Échappe % et _ pour LIKE (sinon « Chic _package » ne matche jamais le nom réel).
+ */
+function search_clients_like_escape($value) {
+    return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $value);
+}
+
+/**
+ * Conditions SQL commune users/contacts : nom, prénom, nom complet, email, téléphone (brut + chiffres).
+ *
+ * @param string $prefix Préfixe de paramètres PDO (ex. u / c)
+ * @return array{0: string, 1: array<string, string>}
+ */
+function search_clients_build_match_sql($prefix, $recherche) {
+    $q = trim((string) $recherche);
+    $like = '%' . search_clients_like_escape($q) . '%';
+    $digits = preg_replace('/\D/', '', $q);
+    $params = [
+        $prefix . '_t' => $like,
+    ];
+
+    $nameExpr = "CONCAT(COALESCE(prenom,''), ' ', COALESCE(nom,''))";
+    $nameExprRev = "CONCAT(COALESCE(nom,''), ' ', COALESCE(prenom,''))";
+    $sql = "(
+        nom LIKE :{$prefix}_t ESCAPE '\\\\'
+        OR prenom LIKE :{$prefix}_t ESCAPE '\\\\'
+        OR email LIKE :{$prefix}_t ESCAPE '\\\\'
+        OR telephone LIKE :{$prefix}_t ESCAPE '\\\\'
+        OR TRIM($nameExpr) LIKE :{$prefix}_t ESCAPE '\\\\'
+        OR TRIM($nameExprRev) LIKE :{$prefix}_t ESCAPE '\\\\'
+    )";
+
+    if (strlen($digits) >= 3) {
+        $params[$prefix . '_d'] = '%' . $digits . '%';
+        $sql = "(
+            $sql
+            OR REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(telephone,''), ' ', ''), '-', ''), '+', ''), '.', '') LIKE :{$prefix}_d
+        )";
+    }
+
+    return [$sql, $params];
+}
+
+/**
  * Récupère tous les contacts
  * @param string|null $recherche Recherche sur nom, prénom, téléphone
  * @return array
@@ -15,9 +58,9 @@ function get_all_contacts($recherche = null) {
         $sql = "SELECT * FROM contacts WHERE 1=1";
         $params = [];
         if (!empty(trim($recherche ?? ''))) {
-            $term = '%' . trim($recherche) . '%';
-            $sql .= " AND (nom LIKE :term OR prenom LIKE :term2 OR telephone LIKE :term3 OR email LIKE :term4)";
-            $params = ['term' => $term, 'term2' => $term, 'term3' => $term, 'term4' => $term];
+            list($matchSql, $matchParams) = search_clients_build_match_sql('g', $recherche);
+            $sql .= " AND $matchSql";
+            $params = $matchParams;
         }
         $sql .= " ORDER BY nom ASC, prenom ASC";
         $stmt = $db->prepare($sql);
@@ -272,56 +315,213 @@ function contacts_normalize_type_bl($code) {
 }
 
 /**
- * Recherche clients (users + contacts) pour commande manuelle
+ * Score de pertinence client/contact (nom complet, téléphone, email) — fuzzy / accents / casse.
+ * Plus strict que la recherche produit pour éviter les faux positifs sur le carnet (~4k contacts).
+ */
+function search_clients_row_score($query, array $row) {
+    require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+
+    $nom = trim((string) ($row['nom'] ?? ''));
+    $prenom = trim((string) ($row['prenom'] ?? ''));
+    $full = trim($prenom . ' ' . $nom);
+    $fullAlt = trim($nom . ' ' . $prenom);
+    $email = trim((string) ($row['email'] ?? ''));
+    $tel = (string) ($row['telephone'] ?? '');
+
+    $score = max(
+        search_clients_text_score($query, $full),
+        search_clients_text_score($query, $fullAlt),
+        search_clients_text_score($query, $nom),
+        search_clients_text_score($query, $prenom)
+    );
+
+    if ($email !== '') {
+        $score = max($score, search_clients_text_score($query, $email));
+    }
+
+    $qDigits = preg_replace('/\D/', '', (string) $query);
+    $telDigits = preg_replace('/\D/', '', $tel);
+    if (strlen($qDigits) >= 3 && $telDigits !== '' && strpos($telDigits, $qDigits) !== false) {
+        $score = max($score, 850);
+    }
+
+    return (int) $score;
+}
+
+/**
+ * Score texte client : casse/accents ignorés, fautes légères, sans faux positifs sur tokens courts.
+ */
+function search_clients_text_score($query, $text) {
+    require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+
+    $q = produit_recherche_normalize($query);
+    $l = produit_recherche_normalize($text);
+    if ($q === '' || $l === '') {
+        return 0;
+    }
+    if ($l === $q) {
+        return 1000;
+    }
+    if (strpos($l, $q) === 0) {
+        return 850;
+    }
+    if (strpos($l, $q) !== false) {
+        return 700;
+    }
+
+    $words = array_values(array_filter(explode(' ', $q), static function ($w) {
+        return mb_strlen($w) >= 2 && !ctype_digit($w);
+    }));
+    if (empty($words)) {
+        return 0;
+    }
+
+    $tokens = array_values(array_filter(explode(' ', $l), static function ($t) {
+        return mb_strlen($t) >= 2 && !ctype_digit($t);
+    }));
+
+    $score = 0;
+    $matchedWords = 0;
+    foreach ($words as $word) {
+        $best = 0;
+        if (strpos($l, $word) !== false) {
+            $best = 120;
+        } else {
+            foreach ($tokens as $token) {
+                if ($token === $word) {
+                    $best = max($best, 120);
+                    continue;
+                }
+                if (strlen($word) >= 3 && strpos($token, $word) === 0) {
+                    $best = max($best, 110);
+                    continue;
+                }
+                if (strlen($word) >= 4 && strlen($token) >= 4) {
+                    if (strpos($token, $word) !== false || strpos($word, $token) !== false) {
+                        $best = max($best, 100);
+                        continue;
+                    }
+                    similar_text($word, $token, $pct);
+                    if ($pct >= 82) {
+                        $best = max($best, (int) round($pct));
+                    }
+                    if (produit_recherche_levenshtein_ok($word, $token)) {
+                        $best = max($best, 90);
+                    }
+                }
+            }
+        }
+        if ($best > 0) {
+            $matchedWords++;
+            $score += $best;
+        }
+    }
+
+    // Exiger que tous les mots significatifs matchent (ex. « jp magnifcat »)
+    if ($matchedWords < count($words)) {
+        return 0;
+    }
+
+    return $score;
+}
+
+/**
+ * Recherche clients (users + contacts) pour commande manuelle / devis / BL.
+ * Fuzzy : casse, accents, fautes légères ; téléphone normalisé ; contacts prioritaires.
  */
 function search_clients_for_commande($recherche, $limit = 20) {
     global $db;
-    $term = '%' . trim($recherche) . '%';
-    if (strlen(trim($recherche)) < 1) {
+    $recherche = trim((string) $recherche);
+    if ($recherche === '') {
         return [];
     }
+
+    require_once __DIR__ . '/../includes/produit_recherche_fuzzy.php';
+    $limit = max(1, (int) $limit);
+    $minScore = 90;
+
+    $users = [];
+    $contacts = [];
+
     try {
-        $stmt = $db->prepare("
-            (SELECT id, nom, prenom, telephone, email, 'user' AS source, 'standard' AS type_client_bl, 0 AS plafond_bl_cumul_ht FROM users WHERE statut = 'actif' AND (nom LIKE :t1 OR prenom LIKE :t2 OR email LIKE :t3 OR telephone LIKE :t4))
-            UNION ALL
-            (SELECT id, nom, prenom, telephone, email, 'contact' AS source,
-                COALESCE(type_client_bl, 'standard') AS type_client_bl,
-                COALESCE(plafond_bl_cumul_ht, 0) AS plafond_bl_cumul_ht
-                FROM contacts WHERE nom LIKE :t5 OR prenom LIKE :t6 OR email LIKE :t7 OR telephone LIKE :t8)
-            LIMIT :limit
+        $stmt = $db->query("
+            SELECT id, nom, prenom, telephone, email, 'user' AS source,
+                   'standard' AS type_client_bl, 0 AS plafond_bl_cumul_ht
+            FROM users
+            WHERE statut = 'actif'
         ");
-        $stmt->bindValue('t1', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t2', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t3', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t4', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t5', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t6', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t7', $term, PDO::PARAM_STR);
-        $stmt->bindValue('t8', $term, PDO::PARAM_STR);
-        $stmt->bindValue('limit', (int) $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        $users = [];
+    }
+
+    try {
+        $stmt = $db->query("
+            SELECT id, nom, prenom, telephone, email, 'contact' AS source,
+                   COALESCE(type_client_bl, 'standard') AS type_client_bl,
+                   COALESCE(plafond_bl_cumul_ht, 0) AS plafond_bl_cumul_ht
+            FROM contacts
+        ");
+        $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {
         try {
-            $stmt = $db->prepare("
-                (SELECT id, nom, prenom, telephone, email, 'user' AS source, 'standard' AS type_client_bl FROM users WHERE statut = 'actif' AND (nom LIKE :t1 OR prenom LIKE :t2 OR email LIKE :t3 OR telephone LIKE :t4))
-                UNION ALL
-                (SELECT id, nom, prenom, telephone, email, 'contact' AS source, 'standard' AS type_client_bl FROM contacts WHERE nom LIKE :t5 OR prenom LIKE :t6 OR email LIKE :t7 OR telephone LIKE :t8)
-                LIMIT :limit
+            $stmt = $db->query("
+                SELECT id, nom, prenom, telephone, email, 'contact' AS source,
+                       'standard' AS type_client_bl, 0 AS plafond_bl_cumul_ht
+                FROM contacts
             ");
-            $stmt->bindValue('t1', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t2', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t3', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t4', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t5', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t6', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t7', $term, PDO::PARAM_STR);
-            $stmt->bindValue('t8', $term, PDO::PARAM_STR);
-            $stmt->bindValue('limit', (int) $limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $contacts = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (PDOException $e2) {
-            return [];
+            $contacts = [];
         }
     }
+
+    $scored = [];
+    foreach (array_merge($contacts, $users) as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $score = search_clients_row_score($recherche, $row);
+        if ($score < $minScore) {
+            continue;
+        }
+        $row['_search_score'] = $score;
+        $row['_is_contact'] = (($row['source'] ?? '') === 'contact') ? 1 : 0;
+        $scored[] = $row;
+    }
+
+    usort($scored, static function ($a, $b) {
+        $sa = (int) ($a['_search_score'] ?? 0);
+        $sb = (int) ($b['_search_score'] ?? 0);
+        if ($sa !== $sb) {
+            return $sb <=> $sa;
+        }
+        $ca = (int) ($a['_is_contact'] ?? 0);
+        $cb = (int) ($b['_is_contact'] ?? 0);
+        if ($ca !== $cb) {
+            return $cb <=> $ca;
+        }
+        $na = mb_strtolower(trim(($a['prenom'] ?? '') . ' ' . ($a['nom'] ?? '')), 'UTF-8');
+        $nb = mb_strtolower(trim(($b['prenom'] ?? '') . ' ' . ($b['nom'] ?? '')), 'UTF-8');
+        return strcmp($na, $nb);
+    });
+
+    $merged = [];
+    $seenPhones = [];
+    foreach ($scored as $row) {
+        $phoneKey = preg_replace('/\D/', '', (string) ($row['telephone'] ?? ''));
+        if ($phoneKey !== '' && isset($seenPhones[$phoneKey])) {
+            continue;
+        }
+        if ($phoneKey !== '') {
+            $seenPhones[$phoneKey] = true;
+        }
+        unset($row['_search_score'], $row['_is_contact']);
+        $merged[] = $row;
+        if (count($merged) >= $limit) {
+            break;
+        }
+    }
+
+    return $merged;
 }
