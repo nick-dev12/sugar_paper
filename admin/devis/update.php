@@ -108,7 +108,7 @@ if (update_devis($devis_id, $items, $infos)) {
     exit;
 }
 
-$_SESSION['devis_erreur'] = 'Erreur lors de la mise à jour du devis (vérifiez le statut ou les données).';
+$_SESSION['devis_erreur'] = 'Erreur lors de la mise à jour du devis.';
 $_SESSION['devis_post'] = $_POST;
 header('Location: ' . $redirect_edit);
 exit;

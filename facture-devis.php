@@ -21,6 +21,9 @@ if (!$facture) {
 }
 
 $devis = get_devis_by_id($facture['devis_id']);
+if ($devis && isset($devis['montant_total'])) {
+    $facture['montant_total'] = $devis['montant_total'];
+}
 $produits = get_produits_by_devis($facture['devis_id']);
 $produits = is_array($produits) ? $produits : [];
 

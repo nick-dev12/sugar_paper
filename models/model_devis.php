@@ -274,7 +274,7 @@ function update_devis($devis_id, $items, $infos) {
     if ($devis_id <= 0) return false;
 
     $devis = get_devis_by_id($devis_id);
-    if (!$devis || ($devis['statut'] ?? '') !== 'brouillon') {
+    if (!$devis) {
         return false;
     }
 
@@ -345,9 +345,17 @@ function update_devis($devis_id, $items, $infos) {
         }
 
         $db->commit();
+
+        require_once __DIR__ . '/model_factures_devis.php';
+        if (function_exists('sync_facture_devis_montant')) {
+            sync_facture_devis_montant($devis_id, $montant_total);
+        }
+
         return true;
     } catch (PDOException $e) {
-        $db->rollBack();
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
         error_log('[update_devis] ' . $e->getMessage());
         return false;
     }

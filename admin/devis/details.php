@@ -40,7 +40,7 @@ if (!$devis) {
 }
 
 $client_nom = trim($devis['client_prenom'] . ' ' . $devis['client_nom']);
-$devis_peut_modifier = ($devis['statut'] ?? '') === 'brouillon' && !$facture;
+$devis_peut_supprimer = ($devis['statut'] ?? '') === 'brouillon' && !$facture;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -74,10 +74,10 @@ $devis_peut_modifier = ($devis['statut'] ?? '') === 'brouillon' && !$facture;
                     <i class="fas fa-file-invoice"></i> Générer une facture
                 </a>
             <?php endif; ?>
-            <?php if ($devis_peut_modifier): ?>
             <a href="../invoice/index.php?tab=devis&amp;modal=devis&amp;edit=<?php echo (int) $devis_id; ?>" class="btn-secondary">
                 <i class="fas fa-edit"></i> Modifier
             </a>
+            <?php if ($devis_peut_supprimer): ?>
             <form method="post" action="supprimer.php" class="header-actions__form" onsubmit="return confirm('Supprimer définitivement ce devis ?');">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
                 <input type="hidden" name="devis_id" value="<?php echo (int) $devis_id; ?>">

@@ -70,6 +70,27 @@ function create_facture_devis($devis_id) {
 }
 
 /**
+ * Aligne le montant enregistré de la facture devis sur le devis modifié.
+ */
+function sync_facture_devis_montant($devis_id, $montant_total) {
+    global $db;
+    $devis_id = (int) $devis_id;
+    if ($devis_id <= 0) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare('UPDATE factures_devis SET montant_total = :montant WHERE devis_id = :devis_id');
+        return $stmt->execute([
+            'montant' => (float) $montant_total,
+            'devis_id' => $devis_id,
+        ]);
+    } catch (PDOException $e) {
+        error_log('[sync_facture_devis_montant] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Récupère une facture devis par devis_id
  */
 function get_facture_devis_by_devis($devis_id) {
