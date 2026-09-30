@@ -57,25 +57,6 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
 
                     <div id="panel-livraison"
                         class="cmd-mode-panel<?php echo $commande_mode_selected === 'livraison' ? ' is-visible' : ''; ?>">
-                        <?php if (!empty($zones_livraison_delivery)): ?>
-                            <div class="ckm-field">
-                                <label for="zone_livraison_id">Zone de livraison *</label>
-                                <select id="zone_livraison_id" name="zone_livraison_id"
-                                    <?php echo $commande_mode_selected === 'livraison' ? 'required' : 'disabled'; ?>>
-                                    <option value="">Sélectionnez votre zone</option>
-                                    <?php foreach ($zones_livraison_delivery as $zone): ?>
-                                        <option value="<?php echo (int) $zone['id']; ?>"
-                                            data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
-                                            <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
-                                            (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        <?php else: ?>
-                            <div class="ckm-flash ckm-flash--error">Aucune zone de livraison à domicile n'est configurée.</div>
-                        <?php endif; ?>
-
                         <div class="ckm-field">
                             <label>Votre position exacte *</label>
                             <div class="commande-geo-box">
@@ -91,6 +72,25 @@ $ckm_message_type = isset($ckm_message_type) ? (string) $ckm_message_type : '';
                             <input type="hidden" name="geo_source" id="geo_source" value="">
                             <input type="hidden" name="geo_address" id="geo_address" value="">
                         </div>
+                        <?php if (!empty($zones_livraison_delivery)): ?>
+                            <div class="ckm-field" id="ckm-field-zone">
+                                <label for="zone_livraison_id">Zone de livraison *</label>
+                                <select id="zone_livraison_id" name="zone_livraison_id"
+                                    <?php echo $commande_mode_selected === 'livraison' ? 'required' : 'disabled'; ?>>
+                                    <option value="">Sélectionnez votre zone</option>
+                                    <?php foreach ($zones_livraison_delivery as $zone): ?>
+                                        <option value="<?php echo (int) $zone['id']; ?>"
+                                            data-prix="<?php echo (float) $zone['prix_livraison']; ?>">
+                                            <?php echo htmlspecialchars($zone['ville'] . ' - ' . $zone['quartier']); ?>
+                                            (<?php echo number_format($zone['prix_livraison'], 0, ',', ' '); ?> FCFA)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="ckm-field-error" id="ckm-zone-error" hidden>Veuillez sélectionner votre zone de livraison.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="ckm-flash ckm-flash--error">Aucune zone de livraison à domicile n'est configurée.</div>
+                        <?php endif; ?>
                     </div>
 
                     <div id="panel-retrait"

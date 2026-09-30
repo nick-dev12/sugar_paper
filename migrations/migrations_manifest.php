@@ -286,4 +286,14 @@ return [
         'label' => 'Profil livraison client par téléphone (adresse + GPS livreur)',
         'script' => 'run_add_client_livraison_profil.php',
     ],
+    [
+        'id' => 'admin_invoice_journal',
+        'label' => 'Journal actions factures Invoice (création / suppression)',
+        'script' => 'run_add_admin_invoice_journal.php',
+    ],
+    [
+        'id' => 'admin_invoice_journal_modification',
+        'label' => 'Journal factures : action modification',
+        'script' => 'run_alter_admin_invoice_journal_modification.php',
+    ],
 ];

@@ -634,7 +634,8 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             $numero_facture = $f['numero_bl'] ?? '—';
                             $date_source = !empty($f['date_bl']) ? $f['date_bl'] : ($f['date_creation'] ?? 'now');
                             $date_iso = date('Y-m-d', strtotime($date_source));
-                            $date_aff = date('d/m/Y', strtotime($date_source));
+                            $created_ts = !empty($f['date_creation']) ? strtotime($f['date_creation']) : strtotime($date_source);
+                            $date_aff = date('d/m/Y H:i', $created_ts ?: time());
                             if ($date_iso !== $facture_group_date):
                                 $facture_group_date = $date_iso;
                                 if ($date_iso === $facture_today_iso) {

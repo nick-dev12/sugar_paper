@@ -1009,11 +1009,45 @@ function delete_bl($bl_id) {
     if (bl_est_facture_payee($bl)) {
         return false;
     }
+    admin_invoice_journal_log(
+        (int) ($_SESSION['admin_id'] ?? 0),
+        'suppression',
+        (int) $bl_id,
+        (string) ($bl['numero_bl'] ?? ''),
+        (string) ($bl['raison_sociale'] ?? $bl['client_nom'] ?? '')
+    );
     try {
         $stmt = $db->prepare('DELETE FROM bons_livraison WHERE id = :id');
         return $stmt->execute(['id' => (int) $bl_id]);
     } catch (PDOException $e) {
         error_log('[delete_bl] ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Trace une action Invoice (création ou suppression) avec date et heure.
+ */
+function admin_invoice_journal_log($admin_id, $action, $bl_id, $numero_bl, $client_label = '') {
+    global $db;
+    $admin_id = (int) $admin_id;
+    if ($admin_id <= 0 || !in_array($action, ['creation', 'suppression', 'modification'], true)) {
+        return false;
+    }
+    try {
+        $stmt = $db->prepare(
+            'INSERT INTO admin_invoice_journal (admin_id, action, bl_id, numero_bl, client_label, date_action)
+             VALUES (:aid, :action, :bl, :num, :client, NOW())'
+        );
+        return $stmt->execute([
+            'aid' => $admin_id,
+            'action' => $action,
+            'bl' => (int) $bl_id > 0 ? (int) $bl_id : null,
+            'num' => mb_substr((string) $numero_bl, 0, 64),
+            'client' => mb_substr((string) $client_label, 0, 255),
+        ]);
+    } catch (PDOException $e) {
+        error_log('[admin_invoice_journal] ' . $e->getMessage());
         return false;
     }
 }
@@ -1319,6 +1353,15 @@ function create_bl_manuel($client_b2b_id, $date_bl, $notes, $lignes, $admin_id, 
         if (function_exists('bl_enqueue_client_event')) {
             bl_enqueue_client_event('created', $bl_id);
         }
+        $client_label = '';
+        try {
+            $stc = $db->prepare('SELECT raison_sociale FROM clients_b2b WHERE id = :id');
+            $stc->execute(['id' => $client_b2b_id]);
+            $client_label = (string) ($stc->fetchColumn() ?: '');
+        } catch (PDOException $e) {
+            $client_label = '';
+        }
+        admin_invoice_journal_log((int) $admin_id, 'creation', $bl_id, $numero, $client_label);
         return ['success' => true, 'bl_id' => $bl_id, 'numero_bl' => $numero];
     } catch (PDOException $e) {
         $db->rollBack();

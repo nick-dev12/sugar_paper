@@ -380,6 +380,9 @@
         if (selectZone) {
             selectZone.addEventListener('change', function () {
                 window.CommandeTotaux.refresh();
+                if (selectZone.value) {
+                    setZoneFieldError(false);
+                }
             });
         }
         if (window.CommandeGeo && typeof window.CommandeGeo.reset === 'function') {
@@ -433,20 +436,43 @@
         } catch (err) {}
     }
 
+    function setZoneFieldError(show) {
+        var field = document.getElementById('ckm-field-zone');
+        var msg = document.getElementById('ckm-zone-error');
+        var selectZone = document.getElementById('zone_livraison_id');
+        if (field) {
+            field.classList.toggle('is-invalid', !!show);
+        }
+        if (msg) {
+            msg.hidden = !show;
+        }
+        if (selectZone) {
+            selectZone.setAttribute('aria-invalid', show ? 'true' : 'false');
+        }
+    }
+
     function validateCheckoutForm(form) {
         showCheckoutError('');
+        setZoneFieldError(false);
         var modeInput = document.getElementById('mode_livraison');
         var mode = modeInput && modeInput.value === 'retrait' ? 'retrait' : 'livraison';
+        var selectZone = document.getElementById('zone_livraison_id');
+        if (mode === 'livraison' && selectZone && !selectZone.disabled && !selectZone.value) {
+            setZoneFieldError(true);
+            showCheckoutError('Veuillez sélectionner votre zone de livraison.');
+            try {
+                selectZone.focus();
+                var field = document.getElementById('ckm-field-zone');
+                if (field) {
+                    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch (err) {}
+            return false;
+        }
         if (window.CommandeGeo && typeof CommandeGeo.validate === 'function' && !CommandeGeo.validate()) {
             var geoStatus = document.getElementById('commande-geo-status');
             var geoMsg = geoStatus ? (geoStatus.textContent || '').trim() : '';
-            showCheckoutError(geoMsg || 'Veuillez sélectionner votre zone et confirmer votre position.');
-            return false;
-        }
-        var selectZone = document.getElementById('zone_livraison_id');
-        if (mode === 'livraison' && selectZone && !selectZone.disabled && !selectZone.value) {
-            showCheckoutError('Veuillez sélectionner votre zone de livraison.');
-            try { selectZone.focus(); } catch (err) {}
+            showCheckoutError(geoMsg || 'Veuillez confirmer votre position sur la carte.');
             return false;
         }
         var tel = form.querySelector('#telephone_livraison');

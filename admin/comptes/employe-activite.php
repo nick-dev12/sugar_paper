@@ -78,6 +78,14 @@ $activite_blocs = [
         'nb_key' => 'nb_factures_devis',
         'trace_key' => 'trace_factures_devis',
     ],
+    'factures_actions' => [
+        'icon' => 'fa-file-circle-plus',
+        'label' => 'Factures Invoice',
+        'hint' => 'Création, modification et suppression, avec date et heure',
+        'kpi' => 'Factures ajoutées / modifiées / supprimées',
+        'nb_key' => 'nb_factures_actions',
+        'trace_key' => 'trace_factures_actions',
+    ],
     'bl' => [
         'icon' => 'fa-dolly',
         'label' => 'Bons de livraison',

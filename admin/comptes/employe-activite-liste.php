@@ -118,6 +118,12 @@ $page_title = $titre_liste . ' — ' . htmlspecialchars($admin_cible['prenom'] .
                             <th>Date</th>
                             <th>Montant</th>
                             <th></th>
+                        <?php elseif ($type === 'factures_actions'): ?>
+                            <th>Action</th>
+                            <th>N° facture</th>
+                            <th>Client</th>
+                            <th>Date et heure</th>
+                            <th></th>
                         <?php elseif ($type === 'bl'): ?>
                             <th>N° BL</th>
                             <th>Date BL</th>
@@ -183,6 +189,28 @@ $page_title = $titre_liste . ' — ' . htmlspecialchars($admin_cible['prenom'] .
                                 <td><?php echo !empty($row['date_facture']) ? date('d/m/Y', strtotime($row['date_facture'])) : '—'; ?></td>
                                 <td><?php echo isset($row['montant_total']) ? number_format((float) $row['montant_total'], 2, ',', ' ') . ' €' : '—'; ?></td>
                                 <td><a href="../devis/facture.php?id=<?php echo (int) ($row['id'] ?? 0); ?>">Ouvrir</a></td>
+                            <?php elseif ($type === 'factures_actions'): ?>
+                                <td><?php
+                                    $action_code = (string) ($row['action'] ?? '');
+                                    if ($action_code === 'suppression') {
+                                        echo 'Suppression';
+                                    } elseif ($action_code === 'modification') {
+                                        echo 'Modification';
+                                    } else {
+                                        echo 'Création';
+                                    }
+                                ?></td>
+                                <td><?php echo htmlspecialchars($row['numero_bl'] ?? '—'); ?></td>
+                                <td><?php echo htmlspecialchars($row['client_label'] !== '' ? $row['client_label'] : '—'); ?></td>
+                                <td><?php echo !empty($row['date_action']) ? date('d/m/Y H:i', strtotime($row['date_action'])) : '—'; ?></td>
+                                <td><?php
+                                    $bl_open = (int) ($row['bl_id'] ?? 0);
+                                    if (in_array(($row['action'] ?? ''), ['creation', 'modification'], true) && $bl_open > 0) {
+                                        echo '<a href="../invoice/bl_voir.php?id=' . $bl_open . '">Ouvrir</a>';
+                                    } else {
+                                        echo '—';
+                                    }
+                                ?></td>
                             <?php elseif ($type === 'bl'): ?>
                                 <td><?php echo htmlspecialchars($row['numero_bl'] ?? ''); ?></td>
                                 <td><?php echo !empty($row['date_bl']) ? date('d/m/Y', strtotime($row['date_bl'])) : '—'; ?></td>

@@ -88,6 +88,13 @@ update_bl_entete($bl_id, $date_bl, $notes, $adresse_client);
 $res = replace_bl_lignes($bl_id, $lignes);
 
 if (!empty($res['success'])) {
+    admin_invoice_journal_log(
+        (int) ($_SESSION['admin_id'] ?? 0),
+        'modification',
+        $bl_id,
+        (string) ($bl['numero_bl'] ?? ''),
+        (string) ($bl['raison_sociale'] ?? '')
+    );
     $_SESSION['success_message'] = 'Bon de livraison mis à jour.';
     header('Location: bl_voir.php?id=' . $bl_id);
     exit;

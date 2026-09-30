@@ -212,6 +212,16 @@ $res = update_bl_complet(
 
 if (!empty($res['success'])) {
     ensure_bl_facture_token($bl_id);
+    $client_label = trim((string) ($client['raison_sociale'] ?? ''));
+    if (function_exists('admin_invoice_journal_log')) {
+        admin_invoice_journal_log(
+            (int) ($_SESSION['admin_id'] ?? 0),
+            'modification',
+            $bl_id,
+            (string) ($bl_exist['numero_bl'] ?? ''),
+            $client_label
+        );
+    }
     $_SESSION['success_message'] = 'Facture ' . ($bl_exist['numero_bl'] ?? '') . ' mise à jour. La page publique affiche déjà les nouvelles données.';
     header('Location: ' . $redirect_voir);
     exit;

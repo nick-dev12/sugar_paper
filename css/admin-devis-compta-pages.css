@@ -1174,6 +1174,7 @@
 .page-devis-admin .invoice-date-statut-line .invoice-cell-sub {
   display: inline;
   margin-top: 0;
+  white-space: nowrap;
 }
 
 .page-devis-admin .invoice-row-statut--inline {
@@ -1450,6 +1451,7 @@
   font-size: 10px;
   line-height: 1.2;
   color: var(--gris-fonce);
+  white-space: nowrap;
 }
 
 .page-commandes-index .invoice-montant-cell--suivi .invoice-montant-cell__meta .invoice-cell-primary {

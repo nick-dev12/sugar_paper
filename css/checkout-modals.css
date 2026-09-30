@@ -438,6 +438,20 @@
   box-shadow: 0 0 0 3px rgba(229, 72, 138, 0.14);
 }
 
+.ckm-field.is-invalid select,
+.ckm-field.is-invalid input {
+  border-color: #dc2626;
+  background: #fff5f5;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.ckm-field-error {
+  margin: 6px 0 0;
+  color: #dc2626;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .ckm-checkout__recap {
   padding: 14px;
   border-radius: 16px;

@@ -29,6 +29,7 @@ function admin_activite_types_pour_role($role) {
                 'commandes_traitees',
                 'devis',
                 'factures_devis',
+                'factures_actions',
                 'bl',
                 'factures_mensuelles',
                 'clients_b2b',
@@ -40,6 +41,7 @@ function admin_activite_types_pour_role($role) {
                 'commandes_traitees',
                 'devis',
                 'factures_devis',
+                'factures_actions',
                 'bl',
                 'factures_mensuelles',
                 'clients_b2b',
@@ -52,6 +54,7 @@ function admin_activite_types_pour_role($role) {
                 'commandes_traitees',
                 'devis',
                 'factures_devis',
+                'factures_actions',
                 'bl',
                 'factures_mensuelles',
                 'clients_b2b',
@@ -62,6 +65,7 @@ function admin_activite_types_pour_role($role) {
             return [
                 'devis',
                 'factures_devis',
+                'factures_actions',
                 'bl',
                 'factures_mensuelles',
                 'commandes_traitees',
@@ -69,6 +73,7 @@ function admin_activite_types_pour_role($role) {
             return ['caisse_encaissements'];
         case 'gestion_stock':
             return [
+                'factures_actions',
                 'produits_crees',
                 'produits_modifies',
                 'categories_crees',
@@ -141,6 +146,7 @@ function get_stats_activite_par_admin_id($admin_id, $types_autorises = null) {
         'nb_commandes_creees' => 0,
         'nb_devis' => 0,
         'nb_factures_devis' => 0,
+        'nb_factures_actions' => 0,
         'nb_factures_mensuelles' => 0,
         'nb_bl_total' => 0,
         'nb_bl_valides' => 0,
@@ -157,6 +163,7 @@ function get_stats_activite_par_admin_id($admin_id, $types_autorises = null) {
         'trace_commandes_creees' => false,
         'trace_devis' => false,
         'trace_factures_devis' => false,
+        'trace_factures_actions' => false,
         'trace_clients_b2b' => false,
         'trace_caisse_encaissements' => false,
         'trace_caisse_tickets_bureau' => false,
@@ -198,6 +205,17 @@ function get_stats_activite_par_admin_id($admin_id, $types_autorises = null) {
         }
     } catch (PDOException $e) {
         error_log('[get_stats_activite_par_admin_id admin] ' . $e->getMessage());
+    }
+
+    if ($allow('factures_actions') && admin_activite_column_exists('admin_invoice_journal', 'admin_id')) {
+        try {
+            $stmt = $db->prepare('SELECT COUNT(*) FROM admin_invoice_journal WHERE admin_id = :aid');
+            $stmt->execute(['aid' => $admin_id]);
+            $out['nb_factures_actions'] = (int) $stmt->fetchColumn();
+            $out['trace_factures_actions'] = true;
+        } catch (PDOException $e) {
+            error_log('[get_stats_activite_par_admin_id factures_actions] ' . $e->getMessage());
+        }
     }
 
     if ($allow('bl') && admin_activite_column_exists('bons_livraison', 'admin_createur_id')) {
@@ -383,6 +401,7 @@ function get_activite_liste_types_libelles() {
         'commandes_traitees' => 'Commandes (dernier traitement de statut)',
         'devis' => 'Devis créés',
         'factures_devis' => 'Factures générées (devis)',
+        'factures_actions' => 'Factures Invoice (création / suppression)',
         'bl' => 'Bons de livraison créés',
         'factures_mensuelles' => 'Factures mensuelles HT',
         'clients_b2b' => 'Clients B2B enregistrés',
@@ -459,6 +478,18 @@ function get_liste_activite_par_admin($admin_id, $type, $limit = 200) {
                     'SELECT id, devis_id, numero_facture, date_facture, montant_total, date_creation
                      FROM factures_devis WHERE admin_createur_id = :aid
                      ORDER BY date_creation DESC LIMIT ' . $limit
+                );
+                $stmt->execute(['aid' => $admin_id]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+            case 'factures_actions':
+                if (!admin_activite_column_exists('admin_invoice_journal', 'admin_id')) {
+                    return [];
+                }
+                $stmt = $db->prepare(
+                    'SELECT id, action, bl_id, numero_bl, client_label, date_action
+                     FROM admin_invoice_journal WHERE admin_id = :aid
+                     ORDER BY date_action DESC LIMIT ' . $limit
                 );
                 $stmt->execute(['aid' => $admin_id]);
                 return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];

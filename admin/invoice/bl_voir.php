@@ -152,7 +152,7 @@ $can_desarchiver = admin_is_full_admin() && $bl_est_archive;
                     <i class="fas fa-box-archive"></i> Archiver
                 </button>
             </form>
-            <?php elseif (!$bl_est_archive && !$est_payee): ?>
+            <?php elseif (!$bl_est_archive && !$est_payee && admin_is_full_admin()): ?>
             <form method="post" action="bl_supprimer.php" class="header-actions__form" onsubmit="return confirm('Supprimer définitivement cette facture impayée ? Cette action est irréversible.');">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
                 <input type="hidden" name="bl_id" value="<?php echo (int) $bl_id; ?>">

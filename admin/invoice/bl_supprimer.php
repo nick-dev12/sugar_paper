@@ -10,8 +10,9 @@ require_once __DIR__ . '/../includes/require_access.php';
 
 
 require_once __DIR__ . '/../../includes/admin_permissions.php';
-if (!admin_can_bl_retours_b2b()) {
-    header('Location: ../dashboard.php');
+if (!admin_is_full_admin()) {
+    $_SESSION['bl_erreur'] = 'Seul un compte administrateur peut supprimer une facture.';
+    header('Location: index.php?tab=facture');
     exit;
 }
 
