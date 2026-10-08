@@ -301,12 +301,7 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
         return (int) ($f_row['id'] ?? 0);
     }, $facture_list);
     $facture_lignes_totaux_map = bl_prefetch_totaux_lignes_par_bl_ids($facture_bl_ids);
-    $facture_kpi_jour = date('Y-m-d');
     foreach ($facture_list as $f_row) {
-        $f_row_date = !empty($f_row['date_bl']) ? $f_row['date_bl'] : ($f_row['date_creation'] ?? '');
-        if ($f_row_date === '' || date('Y-m-d', strtotime($f_row_date)) !== $facture_kpi_jour) {
-            continue;
-        }
         $bl_id_row = (int) ($f_row['id'] ?? 0);
         $lignes_totaux_row = $facture_lignes_totaux_map[$bl_id_row] ?? null;
         $decomp_row = bl_decomposer_montant_facture($f_row, $lignes_totaux_row);
@@ -625,10 +620,10 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                     <?php endif; ?>
                     <div class="invoice-period-panel" id="facture-period-panel" hidden>
                         <div class="invoice-period-presets" role="group" aria-label="Périodes rapides factures">
-                            <button type="button" class="invoice-period-preset is-active" data-preset="today">Aujourd'hui</button>
+                            <button type="button" class="invoice-period-preset" data-preset="today">Aujourd'hui</button>
                             <button type="button" class="invoice-period-preset" data-preset="week">7 jours</button>
                             <button type="button" class="invoice-period-preset" data-preset="month">Ce mois</button>
-                            <button type="button" class="invoice-period-preset" data-preset="all">Tout</button>
+                            <button type="button" class="invoice-period-preset is-active" data-preset="all">Tout</button>
                         </div>
                         <div class="admin-filters-bar invoice-period-fields">
                             <div class="admin-filter-field">

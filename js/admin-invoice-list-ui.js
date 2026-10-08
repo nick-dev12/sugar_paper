@@ -1188,7 +1188,7 @@
 
             periodSummary: '#facture-period-summary',
 
-            defaultPeriodPreset: 'today',
+            defaultPeriodPreset: 'all',
 
             emptySearchText: 'Aucune facture ne correspond à votre recherche.',
 
