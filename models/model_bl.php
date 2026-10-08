@@ -526,6 +526,8 @@ function marquer_bl_facture_payee($bl_id)
         if ($stmt->rowCount() < 1) {
             return ['ok' => false, 'error' => 'Impossible d’enregistrer le paiement.'];
         }
+        require_once __DIR__ . '/model_bl_commandes.php';
+        bl_propager_paiement_vers_commande($bl_id, true);
         return ['ok' => true];
     } catch (PDOException $e) {
         error_log('[marquer_bl_facture_payee] ' . $e->getMessage());
@@ -562,6 +564,8 @@ function marquer_bl_facture_non_payee($bl_id)
         if ($stmt->rowCount() < 1) {
             return ['ok' => false, 'error' => 'Impossible d’annuler le paiement.'];
         }
+        require_once __DIR__ . '/model_bl_commandes.php';
+        bl_propager_paiement_vers_commande($bl_id, false);
         return ['ok' => true];
     } catch (PDOException $e) {
         error_log('[marquer_bl_facture_non_payee] ' . $e->getMessage());

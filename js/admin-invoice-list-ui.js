@@ -254,6 +254,8 @@
 
         }
 
+        setPresetActive(range.preset || initialPreset);
+
 
 
         function applyRange(nextRange, closePanel) {
@@ -1065,7 +1067,7 @@
 
             periodSummary: '#facture-period-summary',
 
-            defaultPeriodPreset: 'all',
+            defaultPeriodPreset: 'today',
 
             emptySearchText: 'Aucune facture ne correspond à votre recherche.',
 

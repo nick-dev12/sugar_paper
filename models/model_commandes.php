@@ -367,6 +367,9 @@ function create_commande($user_id, $panier_items, $adresse_livraison, $telephone
 
         // Valider la transaction
         $db->commit();
+
+        require_once __DIR__ . '/model_bl_commandes.php';
+        bl_sync_from_commande_safe((int) $commande_id);
         
         return [
             'success' => true,
@@ -536,6 +539,10 @@ function create_commande_manuelle($items, $client_nom, $client_prenom, $client_t
         // Le stock est décrémenté uniquement lorsque le statut de la commande passe à 'paye' (via update_commande_statut)
 
         $db->commit();
+
+        require_once __DIR__ . '/model_bl_commandes.php';
+        bl_sync_from_commande_safe((int) $commande_id);
+
         return ['success' => true, 'commande_id' => $commande_id, 'numero_commande' => $numero_commande];
     } catch (PDOException $e) {
         $db->rollBack();

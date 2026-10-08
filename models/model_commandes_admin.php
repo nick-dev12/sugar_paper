@@ -372,6 +372,8 @@ function update_commande_statut($commande_id, $statut) {
             $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
 
             $db->commit();
+            require_once __DIR__ . '/model_bl_commandes.php';
+            bl_sync_from_commande_safe((int) $commande_id);
             if ($ancien_statut !== $statut) {
                 try {
                     require_once __DIR__ . '/../services/notify_helpers.php';
@@ -396,6 +398,10 @@ function update_commande_statut($commande_id, $statut) {
             WHERE id = :id
         ");
         $ok = $stmt->execute(['id' => $commande_id, 'statut' => $statut]);
+        if ($ok) {
+            require_once __DIR__ . '/model_bl_commandes.php';
+            bl_sync_from_commande_safe((int) $commande_id);
+        }
         if ($ok && $ancien_statut !== $statut) {
             try {
                 require_once __DIR__ . '/../services/notify_helpers.php';
@@ -670,6 +676,9 @@ function delete_commande($commande_id) {
         }
 
         $db->commit();
+
+        require_once __DIR__ . '/model_bl_commandes.php';
+        bl_delete_for_commande($commande_id);
 
         $numero = $commande['numero_commande'] ?? (string) $commande_id;
         return [

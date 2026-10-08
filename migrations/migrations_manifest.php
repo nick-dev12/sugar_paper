@@ -296,4 +296,9 @@ return [
         'label' => 'Journal factures : action modification',
         'script' => 'run_alter_admin_invoice_journal_modification.php',
     ],
+    [
+        'id' => 'bl_commande_id',
+        'label' => 'Factures Invoice issues des commandes du site',
+        'script' => 'run_add_bl_commande_id.php',
+    ],
 ];
