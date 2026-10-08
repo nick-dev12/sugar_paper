@@ -143,11 +143,6 @@ $admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_ac
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
             </a>
-            <a href="<?php echo $nav_href('catalogue-personnalise/index.php'); ?>"
-                class="menu-item <?php echo $is_catalogue_cp ? 'active' : ''; ?>">
-                <i class="fas fa-folder-tree"></i>
-                <span>Configuration catalogue</span>
-            </a>
             <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
                 <i class="fas fa-boxes-stacked"></i>
@@ -211,11 +206,6 @@ $admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_ac
                 class="menu-item <?php echo ($is_produits && $current_page == 'index.php') ? 'active' : ''; ?>">
                 <i class="fas fa-box"></i>
                 <span>Produits</span>
-            </a>
-            <a href="<?php echo $nav_href('catalogue-personnalise/index.php'); ?>"
-                class="menu-item <?php echo $is_catalogue_cp ? 'active' : ''; ?>">
-                <i class="fas fa-folder-tree"></i>
-                <span>Configuration catalogue</span>
             </a>
             <a href="<?php echo $nav_href('stock/index.php'); ?>"
                 class="menu-item <?php echo ($is_stock) ? 'active' : ''; ?>">
@@ -312,20 +302,6 @@ $admin_nav_livreurs_badge = admin_nav_badge_label($admin_nav_counts['livreurs_ac
                 <i class="fas fa-bell"></i>
                 <span>Notifications</span>
             </button>
-            <?php endif; ?>
-            <?php if ($admin_role === 'admin'): ?>
-            <a href="<?php echo $nav_href('fcm-diagnostic.php'); ?>"
-                class="menu-item <?php echo $current_page === 'fcm-diagnostic.php' ? 'active' : ''; ?>"
-                title="Diagnostic push FCM et files d'attente">
-                <i class="fas fa-satellite-dish"></i>
-                <span>Diag. FCM</span>
-            </a>
-            <a href="<?php echo $nav_href('test-email.php'); ?>"
-                class="menu-item <?php echo $current_page === 'test-email.php' ? 'active' : ''; ?>"
-                title="Tester l'envoi SMTP et la file d'attente">
-                <i class="fas fa-envelope-open-text"></i>
-                <span>Test email</span>
-            </a>
             <?php endif; ?>
             <a href="<?php echo $nav_href('logout.php'); ?>" class="menu-item">
                 <i class="fas fa-sign-out-alt"></i>
