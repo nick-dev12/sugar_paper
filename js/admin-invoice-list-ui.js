@@ -968,12 +968,25 @@
             }
         }
 
+        function rowSelectBox(row) {
+            var panel = row.closest('.is-selecting');
+            return panel ? row.querySelector('.invoice-row-select') : null;
+        }
+
         document.addEventListener('click', function (e) {
             if (e.target.closest('.invoice-suivi-livraison-btn')) {
                 return;
             }
             var row = e.target.closest('.invoice-list-item--clickable');
             if (!row || row.hidden) {
+                return;
+            }
+            var box = rowSelectBox(row);
+            if (box) {
+                if (e.target !== box) {
+                    box.checked = !box.checked;
+                    box.dispatchEvent(new Event('change', { bubbles: true }));
+                }
                 return;
             }
             goToRow(row);
@@ -988,12 +1001,120 @@
                 return;
             }
             e.preventDefault();
+            var box = rowSelectBox(row);
+            if (box) {
+                box.checked = !box.checked;
+                box.dispatchEvent(new Event('change', { bubbles: true }));
+                return;
+            }
             goToRow(row);
         });
     }
 
+    function initFactureBulkSelect() {
+        var panel = document.getElementById('panel-facture');
+        var toggle = document.getElementById('facture-select-toggle');
+        var form = document.getElementById('facture-bulk-form');
+        if (!panel || !toggle || !form) {
+            return;
+        }
+        var countEl = document.getElementById('facture-bulk-count');
+        var selectAll = document.getElementById('facture-select-all');
+        var cancelBtn = document.getElementById('facture-bulk-cancel');
+        var actionBtns = form.querySelectorAll('button[type="submit"]');
+
+        function boxes() {
+            return Array.prototype.slice.call(panel.querySelectorAll('.invoice-row-select'));
+        }
+
+        function visibleBoxes() {
+            return boxes().filter(function (b) {
+                var row = b.closest('.invoice-list-item');
+                return row && !row.hidden;
+            });
+        }
+
+        function refresh() {
+            var all = boxes();
+            var n = 0;
+            all.forEach(function (b) {
+                var row = b.closest('.invoice-list-item');
+                if (row) {
+                    row.classList.toggle('is-selected', b.checked);
+                }
+                if (b.checked) {
+                    n++;
+                }
+            });
+            if (countEl) {
+                countEl.textContent = n + (n > 1 ? ' sélectionnées' : ' sélectionnée');
+            }
+            for (var i = 0; i < actionBtns.length; i++) {
+                actionBtns[i].disabled = n === 0;
+            }
+            if (selectAll) {
+                var vis = visibleBoxes();
+                var checkedVis = vis.filter(function (b) { return b.checked; }).length;
+                selectAll.checked = vis.length > 0 && checkedVis === vis.length;
+                selectAll.indeterminate = checkedVis > 0 && checkedVis < vis.length;
+            }
+        }
+
+        function setMode(on) {
+            panel.classList.toggle('is-selecting', on);
+            form.hidden = !on;
+            toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+            toggle.classList.toggle('is-active', on);
+            if (!on) {
+                boxes().forEach(function (b) { b.checked = false; });
+            }
+            refresh();
+        }
+
+        toggle.addEventListener('click', function () {
+            setMode(!panel.classList.contains('is-selecting'));
+        });
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                setMode(false);
+            });
+        }
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                var on = selectAll.checked;
+                visibleBoxes().forEach(function (b) { b.checked = on; });
+                refresh();
+            });
+        }
+        panel.addEventListener('change', function (e) {
+            if (e.target.classList && e.target.classList.contains('invoice-row-select')) {
+                refresh();
+            }
+        });
+        panel.addEventListener('click', function (e) {
+            if (e.target.closest('.invoice-list-pagination, .invoice-period-preset, #facture-period-apply, .invoice-facture-kpi--filter')) {
+                setTimeout(refresh, 0);
+            }
+        });
+        var searchFacture = document.getElementById('search-facture');
+        if (searchFacture) {
+            searchFacture.addEventListener('input', function () {
+                setTimeout(refresh, 0);
+            });
+        }
+        form.addEventListener('submit', function (e) {
+            var btn = e.submitter;
+            var msg = btn ? btn.getAttribute('data-confirm') : '';
+            if (msg && !window.confirm(msg)) {
+                e.preventDefault();
+            }
+        });
+        setMode(false);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initInvoiceClickableRows();
+        initFactureBulkSelect();
 
         initInvoiceList({
 

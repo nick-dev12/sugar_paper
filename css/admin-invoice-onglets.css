@@ -737,6 +737,121 @@
     pointer-events: none;
 }
 
+.invoice-period-toggle.is-active {
+    background: #918a44;
+    border-color: #918a44;
+    color: #fff;
+}
+
+.invoice-bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(145, 138, 68, 0.35);
+    background: rgba(145, 138, 68, 0.08);
+    position: sticky;
+    top: 8px;
+    z-index: 5;
+}
+
+.invoice-bulk-bar[hidden] {
+    display: none;
+}
+
+.invoice-bulk-bar__all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #000;
+    cursor: pointer;
+}
+
+.invoice-bulk-bar__count {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #6b2f20;
+}
+
+.invoice-bulk-bar__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.invoice-bulk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.invoice-bulk-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.invoice-bulk-btn--danger:not(:disabled) {
+    background: #c26638;
+    border-color: #c26638;
+    color: #fff;
+}
+
+.invoice-row-select {
+    display: none;
+}
+
+.invoice-cell-select-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.invoice-cell-select-line .invoice-cell-primary {
+    min-width: 0;
+}
+
+.is-selecting .invoice-row-select {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #918a44;
+    cursor: pointer;
+}
+
+.is-selecting .invoice-list-item.is-selected {
+    background: rgba(145, 138, 68, 0.12);
+}
+
+.is-selecting .invoice-list-item--clickable {
+    cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .invoice-bulk-bar__actions {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .invoice-bulk-btn {
+        flex: 1 1 0;
+        justify-content: center;
+        padding: 0 8px;
+    }
+}
+
 .invoice-period-panel {
     width: 100%;
     padding: 12px;

@@ -62,6 +62,7 @@ if (!function_exists('admin_route_relative_path')) {
             'invoice/bl_par_client.php',
             'invoice/bl_maj.php',
             'invoice/bl_supprimer.php',
+            'invoice/bl_actions_groupees.php',
             'invoice/bl_ligne_supprimer.php',
             'invoice/convertir_bl.php',
             'invoice/clients_b2b_create.php',

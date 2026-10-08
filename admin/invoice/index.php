@@ -290,6 +290,8 @@ $invoice_hub_titles = [
 ];
 $invoice_hub_title = $invoice_hub_titles[$active_tab] ?? $invoice_hub_titles['facture'];
 
+$facture_bulk_enabled = !$invoice_archive_mode && !admin_is_restricted_admin_account();
+
 $facture_montant_paye = 0.0;
 $facture_montant_impaye = 0.0;
 $facture_montant_livraison = 0.0;
@@ -589,7 +591,38 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                                 <span class="invoice-period-toggle__label">Période</span>
                             </button>
                         </div>
+                        <?php if ($facture_bulk_enabled): ?>
+                        <div class="invoice-panel-period-trigger">
+                            <button type="button" class="btn-secondary invoice-period-toggle" id="facture-select-toggle" aria-pressed="false" aria-label="Sélectionner plusieurs factures">
+                                <i class="fas fa-check-square" aria-hidden="true"></i>
+                                <span class="invoice-period-toggle__label">Sélectionner</span>
+                            </button>
+                        </div>
+                        <?php endif; ?>
                     </div>
+                    <?php if ($facture_bulk_enabled): ?>
+                    <form method="post" action="bl_actions_groupees.php" id="facture-bulk-form" class="invoice-bulk-bar" hidden>
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['admin_csrf']); ?>">
+                        <label class="invoice-bulk-bar__all">
+                            <input type="checkbox" id="facture-select-all">
+                            <span>Tout (page)</span>
+                        </label>
+                        <span class="invoice-bulk-bar__count" id="facture-bulk-count" aria-live="polite">0 sélectionnée</span>
+                        <div class="invoice-bulk-bar__actions">
+                            <button type="submit" name="action_groupee" value="archiver" class="btn-secondary invoice-bulk-btn" data-confirm="Archiver les factures sélectionnées ? Seules les factures payées seront archivées.">
+                                <i class="fas fa-box-archive" aria-hidden="true"></i> <span>Archiver</span>
+                            </button>
+                            <?php if (admin_is_full_admin()): ?>
+                            <button type="submit" name="action_groupee" value="supprimer" class="btn-secondary invoice-bulk-btn invoice-bulk-btn--danger" data-confirm="Supprimer définitivement les factures sélectionnées ? Les factures payées seront ignorées. Action irréversible.">
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i> <span>Supprimer</span>
+                            </button>
+                            <?php endif; ?>
+                            <button type="button" class="btn-secondary invoice-bulk-btn" id="facture-bulk-cancel">
+                                <i class="fas fa-times" aria-hidden="true"></i> <span>Annuler</span>
+                            </button>
+                        </div>
+                    </form>
+                    <?php endif; ?>
                     <div class="invoice-period-panel" id="facture-period-panel" hidden>
                         <div class="invoice-period-presets" role="group" aria-label="Périodes rapides factures">
                             <button type="button" class="invoice-period-preset is-active" data-preset="today">Aujourd'hui</button>
@@ -677,7 +710,12 @@ if ($bl_tables_ok && admin_can_bl_retours_b2b()) {
                             ?>
                             <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($facture_href); ?>" data-montant="<?php echo (int) round($montant_aff); ?>" data-montant-hors-livraison="<?php echo $montant_hors_livraison; ?>" data-montant-livraison="<?php echo $montant_livraison; ?>" data-payee="<?php echo $est_payee ? '1' : '0'; ?>" role="link" tabindex="0" aria-label="Voir la facture <?php echo htmlspecialchars($numero_facture); ?>">
                                 <td data-label="Client">
-                                    <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_label); ?></strong>
+                                    <span class="invoice-cell-select-line">
+                                        <?php if ($facture_bulk_enabled): ?>
+                                        <input type="checkbox" class="invoice-row-select" name="bl_ids[]" value="<?php echo $fid; ?>" form="facture-bulk-form" aria-label="Sélectionner la facture <?php echo htmlspecialchars($numero_facture); ?>">
+                                        <?php endif; ?>
+                                        <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_label); ?></strong>
+                                    </span>
                                     <?php if ($client_tel !== ''): ?>
                                     <span class="invoice-cell-phone"><?php echo htmlspecialchars($client_tel); ?></span>
                                     <?php endif; ?>
