@@ -206,6 +206,20 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
         color: #1a1a1a;
     }
 
+    .nav-search-suggest__nom mark.nav-search-suggest__mark {
+        background: rgba(194, 102, 56, 0.22);
+        color: inherit;
+        padding: 0 1px;
+        border-radius: 2px;
+    }
+
+    .nav-search-suggest__empty {
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #666;
+        text-align: center;
+    }
+
     /* Groupe actions : langue · panier · compte */
     .nav-actions {
         display: flex;
@@ -589,7 +603,7 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
             <input type="search" name="recherche" id="nav-search" class="nav-search-input"
-                placeholder="Que recherchez-vous ?"
+                placeholder="Rechercher un produit par son nom…"
                 autocomplete="off" autocorrect="off" spellcheck="false"
                 role="combobox" aria-autocomplete="list" aria-controls="nav-search-suggest" aria-expanded="false"
                 value="<?php echo !empty($_GET['recherche']) ? htmlspecialchars($_GET['recherche']) : ''; ?>">

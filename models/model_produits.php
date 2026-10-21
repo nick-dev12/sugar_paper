@@ -661,7 +661,7 @@ function search_produits_with_filters($recherche = '', $prix_min = null, $prix_m
             $stmt->execute();
             $produits = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
             $produits = produit_recherche_filter_sort_rows($produits, $recherche_trim, 'nom', null);
-            if ($tri !== 'rand') {
+            if ($tri !== 'rand' && !in_array($tri, ['', 'pertinence'], true)) {
                 $produits = produit_recherche_apply_tri($produits, $tri, $rand_seed);
             }
             return array_slice($produits, (int) $offset, (int) $limit);

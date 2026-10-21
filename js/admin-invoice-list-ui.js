@@ -1112,9 +1112,130 @@
         setMode(false);
     }
 
+    function initCommandesBulkSelect() {
+        var panels = document.querySelectorAll('.commandes-bulk-panel[data-bulk-panel]');
+        if (!panels.length) {
+            return;
+        }
+
+        var searchByPanel = {
+            'a-traiter': '#search-commandes-a-traiter',
+            livrees: '#search-commandes-livrees',
+            annulees: '#search-commandes-annulees'
+        };
+
+        panels.forEach(function (panel) {
+            var key = panel.getAttribute('data-bulk-panel');
+            if (!key) {
+                return;
+            }
+            var toggle = panel.querySelector('.commandes-select-toggle[data-commandes-panel="' + key + '"]');
+            var form = document.getElementById('commandes-bulk-form-' + key);
+            if (!toggle || !form) {
+                return;
+            }
+            var countEl = panel.querySelector('.commandes-bulk-count[data-panel="' + key + '"]');
+            var selectAll = panel.querySelector('.commandes-select-all[data-panel="' + key + '"]');
+            var cancelBtn = panel.querySelector('.commandes-bulk-cancel[data-panel="' + key + '"]');
+            var actionBtns = form.querySelectorAll('button[type="submit"]');
+
+            function boxes() {
+                return Array.prototype.slice.call(panel.querySelectorAll('.commandes-row-select'));
+            }
+
+            function visibleBoxes() {
+                return boxes().filter(function (b) {
+                    var row = b.closest('.invoice-list-item');
+                    return row && !row.hidden;
+                });
+            }
+
+            function refresh() {
+                var all = boxes();
+                var n = 0;
+                all.forEach(function (b) {
+                    var row = b.closest('.invoice-list-item');
+                    if (row) {
+                        row.classList.toggle('is-selected', b.checked);
+                    }
+                    if (b.checked) {
+                        n++;
+                    }
+                });
+                if (countEl) {
+                    countEl.textContent = n + (n > 1 ? ' sélectionnées' : ' sélectionnée');
+                }
+                for (var i = 0; i < actionBtns.length; i++) {
+                    actionBtns[i].disabled = n === 0;
+                }
+                if (selectAll) {
+                    var vis = visibleBoxes();
+                    var checkedVis = vis.filter(function (b) { return b.checked; }).length;
+                    selectAll.checked = vis.length > 0 && checkedVis === vis.length;
+                    selectAll.indeterminate = checkedVis > 0 && checkedVis < vis.length;
+                }
+            }
+
+            function setMode(on) {
+                panel.classList.toggle('is-selecting', on);
+                form.hidden = !on;
+                toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+                toggle.classList.toggle('is-active', on);
+                if (!on) {
+                    boxes().forEach(function (b) { b.checked = false; });
+                }
+                refresh();
+            }
+
+            toggle.addEventListener('click', function () {
+                setMode(!panel.classList.contains('is-selecting'));
+            });
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function () {
+                    setMode(false);
+                });
+            }
+            if (selectAll) {
+                selectAll.addEventListener('change', function () {
+                    var on = selectAll.checked;
+                    visibleBoxes().forEach(function (b) { b.checked = on; });
+                    refresh();
+                });
+            }
+            panel.addEventListener('change', function (e) {
+                if (e.target.classList && e.target.classList.contains('commandes-row-select')) {
+                    refresh();
+                }
+            });
+            panel.addEventListener('click', function (e) {
+                if (e.target.closest('.invoice-list-pagination')) {
+                    setTimeout(refresh, 0);
+                }
+            });
+            var searchSel = searchByPanel[key];
+            if (searchSel) {
+                var searchInput = document.querySelector(searchSel);
+                if (searchInput) {
+                    searchInput.addEventListener('input', function () {
+                        setTimeout(refresh, 0);
+                    });
+                }
+            }
+            form.addEventListener('submit', function (e) {
+                var btn = e.submitter;
+                var msg = btn ? btn.getAttribute('data-confirm') : '';
+                if (msg && !window.confirm(msg)) {
+                    e.preventDefault();
+                }
+            });
+            setMode(false);
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         initInvoiceClickableRows();
         initFactureBulkSelect();
+        initCommandesBulkSelect();
 
         initInvoiceList({
 

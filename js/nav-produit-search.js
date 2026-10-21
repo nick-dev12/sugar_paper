@@ -10,6 +10,27 @@
         return d.innerHTML;
     }
 
+    function highlightNom(nom, query) {
+        var text = nom == null ? '' : String(nom);
+        var q = query == null ? '' : String(query).trim();
+        if (!text || !q) {
+            return esc(text);
+        }
+        var lowerText = text.toLocaleLowerCase('fr');
+        var lowerQ = q.toLocaleLowerCase('fr');
+        var idx = lowerText.indexOf(lowerQ);
+        if (idx === -1) {
+            return esc(text);
+        }
+        return (
+            esc(text.slice(0, idx)) +
+            '<mark class="nav-search-suggest__mark">' +
+            esc(text.slice(idx, idx + q.length)) +
+            '</mark>' +
+            esc(text.slice(idx + q.length))
+        );
+    }
+
     function init() {
         var input = document.getElementById('nav-search');
         var form = document.getElementById('nav-search-form');
@@ -32,6 +53,7 @@
         var timer = null;
         var abort = null;
         var activeIndex = -1;
+        var lastQuery = '';
 
         function hideSuggest() {
             list.innerHTML = '';
@@ -48,10 +70,17 @@
             activeIndex = idx;
         }
 
-        function renderItems(items) {
+        function renderItems(items, query) {
             list.innerHTML = '';
             if (!items.length) {
-                hideSuggest();
+                if (query && query.length >= 1) {
+                    list.innerHTML =
+                        '<li class="nav-search-suggest__empty" role="presentation">Aucun produit ne correspond à ce nom.</li>';
+                    list.hidden = false;
+                    input.setAttribute('aria-expanded', 'true');
+                } else {
+                    hideSuggest();
+                }
                 return;
             }
             items.forEach(function (p, i) {
@@ -66,7 +95,10 @@
                       '" alt="" width="40" height="40" loading="lazy" decoding="async"></span>'
                     : '<span class="nav-search-suggest__thumb nav-search-suggest__thumb--empty"><i class="fa-solid fa-box"></i></span>';
                 li.innerHTML =
-                    thumbHtml + '<span class="nav-search-suggest__nom">' + esc(p.nom || '') + '</span>';
+                    thumbHtml +
+                    '<span class="nav-search-suggest__nom">' +
+                    highlightNom(p.nom || '', query) +
+                    '</span>';
                 li.addEventListener('mousedown', function (ev) {
                     ev.preventDefault();
                     if (p.url) {
@@ -93,7 +125,7 @@
                     return r.json();
                 })
                 .then(function (data) {
-                    renderItems(data.items || []);
+                    renderItems(data.items || [], q);
                 })
                 .catch(function () {
                     hideSuggest();
@@ -108,13 +140,14 @@
         function onInput() {
             clearTimeout(timer);
             var q = input.value.trim();
+            lastQuery = q;
             if (q.length < 1) {
                 hideSuggest();
                 return;
             }
             timer = setTimeout(function () {
                 fetchSuggest(q);
-            }, 220);
+            }, 180);
         }
 
         input.addEventListener('input', onInput);
@@ -161,6 +194,13 @@
 
         form.addEventListener('submit', function () {
             hideSuggest();
+            var q = input.value.trim();
+            if (q !== '') {
+                var triEl = document.getElementById('nav-tri');
+                if (triEl) {
+                    triEl.value = '';
+                }
+            }
         });
     }
 

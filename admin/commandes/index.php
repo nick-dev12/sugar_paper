@@ -35,6 +35,13 @@ $commande_manuelle_post = $_SESSION['commande_manuelle_post'] ?? null;
 if (isset($_SESSION['commande_manuelle_erreur'])) unset($_SESSION['commande_manuelle_erreur']);
 if (isset($_SESSION['commande_manuelle_post'])) unset($_SESSION['commande_manuelle_post']);
 
+if (empty($_SESSION['admin_csrf'])) {
+    $_SESSION['admin_csrf'] = bin2hex(random_bytes(32));
+}
+$commandes_bulk_enabled = true;
+$commandes_bulk_is_admin = admin_is_full_admin();
+$commandes_bulk_archive_mode = $commandes_archive_mode;
+
 $tab_param = isset($_GET['tab']) ? (string) $_GET['tab'] : 'a_traiter';
 if (!in_array($tab_param, ['a_traiter', 'livrees', 'annulees'], true)) {
     $tab_param = 'a_traiter';
@@ -211,7 +218,7 @@ function commandes_statut_label($statut)
         </div>
     </div>
 
-    <section class="content-section page-commandes-section">
+    <section class="content-section page-commandes-section commandes-bulk-panel" data-bulk-panel="a-traiter">
         <div class="section-header">
             <div class="section-title">
                 <h2><i class="fas fa-list"></i> Commandes à traiter</h2>
@@ -241,7 +248,16 @@ function commandes_statut_label($statut)
                         <input type="search" id="search-commandes-a-traiter" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
                     </div>
                 </div>
+                <?php
+                $commandes_bulk_suffix = 'a-traiter';
+                $commandes_bulk_render = 'toggle';
+                include __DIR__ . '/includes/commandes_bulk_ui.php';
+                ?>
             </div>
+            <?php
+            $commandes_bulk_render = 'bar';
+            include __DIR__ . '/includes/commandes_bulk_ui.php';
+            ?>
         </div>
         <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-a-traiter-table-wrap">
             <table class="data-table invoice-data-table commandes-data-table">
@@ -271,7 +287,12 @@ function commandes_statut_label($statut)
                     ?>
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
-                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-select-line">
+                                <?php if ($commandes_bulk_enabled): ?>
+                                <input type="checkbox" class="invoice-row-select commandes-row-select" name="commande_ids[]" value="<?php echo (int) $commande['id']; ?>" form="commandes-bulk-form-a-traiter" aria-label="Sélectionner la commande <?php echo htmlspecialchars($numero_cmd); ?>">
+                                <?php endif; ?>
+                                <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            </span>
                             <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">
@@ -323,7 +344,7 @@ function commandes_statut_label($statut)
         </div>
     </div>
 
-    <section class="content-section page-commandes-section">
+    <section class="content-section page-commandes-section commandes-bulk-panel" data-bulk-panel="livrees">
         <div class="section-header">
             <div class="section-title">
                 <h2><i class="fas fa-check-circle"></i> Commandes livrées</h2>
@@ -358,7 +379,16 @@ function commandes_statut_label($statut)
                         <input type="search" id="search-commandes-livrees" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
                     </div>
                 </div>
+                <?php
+                $commandes_bulk_suffix = 'livrees';
+                $commandes_bulk_render = 'toggle';
+                include __DIR__ . '/includes/commandes_bulk_ui.php';
+                ?>
             </div>
+            <?php
+            $commandes_bulk_render = 'bar';
+            include __DIR__ . '/includes/commandes_bulk_ui.php';
+            ?>
         </div>
         <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-livrees-table-wrap">
             <table class="data-table invoice-data-table commandes-data-table">
@@ -389,7 +419,12 @@ function commandes_statut_label($statut)
                     ?>
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
-                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-select-line">
+                                <?php if ($commandes_bulk_enabled): ?>
+                                <input type="checkbox" class="invoice-row-select commandes-row-select" name="commande_ids[]" value="<?php echo (int) $commande['id']; ?>" form="commandes-bulk-form-livrees" aria-label="Sélectionner la commande <?php echo htmlspecialchars($numero_cmd); ?>">
+                                <?php endif; ?>
+                                <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            </span>
                             <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">
@@ -441,7 +476,7 @@ function commandes_statut_label($statut)
         </div>
     </div>
 
-    <section class="content-section page-commandes-section">
+    <section class="content-section page-commandes-section commandes-bulk-panel" data-bulk-panel="annulees">
         <div class="section-header">
             <div class="section-title">
                 <h2><i class="fas fa-ban"></i> Commandes annulées</h2>
@@ -462,7 +497,16 @@ function commandes_statut_label($statut)
                         <input type="search" id="search-commandes-annulees" class="invoice-panel-search-input" placeholder="Rechercher client, n°, téléphone…" autocomplete="off" inputmode="search">
                     </div>
                 </div>
+                <?php
+                $commandes_bulk_suffix = 'annulees';
+                $commandes_bulk_render = 'toggle';
+                include __DIR__ . '/includes/commandes_bulk_ui.php';
+                ?>
             </div>
+            <?php
+            $commandes_bulk_render = 'bar';
+            include __DIR__ . '/includes/commandes_bulk_ui.php';
+            ?>
         </div>
         <div class="invoice-panel-table-wrap commandes-table-wrap" id="commandes-annulees-table-wrap">
             <table class="data-table invoice-data-table commandes-data-table">
@@ -490,7 +534,12 @@ function commandes_statut_label($statut)
                     ?>
                     <tr class="invoice-list-item invoice-list-item--clickable" data-search="<?php echo $search_blob; ?>" data-date="<?php echo htmlspecialchars($date_iso); ?>" data-href="<?php echo htmlspecialchars($details_href); ?>" role="link" tabindex="0" aria-label="Voir la commande <?php echo htmlspecialchars($numero_cmd); ?>">
                         <td data-label="Client">
-                            <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            <span class="invoice-cell-select-line">
+                                <?php if ($commandes_bulk_enabled): ?>
+                                <input type="checkbox" class="invoice-row-select commandes-row-select" name="commande_ids[]" value="<?php echo (int) $commande['id']; ?>" form="commandes-bulk-form-annulees" aria-label="Sélectionner la commande <?php echo htmlspecialchars($numero_cmd); ?>">
+                                <?php endif; ?>
+                                <strong class="invoice-cell-primary"><?php echo htmlspecialchars($client_nom); ?></strong>
+                            </span>
                             <span class="invoice-cell-sub"><?php echo htmlspecialchars($telephone_aff); ?></span>
                         </td>
                         <td data-label="Montant" class="invoice-col-num">

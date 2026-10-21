@@ -34,8 +34,57 @@ if (!function_exists('produit_recherche_min_score')) {
     }
 }
 
+if (!function_exists('produit_recherche_query_words')) {
+    /**
+     * Mots significatifs de la requête (nom produit uniquement).
+     *
+     * @return string[]
+     */
+    function produit_recherche_query_words($query)
+    {
+        $q = produit_recherche_normalize($query);
+        if ($q === '') {
+            return [];
+        }
+        return array_values(array_filter(explode(' ', $q), static function ($w) {
+            return $w !== '';
+        }));
+    }
+}
+
+if (!function_exists('produit_recherche_nom_match_position')) {
+    /**
+     * Position la plus tôt de la requête dans le nom normalisé (tri secondaire).
+     */
+    function produit_recherche_nom_match_position($query, $nom)
+    {
+        $q = produit_recherche_normalize($query);
+        $l = produit_recherche_normalize($nom);
+        if ($q === '' || $l === '') {
+            return PHP_INT_MAX;
+        }
+        $best = PHP_INT_MAX;
+        $pos = strpos($l, $q);
+        if ($pos !== false) {
+            $best = min($best, (int) $pos);
+        }
+        foreach (produit_recherche_query_words($query) as $word) {
+            if ($word === '') {
+                continue;
+            }
+            $p = strpos($l, $word);
+            if ($p !== false) {
+                $best = min($best, (int) $p);
+            }
+        }
+        return $best;
+    }
+}
+
 if (!function_exists('produit_recherche_nom_score')) {
     /**
+     * Score de pertinence (nom produit uniquement). Plus haut = meilleure correspondance.
+     *
      * @return int Score 0 = pas de correspondance
      */
     function produit_recherche_nom_score($query, $nom)
@@ -50,46 +99,120 @@ if (!function_exists('produit_recherche_nom_score')) {
             return 0;
         }
 
+        $tokens = array_values(array_filter(explode(' ', $l)));
+        $qWords = produit_recherche_query_words($query);
+
         if ($l === $q) {
-            return 1000;
-        }
-        if (strpos($l, $q) === 0) {
-            return 850;
-        }
-        if (strpos($l, $q) !== false) {
-            return 700;
+            return 10000;
         }
 
-        $score = 0;
-        $words = array_filter(explode(' ', $q), static function ($w) {
-            return mb_strlen($w) >= 2;
-        });
+        $pos = strpos($l, $q);
+        if ($pos === 0) {
+            return 9600 - min(50, max(0, mb_strlen($l) - mb_strlen($q)));
+        }
+        if ($pos !== false) {
+            return 8800 - min(120, (int) $pos * 4);
+        }
 
-        foreach ($words as $word) {
-            if (strpos($l, $word) !== false) {
-                $score += 120;
-                continue;
-            }
-            if (strlen($word) >= 3) {
-                similar_text($word, $l, $pct);
-                if ($pct >= 72) {
-                    $score += (int) round($pct);
-                    continue;
+        $allWordsStartToken = !empty($qWords);
+        $allWordsSubstring = !empty($qWords);
+        $tokenPrefixScore = 0;
+        $tokenExactScore = 0;
+        $partialScore = 0;
+
+        foreach ($qWords as $word) {
+            $wLen = mb_strlen($word);
+            $wordStartOk = false;
+            $wordSubOk = false;
+
+            if ($wLen === 1) {
+                $wordSubOk = strpos($l, $word) !== false;
+                $allWordsStartToken = false;
+            } else {
+                foreach ($tokens as $token) {
+                    if ($token === $word) {
+                        $tokenExactScore = max($tokenExactScore, 8200);
+                        $wordStartOk = true;
+                        $wordSubOk = true;
+                        break;
+                    }
+                    if (strpos($token, $word) === 0) {
+                        $tokenPrefixScore = max(
+                            $tokenPrefixScore,
+                            7800 - min(100, mb_strlen($token) - $wLen)
+                        );
+                        $wordStartOk = true;
+                        $wordSubOk = true;
+                    } elseif (strpos($token, $word) !== false || strpos($word, $token) !== false) {
+                        $wordSubOk = true;
+                    }
+                }
+                if (!$wordSubOk && strpos($l, $word) !== false) {
+                    $wordSubOk = true;
+                }
+                if (!$wordSubOk && $wLen >= 3 && produit_recherche_word_in_name_fuzzy($word, $l)) {
+                    $wordSubOk = true;
+                    $partialScore += 110;
+                } elseif (!$wordSubOk && $wLen >= 3) {
+                    foreach ($tokens as $token) {
+                        if (mb_strlen($token) < 3) {
+                            continue;
+                        }
+                        similar_text($word, $token, $pct);
+                        if ($pct >= 76) {
+                            $wordSubOk = true;
+                            $partialScore += (int) round($pct * 0.9);
+                            break;
+                        }
+                    }
                 }
             }
-            if (strlen($word) >= 3 && produit_recherche_word_in_name_fuzzy($word, $l)) {
-                $score += 95;
+
+            if (!$wordStartOk && $wLen > 1) {
+                $allWordsStartToken = false;
+            }
+            if (!$wordSubOk) {
+                $allWordsSubstring = false;
             }
         }
 
-        if ($score === 0 && mb_strlen($q) >= 3) {
+        if ($allWordsStartToken && count($qWords) > 1) {
+            return 9000;
+        }
+        if ($tokenExactScore > 0) {
+            return $tokenExactScore;
+        }
+        if ($tokenPrefixScore > 0) {
+            return $tokenPrefixScore;
+        }
+        if ($allWordsSubstring && count($qWords) > 1) {
+            return 7600 + min(200, $partialScore);
+        }
+        if ($allWordsSubstring && count($qWords) === 1) {
+            return 7400;
+        }
+
+        if ($partialScore > 0) {
+            return min(720, $partialScore);
+        }
+
+        if (mb_strlen($q) >= 3) {
+            foreach ($tokens as $token) {
+                if (mb_strlen($token) < 3) {
+                    continue;
+                }
+                similar_text($q, $token, $pctTok);
+                if ($pctTok >= 78) {
+                    return (int) round($pctTok * 6);
+                }
+            }
             similar_text($q, $l, $pctFull);
-            if ($pctFull >= 68) {
-                $score = (int) round($pctFull);
+            if ($pctFull >= 70) {
+                return (int) round($pctFull * 5);
             }
         }
 
-        return $score;
+        return 0;
     }
 }
 
@@ -149,7 +272,7 @@ if (!function_exists('produit_recherche_filter_sort_rows')) {
      * @param int|null $limit
      * @return array
      */
-    function produit_recherche_filter_sort_rows(array $rows, $query, $nomKey = 'nom', $limit = null)
+    function produit_recherche_filter_sort_rows(array $rows, $query, $nomKey = 'nom', $limit = null, $minScore = null)
     {
         $query = trim((string) $query);
         if ($query === '') {
@@ -159,7 +282,7 @@ if (!function_exists('produit_recherche_filter_sort_rows')) {
             return $rows;
         }
 
-        $min = produit_recherche_min_score();
+        $min = $minScore !== null ? (int) $minScore : produit_recherche_min_score();
         $scored = [];
         foreach ($rows as $row) {
             if (!is_array($row)) {
@@ -171,22 +294,34 @@ if (!function_exists('produit_recherche_filter_sort_rows')) {
                 continue;
             }
             $row['_search_score'] = $score;
+            $row['_search_pos'] = produit_recherche_nom_match_position($query, $nom);
+            $row['_search_nom_len'] = mb_strlen(produit_recherche_normalize($nom));
             $scored[] = $row;
         }
 
-        usort($scored, static function ($a, $b) {
+        usort($scored, static function ($a, $b) use ($nomKey) {
             $sa = (int) ($a['_search_score'] ?? 0);
             $sb = (int) ($b['_search_score'] ?? 0);
             if ($sa !== $sb) {
                 return $sb <=> $sa;
             }
-            $na = mb_strtolower((string) ($a['nom'] ?? ''), 'UTF-8');
-            $nb = mb_strtolower((string) ($b['nom'] ?? ''), 'UTF-8');
+            $pa = (int) ($a['_search_pos'] ?? PHP_INT_MAX);
+            $pb = (int) ($b['_search_pos'] ?? PHP_INT_MAX);
+            if ($pa !== $pb) {
+                return $pa <=> $pb;
+            }
+            $la = (int) ($a['_search_nom_len'] ?? 0);
+            $lb = (int) ($b['_search_nom_len'] ?? 0);
+            if ($la !== $lb) {
+                return $la <=> $lb;
+            }
+            $na = mb_strtolower((string) ($a[$nomKey] ?? ''), 'UTF-8');
+            $nb = mb_strtolower((string) ($b[$nomKey] ?? ''), 'UTF-8');
             return strcmp($na, $nb);
         });
 
         foreach ($scored as $i => $row) {
-            unset($scored[$i]['_search_score']);
+            unset($scored[$i]['_search_score'], $scored[$i]['_search_pos'], $scored[$i]['_search_nom_len']);
         }
 
         if ($limit !== null && $limit > 0) {
