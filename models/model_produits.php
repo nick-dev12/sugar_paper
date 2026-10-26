@@ -402,7 +402,7 @@ function get_produit_section_accueil_labels()
     return [
         'cake_topper' => 'Cake toppers',
         'photo_impression' => 'Photo et impression comestible',
-        'outils_patisserie' => 'Outils de pâtisserie',
+        'outils_patisserie' => 'Matériel de pâtisserie',
         'decoration_gateau' => 'Décoration de gâteau',
         'cupcakes' => 'Cupcakes',
         'contours_gateau' => 'Contours de gâteau',

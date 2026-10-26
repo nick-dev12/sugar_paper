@@ -39,7 +39,7 @@ function get_seo_site_organization()
  */
 function get_seo_default_keywords()
 {
-    return 'cake topper, topper gâteau, impression comestible, photo gâteau comestible, personnalisation gâteau, décoration gâteau, outils pâtisserie, papier sucre, Sugar Paper, Dakar, Sénégal';
+    return 'cake topper, topper gâteau, impression comestible, photo gâteau comestible, personnalisation gâteau, décoration gâteau, matériel de pâtisserie, materiel patisserie, papier sucre, Sugar Paper, Dakar, Sénégal';
 }
 
 /**
@@ -49,7 +49,7 @@ function get_seo_home_meta()
 {
     return [
         'title' => 'Sugar Paper — Cake topper, impression comestible & décoration gâteau à Dakar',
-        'description' => 'Boutique à Dakar : cake toppers, impressions comestibles, photos sur gâteau et outils de pâtisserie. Personnalisation de gâteaux pour anniversaire, mariage et événements au Sénégal.',
+        'description' => 'Boutique à Dakar : cake toppers, impressions comestibles, photos sur gâteau et matériel de pâtisserie. Personnalisation de gâteaux pour anniversaire, mariage et événements au Sénégal.',
         'keywords' => get_seo_default_keywords(),
     ];
 }
@@ -81,14 +81,14 @@ function get_seo_sections_meta()
                 . 'Commandez en ligne et recevez vos impressions comestibles prêtes à décorer vos gâteaux.',
         ],
         'outils_patisserie' => [
-            'title' => 'Outils de pâtisserie & matériel décor — Dakar | Sugar Paper',
-            'description' => 'Outils de pâtisserie et matériel de décoration à Dakar : emporte-pièces, poches, spatules, accessoires pour gâteaux. Sugar Paper Sénégal.',
-            'keywords' => 'outils pâtisserie, matériel décoration gâteau, emporte-pièce, poche à douille, accessoires pâtisserie Dakar, Sugar Paper',
-            'intro' => 'Équipez-vous avec les outils de pâtisserie indispensables pour réussir vos décorations de gâteaux. '
-                . 'Sugar Paper propose une sélection d\'accessoires professionnels et grand public : emporte-pièces, poches à douille, spatules, rouleaux, cutters et petit matériel de finition. '
-                . 'Que vous prépariez un gâteau d\'anniversaire à la maison ou que vous gériez une activité de pâtisserie à Dakar, trouvez le matériel adapté à vos besoins. '
-                . 'Nos outils sont choisis pour leur durabilité et leur facilité d\'utilisation au quotidien. '
-                . 'Commandez en ligne et complétez votre arsenal de décoration avec des produits disponibles au Sénégal.',
+            'title' => 'Matériel de pâtisserie à Dakar — moules, emporte-pièces & décor | Sugar Paper',
+            'description' => 'Matériel de pâtisserie à Dakar : emporte-pièces, moules, poches à douille, spatules et équipement de décoration gâteau. Achat en ligne Sugar Paper Sénégal.',
+            'keywords' => 'matériel de pâtisserie, materiel patisserie Dakar, équipement pâtisserie, matériel décoration gâteau, emporte-pièce, poche à douille, moule pâtisserie, accessoires pâtisserie, Sugar Paper',
+            'intro' => 'Équipez-vous avec le matériel de pâtisserie indispensable pour réussir vos décorations de gâteaux. '
+                . 'Sugar Paper propose une sélection professionnelle et grand public : emporte-pièces, poches à douille, spatules, moules, rouleaux, cutters et petit matériel de finition. '
+                . 'Que vous prépariez un gâteau d\'anniversaire à la maison ou que vous gériez une activité de pâtisserie à Dakar, trouvez l\'équipement adapté à vos besoins. '
+                . 'Notre matériel de pâtisserie est choisi pour sa durabilité et sa facilité d\'utilisation au quotidien. '
+                . 'Commandez en ligne et complétez votre équipement de décoration avec des produits disponibles au Sénégal.',
         ],
         'decoration_gateau' => [
             'title' => 'Décoration de gâteau — Dakar | Sugar Paper',
@@ -127,8 +127,8 @@ function get_seo_produits_meta()
 {
     return [
         'title' => 'Catalogue décoration gâteau — Cake topper & impression comestible | Sugar Paper Dakar',
-        'description' => 'Catalogue complet : cake toppers, impressions comestibles, outils pâtisserie et décoration de gâteau. Commandez en ligne à Dakar, livraison au Sénégal.',
-        'keywords' => 'catalogue décoration gâteau, cake topper Dakar, impression comestible Sénégal, produits pâtisserie, Sugar Paper',
+        'description' => 'Catalogue complet : cake toppers, impressions comestibles, matériel de pâtisserie et décoration de gâteau. Commandez en ligne à Dakar, livraison au Sénégal.',
+        'keywords' => 'catalogue décoration gâteau, cake topper Dakar, impression comestible Sénégal, matériel de pâtisserie, materiel patisserie, Sugar Paper',
     ];
 }
 
@@ -163,7 +163,7 @@ function get_seo_nouveautes_meta()
 {
     return [
         'title' => 'Nouveautés décoration gâteau — Cake topper & comestible | Sugar Paper',
-        'description' => 'Dernières nouveautés Sugar Paper : cake toppers, impressions comestibles et outils pâtisserie. Découvrez les nouveaux produits à Dakar.',
+        'description' => 'Dernières nouveautés Sugar Paper : cake toppers, impressions comestibles et matériel de pâtisserie. Découvrez les nouveaux produits à Dakar.',
         'keywords' => 'nouveautés décoration gâteau, nouveaux cake topper, impression comestible Dakar, Sugar Paper',
     ];
 }
@@ -175,7 +175,7 @@ function get_seo_promo_meta()
 {
     return [
         'title' => 'Promotions décoration gâteau — Offres Sugar Paper Dakar',
-        'description' => 'Promotions sur cake toppers, impressions comestibles et outils pâtisserie. Offres limitées sur la décoration de gâteau à Dakar, Sénégal.',
+        'description' => 'Promotions sur cake toppers, impressions comestibles et matériel de pâtisserie. Offres limitées sur la décoration de gâteau à Dakar, Sénégal.',
         'keywords' => 'promotion décoration gâteau, promo cake topper, offre impression comestible, Sugar Paper Dakar',
     ];
 }

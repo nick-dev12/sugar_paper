@@ -37,12 +37,12 @@ function get_home_sections_config()
         ],
         'outils_patisserie' => [
             'id' => 'home-outils-patisserie',
-            'kicker' => 'Outils de pâtisserie',
-            'nav_label' => 'Outils pâtisserie',
-            'title' => 'Outils de pâtisserie',
-            'desc' => 'Le matériel indispensable pour vos créations.',
+            'kicker' => 'Matériel de pâtisserie',
+            'nav_label' => 'Matériel pâtisserie',
+            'title' => 'Matériel de pâtisserie',
+            'desc' => 'Emporte-pièces, moules, spatules et équipement pour vos créations à Dakar.',
             'cta_href' => 'section-produits.php?section=outils_patisserie',
-            'cta_label' => 'Tous les outils',
+            'cta_label' => 'Tout le matériel',
             'page_icon' => 'fa-utensils',
         ],
         'decoration_gateau' => [

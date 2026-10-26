@@ -144,7 +144,7 @@ try {
     echo "Assignation terminee.\n";
     echo "- Cake toppers: {$counts['cake_topper']}\n";
     echo "- Photo et impression comestible: {$counts['photo_impression']}\n";
-    echo "- Outils de patisserie: {$counts['outils_patisserie']}\n";
+    echo "- Materiel de patisserie: {$counts['outils_patisserie']}\n";
     echo "- Non assignes: {$counts['skipped']}\n";
 } catch (PDOException $e) {
     echo "Erreur: " . $e->getMessage() . "\n";

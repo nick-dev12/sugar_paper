@@ -301,4 +301,9 @@ return [
         'label' => 'Factures Invoice issues des commandes du site',
         'script' => 'run_add_bl_commande_id.php',
     ],
+    [
+        'id' => 'seo_materiel_patisserie_libelles',
+        'label' => 'SEO libellés matériel de pâtisserie (catégories)',
+        'script' => 'run_seo_materiel_patisserie_libelles.php',
+    ],
 ];

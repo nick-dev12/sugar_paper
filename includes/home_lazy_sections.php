@@ -45,7 +45,7 @@ function get_home_lazy_section_labels()
         'galerie_creations' => 'Nos créations',
         'photo_impression' => 'Photo comestible',
         'top_categories' => 'Top catégories',
-        'outils_patisserie' => 'Outils pâtisserie',
+        'outils_patisserie' => 'Matériel pâtisserie',
         'decoration_gateau' => 'Décoration gâteau',
     ];
 }
