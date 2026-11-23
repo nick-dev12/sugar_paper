@@ -149,6 +149,7 @@ $page_title = 'Suivi livraison' . ($client_nom !== '' ? ' — ' . $client_nom : 
     <link rel="stylesheet" href="/css/admin-livreur-suivi.css<?php echo asset_version_query(); ?>">
 </head>
 <body class="page-livreur-suivi page-livreur-suivi--public">
+    <?php require_once __DIR__ . '/includes/christmas_theme.php'; ?>
 
 <div class="livreur-suivi-app is-public-watch" id="livreur-suivi-app">
     <header class="livreur-suivi-topbar livreur-suivi-topbar--public">

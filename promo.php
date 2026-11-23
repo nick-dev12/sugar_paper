@@ -134,7 +134,7 @@ $seo_canonical = $base . '/promo.php';
 <body>
     <?php include('nav_bar.php'); ?>
 
-    <div class="page-header">
+    <div class="page-header page-header--promo">
         <h1><i class="fas fa-percent"></i> Promotions</h1>
         <p><?php echo $total_produits; ?> produit(s) en promotion - Profitez des meilleures offres !</p>
     </div>

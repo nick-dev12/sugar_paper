@@ -570,6 +570,7 @@ $active_login_mode = (isset($_POST['login_mode']) && (string) $_POST['login_mode
 </head>
 
 <body class="auth-page auth-page--<?php echo $active_login_mode === 'phone' ? 'phone' : 'email'; ?>">
+    <?php require_once __DIR__ . '/../includes/christmas_theme.php'; ?>
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/sugar_paper.jpg" alt="Sugar Paper">

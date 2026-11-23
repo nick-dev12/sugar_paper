@@ -590,6 +590,7 @@ if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
     }
 </style>
 
+<?php require_once __DIR__ . '/includes/christmas_theme.php'; ?>
 <div class="info" aria-hidden="true"></div>
 <nav class="nav-planete-gateau">
     <a class="logo" href="/index.php">

@@ -231,7 +231,8 @@ function render_home_product_section($section_key, $limit = 20, $return_url = '/
     $total = count_produits_by_home_section($section_key);
     $has_more = $total > count($produits);
     ?>
-    <section class="produit_vedete home-section-products home-reveal" id="<?php echo htmlspecialchars($config['id']); ?>">
+    <section class="produit_vedete home-section-products home-reveal" id="<?php echo htmlspecialchars($config['id']); ?>"
+        data-store-section="<?php echo htmlspecialchars($section_key); ?>">
         <div class="home-section-head">
             <div>
                 <span class="home-section-kicker"><?php echo htmlspecialchars($config['kicker']); ?></span>

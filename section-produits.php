@@ -176,7 +176,7 @@ $section_uses_cp = ($section_key === 'cake_topper');
     </style>
 </head>
 
-<body class="page-section-produits">
+<body class="page-section-produits" data-store-section="<?php echo htmlspecialchars($section_key); ?>">
     <?php
     if (!defined('NAV_SKIP_HEAD_ASSETS')) {
         define('NAV_SKIP_HEAD_ASSETS', true);

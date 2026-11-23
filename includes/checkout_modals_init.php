@@ -13,6 +13,7 @@ if (!function_exists('asset_version_query')) {
 
 $user_logged_in_ckm = isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0;
 ?>
+<?php require_once __DIR__ . '/christmas_theme.php'; ?>
 <?php if (!$user_logged_in_ckm): ?>
     <?php include __DIR__ . '/auth_intl_tel_head.php'; ?>
 <?php endif; ?>

@@ -9,7 +9,8 @@
 <link rel="stylesheet" href="/css/connextion.css">
 </head>
 <body>
-    <nav>
+    <?php require_once __DIR__ . '/../includes/christmas_theme.php'; ?>
+    <nav class="sp-noel-public-nav">
         <a class="logo" href="/index.html"><img src="../logo.png" alt=""></a>
         <div class="container">
             <div class="box">

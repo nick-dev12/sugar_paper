@@ -287,6 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $token_valid) {
 </head>
 
 <body>
+    <?php require_once __DIR__ . '/../includes/christmas_theme.php'; ?>
     <header class="auth-header">
         <a class="logo" href="/index.php">
             <img src="/image/sugar_paper.jpg" alt="Sugar Paper">

@@ -134,7 +134,7 @@ $seo_canonical = $base . '/nouveautes.php';
 <body>
     <?php include('nav_bar.php'); ?>
 
-    <div class="page-header">
+    <div class="page-header page-header--nouveautes">
         <h1><i class="fas fa-gift"></i> Nouveautés</h1>
         <p>Découvrez nos derniers produits ajoutés</p>
     </div>

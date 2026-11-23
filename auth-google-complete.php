@@ -141,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body class="auth-page">
+    <?php require_once __DIR__ . '/includes/christmas_theme.php'; ?>
     <div class="container">
         <div class="header">
             <h1>Finaliser mon compte</h1>
