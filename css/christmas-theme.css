@@ -258,7 +258,7 @@
 }
 
 .sp-noel :is(.home-hero-banner, .commande-perso-showcase-inner,
-    .product-card-link .image-wrapper, .produit-gallery-main, .categorie .item, .ckm-header, .legal-page)::after {
+    .produit-gallery-main, .categorie .item, .ckm-header, .legal-page)::after {
     content: "";
     position: absolute;
     inset: var(--noel-trim-inset, -3px auto auto -3px);
@@ -302,35 +302,30 @@
 .sp-noel .carousel:has(.product-card-link),
 .sp-noel .card:has(.product-card-link),
 .sp-noel .card.product-card-link {
-    --noel-card-corner: var(--noel-ribbon);
     --noel-card-bottom: var(--noel-sugar-stars);
     --noel-card-action: var(--noel-gift-pair);
     --noel-card-tint: #fff0f4;
 }
 
 .sp-noel :is(.carousel, .card):nth-child(5n + 2) {
-    --noel-card-corner: var(--noel-baubles);
     --noel-card-bottom: var(--noel-cookies);
     --noel-card-action: var(--noel-sugar-stars);
     --noel-card-tint: #fff6e9;
 }
 
 .sp-noel :is(.carousel, .card):nth-child(5n + 3) {
-    --noel-card-corner: var(--noel-roses);
     --noel-card-bottom: var(--noel-gift-pair);
     --noel-card-action: var(--noel-cookies);
     --noel-card-tint: #faedf4;
 }
 
 .sp-noel :is(.carousel, .card):nth-child(5n + 4) {
-    --noel-card-corner: var(--noel-topper);
     --noel-card-bottom: var(--noel-icing);
     --noel-card-action: var(--noel-baubles);
     --noel-card-tint: #fff2e6;
 }
 
 .sp-noel :is(.carousel, .card):nth-child(5n + 5) {
-    --noel-card-corner: var(--noel-whisk);
     --noel-card-bottom: var(--noel-baubles);
     --noel-card-action: var(--noel-roses);
     --noel-card-tint: #f8eaf1;
@@ -356,12 +351,6 @@
     --noel-card-bottom: var(--noel-icing);
 }
 
-.sp-noel .product-card-link .image-wrapper::after {
-    --noel-trim-art: var(--noel-card-corner, var(--noel-ribbon));
-    transform-origin: top left;
-    transition: transform 260ms ease-out;
-}
-
 .sp-noel .carousel:has(.product-card-link) > .add-to-cart-form,
 .sp-noel .card.product-card-link > .add-to-cart-form {
     position: relative;
@@ -385,12 +374,6 @@
 
 .sp-noel :is(.carousel:has(.product-card-link), .card.product-card-link) > .add-to-cart-form .btn-add-cart {
     min-height: 36px;
-}
-
-@media (hover: hover) {
-    .sp-noel .product-card-link:hover .image-wrapper::after {
-        transform: rotate(4deg) translateY(2px);
-    }
 }
 
 .sp-noel .home-spotlight__visual {
@@ -618,11 +601,6 @@ body.guest-checkout-open .sp-noel-pause {
     .sp-noel-vitrine::before,
     .sp-noel-vitrine::after {
         animation: none;
-    }
-
-    .sp-noel .product-card-link .image-wrapper::after {
-        transition: none;
-        transform: none;
     }
 
     .sp-noel-snow,
